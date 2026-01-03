@@ -422,3 +422,94 @@ document.getElementById('join-room-btn').addEventListener('click', () => {
 });
 
 function joinGame(roomId, name) {
+    showView(views.playerGame);
+    document.getElementById('player-name-disp').textContent = name;
+    myRoomRef = db.ref(`rooms/${roomId}`);
+    const myRef = myRoomRef.child('players').push();
+    myPlayerId = myRef.key;
+    myRef.set({ name: name, isAlive: true, periodScore: 0, periodTime: 0, lastAnswer: -1, lastTime: 99999 });
+
+    // 設定同期用変数
+    let playerConfig = { theme: 'light', scoreUnit: 'point' };
+
+    // 設定監視
+    db.ref(`rooms/${roomId}/config`).on('value', snap => {
+        if(!snap.val()) return;
+        playerConfig = snap.val();
+        
+        // テーマ適用
+        if(playerConfig.theme === 'dark') document.body.classList.add('dark-theme');
+        else document.body.classList.remove('dark-theme');
+    });
+
+    // 生存・スコア監視
+    myRef.on('value', snap => {
+        const val = snap.val();
+        if(!val) return;
+        const badge = document.getElementById('alive-badge');
+        const overlay = document.getElementById('player-dead-overlay');
+        
+        // スコア表示更新
+        document.getElementById('score-display-area').classList.remove('hidden');
+        document.getElementById('current-score-value').textContent = calculateScoreDisplay(val.periodScore||0, playerConfig.scoreUnit);
+
+        if(val.isAlive) {
+            badge.textContent = "ALIVE";
+            badge.style.background = "#00ff00";
+            overlay.classList.add('hidden');
+        } else {
+            badge.textContent = "DROP OUT";
+            badge.style.background = "#555";
+            overlay.classList.remove('hidden');
+        }
+    });
+
+    db.ref(`rooms/${roomId}/status`).on('value', snap => {
+        const st = snap.val();
+        if(!st) return;
+        const lobby = document.getElementById('player-lobby-msg');
+        const quizArea = document.getElementById('player-quiz-area');
+        const waitMsg = document.getElementById('player-wait-msg');
+
+        if(st.step === 'question') {
+            lobby.classList.add('hidden');
+            waitMsg.classList.add('hidden');
+            quizArea.classList.remove('hidden');
+            questionStartTime = st.startTime;
+            db.ref(`rooms/${roomId}/questions/${st.qIndex}`).once('value', qSnap => {
+                const q = qSnap.val();
+                if(!q) return;
+                document.getElementById('question-text-disp').textContent = q.q;
+                const btns = document.querySelectorAll('.answer-btn');
+                btns.forEach((btn, i) => {
+                    btn.textContent = q.c[i];
+                    btn.disabled = false;
+                    btn.style.opacity = "1";
+                    btn.style.border = (playerConfig.theme==='dark') ? "2px solid #ffd700" : "none";
+                });
+            });
+        } else if(st.step === 'answer') {
+            quizArea.classList.add('hidden');
+            waitMsg.classList.remove('hidden');
+        } else {
+            lobby.classList.remove('hidden');
+            quizArea.classList.add('hidden');
+            waitMsg.classList.add('hidden');
+        }
+    });
+}
+
+document.querySelectorAll('.answer-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const estimatedTimeTaken = Date.now() - questionStartTime;
+        const myAnswerIndex = parseInt(btn.dataset.index);
+        document.querySelectorAll('.answer-btn').forEach(b => { b.disabled = true; b.style.opacity = "0.3"; });
+        btn.style.opacity = "1";
+        if(document.body.classList.contains('dark-theme')) btn.style.border = "4px solid white";
+        
+        document.getElementById('answer-timer-disp').textContent = `${(estimatedTimeTaken/1000).toFixed(2)}秒`;
+        if(myPlayerId && myRoomRef) {
+            myRoomRef.child(`players/${myPlayerId}`).update({ lastAnswer: myAnswerIndex, lastTime: estimatedTimeTaken });
+        }
+    });
+});
