@@ -46,76 +46,19 @@
     </div>
 
     <div style="margin-top:20px;">
-        <h4>作成中の問題 (<span id="q-count">0</span>問)</h4>
+        <h4>現在のセット (<span id="q-count">0</span>問)</h4>
         <ul id="q-list" style="background:white; padding:10px; border:1px solid #ddd; min-height:50px; list-style:none;"></ul>
         
         <button id="save-room-btn" class="btn-success btn-block" style="padding:15px; font-weight:bold; font-size:1.1em; margin-top:10px;">
             部屋を作成してロビーへ移動
         </button>
     </div>
-</div>
+
+    <hr style="border-top: 2px dashed #ccc; margin-top:30px;">
+    <h3>📜 過去のクイズ履歴</h3>
+    <p style="font-size:0.8em; color:#666; text-align:center;">クリックすると、その問題を「現在のセット」に読み込みます（コピー）</p>
+    <div id="history-list" style="display:flex; flex-direction:column; gap:10px; padding-bottom: 20px;"></div>
+    </div>
 
 <div id="host-control-view" class="view hidden">
-    <div style="background:#245672; color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:20px;">
-        <div style="font-size:0.9em;">部屋コード</div>
-        <div id="host-room-id" style="font-size:3em; font-weight:bold; letter-spacing:5px;">---</div>
-        <div>参加人数: <span id="host-player-count" style="font-weight:bold;">0</span>人</div>
-    </div>
-
-    <div id="host-status-area" style="text-align:center; margin-bottom:20px;">
-        <h3>待機中...</h3>
-        <p>参加者が集まったら開始してください</p>
-    </div>
-
-    <div style="display:flex; flex-direction:column; gap:10px;">
-        <button id="host-start-btn" class="btn-primary btn-block" style="padding:15px; font-size:1.2em;">クイズを開始する</button>
-        <button id="host-next-btn" class="btn-info btn-block hidden" style="padding:15px;">次の問題へ</button>
-        <button id="host-show-answer-btn" class="btn-warning btn-block hidden" style="padding:15px;">正解を表示</button>
-        <button id="host-end-btn" class="btn-danger btn-block hidden">終了してトップへ</button>
-    </div>
-</div>
-
-<div id="respondent-view" class="view hidden">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2 style="margin:0;">部屋に入る</h2>
-        <button class="back-to-main">戻る</button>
-    </div>
-    <hr>
-    <div style="text-align:center; padding:20px 0;">
-        <input type="text" id="room-code-input" placeholder="部屋コード (6桁)" maxlength="6"
-               style="font-size:1.5em; width:200px; text-align:center; text-transform:uppercase; margin-bottom:20px;">
-        <input type="text" id="player-name-input" placeholder="ニックネーム" 
-               style="font-size:1.2em; width:200px; text-align:center; margin-bottom:20px; display:block; margin:0 auto 20px auto;">
-        <button id="join-room-btn" class="btn-primary btn-block">参加する</button>
-    </div>
-</div>
-
-<div id="player-game-view" class="view hidden">
-    <div id="player-status-bar" style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.9em; color:#666;">
-        <span id="player-name-disp">名無し</span>
-        <span>Score: <span id="player-score">0</span></span>
-    </div>
-
-    <div id="player-lobby-msg" style="text-align:center; padding:40px 0;">
-        <h2>🍵 待機中</h2>
-        <p>出題者が開始するのを待っています...</p>
-    </div>
-
-    <div id="player-quiz-area" class="hidden">
-        <div id="question-number" style="text-align:center; font-weight:bold; margin-bottom:10px;">Q1</div>
-        <div id="question-text-disp" style="background:#eef; padding:15px; border-radius:8px; font-weight:bold; margin-bottom:15px;">
-            問題文がここに表示されます
-        </div>
-        <div id="player-choices-area"></div>
-    </div>
-    
-    <div id="player-wait-msg" class="hidden" style="text-align:center; padding:20px; color:#007bff; font-weight:bold;">
-        回答を受け付けました！<br>結果発表を待っています...
-    </div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="script.js"></script>
-</body>
-</html>
+    <div style="background:#245672; color:white; padding:15px; border-radius:8px;

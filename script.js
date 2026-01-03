@@ -31,6 +31,10 @@ const views = {
 function showView(target) {
     Object.values(views).forEach(v => v.classList.add('hidden'));
     target.classList.remove('hidden');
+    // 作成画面を開いたときだけ履歴を再読み込み
+    if(target === views.creator) {
+        renderHistoryList();
+    }
 }
 
 document.querySelectorAll('.back-to-main').forEach(btn => {
@@ -41,15 +45,28 @@ document.getElementById('show-creator-btn').addEventListener('click', () => show
 document.getElementById('show-respondent-btn').addEventListener('click', () => showView(views.respondent));
 
 /* =========================================================
- * SECTION: 出題者（作成パート）
+ * SECTION: 出題者（作成＆履歴管理）
  * =======================================================*/
 let createdQuestions = [];
 
+// 問題リストの表示更新
+function updateQuestionListDisplay() {
+    const list = document.getElementById('q-list');
+    list.innerHTML = '';
+    createdQuestions.forEach((q, i) => {
+        const li = document.createElement('li');
+        li.textContent = `Q${i+1}. ${q.q} (正解: ${q.correct || q.c[0]})`;
+        li.style.borderBottom = '1px solid #eee';
+        li.style.padding = '5px';
+        list.appendChild(li);
+    });
+    document.getElementById('q-count').textContent = createdQuestions.length;
+}
+
+// 問題追加ボタン
 document.getElementById('add-question-btn').addEventListener('click', () => {
     const qText = document.getElementById('question-text').value.trim();
     const choiceInputs = document.querySelectorAll('.choice-input');
-    
-    // 選択肢収集（空欄除外）
     let choices = [];
     choiceInputs.forEach(inp => { if(inp.value.trim()) choices.push(inp.value.trim()); });
 
@@ -58,29 +75,103 @@ document.getElementById('add-question-btn').addEventListener('click', () => {
         return;
     }
 
-    // 正解は常に「入力欄の一番上（choices[0]）」とする（後でシャッフル表示）
     const correctText = choices[0];
-
     createdQuestions.push({
         q: qText,
-        c: choices, // 配列の0番目が正解
+        c: choices,
         correct: correctText
     });
 
-    // 表示更新
-    const li = document.createElement('li');
-    li.textContent = `Q${createdQuestions.length}. ${qText} (正解: ${correctText})`;
-    document.getElementById('q-list').appendChild(li);
-    document.getElementById('q-count').textContent = createdQuestions.length;
+    updateQuestionListDisplay();
 
     // フォームリセット
     document.getElementById('question-text').value = '';
     choiceInputs.forEach(inp => inp.value = '');
+    document.getElementById('question-text').focus();
 });
 
-/* =========================================================
- * SECTION: 出題者（ロビー＆進行パート）
- * =======================================================*/
+// ★★★ 履歴管理ロジック ★★★
+
+// 履歴データを保存（Local Storage）
+function saveToHistory(title, questions) {
+    const history = JSON.parse(localStorage.getItem('quiz_history') || '[]');
+    history.unshift({
+        title: title || '無題のセット',
+        questions: questions,
+        date: new Date().toLocaleString()
+    });
+    // 最大20件まで保存
+    if(history.length > 20) history.pop();
+    localStorage.setItem('quiz_history', JSON.stringify(history));
+}
+
+// 履歴リストの表示
+function renderHistoryList() {
+    const list = document.getElementById('history-list');
+    list.innerHTML = '';
+
+    // 1. 新しい履歴（オンライン版で作ったもの）
+    const history = JSON.parse(localStorage.getItem('quiz_history') || '[]');
+    
+    // 2. 古い履歴（オフライン版の遺産）も探してみる
+    const oldQuizzes = JSON.parse(localStorage.getItem('quizzes') || '{}');
+    const oldKeys = Object.keys(oldQuizzes);
+    
+    // 表示用配列にマージ
+    let allItems = [];
+    
+    history.forEach(h => allItems.push({ type: 'new', ...h }));
+    oldKeys.forEach(k => {
+        const d = oldQuizzes[k];
+        allItems.push({
+            type: 'old',
+            title: d.title || `過去の部屋(${k})`,
+            questions: d.questions || [],
+            date: '以前のバージョン'
+        });
+    });
+
+    if(allItems.length === 0) {
+        list.innerHTML = '<p style="text-align:center; color:#999;">履歴はありません</p>';
+        return;
+    }
+
+    allItems.forEach(item => {
+        const div = document.createElement('div');
+        div.style.cssText = "border:1px solid #ddd; padding:10px; background:#fff; border-radius:5px; cursor:pointer; transition:0.2s;";
+        div.onmouseover = () => div.style.background = '#f9f9f9';
+        div.onmouseout = () => div.style.background = '#fff';
+        
+        const qNum = item.questions ? item.questions.length : 0;
+        div.innerHTML = `
+            <div style="font-weight:bold; color:#0056b3;">${item.title}</div>
+            <div style="font-size:0.8em; color:#666;">${item.date} / 全${qNum}問</div>
+        `;
+        
+        // クリックで読み込み
+        div.onclick = () => {
+            if(!confirm(`「${item.title}」の内容を読み込みますか？\n（現在作成中の内容は上書きされます）`)) return;
+            
+            // データの形式を揃えて読み込み
+            if(item.questions) {
+                // 古い形式データのコンバートも兼ねる
+                createdQuestions = item.questions.map(q => ({
+                    q: q.q || q.questionText,
+                    c: q.c || q.choices,
+                    correct: q.correct || (q.c ? q.c[0] : (q.choices ? q.choices[0] : ''))
+                }));
+                
+                document.getElementById('quiz-set-title').value = item.title;
+                updateQuestionListDisplay();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                alert('読み込みました！編集して新しい部屋を作成できます。');
+            }
+        };
+        list.appendChild(div);
+    });
+}
+
+// 部屋作成ボタン（保存＆開始）
 let currentRoomId = null;
 let currentQuestionIndex = 0;
 
@@ -90,17 +181,23 @@ document.getElementById('save-room-btn').addEventListener('click', () => {
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     const title = document.getElementById('quiz-set-title').value || '無題のクイズ';
 
+    // ★ここで履歴に保存！
+    saveToHistory(title, createdQuestions);
+
     // Firebaseに部屋作成
     db.ref('rooms/' + currentRoomId).set({
         info: { title: title, hostActive: true },
         questions: createdQuestions,
-        status: { step: 'lobby', qIndex: 0 }, // ここを全員が監視する
+        status: { step: 'lobby', qIndex: 0 },
         players: {}
     }).then(() => {
         enterHostMode(currentRoomId);
     });
 });
 
+/* =========================================================
+ * SECTION: 出題者（ロビー＆進行パート）
+ * =======================================================*/
 function enterHostMode(roomId) {
     showView(views.hostControl);
     document.getElementById('host-room-id').textContent = roomId;
@@ -111,7 +208,6 @@ function enterHostMode(roomId) {
         document.getElementById('host-player-count').textContent = count;
     });
 
-    // ボタン設定
     const startBtn = document.getElementById('host-start-btn');
     const nextBtn = document.getElementById('host-next-btn');
     const ansBtn = document.getElementById('host-show-answer-btn');
@@ -122,40 +218,33 @@ function enterHostMode(roomId) {
     ansBtn.classList.add('hidden');
     endBtn.classList.add('hidden');
 
-    // ★「開始」ボタン
     startBtn.onclick = () => {
         currentQuestionIndex = 0;
         updateRoomStatus('question', 0);
-        
         startBtn.classList.add('hidden');
         ansBtn.classList.remove('hidden');
         document.getElementById('host-status-area').innerHTML = `<h3>Q1 出題中...</h3>`;
     };
 
-    // ★「正解表示」ボタン
     ansBtn.onclick = () => {
         updateRoomStatus('answer', currentQuestionIndex);
-        
         ansBtn.classList.add('hidden');
         if(currentQuestionIndex < createdQuestions.length - 1) {
-            nextBtn.classList.remove('hidden'); // 次の問題があるなら
+            nextBtn.classList.remove('hidden');
         } else {
-            endBtn.classList.remove('hidden');  // 最後なら終了ボタン
+            endBtn.classList.remove('hidden');
         }
         document.getElementById('host-status-area').innerHTML = `<h3>答え合わせ中</h3>`;
     };
 
-    // ★「次の問題」ボタン
     nextBtn.onclick = () => {
         currentQuestionIndex++;
         updateRoomStatus('question', currentQuestionIndex);
-        
         nextBtn.classList.add('hidden');
         ansBtn.classList.remove('hidden');
         document.getElementById('host-status-area').innerHTML = `<h3>Q${currentQuestionIndex+1} 出題中...</h3>`;
     };
     
-    // ★「終了」ボタン
     endBtn.onclick = () => {
         if(confirm('終了しますか？')) showView(views.main);
     }
@@ -182,7 +271,6 @@ document.getElementById('join-room-btn').addEventListener('click', () => {
     
     if(!code) return;
 
-    // 部屋の存在確認
     db.ref('rooms/' + code).once('value', snapshot => {
         if(snapshot.exists()) {
             joinRoomAsPlayer(code, name);
@@ -198,40 +286,32 @@ function joinRoomAsPlayer(roomId, name) {
     document.getElementById('player-score').textContent = 0;
     document.getElementById('player-name-disp').textContent = name;
 
-    // プレイヤー登録
     playerRoomRef = db.ref(`rooms/${roomId}`);
     const newPlayerRef = playerRoomRef.child('players').push();
     myPlayerId = newPlayerRef.key;
     newPlayerRef.set({ name: name, score: 0 });
 
-    // ★★★ ここが「同期」の心臓部 ★★★
-    // ホストが status を書き換えるたびに、ここが動く
     playerRoomRef.child('status').on('value', snapshot => {
         const status = snapshot.val();
         if(!status) return;
 
         if(status.step === 'lobby') {
-            // ロビー待機
             document.getElementById('player-lobby-msg').classList.remove('hidden');
             document.getElementById('player-quiz-area').classList.add('hidden');
         } 
         else if(status.step === 'question') {
-            // 問題表示！
             document.getElementById('player-lobby-msg').classList.add('hidden');
             document.getElementById('player-quiz-area').classList.remove('hidden');
             document.getElementById('player-wait-msg').classList.add('hidden');
             
-            // 問題データを取得して表示
             playerRoomRef.child('questions/' + status.qIndex).once('value', qSnap => {
                 const qData = qSnap.val();
                 renderPlayerQuestion(qData, status.qIndex);
             });
         }
         else if(status.step === 'answer') {
-            // 正解発表モード
             document.getElementById('player-wait-msg').classList.add('hidden');
-            // ここで正解アニメーションなどを出しても良い
-            alert('出題者が正解を表示しました！画面を確認してください');
+            alert('出題者が正解を表示しました！');
         }
     });
 }
@@ -240,33 +320,26 @@ function renderPlayerQuestion(qData, index) {
     document.getElementById('question-number').textContent = `Q${index + 1}`;
     document.getElementById('question-text-disp').textContent = qData.q;
     
-    // 選択肢をシャッフルして表示
     const area = document.getElementById('player-choices-area');
     area.innerHTML = '';
-    
-    // シャッフル用配列作成
     const shuffled = [...qData.c].sort(() => Math.random() - 0.5);
 
     shuffled.forEach(choice => {
         const btn = document.createElement('button');
         btn.className = 'btn-block';
-        btn.style.cssText = "margin-bottom:10px; padding:15px; background:white; border:1px solid #ccc;";
+        btn.style.cssText = "margin-bottom:10px; padding:15px; background:white; border:1px solid #ccc; color:#333;";
         btn.textContent = choice;
         
         btn.onclick = () => {
-            // 回答送信
             if(choice === qData.correct) {
                 currentScore += 10;
                 document.getElementById('player-score').textContent = currentScore;
-                alert('⭕ 正解！'); // 簡易表示
+                alert('⭕ 正解！');
             } else {
                 alert('❌ 残念...');
             }
-            // 二重回答防止
             area.innerHTML = '<p style="text-align:center; color:#888;">回答済み</p>';
             document.getElementById('player-wait-msg').classList.remove('hidden');
-            
-            // スコア送信（オプション）
             if(myPlayerId) {
                 playerRoomRef.child(`players/${myPlayerId}/score`).set(currentScore);
             }
