@@ -1,5 +1,5 @@
 /* =========================================================
- * ALL STAR SYSTEM: Cloud Edition
+ * ALL STAR SYSTEM: Cloud Edition (Fixed Kanpe)
  * =======================================================*/
 
 const firebaseConfig = {
@@ -37,9 +37,7 @@ function showView(target) {
     target.classList.remove('hidden');
 }
 
-// 戻るボタン等
 document.querySelectorAll('.back-to-main').forEach(btn => btn.addEventListener('click', () => {
-    // ログアウト扱い
     currentShowId = null;
     showView(views.main);
 }));
@@ -52,17 +50,13 @@ document.getElementById('main-player-btn').addEventListener('click', () => showV
  * =======================================================*/
 let currentShowId = null;
 
-// ログインボタン
 document.getElementById('host-login-submit-btn').addEventListener('click', () => {
     const input = document.getElementById('show-id-input').value.trim().toUpperCase();
     if(!input) { alert("番組IDを入力してください"); return; }
-    
-    // 英数字のみチェック
     if(!/^[A-Z0-9_-]+$/.test(input)) {
         alert("IDは半角英数字、ハイフン、アンダーバーのみ使用できます");
         return;
     }
-
     currentShowId = input;
     enterDashboard();
 });
@@ -70,10 +64,9 @@ document.getElementById('host-login-submit-btn').addEventListener('click', () =>
 function enterDashboard() {
     showView(views.dashboard);
     document.getElementById('dashboard-show-id').textContent = currentShowId;
-    loadSavedSets(); // クラウドからリスト取得
+    loadSavedSets();
 }
 
-// クラウド上のセット一覧を取得
 function loadSavedSets() {
     const listEl = document.getElementById('dash-set-list');
     listEl.innerHTML = '<p style="text-align:center;">読み込み中...</p>';
@@ -97,7 +90,6 @@ function loadSavedSets() {
                     <div style="font-size:0.8em; color:#666;">全${item.questions.length}問</div>
                 </div>
             `;
-            
             const delBtn = document.createElement('button');
             delBtn.className = 'delete-btn';
             delBtn.textContent = '削除';
@@ -114,25 +106,20 @@ function loadSavedSets() {
 }
 
 document.getElementById('dash-create-btn').onclick = () => {
-    // 作成画面リセット
     createdQuestions = [];
     document.getElementById('q-list').innerHTML = '';
     document.getElementById('q-count').textContent = '0';
     document.getElementById('quiz-set-title').value = '';
     showView(views.creator);
 };
-
-document.getElementById('dash-studio-btn').onclick = () => {
-    startRoom(); // 部屋作成へ
-};
+document.getElementById('dash-studio-btn').onclick = () => startRoom();
+document.getElementById('creator-back-btn').addEventListener('click', () => enterDashboard());
 
 
 /* =========================================================
- * 2. HOST: 問題作成 & クラウド保存
+ * 2. HOST: 問題作成
  * =======================================================*/
 let createdQuestions = [];
-
-document.getElementById('creator-back-btn').addEventListener('click', () => enterDashboard());
 
 document.getElementById('add-question-btn').addEventListener('click', () => {
     const qText = document.getElementById('question-text').value.trim();
@@ -161,44 +148,35 @@ document.getElementById('add-question-btn').addEventListener('click', () => {
     document.getElementById('question-text').focus();
 });
 
-// ★クラウド保存
 document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
     if(createdQuestions.length === 0) { alert('問題がありません'); return; }
-    
     const title = document.getElementById('quiz-set-title').value.trim() || "無題のセット";
     
-    // FirebaseにPush
     db.ref(`saved_sets/${currentShowId}`).push({
         title: title,
         questions: createdQuestions,
         createdAt: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
-        alert(`クラウドに「${title}」を保存しました！\nダッシュボードに戻ります。`);
+        alert(`クラウドに保存しました！\nダッシュボードに戻ります。`);
         enterDashboard();
-    }).catch(err => {
-        alert("保存エラー: " + err.message);
-    });
+    }).catch(err => alert("保存エラー: " + err.message));
 });
 
 
 /* =========================================================
- * 3. HOST: スタジオ進行 (クラウドロード機能)
+ * 3. HOST: スタジオ進行
  * =======================================================*/
 let currentRoomId = null;
 let currentQIndex = 0;
-let studioQuestions = []; // スタジオで使う問題
+let studioQuestions = [];
 
 function startRoom() {
-    // 部屋ID作成 (毎回ランダム)
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-
     db.ref(`rooms/${currentRoomId}`).set({
         questions: [],
         status: { step: 'standby', qIndex: 0 },
         players: {}
-    }).then(() => {
-        enterHostMode(currentRoomId);
-    });
+    }).then(() => enterHostMode(currentRoomId));
 }
 
 function enterHostMode(roomId) {
@@ -206,11 +184,9 @@ function enterHostMode(roomId) {
     document.getElementById('host-room-id').textContent = roomId;
     document.getElementById('studio-show-id').textContent = currentShowId;
     
-    // ロード用プルダウン更新
+    // ロード用プルダウン
     const select = document.getElementById('period-select');
     select.innerHTML = '<option value="">読み込み中...</option>';
-    
-    // Firebaseからリスト取得
     db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
         const data = snap.val();
         select.innerHTML = '<option value="">-- セットを選択 --</option>';
@@ -218,7 +194,7 @@ function enterHostMode(roomId) {
             Object.keys(data).forEach(key => {
                 const item = data[key];
                 const opt = document.createElement('option');
-                opt.value = JSON.stringify(item.questions); // 簡易的に値を埋め込む
+                opt.value = JSON.stringify(item.questions);
                 opt.textContent = item.title;
                 select.appendChild(opt);
             });
@@ -234,14 +210,10 @@ function enterHostMode(roomId) {
         document.getElementById('host-alive-count').textContent = alive;
     });
 
-    // スタジオ閉じる
     document.getElementById('host-close-studio-btn').onclick = () => {
-        if(confirm("スタジオを閉じてダッシュボードに戻りますか？\n(参加者は切断されます)")) {
-            enterDashboard();
-        }
+        if(confirm("スタジオを閉じてダッシュボードに戻りますか？")) enterDashboard();
     };
 
-    // ボタン定義
     const btnLoad = document.getElementById('host-load-period-btn');
     const btnNewPeriod = document.getElementById('host-new-period-btn');
     const btnStart = document.getElementById('host-start-btn');
@@ -249,59 +221,71 @@ function enterHostMode(roomId) {
     const btnEliminate = document.getElementById('host-eliminate-slowest-btn');
     const btnNext = document.getElementById('host-next-btn');
     const btnRanking = document.getElementById('host-ranking-btn');
+    const kanpeArea = document.getElementById('host-kanpe-area');
 
-    // ★ロード実行
+    // ★カンペ表示更新関数
+    function updateKanpe() {
+        if(studioQuestions.length > currentQIndex) {
+            const q = studioQuestions[currentQIndex];
+            kanpeArea.style.display = 'block';
+            document.getElementById('kanpe-question').textContent = `Q${currentQIndex+1}. ${q.q}`;
+            const colors = ["青","赤","緑","黄"];
+            document.getElementById('kanpe-answer').textContent = `正解: ${colors[q.correctIndex]}（${q.c[q.correctIndex]}）`;
+        } else {
+            kanpeArea.style.display = 'none';
+        }
+    }
+
     btnLoad.onclick = () => {
         const json = document.getElementById('period-select').value;
         if(!json) return;
-        
-        if(studioQuestions.length > 0) {
-            if(!confirm("進行中の問題を破棄して、新しいセットを読み込みますか？")) return;
-        }
+        if(studioQuestions.length > 0 && !confirm("問題を読み込み直しますか？")) return;
 
         studioQuestions = JSON.parse(json);
         currentQIndex = 0;
-
-        // 部屋データを更新
         db.ref(`rooms/${roomId}/questions`).set(studioQuestions);
         db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: 0 });
 
-        alert("セット完了！\n「全員復活させてスタート」を押してください。");
+        alert("セット完了！全員復活させてスタートしてください。");
         document.getElementById('host-status-area').textContent = "Ready...";
         
+        // カンペエリアを非表示（まだ始まっていないので）または1問目プレビュー
+        // ここではまだ表示せず、ピリオド開始時に表示します
+        kanpeArea.style.display = 'none';
+
         btnStart.classList.add('hidden');
         btnShowAns.classList.add('hidden');
         btnNext.classList.add('hidden');
         btnNewPeriod.classList.remove('hidden');
+        document.getElementById('period-load-area').classList.add('hidden'); // ロードエリア隠す
     };
 
-    // ★全員復活
     btnNewPeriod.onclick = () => {
-        if(!studioQuestions.length) { alert("問題をロードしてください"); return; }
+        if(!studioQuestions.length) return;
         if(!confirm("全員を復活させてピリオドを開始しますか？")) return;
 
         db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(p => p.ref.update({ isAlive: true, periodScore:0, periodTime:0, lastTime:99999 }));
         });
         currentQIndex = 0;
+        updateKanpe(); // カンペ表示！
+
         btnStart.classList.remove('hidden');
         btnNewPeriod.classList.add('hidden');
+        document.getElementById('host-status-area').textContent = "スタンバイ...";
     };
 
-    // ★START
     btnStart.onclick = () => {
         const now = firebase.database.ServerValue.TIMESTAMP;
         db.ref(`rooms/${roomId}/status`).set({ step: 'question', qIndex: currentQIndex, startTime: now });
         btnStart.classList.add('hidden');
         btnShowAns.classList.remove('hidden');
-        document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} Thinking...`;
+        document.getElementById('host-status-area').textContent = `Thinking Time...`;
     };
 
-    // ★正解発表
     btnShowAns.onclick = () => {
         const q = studioQuestions[currentQIndex];
         const correctIdx = q.correctIndex;
-        
         db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(p => {
                 const val = p.val();
@@ -318,12 +302,11 @@ function enterHostMode(roomId) {
         btnShowAns.classList.add('hidden');
         btnEliminate.classList.remove('hidden');
         btnNext.classList.remove('hidden');
-        document.getElementById('host-status-area').textContent = `正解: ${["青","赤","緑","黄"][correctIdx]}`;
+        document.getElementById('host-status-area').textContent = `正解発表`;
     };
 
-    // ★予選落ち
     btnEliminate.onclick = () => {
-        if(!confirm("正解者の中で最も遅い1名を脱落させますか？")) return;
+        if(!confirm("最も遅い1名を脱落させますか？")) return;
         const correctIdx = studioQuestions[currentQIndex].correctIndex;
         db.ref(`rooms/${roomId}/players`).once('value', snap => {
             let target = null, maxT = -1;
@@ -335,32 +318,32 @@ function enterHostMode(roomId) {
             });
             if(target) {
                 db.ref(`rooms/${roomId}/players/${target}`).update({ isAlive: false });
-                alert(`脱落執行: ${(maxT/1000).toFixed(2)}秒`);
-            } else {
-                alert("対象なし");
-            }
+                alert(`脱落: ${(maxT/1000).toFixed(2)}秒`);
+            } else { alert("対象なし"); }
         });
     };
 
-    // ★次へ
     btnNext.onclick = () => {
         currentQIndex++;
         if(currentQIndex >= studioQuestions.length) {
-            alert("ピリオド終了！ランキングを確認してください。");
+            alert("ピリオド終了！");
             btnNext.classList.add('hidden');
+            document.getElementById('period-load-area').classList.remove('hidden'); // 次のピリオドロードへ
+            kanpeArea.style.display = 'none';
             return;
         }
-        // 回答リセット
         db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(p => p.ref.update({ lastAnswer: -1, lastTime: 99999 }));
         });
+        
+        updateKanpe(); // 次の問題をカンペに表示
+        
         btnStart.classList.remove('hidden');
         btnNext.classList.add('hidden');
         btnEliminate.classList.add('hidden');
-        document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} Ready...`;
+        document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} スタンバイ...`;
     };
 
-    // ★ランキング
     btnRanking.onclick = () => {
         db.ref(`rooms/${roomId}/players`).once('value', snap => {
             let ranking = [];
@@ -401,11 +384,9 @@ document.getElementById('join-room-btn').addEventListener('click', () => {
 function joinGame(roomId, name) {
     showView(views.playerGame);
     document.getElementById('player-name-disp').textContent = name;
-
     myRoomRef = db.ref(`rooms/${roomId}`);
     const myRef = myRoomRef.child('players').push();
     myPlayerId = myRef.key;
-
     myRef.set({ name: name, isAlive: true, periodScore: 0, periodTime: 0, lastAnswer: -1, lastTime: 99999 });
 
     myRef.on('value', snap => {
