@@ -1,5 +1,5 @@
 /* =========================================================
- * ALL STAR SYSTEM: Cloud Edition (Fixed Kanpe)
+ * ALL STAR SYSTEM: Cloud Edition (Fixed Kanpe V2)
  * =======================================================*/
 
 const firebaseConfig = {
@@ -184,7 +184,6 @@ function enterHostMode(roomId) {
     document.getElementById('host-room-id').textContent = roomId;
     document.getElementById('studio-show-id').textContent = currentShowId;
     
-    // ロード用プルダウン
     const select = document.getElementById('period-select');
     select.innerHTML = '<option value="">読み込み中...</option>';
     db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
@@ -201,7 +200,6 @@ function enterHostMode(roomId) {
         }
     });
 
-    // プレイヤー監視
     db.ref(`rooms/${roomId}/players`).on('value', snap => {
         const players = snap.val() || {};
         const total = Object.keys(players).length;
@@ -223,19 +221,20 @@ function enterHostMode(roomId) {
     const btnRanking = document.getElementById('host-ranking-btn');
     const kanpeArea = document.getElementById('host-kanpe-area');
 
-    // ★カンペ表示更新関数
     function updateKanpe() {
         if(studioQuestions.length > currentQIndex) {
             const q = studioQuestions[currentQIndex];
-            kanpeArea.style.display = 'block';
+            // 強制的に表示（hidden削除）
+            kanpeArea.classList.remove('hidden');
             document.getElementById('kanpe-question').textContent = `Q${currentQIndex+1}. ${q.q}`;
             const colors = ["青","赤","緑","黄"];
             document.getElementById('kanpe-answer').textContent = `正解: ${colors[q.correctIndex]}（${q.c[q.correctIndex]}）`;
         } else {
-            kanpeArea.style.display = 'none';
+            kanpeArea.classList.add('hidden');
         }
     }
 
+    // ★ロード実行
     btnLoad.onclick = () => {
         const json = document.getElementById('period-select').value;
         if(!json) return;
@@ -246,18 +245,17 @@ function enterHostMode(roomId) {
         db.ref(`rooms/${roomId}/questions`).set(studioQuestions);
         db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: 0 });
 
-        alert("セット完了！全員復活させてスタートしてください。");
-        document.getElementById('host-status-area').textContent = "Ready...";
+        alert("セット完了！\nカンペを表示します。");
         
-        // カンペエリアを非表示（まだ始まっていないので）または1問目プレビュー
-        // ここではまだ表示せず、ピリオド開始時に表示します
-        kanpeArea.style.display = 'none';
+        // ★ここでカンペを即更新！
+        updateKanpe();
 
+        document.getElementById('host-status-area').textContent = "Ready...";
         btnStart.classList.add('hidden');
         btnShowAns.classList.add('hidden');
         btnNext.classList.add('hidden');
         btnNewPeriod.classList.remove('hidden');
-        document.getElementById('period-load-area').classList.add('hidden'); // ロードエリア隠す
+        document.getElementById('period-load-area').classList.add('hidden');
     };
 
     btnNewPeriod.onclick = () => {
@@ -268,7 +266,9 @@ function enterHostMode(roomId) {
             snap.forEach(p => p.ref.update({ isAlive: true, periodScore:0, periodTime:0, lastTime:99999 }));
         });
         currentQIndex = 0;
-        updateKanpe(); // カンペ表示！
+        
+        // スタート時にも念のため更新
+        updateKanpe();
 
         btnStart.classList.remove('hidden');
         btnNewPeriod.classList.add('hidden');
@@ -308,148 +308,4 @@ function enterHostMode(roomId) {
     btnEliminate.onclick = () => {
         if(!confirm("最も遅い1名を脱落させますか？")) return;
         const correctIdx = studioQuestions[currentQIndex].correctIndex;
-        db.ref(`rooms/${roomId}/players`).once('value', snap => {
-            let target = null, maxT = -1;
-            snap.forEach(p => {
-                const v = p.val();
-                if(v.isAlive && v.lastAnswer === correctIdx) {
-                    if(v.lastTime > maxT) { maxT = v.lastTime; target = p.key; }
-                }
-            });
-            if(target) {
-                db.ref(`rooms/${roomId}/players/${target}`).update({ isAlive: false });
-                alert(`脱落: ${(maxT/1000).toFixed(2)}秒`);
-            } else { alert("対象なし"); }
-        });
-    };
-
-    btnNext.onclick = () => {
-        currentQIndex++;
-        if(currentQIndex >= studioQuestions.length) {
-            alert("ピリオド終了！");
-            btnNext.classList.add('hidden');
-            document.getElementById('period-load-area').classList.remove('hidden'); // 次のピリオドロードへ
-            kanpeArea.style.display = 'none';
-            return;
-        }
-        db.ref(`rooms/${roomId}/players`).once('value', snap => {
-            snap.forEach(p => p.ref.update({ lastAnswer: -1, lastTime: 99999 }));
-        });
-        
-        updateKanpe(); // 次の問題をカンペに表示
-        
-        btnStart.classList.remove('hidden');
-        btnNext.classList.add('hidden');
-        btnEliminate.classList.add('hidden');
-        document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} スタンバイ...`;
-    };
-
-    btnRanking.onclick = () => {
-        db.ref(`rooms/${roomId}/players`).once('value', snap => {
-            let ranking = [];
-            snap.forEach(p => {
-                const v = p.val();
-                if(v.isAlive) ranking.push({ name: v.name, score: v.periodScore, time: v.periodTime });
-            });
-            ranking.sort((a,b) => (b.score - a.score) || (a.time - b.time));
-            let msg = "🏆 生存者ランキング 🏆\n";
-            ranking.slice(0,10).forEach((r,i) => msg += `${i+1}. ${r.name} (${r.score}問/${(r.time/1000).toFixed(2)}s)\n`);
-            alert(msg);
-        });
-    };
-}
-
-
-/* =========================================================
- * 4. PLAYER: 回答者 (変更なし)
- * =======================================================*/
-let myPlayerId = null;
-let myRoomRef = null;
-let questionStartTime = 0;
-
-document.getElementById('join-room-btn').addEventListener('click', () => {
-    const code = document.getElementById('room-code-input').value.trim().toUpperCase();
-    const name = document.getElementById('player-name-input').value.trim() || "名無し";
-    if(!code) return;
-
-    db.ref(`rooms/${code}`).once('value', snap => {
-        if(snap.exists()) {
-            joinGame(code, name);
-        } else {
-            alert('部屋が見つかりません');
-        }
-    });
-});
-
-function joinGame(roomId, name) {
-    showView(views.playerGame);
-    document.getElementById('player-name-disp').textContent = name;
-    myRoomRef = db.ref(`rooms/${roomId}`);
-    const myRef = myRoomRef.child('players').push();
-    myPlayerId = myRef.key;
-    myRef.set({ name: name, isAlive: true, periodScore: 0, periodTime: 0, lastAnswer: -1, lastTime: 99999 });
-
-    myRef.on('value', snap => {
-        const val = snap.val();
-        if(!val) return;
-        const badge = document.getElementById('alive-badge');
-        const overlay = document.getElementById('player-dead-overlay');
-        if(val.isAlive) {
-            badge.textContent = "STAND UP";
-            badge.style.background = "#00ff00";
-            overlay.classList.add('hidden');
-        } else {
-            badge.textContent = "SIT DOWN";
-            badge.style.background = "#555";
-            overlay.classList.remove('hidden');
-        }
-    });
-
-    db.ref(`rooms/${roomId}/status`).on('value', snap => {
-        const st = snap.val();
-        if(!st) return;
-        const lobby = document.getElementById('player-lobby-msg');
-        const quizArea = document.getElementById('player-quiz-area');
-        const waitMsg = document.getElementById('player-wait-msg');
-
-        if(st.step === 'question') {
-            lobby.classList.add('hidden');
-            waitMsg.classList.add('hidden');
-            quizArea.classList.remove('hidden');
-            questionStartTime = st.startTime;
-            db.ref(`rooms/${roomId}/questions/${st.qIndex}`).once('value', qSnap => {
-                const q = qSnap.val();
-                if(!q) return;
-                document.getElementById('question-text-disp').textContent = q.q;
-                const btns = document.querySelectorAll('.answer-btn');
-                btns.forEach((btn, i) => {
-                    btn.textContent = q.c[i];
-                    btn.disabled = false;
-                    btn.style.opacity = "1";
-                    btn.style.border = "none";
-                });
-            });
-        } else if(st.step === 'answer') {
-            quizArea.classList.add('hidden');
-            waitMsg.classList.remove('hidden');
-        } else {
-            lobby.classList.remove('hidden');
-            quizArea.classList.add('hidden');
-            waitMsg.classList.add('hidden');
-        }
-    });
-}
-
-document.querySelectorAll('.answer-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const estimatedTimeTaken = Date.now() - questionStartTime;
-        const myAnswerIndex = parseInt(btn.dataset.index);
-        document.querySelectorAll('.answer-btn').forEach(b => { b.disabled = true; b.style.opacity = "0.3"; });
-        btn.style.opacity = "1";
-        btn.style.border = "4px solid white";
-        document.getElementById('answer-timer-disp').textContent = `${(estimatedTimeTaken/1000).toFixed(2)}秒`;
-        if(myPlayerId && myRoomRef) {
-            myRoomRef.child(`players/${myPlayerId}`).update({ lastAnswer: myAnswerIndex, lastTime: estimatedTimeTaken });
-        }
-    });
-});
+        db.ref(`rooms/${roomId}/players`).once('value', snap
