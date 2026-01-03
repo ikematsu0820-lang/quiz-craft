@@ -55,30 +55,35 @@
 <div id="creator-view" class="view hidden">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2 style="margin:0;">問題作成</h2>
-        <button id="creator-back-btn" style="background:#999; padding:5px 10px;">ダッシュボードへ</button>
+        <button id="creator-back-btn" style="background:#999; padding:5px 10px;">戻る</button>
     </div>
     <hr>
     
-    <div style="margin-bottom:15px;">
-        <label style="font-weight:bold;">セット名（例：第1ピリオド）</label>
-        <input type="text" id="quiz-set-title" class="btn-block" placeholder="タイトルを入力">
+    <div style="margin-bottom:15px; background:#f0f0f0; padding:10px; border-radius:5px;">
+        <label style="font-weight:bold;">セット設定</label>
+        <input type="text" id="quiz-set-title" class="btn-block" placeholder="セット名 (例: 第1ピリオド)" style="margin-bottom:10px;">
+        
+        <label style="font-size:0.9em; color:#666;">演出スタイル:</label>
+        <select id="quiz-set-style" class="btn-block">
+            <option value="standard">🌈 オールスター感謝祭風 (4色ボタン)</option>
+            <option value="millionaire">💰 クイズミリオネア風 (金額表示・黒金)</option>
+        </select>
     </div>
-
     <div style="background:#fff0f5; padding:15px; border-radius:8px; border:2px solid #ff69b4;">
         <h3 style="margin-top:0; color:#c71585;">新規問題</h3>
         <input type="text" id="question-text" class="btn-block" placeholder="問題文" style="margin-bottom:10px;">
         
         <div id="choices-container" style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
-            <input type="text" class="choice-input btn-blue" placeholder="選択肢1 (青)">
-            <input type="text" class="choice-input btn-red" placeholder="選択肢2 (赤)">
-            <input type="text" class="choice-input btn-green" placeholder="選択肢3 (緑)">
-            <input type="text" class="choice-input btn-yellow" placeholder="選択肢4 (黄)">
+            <input type="text" class="choice-input btn-blue" placeholder="選択肢1 (A)">
+            <input type="text" class="choice-input btn-red" placeholder="選択肢2 (B)">
+            <input type="text" class="choice-input btn-green" placeholder="選択肢3 (C)">
+            <input type="text" class="choice-input btn-yellow" placeholder="選択肢4 (D)">
         </div>
         <select id="correct-index" class="btn-block" style="margin-top:10px;">
-            <option value="0">正解: 青 (選択肢1)</option>
-            <option value="1">正解: 赤 (選択肢2)</option>
-            <option value="2">正解: 緑 (選択肢3)</option>
-            <option value="3">正解: 黄 (選択肢4)</option>
+            <option value="0">正解: 1/A (青)</option>
+            <option value="1">正解: 2/B (赤)</option>
+            <option value="2">正解: 3/C (緑)</option>
+            <option value="3">正解: 4/D (黄)</option>
         </select>
         <button id="add-question-btn" class="btn-primary btn-block" style="margin-top:10px;">リストに追加</button>
     </div>
@@ -108,6 +113,7 @@
         <div id="kanpe-question" style="font-weight:bold; font-size:1.1em; margin-bottom:5px;"></div>
         <div id="kanpe-answer" style="color:#d00; font-weight:bold;"></div>
     </div>
+
     <div id="host-status-area" style="text-align:center; margin-bottom:15px; font-weight:bold; color:#666;">
         準備中...
     </div>
@@ -125,7 +131,7 @@
         
         <hr style="margin:5px 0; border-color:#ccc;">
         <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;">問題 START！</button>
-        <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;">正解発表 (Sit Down)</button>
+        <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;">正解発表</button>
         <button id="host-eliminate-slowest-btn" class="btn-dark btn-block hidden">☠️ 予選落ち (一番遅い人を脱落)</button>
         <button id="host-next-btn" class="btn-info btn-block hidden" style="padding:15px;">次の問題へ</button>
         
@@ -155,12 +161,19 @@
         <span id="player-name-disp" style="font-weight:bold;">名無し</span>
         <span id="alive-badge" style="background:#00ff00; color:black; padding:2px 6px; border-radius:4px; font-weight:bold;">STAND UP</span>
     </div>
+    
+    <div id="millionaire-money-disp" class="hidden" style="text-align:center; background:#111; color:gold; padding:5px; margin-bottom:10px; border-radius:4px; font-family:serif; border:1px solid gold;">
+        Current: <span id="current-money-value">¥0</span>
+    </div>
+
     <div id="player-lobby-msg" style="text-align:center; padding:40px 0;">
         <h2>Ready?</h2>
         <p>画面を注視してください</p>
     </div>
+
     <div id="player-quiz-area" class="hidden">
         <div id="question-text-disp" style="background:#fff; border:2px solid #333; padding:15px; border-radius:8px; font-weight:bold; margin-bottom:15px; min-height:60px;">問題文</div>
+        
         <div id="player-choices-area" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; height:200px;">
             <button class="answer-btn btn-blue" data-index="0">1</button>
             <button class="answer-btn btn-red" data-index="1">2</button>
@@ -171,4 +184,13 @@
     </div>
     <div id="player-wait-msg" class="hidden" style="text-align:center; padding:20px; font-weight:bold;">ANSWERED!<br>祈ってお待ちください...</div>
     <div id="player-dead-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:999;">
-        <h1 style="color:gray; font-size:3em;">Sit Down</h1>
+        <h1 style="color:gray; font-size:3em;">GAME OVER</h1>
+        <p>脱落...</p>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
