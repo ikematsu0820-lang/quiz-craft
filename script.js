@@ -1,9 +1,8 @@
 /* =========================================================
- * ALL STAR SYSTEM: script.js
+ * ALL STAR SYSTEM: script.js (Multi-Period Edition)
  * =======================================================*/
 
 const firebaseConfig = {
-  // ★ここにあなたのFirebaseConfigを貼り付けてください★
   apiKey: "AIzaSyDl9kq_jJb_zvYc3lfTfL_oTQrdqv2Abww",
   databaseURL: "https://quizcraft-56950-default-rtdb.asia-southeast1.firebasedatabase.app/",
   authDomain: "quizcraft-56950.firebaseapp.com",
@@ -14,10 +13,15 @@ const firebaseConfig = {
   measurementId: "G-3HRYY8ZC2W"
 };
 
-if (!firebase.apps.length) {
+if (typeof firebase !== 'undefined' && !firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
-const db = firebase.database();
+let db;
+try {
+    db = firebase.database();
+} catch(e) {
+    console.error(e);
+}
 
 /* --- 画面遷移 --- */
 const views = {
@@ -33,12 +37,16 @@ function showView(target) {
     target.classList.remove('hidden');
 }
 
+// 戻るボタンなど
+document.querySelectorAll('.back-to-main').forEach(btn => {
+    btn.addEventListener('click', () => showView(views.main));
+});
 document.getElementById('show-creator-btn').addEventListener('click', () => showView(views.creator));
 document.getElementById('show-respondent-btn').addEventListener('click', () => showView(views.respondent));
 
 
 /* =========================================================
- * 1. HOST: 問題作成
+ * 1. HOST: 問題作成 & 保存
  * =======================================================*/
 let createdQuestions = [];
 
@@ -46,7 +54,6 @@ document.getElementById('add-question-btn').addEventListener('click', () => {
     const qText = document.getElementById('question-text').value.trim();
     const correctIndex = parseInt(document.getElementById('correct-index').value);
     
-    // 4色の選択肢を取得
     const cBlue = document.querySelector('.btn-blue.choice-input').value.trim() || "選択肢1";
     const cRed = document.querySelector('.btn-red.choice-input').value.trim() || "選択肢2";
     const cGreen = document.querySelector('.btn-green.choice-input').value.trim() || "選択肢3";
@@ -56,11 +63,10 @@ document.getElementById('add-question-btn').addEventListener('click', () => {
 
     createdQuestions.push({
         q: qText,
-        c: [cBlue, cRed, cGreen, cYellow], // 0:青, 1:赤, 2:緑, 3:黄
+        c: [cBlue, cRed, cGreen, cYellow],
         correctIndex: correctIndex
     });
 
-    // リスト表示更新
     const list = document.getElementById('q-list');
     const li = document.createElement('li');
     li.textContent = `Q${createdQuestions.length}. ${qText}`;
@@ -68,21 +74,49 @@ document.getElementById('add-question-btn').addEventListener('click', () => {
     document.getElementById('q-count').textContent = createdQuestions.length;
 
     document.getElementById('question-text').value = '';
+    document.getElementById('question-text').focus();
+});
+
+// ★履歴（ピリオドストック）に保存
+function saveToLocalHistory(title, questions) {
+    if(!title) title = "無題のセット " + new Date().toLocaleTimeString();
+    const history = JSON.parse(localStorage.getItem('as_history') || '[]');
+    history.unshift({
+        title: title,
+        questions: questions,
+        date: new Date().toLocaleString()
+    });
+    localStorage.setItem('as_history', JSON.stringify(history));
+    alert(`「${title}」を保存しました！\n本番画面から呼び出せます。`);
+}
+
+// 保存ボタン（端末に保存だけ）
+document.getElementById('save-only-btn').addEventListener('click', () => {
+    if(createdQuestions.length === 0) { alert('問題がありません'); return; }
+    const title = document.getElementById('quiz-set-title').value.trim();
+    saveToLocalHistory(title, createdQuestions);
 });
 
 /* =========================================================
- * 2. HOST: 進行管理 (THE ALL STAR LOGIC)
+ * 2. HOST: 進行管理 (ピリオドロード機能付き)
  * =======================================================*/
 let currentRoomId = null;
 let currentQIndex = 0;
 
+// すぐに放送開始（部屋作成）
 document.getElementById('save-room-btn').addEventListener('click', () => {
-    if(createdQuestions.length === 0) { alert('問題がありません'); return; }
+    // 部屋を作るときは、現在作成中のリストを使う
+    // （もし空なら、ダミーで部屋だけ作ることも許可）
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    
+    // 現在の内容も一応保存しておく
+    if(createdQuestions.length > 0) {
+        const title = document.getElementById('quiz-set-title').value.trim();
+        saveToLocalHistory(title, createdQuestions);
+    }
 
-    // 部屋初期化
     db.ref(`rooms/${currentRoomId}`).set({
-        questions: createdQuestions,
+        questions: createdQuestions, // 初期の問題セット
         status: { step: 'standby', qIndex: 0 },
         players: {}
     }).then(() => {
@@ -93,192 +127,204 @@ document.getElementById('save-room-btn').addEventListener('click', () => {
 function enterHostMode(roomId) {
     showView(views.hostControl);
     document.getElementById('host-room-id').textContent = roomId;
+    
+    // ピリオド選択プルダウンを更新
+    updatePeriodSelect();
 
     // プレイヤー監視
     db.ref(`rooms/${roomId}/players`).on('value', snap => {
         const players = snap.val() || {};
         const total = Object.keys(players).length;
-        // Alive（生存者）カウント
-        const alive = Object.values(players).filter(p => p.isAlive).length;
-        
+        const alive = Object.values(players).filter(p => p.isAlive).filter(Boolean).length;
         document.getElementById('host-player-count').textContent = total;
         document.getElementById('host-alive-count').textContent = alive;
     });
 
-    // --- ボタンアクション ---
     const btnNewPeriod = document.getElementById('host-new-period-btn');
     const btnStart = document.getElementById('host-start-btn');
     const btnShowAns = document.getElementById('host-show-answer-btn');
     const btnNext = document.getElementById('host-next-btn');
     const btnEliminate = document.getElementById('host-eliminate-slowest-btn');
     const btnRanking = document.getElementById('host-ranking-btn');
+    const btnLoadPeriod = document.getElementById('host-load-period-btn');
 
-    // ★ピリオド開始（全員復活）
-    btnNewPeriod.onclick = () => {
-        if(!confirm('新しいピリオドを開始しますか？\n全員がStandUp（復活）し、ピリオド成績がリセットされます。')) return;
+    // ★ピリオドロード機能
+    btnLoadPeriod.onclick = () => {
+        const select = document.getElementById('period-select');
+        const json = select.value;
+        if(!json) return;
         
-        // 全プレイヤーの状態をリセット
+        if(!confirm('現在進行中の問題セットを破棄し、\n選択したピリオドを読み込みますか？')) return;
+
+        const selectedSet = JSON.parse(json);
+        createdQuestions = selectedSet.questions; // ホストのメモリを書き換え
+        currentQIndex = 0;
+
+        // Firebase上の問題を書き換え
+        db.ref(`rooms/${roomId}/questions`).set(createdQuestions);
+        // ステータスをリセット
+        db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: 0 });
+
+        alert(`「${selectedSet.title}」をセットしました！\n「新ピリオド開始」を押してください。`);
+        document.getElementById('host-status-area').textContent = `セット完了: ${selectedSet.title}`;
+        
+        btnStart.classList.add('hidden');
+        btnNewPeriod.classList.remove('hidden');
+    };
+
+    // ★新ピリオド開始
+    btnNewPeriod.onclick = () => {
+        if(createdQuestions.length === 0) { alert('問題がロードされていません！'); return; }
+        if(!confirm('全員を復活させ、ピリオドを開始しますか？')) return;
+        
         db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(child => {
                 child.ref.update({
-                    isAlive: true,      // 復活
-                    periodScore: 0,     // ピリオドスコア0
-                    periodTime: 0,      // ピリオドタイム0
-                    lastTime: 99999     // 今回のタイムリセット
+                    isAlive: true,
+                    periodScore: 0,
+                    periodTime: 0,
+                    lastTime: 99999
                 });
             });
         });
         
         currentQIndex = 0;
-        document.getElementById('host-status-area').textContent = "新ピリオド 待機中...";
+        document.getElementById('host-status-area').textContent = "Ready...";
         btnStart.classList.remove('hidden');
         btnNewPeriod.classList.add('hidden');
     };
 
-    // ★問題START（タイム計測開始）
+    // ★START
     btnStart.onclick = () => {
-        // 現在時刻（サーバー時刻）を記録
         const now = firebase.database.ServerValue.TIMESTAMP;
-        
         db.ref(`rooms/${roomId}/status`).set({
             step: 'question',
             qIndex: currentQIndex,
             startTime: now
         });
-
         btnStart.classList.add('hidden');
         btnShowAns.classList.remove('hidden');
-        document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} Thinking Time...`;
+        document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} Thinking...`;
     };
 
-    // ★正解発表 & 生存判定 (Sit Down Logic)
+    // ★正解発表
     btnShowAns.onclick = () => {
         const currentQ = createdQuestions[currentQIndex];
         const correctIdx = currentQ.correctIndex;
 
-        // 答え合わせ処理
         db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(p => {
                 const val = p.val();
-                if(!val.isAlive) return; // 既に死んでいる人は無視
-
-                // 正解チェック
+                if(!val.isAlive) return;
                 if(val.lastAnswer === correctIdx) {
-                    // 正解！: ピリオドスコア加算、タイム加算
                     const timeTaken = val.lastTime || 99999;
                     p.ref.update({
                         periodScore: (val.periodScore || 0) + 1,
                         periodTime: (val.periodTime || 0) + timeTaken
                     });
                 } else {
-                    // 不正解！: Sit Down（脱落）
                     p.ref.update({ isAlive: false });
                 }
             });
         });
 
         db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
-
         btnShowAns.classList.add('hidden');
-        btnEliminate.classList.remove('hidden'); // 予選落ちボタン出現
+        btnEliminate.classList.remove('hidden');
         btnNext.classList.remove('hidden');
-        document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} 正解: ${["青","赤","緑","黄"][correctIdx]}`;
+        document.getElementById('host-status-area').textContent = `正解: ${["青","赤","緑","黄"][correctIdx]}`;
     };
 
-    // ★予選落ち（一番遅い正解者を消す）
+    // ★予選落ち
     btnEliminate.onclick = () => {
-        if(!confirm('【予選落ち】\nこの問題の正解者の中で、一番タイムが遅かった1名を脱落させますか？')) return;
-
+        if(!confirm('正解者の中で一番遅い1名を脱落させますか？')) return;
         const currentQ = createdQuestions[currentQIndex];
         const correctIdx = currentQ.correctIndex;
 
         db.ref(`rooms/${roomId}/players`).once('value', snap => {
-            let slowestPlayerKey = null;
+            let slowestKey = null;
             let maxTime = -1;
-
             snap.forEach(p => {
                 const val = p.val();
-                // 「生きていて」かつ「今回正解した人」の中で
                 if(val.isAlive && val.lastAnswer === correctIdx) {
                     if(val.lastTime > maxTime) {
                         maxTime = val.lastTime;
-                        slowestPlayerKey = p.key;
+                        slowestKey = p.key;
                     }
                 }
             });
-
-            if(slowestPlayerKey) {
-                // 最下位を脱落させる
-                db.ref(`rooms/${roomId}/players/${slowestPlayerKey}`).update({ isAlive: false });
-                alert(`予選落ち執行: タイム ${maxTime/1000}秒 のプレイヤーを脱落させました。`);
+            if(slowestKey) {
+                db.ref(`rooms/${roomId}/players/${slowestKey}`).update({ isAlive: false });
+                alert(`脱落: ${(maxTime/1000).toFixed(2)}秒`);
             } else {
-                alert('対象者がいませんでした。');
+                alert('対象者なし');
             }
         });
     };
 
-    // ★次の問題へ
+    // ★次へ
     btnNext.onclick = () => {
         currentQIndex++;
         if(currentQIndex >= createdQuestions.length) {
-            alert('全問終了です！');
+            alert('ピリオド終了！チャンピオンを決めましょう');
             btnNext.classList.add('hidden');
             return;
         }
-        
-        // 次の問題の準備（回答リセット）
         db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(p => p.ref.update({ lastAnswer: -1, lastTime: 99999 }));
         });
-
         btnStart.classList.remove('hidden');
         btnNext.classList.add('hidden');
         btnEliminate.classList.add('hidden');
-        document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} 待機中...`;
+        document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} Ready...`;
     };
 
-    // ★ランキング集計
+    // ★ランキング
     btnRanking.onclick = () => {
         db.ref(`rooms/${roomId}/players`).once('value', snap => {
             let ranking = [];
             snap.forEach(p => {
                 const v = p.val();
-                if(v.isAlive) { // 生存者のみ
-                    ranking.push({
-                        name: v.name,
-                        score: v.periodScore,
-                        time: v.periodTime
-                    });
+                if(v.isAlive) {
+                    ranking.push({ name: v.name, score: v.periodScore, time: v.periodTime });
                 }
             });
-
-            // 順位付け: ①正解数(降順) > ②タイム(昇順)
-            ranking.sort((a, b) => {
-                if(b.score !== a.score) return b.score - a.score;
-                return a.time - b.time;
-            });
-
-            let msg = "🏆 ピリオド中間発表 🏆\n\n";
-            ranking.slice(0, 5).forEach((r, i) => {
-                msg += `${i+1}位: ${r.name} (${r.score}問 / ${(r.time/1000).toFixed(2)}秒)\n`;
+            ranking.sort((a, b) => (b.score - a.score) || (a.time - b.time));
+            
+            let msg = "🏆 生存者ランキング 🏆\n";
+            ranking.slice(0, 10).forEach((r, i) => {
+                msg += `${i+1}. ${r.name} (${r.score}問/${(r.time/1000).toFixed(2)}s)\n`;
             });
             alert(msg);
         });
     };
 }
 
+// 履歴プルダウン更新
+function updatePeriodSelect() {
+    const select = document.getElementById('period-select');
+    select.innerHTML = '<option value="">-- セットを選択 --</option>';
+    const history = JSON.parse(localStorage.getItem('as_history') || '[]');
+    
+    history.forEach(h => {
+        const opt = document.createElement('option');
+        opt.value = JSON.stringify(h);
+        opt.textContent = `${h.title} (${h.date})`;
+        select.appendChild(opt);
+    });
+}
+
 
 /* =========================================================
- * 3. PLAYER: 回答者 (1/100秒計測 & SitDown)
+ * 3. PLAYER: 回答者
  * =======================================================*/
 let myPlayerId = null;
 let myRoomRef = null;
-let questionStartTime = 0; // ミリ秒
+let questionStartTime = 0;
 
 document.getElementById('join-room-btn').addEventListener('click', () => {
     const code = document.getElementById('room-code-input').value.trim().toUpperCase();
     const name = document.getElementById('player-name-input').value.trim() || "名無し";
-
     if(!code) return;
 
     db.ref(`rooms/${code}`).once('value', snap => {
@@ -298,7 +344,6 @@ function joinGame(roomId, name) {
     const myRef = myRoomRef.child('players').push();
     myPlayerId = myRef.key;
 
-    // 初期状態: 生存
     myRef.set({
         name: name,
         isAlive: true,
@@ -308,34 +353,25 @@ function joinGame(roomId, name) {
         lastTime: 99999
     });
 
-    // 監視開始
-    monitorStatus(roomId);
-    monitorMyStatus(myRef);
-}
-
-// 自分の生存確認 (Sit Down監視)
-function monitorMyStatus(ref) {
-    ref.on('value', snap => {
+    // 自分の状態監視
+    myRef.on('value', snap => {
         const val = snap.val();
         if(!val) return;
-
         const badge = document.getElementById('alive-badge');
         const overlay = document.getElementById('player-dead-overlay');
-
+        
         if(val.isAlive) {
             badge.textContent = "STAND UP";
-            badge.style.background = "#00ff00"; // Green
+            badge.style.background = "#00ff00";
             overlay.classList.add('hidden');
         } else {
             badge.textContent = "SIT DOWN";
-            badge.style.background = "#555";    // Gray
-            overlay.classList.remove('hidden'); // 脱落画面を出す
+            badge.style.background = "#555";
+            overlay.classList.remove('hidden');
         }
     });
-}
 
-// 全体進行監視
-function monitorStatus(roomId) {
+    // 全体進行監視
     db.ref(`rooms/${roomId}/status`).on('value', snap => {
         const st = snap.val();
         if(!st) return;
@@ -345,34 +381,30 @@ function monitorStatus(roomId) {
         const waitMsg = document.getElementById('player-wait-msg');
 
         if(st.step === 'question') {
-            // 問題表示
             lobby.classList.add('hidden');
             waitMsg.classList.add('hidden');
             quizArea.classList.remove('hidden');
-
-            // サーバー時刻を使って開始時刻を同期
             questionStartTime = st.startTime; 
 
-            // 問題文取得
             db.ref(`rooms/${roomId}/questions/${st.qIndex}`).once('value', qSnap => {
                 const q = qSnap.val();
+                if(!q) return;
                 document.getElementById('question-text-disp').textContent = q.q;
                 
-                // 選択肢ボタンにテキストセット
                 const btns = document.querySelectorAll('.answer-btn');
                 btns.forEach((btn, i) => {
                     btn.textContent = q.c[i];
                     btn.disabled = false;
                     btn.style.opacity = "1";
+                    btn.style.border = "none";
                 });
             });
 
         } else if(st.step === 'answer') {
-            // 正解発表待ち
             quizArea.classList.add('hidden');
             waitMsg.classList.remove('hidden');
         } else {
-            // 待機中
+            // Standby
             lobby.classList.remove('hidden');
             quizArea.classList.add('hidden');
             waitMsg.classList.add('hidden');
@@ -380,27 +412,12 @@ function monitorStatus(roomId) {
     });
 }
 
-// 4色ボタンクリック処理
 document.querySelectorAll('.answer-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        // ボタンを押した瞬間のタイム
-        const pressTime = new Date().getTime(); // クライアント時刻(暫定)
-        // 本来はサーバー時刻との差分補正が必要だが、簡易的に「サーバー開始時刻」と「現在時刻」の差を使う
-        // ※厳密にはズレるが、早押し遊びレベルなら許容範囲
-        
-        // 補正: firebase.database.ServerValue.TIMESTAMP は書き込み時のみ有効なので
-        // ここでは簡易的に `Date.now()` を使うが、Host側で開始した `st.startTime` との差分をとる
-        
-        // サーバー上のstartTimeは「過去」なので、本来はローカルクロックとの差分補正が必要。
-        // ★簡易実装: 押した瞬間のタイムスタンプをそのまま送るのではなく、
-        // 「問題が表示されてから何ミリ秒で押したか」をローカルで計算して送る形にする。
-        
-        // 正確には `firebase.database.ServerValue.TIMESTAMP` を送ってサーバー側で差分を取りたいが
-        // データ書き込みラグがあるため、ここでは「ボタンを押した瞬間のローカル時間」を送る。
-        
+        // 簡易タイム計測
+        const estimatedTimeTaken = Date.now() - questionStartTime;
         const myAnswerIndex = parseInt(btn.dataset.index);
         
-        // ボタン無効化
         document.querySelectorAll('.answer-btn').forEach(b => {
             b.disabled = true;
             b.style.opacity = "0.3";
@@ -408,18 +425,12 @@ document.querySelectorAll('.answer-btn').forEach(btn => {
         btn.style.opacity = "1";
         btn.style.border = "4px solid white";
 
-        // 時間計算（概算）
-        // 厳密にするなら「Offset」計算が必要だが、今回は簡易的に
-        // 「サーバーのstartTime」と「ローカルの現在時刻」の差分をとる（ズレは全員同じと仮定）
-        const estimatedTimeTaken = Date.now() - questionStartTime;
-
         document.getElementById('answer-timer-disp').textContent = `${(estimatedTimeTaken/1000).toFixed(2)}秒`;
 
-        // 送信
         if(myPlayerId && myRoomRef) {
             myRoomRef.child(`players/${myPlayerId}`).update({
                 lastAnswer: myAnswerIndex,
-                lastTime: estimatedTimeTaken // タイム送信
+                lastTime: estimatedTimeTaken
             });
         }
     });
