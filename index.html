@@ -15,20 +15,20 @@
     <p style="text-align:center;">感謝祭モード</p>
 
     <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
-        <button id="show-creator-btn" class="btn-primary">司会者（Host）</button>
-        <button id="show-respondent-btn" class="btn-success">回答者（Player）</button>
+        <button id="show-creator-btn" class="btn-primary">司会者（Host）：作問・進行</button>
+        <button id="show-respondent-btn" class="btn-success">回答者（Player）：参加</button>
     </div>
 </div>
 
 <div id="creator-view" class="view hidden">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2 style="margin:0;">ピリオド作成</h2>
+        <h2 style="margin:0;">問題セット作成</h2>
         <button class="back-to-main">トップに戻る</button>
     </div>
     <hr>
     
     <div style="margin-bottom:15px;">
-        <label style="font-weight:bold;">セット名（例：ピリオド1）</label>
+        <label style="font-weight:bold;">セット名（例：第1ピリオド）</label>
         <input type="text" id="quiz-set-title" class="btn-block" placeholder="タイトルを入力">
     </div>
 
@@ -57,15 +57,16 @@
         <h4>作成中のリスト (<span id="q-count">0</span>問)</h4>
         <ul id="q-list" style="background:white; padding:10px; border:1px solid #ddd; min-height:50px; list-style:none;"></ul>
         
-        <div style="display:flex; gap:10px; margin-top:15px;">
-            <button id="save-only-btn" class="btn-info btn-block">
-                💾 端末に保存だけする
+        <div style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">
+            <button id="save-stock-btn" class="btn-info btn-block" style="padding:15px; font-weight:bold;">
+                💾 端末に保存してクリア（次のピリオド作成へ）
             </button>
-            <button id="save-room-btn" class="btn-success btn-block">
-                🚀 すぐに放送開始（部屋作成）
+            <p style="text-align:center; font-size:0.8em; margin:0;">↓ 本番当日用 ↓</p>
+            <button id="go-to-studio-btn" class="btn-success btn-block" style="padding:15px; font-weight:bold; font-size:1.1em;">
+                🎥 スタジオへ移動（部屋を開く）
             </button>
         </div>
-    </div>
+        </div>
 </div>
 
 <div id="host-control-view" class="view hidden">
@@ -79,27 +80,26 @@
     </div>
 
     <div id="host-status-area" style="text-align:center; margin-bottom:20px; font-weight:bold; font-size:1.2em;">
-        CM中...
+        準備中...
     </div>
 
-    <details style="background:#eee; padding:10px; border-radius:5px; margin-bottom:15px;">
-        <summary style="font-weight:bold; cursor:pointer;">📂 保存済みセットからロード（ピリオド変更）</summary>
-        <p style="font-size:0.8em; color:#666;">リストから選んで「ロード」を押すと、部屋の問題が差し替わります。</p>
-        <select id="period-select" class="btn-block"></select>
-        <button id="host-load-period-btn" class="btn-dark btn-block">このセットをロードする</button>
-    </details>
+    <div style="background:#eee; padding:10px; border-radius:5px; margin-bottom:15px; border:2px solid #ccc;">
+        <h4 style="margin:0 0 5px 0;">📂 ピリオド管理</h4>
+        <select id="period-select" class="btn-block" style="background:white;"></select>
+        <button id="host-load-period-btn" class="btn-dark btn-block">このセットを読み込んで開始</button>
+    </div>
     <div style="display:flex; flex-direction:column; gap:10px;">
-        <button id="host-new-period-btn" class="btn-warning btn-block" style="border:2px solid #fff;">
-            👑 新ピリオド開始 (全員復活)
+        <button id="host-new-period-btn" class="btn-warning btn-block hidden" style="border:2px solid #fff;">
+            👑 全員復活させてスタート
         </button>
         
         <hr style="margin:5px 0; border-color:#ccc;">
 
         <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;">問題 START！</button>
-        <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;">正解発表 (Sit Down判定)</button>
+        <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;">正解発表 (Sit Down)</button>
         
         <button id="host-eliminate-slowest-btn" class="btn-dark btn-block hidden">
-            ☠️ 予選落ち (一番遅い人を脱落させる)
+            ☠️ 予選落ち (一番遅い人を脱落)
         </button>
 
         <button id="host-next-btn" class="btn-info btn-block hidden" style="padding:15px;">次の問題へ</button>
