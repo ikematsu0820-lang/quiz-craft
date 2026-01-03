@@ -1,5 +1,5 @@
 /* =========================================================
- * ALL STAR SYSTEM: script.js (Multi-Period Edition)
+ * ALL STAR SYSTEM: script.js (Host Script Edition)
  * =======================================================*/
 
 const firebaseConfig = {
@@ -76,7 +76,6 @@ document.getElementById('add-question-btn').addEventListener('click', () => {
     document.getElementById('question-text').focus();
 });
 
-// ★履歴に保存してクリアする機能
 function saveToLocalStock(title, questions) {
     if(!title) title = "無題のセット " + new Date().toLocaleTimeString();
     const history = JSON.parse(localStorage.getItem('as_stock') || '[]');
@@ -88,33 +87,25 @@ function saveToLocalStock(title, questions) {
     localStorage.setItem('as_stock', JSON.stringify(history));
 }
 
-// ① 「保存してクリア」ボタン
 document.getElementById('save-stock-btn').addEventListener('click', () => {
     if(createdQuestions.length === 0) { alert('問題がありません'); return; }
-    
     const title = document.getElementById('quiz-set-title').value.trim();
     saveToLocalStock(title, createdQuestions);
     
-    // クリア処理
     createdQuestions = [];
     document.getElementById('q-list').innerHTML = '';
     document.getElementById('q-count').textContent = '0';
     document.getElementById('quiz-set-title').value = '';
-    
     alert(`「${title}」を保存しました！\n続けて次のピリオドを作成できます。`);
 });
 
-// ② 「スタジオへ移動」ボタン（保存せず移動もOK）
 document.getElementById('go-to-studio-btn').addEventListener('click', () => {
-    // もし作りかけの問題があれば、一応保存しておく
     if(createdQuestions.length > 0) {
         if(confirm('作成中の問題があります。保存してから移動しますか？')) {
             const title = document.getElementById('quiz-set-title').value.trim();
             saveToLocalStock(title, createdQuestions);
         }
     }
-    
-    // 部屋作成へ
     startRoom();
 });
 
@@ -124,12 +115,27 @@ document.getElementById('go-to-studio-btn').addEventListener('click', () => {
 let currentRoomId = null;
 let currentQIndex = 0;
 
+// ★カンペ更新用の便利関数
+function updateHostScript(index) {
+    const q = createdQuestions[index];
+    if(!q) return;
+
+    document.getElementById('host-q-text').textContent = `Q${index+1}. ${q.q}`;
+    
+    const colors = ["🟦 青", "🟥 赤", "🟩 緑", "🟨 黄"];
+    const choicesHtml = q.c.map((c, i) => `${colors[i]}: ${c}`).join('<br>');
+    document.getElementById('host-q-choices').innerHTML = choicesHtml;
+    
+    const ansText = `${colors[q.correctIndex]} (${q.c[q.correctIndex]})`;
+    document.getElementById('host-q-answer').textContent = `正解: ${ansText}`;
+    document.getElementById('host-q-answer').style.display = 'none'; // 最初は隠す
+}
+
 function startRoom() {
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-    // 空の部屋を作る
     db.ref(`rooms/${currentRoomId}`).set({
-        questions: [], // 最初は空
+        questions: [],
         status: { step: 'standby', qIndex: 0 },
         players: {}
     }).then(() => {
@@ -140,10 +146,8 @@ function startRoom() {
 function enterHostMode(roomId) {
     showView(views.hostControl);
     document.getElementById('host-room-id').textContent = roomId;
-    
-    updatePeriodSelect(); // プルダウン更新
+    updatePeriodSelect();
 
-    // プレイヤー監視
     db.ref(`rooms/${roomId}/players`).on('value', snap => {
         const players = snap.val() || {};
         const total = Object.keys(players).length;
@@ -171,28 +175,28 @@ function enterHostMode(roomId) {
         }
 
         const selectedSet = JSON.parse(json);
-        createdQuestions = selectedSet.questions; // メモリ更新
+        createdQuestions = selectedSet.questions; 
         currentQIndex = 0;
 
-        // Firebase更新
         db.ref(`rooms/${roomId}/questions`).set(createdQuestions);
         db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: 0 });
 
-        alert(`「${selectedSet.title}」をセットしました！\n「全員復活させてスタート」を押してください。`);
+        alert(`「${selectedSet.title}」をセットしました！`);
         document.getElementById('host-status-area').textContent = `セット完了: ${selectedSet.title}`;
         
-        // ボタン状態リセット
+        // カンペにQ1を表示
+        updateHostScript(0);
+
         btnStart.classList.add('hidden');
         btnShowAns.classList.add('hidden');
         btnNext.classList.add('hidden');
-        btnNewPeriod.classList.remove('hidden'); // 開始ボタン出現
+        btnNewPeriod.classList.remove('hidden'); 
     };
 
-    // ★全員復活 & スタート
+    // ★新ピリオド開始
     btnNewPeriod.onclick = () => {
         if(!createdQuestions || createdQuestions.length === 0) { alert('問題をロードしてください！'); return; }
-        
-        if(!confirm('全員をStandUp(復活)させて、ピリオドを開始しますか？')) return;
+        if(!confirm('全員を復活させ、ピリオドを開始しますか？')) return;
         
         db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(child => {
@@ -206,6 +210,7 @@ function enterHostMode(roomId) {
         });
         
         currentQIndex = 0;
+        updateHostScript(0); // カンペ確認
         document.getElementById('host-status-area').textContent = "Ready...";
         btnStart.classList.remove('hidden');
         btnNewPeriod.classList.add('hidden');
@@ -246,10 +251,14 @@ function enterHostMode(roomId) {
         });
 
         db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
+        
+        // カンペに正解を表示！
+        document.getElementById('host-q-answer').style.display = 'block';
+
         btnShowAns.classList.add('hidden');
         btnEliminate.classList.remove('hidden');
         btnNext.classList.remove('hidden');
-        document.getElementById('host-status-area').textContent = `正解: ${["青","赤","緑","黄"][correctIdx]}`;
+        document.getElementById('host-status-area').textContent = `正解発表中`;
     };
 
     // ★予選落ち
@@ -291,10 +300,15 @@ function enterHostMode(roomId) {
         db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(p => p.ref.update({ lastAnswer: -1, lastTime: 99999 }));
         });
+        
+        // カンペを次の問題に更新
+        updateHostScript(currentQIndex);
+
         btnStart.classList.remove('hidden');
         btnNext.classList.add('hidden');
         btnEliminate.classList.add('hidden');
         document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} Ready...`;
+        document.getElementById('host-q-answer').style.display = 'none'; // 正解を隠す
     };
 
     // ★ランキング
