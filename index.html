@@ -21,9 +21,17 @@
 </div>
 
 <div id="creator-view" class="view hidden">
-    <h2>問題セット作成</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="margin:0;">ピリオド作成</h2>
+        <button class="back-to-main">トップに戻る</button>
+    </div>
     <hr>
     
+    <div style="margin-bottom:15px;">
+        <label style="font-weight:bold;">セット名（例：ピリオド1）</label>
+        <input type="text" id="quiz-set-title" class="btn-block" placeholder="タイトルを入力">
+    </div>
+
     <div style="background:#fff0f5; padding:15px; border-radius:8px; border:2px solid #ff69b4;">
         <h3 style="margin-top:0; color:#c71585;">新規問題</h3>
         <input type="text" id="question-text" class="btn-block" placeholder="問題文" style="margin-bottom:10px;">
@@ -46,12 +54,17 @@
     </div>
 
     <div style="margin-top:20px;">
-        <h4>登録済み問題 (<span id="q-count">0</span>問)</h4>
+        <h4>作成中のリスト (<span id="q-count">0</span>問)</h4>
         <ul id="q-list" style="background:white; padding:10px; border:1px solid #ddd; min-height:50px; list-style:none;"></ul>
         
-        <button id="save-room-btn" class="btn-success btn-block" style="padding:15px; font-weight:bold; font-size:1.1em; margin-top:10px;">
-            スタジオへ移動（部屋作成）
-        </button>
+        <div style="display:flex; gap:10px; margin-top:15px;">
+            <button id="save-only-btn" class="btn-info btn-block">
+                💾 端末に保存だけする
+            </button>
+            <button id="save-room-btn" class="btn-success btn-block">
+                🚀 すぐに放送開始（部屋作成）
+            </button>
+        </div>
     </div>
 </div>
 
@@ -61,7 +74,7 @@
         <div id="host-room-id" style="font-size:2.5em; font-weight:bold; letter-spacing:3px;">---</div>
         <div style="display:flex; justify-content:space-around; margin-top:10px;">
             <div>参加: <span id="host-player-count">0</span>人</div>
-            <div>生存(StandUp): <span id="host-alive-count" style="color:#00ff00; font-weight:bold;">0</span>人</div>
+            <div>生存: <span id="host-alive-count" style="color:#00ff00; font-weight:bold;">0</span>人</div>
         </div>
     </div>
 
@@ -69,6 +82,12 @@
         CM中...
     </div>
 
+    <details style="background:#eee; padding:10px; border-radius:5px; margin-bottom:15px;">
+        <summary style="font-weight:bold; cursor:pointer;">📂 保存済みセットからロード（ピリオド変更）</summary>
+        <p style="font-size:0.8em; color:#666;">リストから選んで「ロード」を押すと、部屋の問題が差し替わります。</p>
+        <select id="period-select" class="btn-block"></select>
+        <button id="host-load-period-btn" class="btn-dark btn-block">このセットをロードする</button>
+    </details>
     <div style="display:flex; flex-direction:column; gap:10px;">
         <button id="host-new-period-btn" class="btn-warning btn-block" style="border:2px solid #fff;">
             👑 新ピリオド開始 (全員復活)
@@ -93,7 +112,10 @@
 </div>
 
 <div id="respondent-view" class="view hidden">
-    <h2>エントリー</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>エントリー</h2>
+        <button class="back-to-main">戻る</button>
+    </div>
     <hr>
     <div style="text-align:center; padding:20px 0;">
         <input type="text" id="room-code-input" placeholder="部屋コード (6桁)" maxlength="6"
