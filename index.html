@@ -66,7 +66,7 @@
                 🎥 スタジオへ移動（部屋を開く）
             </button>
         </div>
-        </div>
+    </div>
 </div>
 
 <div id="host-control-view" class="view hidden">
@@ -83,11 +83,22 @@
         準備中...
     </div>
 
+    <div id="host-script-area" style="background:#fff; border:2px solid #333; padding:15px; border-radius:8px; margin-bottom:20px; text-align:left; box-shadow: 0 4px 0 rgba(0,0,0,0.1);">
+        <h4 style="margin-top:0; color:#555; border-bottom:1px solid #ccc; padding-bottom:5px;">
+            📖 出題中の問題 (司会者用)
+        </h4>
+        <div id="host-q-text" style="font-size:1.3em; font-weight:bold; margin:10px 0;">(ここに問題文が表示されます)</div>
+        <div id="host-q-choices" style="font-size:0.9em; color:#666; line-height:1.5;"></div>
+        <div id="host-q-answer" style="margin-top:10px; padding:5px; background:#ffebeb; color:#d00; font-weight:bold; display:none;">
+            正解: ---
+        </div>
+    </div>
     <div style="background:#eee; padding:10px; border-radius:5px; margin-bottom:15px; border:2px solid #ccc;">
         <h4 style="margin:0 0 5px 0;">📂 ピリオド管理</h4>
         <select id="period-select" class="btn-block" style="background:white;"></select>
         <button id="host-load-period-btn" class="btn-dark btn-block">このセットを読み込んで開始</button>
     </div>
+
     <div style="display:flex; flex-direction:column; gap:10px;">
         <button id="host-new-period-btn" class="btn-warning btn-block hidden" style="border:2px solid #fff;">
             👑 全員復活させてスタート
