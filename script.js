@@ -5,6 +5,7 @@
 // あなた専用の「鍵」を設定します
 const firebaseConfig = {
   apiKey: "AIzaSyDl9kq_jJb_zvYc3lfTfL_oTQrdqv2Abww",
+　databaseURL: "https://quizcraft-56950-default-rtdb.asia-southeast1.firebasedatabase.app/",
   authDomain: "quizcraft-56950.firebaseapp.com",
   projectId: "quizcraft-56950",
   storageBucket: "quizcraft-56950.firebasestorage.app",
