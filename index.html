@@ -94,20 +94,25 @@
 </div>
 
 <div id="host-control-view" class="view hidden">
-    <div style="background:#111; color:white; padding:15px; border-radius:8px; text-align:center; margin-bottom:20px; border:4px solid gold;">
+    <div style="background:#111; color:white; padding:10px; border-radius:8px; text-align:center; margin-bottom:10px; border:4px solid gold;">
         <div style="font-size:0.8em; color:gold;">ON AIR / <span id="studio-show-id">---</span></div>
-        <div id="host-room-id" style="font-size:2.5em; font-weight:bold; letter-spacing:3px;">---</div>
-        <div style="display:flex; justify-content:space-around; margin-top:10px;">
+        <div id="host-room-id" style="font-size:2em; font-weight:bold; letter-spacing:3px;">---</div>
+        <div style="display:flex; justify-content:space-around; margin-top:5px; font-size:0.9em;">
             <div>参加: <span id="host-player-count">0</span></div>
             <div>生存: <span id="host-alive-count" style="color:#00ff00; font-weight:bold;">0</span></div>
         </div>
     </div>
 
-    <div id="host-status-area" style="text-align:center; margin-bottom:20px; font-weight:bold; font-size:1.2em;">
+    <div id="host-kanpe-area" style="background:#fff; border:2px solid #333; padding:10px; margin-bottom:15px; border-radius:5px; display:none;">
+        <div style="background:#333; color:#fff; display:inline-block; padding:2px 8px; font-size:0.8em; border-radius:3px; margin-bottom:5px;">司会者用カンペ</div>
+        <div id="kanpe-question" style="font-weight:bold; font-size:1.1em; margin-bottom:5px;"></div>
+        <div id="kanpe-answer" style="color:#d00; font-weight:bold;"></div>
+    </div>
+    <div id="host-status-area" style="text-align:center; margin-bottom:15px; font-weight:bold; color:#666;">
         準備中...
     </div>
 
-    <div style="background:#eee; padding:10px; border-radius:5px; margin-bottom:15px; border:2px solid #ccc;">
+    <div id="period-load-area" style="background:#eee; padding:10px; border-radius:5px; margin-bottom:15px; border:2px solid #ccc;">
         <h4 style="margin:0 0 5px 0;">📂 クラウドからロード</h4>
         <select id="period-select" class="btn-block" style="background:white;"></select>
         <button id="host-load-period-btn" class="btn-dark btn-block">読み込んでセットする</button>
@@ -117,11 +122,13 @@
         <button id="host-new-period-btn" class="btn-warning btn-block hidden" style="border:2px solid #fff;">
             👑 全員復活させてスタート
         </button>
+        
         <hr style="margin:5px 0; border-color:#ccc;">
         <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;">問題 START！</button>
         <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;">正解発表 (Sit Down)</button>
         <button id="host-eliminate-slowest-btn" class="btn-dark btn-block hidden">☠️ 予選落ち (一番遅い人を脱落)</button>
         <button id="host-next-btn" class="btn-info btn-block hidden" style="padding:15px;">次の問題へ</button>
+        
         <hr>
         <button id="host-ranking-btn" class="btn-success btn-block">🏆 ランキング集計</button>
         <button id="host-close-studio-btn" style="background:#555; margin-top:10px;" class="btn-block">スタジオを閉じて戻る</button>
@@ -148,10 +155,12 @@
         <span id="player-name-disp" style="font-weight:bold;">名無し</span>
         <span id="alive-badge" style="background:#00ff00; color:black; padding:2px 6px; border-radius:4px; font-weight:bold;">STAND UP</span>
     </div>
+
     <div id="player-lobby-msg" style="text-align:center; padding:40px 0;">
         <h2>Ready?</h2>
         <p>画面を注視してください</p>
     </div>
+
     <div id="player-quiz-area" class="hidden">
         <div id="question-text-disp" style="background:#fff; border:2px solid #333; padding:15px; border-radius:8px; font-weight:bold; margin-bottom:15px; min-height:60px;">問題文</div>
         <div id="player-choices-area" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; height:200px;">
