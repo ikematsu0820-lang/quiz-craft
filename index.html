@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizStudio</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="main-view" class="view">
+    <h1>QuizStudio</h1>
+    <p style="text-align:center; color:#666;">モードを選んでください</p>
+
+    <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
+        <button id="show-creator-btn" class="btn-primary">問題を作る（出題者）</button>
+        <button id="show-respondent-btn" class="btn-success">問題に答える（回答者）</button>
+    </div>
+
+    <hr style="margin-top:30px;">
+
+    <h3 style="text-align:center; margin-bottom:10px;">発行済みクイズ</h3>
+    <p style="text-align:center; font-size:0.85em; color:#666; margin-top:0;">
+        カードをクリックすると、コード入力済みで参加画面に移動します
+    </p>
+    <div id="main-published-list" class="quiz-grid">
+        </div>
+</div>
+
+<div id="creator-view" class="view hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="margin:0;">クイズセット作成</h2>
+        <button id="back-to-main-from-creator">トップに戻る</button>
+    </div>
+    <hr>
+
+    <div class="flex-row">
+        <div style="flex:1; min-width:0;">
+            <div style="margin-bottom:15px;">
+                <label for="quiz-set-title" style="font-weight:bold; display:block; margin-bottom:4px;">
+                    クイズセットの名前
+                </label>
+                <input type="text" id="quiz-set-title"
+                       class="btn-block"
+                       placeholder="例：日本地理クイズ（初級編）">
+                <p style="font-size:0.8em; color:#666; margin-top:4px;">
+                    ※ 未入力の場合は先頭の問題文をセット名として表示します
+                </p>
+            </div>
+
+            <div id="creator-form-box"
+                 class="creator-mode-new"
+                 style="padding:15px; border-radius:8px; border:2px solid;">
+                <h3 id="creator-form-title"
+                    style="margin-top:0; color:#0056b3; font-size:1.1em;">
+                    新しい問題を追加
+                </h3>
+
+                <form id="quiz-form">
+                    <label style="font-weight:bold; margin-top:5px; display:block;">
+                        問題タイプ:
+                        <select id="question-type" style="margin-top:4px; width:100%;">
+                            <option value="choice">4択/多択</option>
+                            <option value="order">並べ替え</option>
+                            <option value="text">記述式</option>
+                        </select>
+                    </label>
+
+                    <p style="font-weight:bold; margin-top:10px; margin-bottom:5px;">問題文:</p>
+                    <input type="text" id="question" placeholder="例：日本で一番高い山は？"
+                           class="btn-block">
+
+                    <div id="type-choice-editor" style="margin-top:15px;">
+                        <p style="font-weight:bold; margin-bottom:5px;">
+                            選択肢 (正解をチェック / 複数選択可):
+                        </p>
+                        <div id="choices-area">
+                            <div class="choice-container" style="margin-bottom:5px;">
+                                <input type="checkbox" class="correct-flag">
+                                <input type="text" class="choice-input" placeholder="選択肢1" style="width:75%;">
+                            </div>
+                            <div class="choice-container" style="margin-bottom:5px;">
+                                <input type="checkbox" class="correct-flag">
+                                <input type="text" class="choice-input" placeholder="選択肢2" style="width:75%;">
+                            </div>
+                            <div class="choice-container" style="margin-bottom:5px;">
+                                <input type="checkbox" class="correct-flag">
+                                <input type="text" class="choice-input" placeholder="選択肢3" style="width:75%;">
+                            </div>
+                            <div class="choice-container" style="margin-bottom:5px;">
+                                <input type="checkbox" class="correct-flag">
+                                <input type="text" class="choice-input" placeholder="選択肢4" style="width:75%;">
+                            </div>
+                        </div>
+                        <div style="margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <button type="button" id="add-choice-btn" class="btn-info" style="padding:6px 12px;">
+                                選択肢を追加
+                            </button>
+                            <button type="button" id="remove-choice-btn" class="btn-danger" style="padding:6px 12px;">
+                                最後の選択肢を削除
+                            </button>
+                            <span style="font-size:0.8em; color:#666;">
+                                （選択肢は最小2個〜最大10個 / 正解はいくつでもOK）
+                            </span>
+                        </div>
+                    </div>
+
+                    <div id="type-order-editor" style="margin-top:15px; display:none;">
+                        <p style="font-weight:bold; margin-bottom:5px;">
+                            並べる要素（上から順に正解の順番 / 2〜10個）:
+                        </p>
+                        <div id="order-items-area">
+                            <div class="choice-container" style="margin-bottom:5px;">
+                                <span>1.</span>
+                                <input type="text" class="order-item-input" placeholder="例：① 手を洗う" style="width:80%;">
+                            </div>
+                            <div class="choice-container" style="margin-bottom:5px;">
+                                <span>2.</span>
+                                <input type="text" class="order-item-input" placeholder="例：② 石けんをつける" style="width:80%;">
+                            </div>
+                        </div>
+                        <div style="margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <button type="button" id="add-order-item-btn" class="btn-info" style="padding:6px 12px;">
+                                要素を追加
+                            </button>
+                            <button type="button" id="remove-order-item-btn" class="btn-danger" style="padding:6px 12px;">
+                                最後の要素を削除
+                            </button>
+                            <span style="font-size:0.8em; color:#666;">
+                                ※ 回答者側にはシャッフルして表示されます
+                            </span>
+                        </div>
+                    </div>
+
+                    <div id="type-text-editor" style="margin-top:15px; display:none;">
+                        <p style="font-weight:bold; margin-bottom:5px;">
+                            正解とみなす答え（1行につき1パターン）:
+                        </p>
+                        <textarea id="text-answers-input" rows="4"
+                                  placeholder="例：&#13;富士山&#13;ふじさん"></textarea>
+                        <p style="font-size:0.8em; color:#666;">
+                            ※ 全角/半角・大文字小文字の違いはゆるく判定します
+                        </p>
+                    </div>
+
+                    <hr>
+                    <p style="font-weight:bold; margin-bottom:5px;">画像URL（任意）:</p>
+                    <input type="text" id="question-image-url" placeholder="例：https://example.com/image.png"
+                           class="btn-block">
+
+                    <p style="font-weight:bold; margin-top:10px; margin-bottom:5px;">制限時間（秒 / 任意）:</p>
+                    <input type="number" id="time-limit" min="0" step="1" value="0"
+                           style="width:120px;">
+                    <span style="font-size:0.8em; color:#666;">0 または空欄で制限なし</span>
+
+                    <p style="font-weight:bold; margin-top:10px; margin-bottom:5px;">配点（正解時の得点）:</p>
+                    <input type="number" id="question-points" min="1" step="1" value="10"
+                           style="width:120px;">
+                    <span style="font-size:0.8em; color:#666;">未入力または0なら10点として扱います</span>
+
+                    <p style="font-weight:bold; margin-top:10px; margin-bottom:5px;">解説（任意）:</p>
+                    <textarea id="question-explanation" rows="3" placeholder="答えの理由や補足など"></textarea>
+
+                    <button type="submit" class="btn-info btn-block" style="margin-top:15px;">
+                        この問題をリストに追加
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="creator-preview-box"
+             style="flex:1; min-width:0; padding:15px; border-radius:8px; border:1px solid #ccc; background:#fafafa;">
+            <h3 style="margin-top:0; font-size:1.05em; text-align:left;">回答者プレビュー</h3>
+            <p style="font-size:0.8em; color:#666; margin-top:0; margin-bottom:10px;">
+                入力中の内容が、回答者側でどのように見えるかを表示します
+            </p>
+            <div id="creator-preview-inner"
+                 style="background:#245672; border-radius:8px; padding:16px; color:#fff; min-height:260px;">
+                <div style="text-align:center; font-size:1.1em; margin-bottom:15px;">
+                    ここにプレビューが表示されます
+                </div>
+                <div style="background:#fff; color:#000; border-radius:6px; padding:20px; margin-bottom:15px;">
+                    <div style="font-weight:bold; text-align:center;">問題文</div>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div style="background:#fff; color:#000; border-radius:6px; padding:10px; text-align:center;">
+                        選択肢1
+                    </div>
+                    <div style="background:#fff; color:#000; border-radius:6px; padding:10px; text-align:center;">
+                        選択肢2
+                    </div>
+                    <div style="background:#fff; color:#000; border-radius:6px; padding:10px; text-align:center;">
+                        選択肢3
+                    </div>
+                    <div style="background:#fff; color:#000; border-radius:6px; padding:10px; text-align:center;">
+                        選択肢4
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top:20px;">
+        <h4>現在作成中のセット (<span id="temp-count">0</span>問)</h4>
+        <p style="font-size:0.8em; color:#666;">※↑↓で並べ替え、修正ボタンで編集、複製ボタンでコピーができます</p>
+
+        <ul id="temp-questions-list"
+            style="background:white; padding:10px; border:1px solid #ddd; min-height:50px;
+                   border-radius:4px; list-style:none;">
+            <li style="color:#999; padding:10px;">まだ問題が追加されていません</li>
+        </ul>
+
+        <button id="save-set-btn" class="btn-success btn-block"
+                style="padding:15px; font-weight:bold; font-size:1.1em; margin-top:10px;">
+            クイズセットを発行する
+        </button>
+        <div id="creator-status-message"
+             style="color:#0056b3; text-align:center; margin-top:10px; font-weight:bold;"></div>
+    </div>
+
+    <hr style="margin-top: 30px; border-top: 2px dashed #ccc;">
+
+    <h3>発行済みのクイズセット</h3>
+    <div id="questions-list"></div>
+</div>
+
+
+<div id="respondent-view" class="view hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="margin:0;">クイズに参加</h2>
+        <button id="back-to-main-from-respondent">トップに戻る</button>
+    </div>
+    <hr>
+
+    <div style="text-align:center; padding:20px 0;">
+        <p>出題者から教えてもらった<br><strong>6桁の部屋コード</strong>を入力してください</p>
+
+        <div id="join-area">
+            <input type="text" id="room-code-input"
+                   placeholder="例：A1B2C3" maxlength="6"
+                   style="font-size:1.5em; width:200px; text-align:center;
+                          letter-spacing: 2px; text-transform:uppercase; margin-bottom:20px;">
+            <br>
+            <button id="join-room-btn" type="button" class="btn-primary btn-block">
+                🚀 参加する
+            </button>
+        </div>
+
+        <div id="room-status-message"
+             style="color:red; font-weight:bold; margin-top:15px;"></div>
+    </div>
+</div>
+
+<div id="quiz-display-view" class="view hidden">
+    <h2>クイズ回答</h2>
+    <div id="timer-display"
+         style="text-align:center; font-weight:bold; margin-bottom:10px; min-height:1.4em;"></div>
+    <div id="quiz-content"></div>
+    <div id="result-message"
+         style="margin-top:20px; font-weight:bold; font-size:1.1em;
+                text-align:center; min-height: 2.5em;"></div>
+    <button id="new-quiz-btn" class="btn-block btn-secondary"
+            style="margin-top:30px;">
+        トップに戻る
+    </button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
