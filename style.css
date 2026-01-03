@@ -1,129 +1,45 @@
-/* =========================================================
- * SECTION 0: 基本スタイル (CSS)
- * =======================================================*/
 body {
     font-family: "Helvetica Neue", Arial, sans-serif;
-    max-width: 1000px;
+    max-width: 600px; /* スマホで見やすいよう少し幅を狭めました */
     margin: 0 auto;
     padding: 20px;
+    background-color: #f9f9f9;
     color: #333;
-    background-color: #f4f4f4;
 }
 .hidden { display: none !important; }
 
 .view {
-    padding: 25px;
-    border: 1px solid #ccc;
-    border-radius: 12px;
     background: #fff;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-h1, h2, h3 {
-    text-align: center;
-    color: #444;
-    margin-top: 0;
-}
-h4 { margin: 10px 0; color: #555; }
-hr { margin: 20px 0; border: 0; border-top: 1px solid #eee; }
+h1, h2, h3 { text-align: center; margin-top: 0; }
+hr { border: 0; border-top: 1px solid #eee; margin: 20px 0; }
 
 button {
     cursor: pointer;
-    padding: 10px 20px;
     font-size: 16px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
+    border-radius: 5px;
+    border: none;
     transition: opacity 0.2s;
+    color: white;
 }
-button:hover { opacity: 0.8; }
-button:disabled {
-    background-color: #ccc !important;
-    cursor: not-allowed;
-    opacity: 0.5;
-}
-input[type="text"], input[type="number"], textarea, select {
-    padding: 8px;
-    font-size: 14px;
+button:hover { opacity: 0.9; }
+
+.btn-block { display: block; width: 100%; padding: 12px; margin-bottom: 10px; }
+.btn-primary { background-color: #007bff; }
+.btn-success { background-color: #28a745; }
+.btn-info    { background-color: #17a2b8; }
+.btn-warning { background-color: #ffc107; color: #333; }
+.btn-danger  { background-color: #dc3545; }
+.back-to-main { background: #6c757d; padding: 5px 10px; font-size: 0.8em; }
+
+input[type="text"] {
+    padding: 10px;
+    border: 1px solid #ddd;
     border-radius: 4px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-}
-textarea {
     width: 100%;
-    resize: vertical;
-}
-
-.btn-primary { background-color: #007bff; color: white; border: none; }
-.btn-success { background-color: #28a745; color: white; border: none; }
-.btn-info    { background-color: #17a2b8; color: white; border: none; }
-.btn-danger  { background-color: #dc3545; color: white; border: none; }
-.btn-secondary { background-color:#6c757d; color:white; border:none; }
-.btn-block   { width: 100%; display: block; }
-
-.flex-row {
-    display:flex;
-    gap:20px;
-    align-items:flex-start;
-}
-@media (max-width: 900px) {
-    .flex-row {
-        flex-direction:column;
-    }
-}
-
-.choice-container {
-    display:flex;
-    align-items:center;
-    gap:6px;
-}
-.quiz-grid {
-    display:flex;
-    flex-wrap:wrap;
-    gap:20px;
-    justify-content:center;
-    margin-top:30px;
-}
-.quiz-card {
-    width:220px;
-    height:120px;
-    background:#245672;
-    color:#fff;
-    border-radius:4px;
-    box-shadow:0 2px 4px rgba(0,0,0,0.2);
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-    text-align:center;
-    cursor:pointer;
-    transition:transform 0.15s, box-shadow 0.15s, opacity 0.15s;
-}
-.quiz-card:hover {
-    transform:translateY(-3px);
-    box-shadow:0 4px 8px rgba(0,0,0,0.3);
-    opacity:0.9;
-}
-.quiz-card-code {
-    font-size:0.9em;
-    opacity:0.9;
-    margin-bottom:6px;
-}
-.quiz-card-title {
-    font-size:0.95em;
-    font-weight:bold;
-}
-
-/* =========================================================
- * SECTION 0-B: 出題者フォーム用スタイル（モード別背景）
- * =======================================================*/
-
-#creator-form-box.creator-mode-new {
-    background: #f0f8ff;      /* 新規モード: 水色 */
-    border: 2px solid #cce5ff;
-}
-
-#creator-form-box.creator-mode-edit {
-    background: #fff4e5;      /* 編集モード: 薄いオレンジ */
-    border: 2px solid #f3cb99;
+    box-sizing: border-box;
 }
