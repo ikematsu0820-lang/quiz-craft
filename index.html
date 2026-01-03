@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuizStudio</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuizStudio</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -18,14 +18,8 @@
     </div>
 
     <hr style="margin-top:30px;">
+    </div>
 
-    <h3 style="text-align:center; margin-bottom:10px;">発行済みクイズ</h3>
-    <p style="text-align:center; font-size:0.85em; color:#666; margin-top:0;">
-        カードをクリックすると、コード入力済みで参加画面に移動します
-    </p>
-    <div id="main-published-list" class="quiz-grid">
-        </div>
-</div>
 
 <div id="creator-view" class="view hidden">
     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -99,9 +93,6 @@
                             <button type="button" id="remove-choice-btn" class="btn-danger" style="padding:6px 12px;">
                                 最後の選択肢を削除
                             </button>
-                            <span style="font-size:0.8em; color:#666;">
-                                （選択肢は最小2個〜最大10個 / 正解はいくつでもOK）
-                            </span>
                         </div>
                     </div>
 
@@ -126,9 +117,6 @@
                             <button type="button" id="remove-order-item-btn" class="btn-danger" style="padding:6px 12px;">
                                 最後の要素を削除
                             </button>
-                            <span style="font-size:0.8em; color:#666;">
-                                ※ 回答者側にはシャッフルして表示されます
-                            </span>
                         </div>
                     </div>
 
@@ -138,9 +126,6 @@
                         </p>
                         <textarea id="text-answers-input" rows="4"
                                   placeholder="例：&#13;富士山&#13;ふじさん"></textarea>
-                        <p style="font-size:0.8em; color:#666;">
-                            ※ 全角/半角・大文字小文字の違いはゆるく判定します
-                        </p>
                     </div>
 
                     <hr>
@@ -156,7 +141,6 @@
                     <p style="font-weight:bold; margin-top:10px; margin-bottom:5px;">配点（正解時の得点）:</p>
                     <input type="number" id="question-points" min="1" step="1" value="10"
                            style="width:120px;">
-                    <span style="font-size:0.8em; color:#666;">未入力または0なら10点として扱います</span>
 
                     <p style="font-weight:bold; margin-top:10px; margin-bottom:5px;">解説（任意）:</p>
                     <textarea id="question-explanation" rows="3" placeholder="答えの理由や補足など"></textarea>
@@ -171,30 +155,10 @@
         <div id="creator-preview-box"
              style="flex:1; min-width:0; padding:15px; border-radius:8px; border:1px solid #ccc; background:#fafafa;">
             <h3 style="margin-top:0; font-size:1.05em; text-align:left;">回答者プレビュー</h3>
-            <p style="font-size:0.8em; color:#666; margin-top:0; margin-bottom:10px;">
-                入力中の内容が、回答者側でどのように見えるかを表示します
-            </p>
             <div id="creator-preview-inner"
                  style="background:#245672; border-radius:8px; padding:16px; color:#fff; min-height:260px;">
                 <div style="text-align:center; font-size:1.1em; margin-bottom:15px;">
                     ここにプレビューが表示されます
-                </div>
-                <div style="background:#fff; color:#000; border-radius:6px; padding:20px; margin-bottom:15px;">
-                    <div style="font-weight:bold; text-align:center;">問題文</div>
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <div style="background:#fff; color:#000; border-radius:6px; padding:10px; text-align:center;">
-                        選択肢1
-                    </div>
-                    <div style="background:#fff; color:#000; border-radius:6px; padding:10px; text-align:center;">
-                        選択肢2
-                    </div>
-                    <div style="background:#fff; color:#000; border-radius:6px; padding:10px; text-align:center;">
-                        選択肢3
-                    </div>
-                    <div style="background:#fff; color:#000; border-radius:6px; padding:10px; text-align:center;">
-                        選択肢4
-                    </div>
                 </div>
             </div>
         </div>
@@ -202,8 +166,6 @@
 
     <div style="margin-top:20px;">
         <h4>現在作成中のセット (<span id="temp-count">0</span>問)</h4>
-        <p style="font-size:0.8em; color:#666;">※↑↓で並べ替え、修正ボタンで編集、複製ボタンでコピーができます</p>
-
         <ul id="temp-questions-list"
             style="background:white; padding:10px; border:1px solid #ddd; min-height:50px;
                    border-radius:4px; list-style:none;">
@@ -212,16 +174,11 @@
 
         <button id="save-set-btn" class="btn-success btn-block"
                 style="padding:15px; font-weight:bold; font-size:1.1em; margin-top:10px;">
-            クイズセットを発行する
+            【オンライン保存】クイズセットを発行する
         </button>
         <div id="creator-status-message"
              style="color:#0056b3; text-align:center; margin-top:10px; font-weight:bold;"></div>
     </div>
-
-    <hr style="margin-top: 30px; border-top: 2px dashed #ccc;">
-
-    <h3>発行済みのクイズセット</h3>
-    <div id="questions-list"></div>
 </div>
 
 
@@ -242,7 +199,7 @@
                           letter-spacing: 2px; text-transform:uppercase; margin-bottom:20px;">
             <br>
             <button id="join-room-btn" type="button" class="btn-primary btn-block">
-                🚀 参加する
+                🚀 オンラインの部屋に参加する
             </button>
         </div>
 
@@ -265,6 +222,8 @@
     </button>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
