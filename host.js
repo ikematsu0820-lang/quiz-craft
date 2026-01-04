@@ -1,6 +1,6 @@
 /* =========================================================
  * host.js
- * 役割：司会者（Host）のロジック。作成、編集、保存、スタジオ進行
+ * 役割：司会者（Host）のロジック。
  * =======================================================*/
 
 let currentShowId = null;
@@ -12,6 +12,9 @@ let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light' };
 let editingSetId = null;
 let returnToCreator = false;
 
+// ★追加：番組構成リスト
+let periodPlaylist = [];
+
 const RANKING_MONEY_TREE = [
     10000, 20000, 30000, 50000, 100000,
     200000, 300000, 500000, 750000, 1000000,
@@ -19,6 +22,7 @@ const RANKING_MONEY_TREE = [
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
+    // ボタンイベントの紐付け（既存）
     const hostBtn = document.getElementById('main-host-btn');
     if(hostBtn) hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
 
@@ -60,6 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const configHeaderBackBtn = document.getElementById('config-header-back-btn');
     if(configHeaderBackBtn) configHeaderBackBtn.addEventListener('click', goBackFromConfig);
+
+    // ★追加：「リストに追加」ボタン
+    const addPeriodBtn = document.getElementById('studio-add-period-btn');
+    if(addPeriodBtn) addPeriodBtn.addEventListener('click', addPeriodToPlaylist);
 });
 
 function goBackFromConfig() {
@@ -103,7 +111,6 @@ function loadSavedSets() {
                     </div>
                 </div>
             `;
-
             const btnArea = document.createElement('div');
             btnArea.style.display = 'flex';
             btnArea.style.gap = '5px';
@@ -125,7 +132,6 @@ function loadSavedSets() {
                     div.remove();
                 }
             };
-
             btnArea.appendChild(editBtn);
             btnArea.appendChild(delBtn);
             div.appendChild(btnArea);
@@ -134,17 +140,15 @@ function loadSavedSets() {
     });
 }
 
+// ... (initCreatorMode, loadSetForEditing, renderQuestionList, save-to-cloud-btn は変更なし) ...
 function initCreatorMode() {
     editingSetId = null;
     createdQuestions = [];
     document.getElementById('quiz-set-title').value = '';
-    
     document.getElementById('config-penalty').value = 'none';
     document.getElementById('config-score-unit').value = 'point';
     document.getElementById('config-theme').value = 'light';
-    
     document.getElementById('save-to-cloud-btn').textContent = '☁️ クラウドに保存して完了';
-    
     renderQuestionList();
     window.showView(window.views.creator);
 }
@@ -152,16 +156,12 @@ function initCreatorMode() {
 function loadSetForEditing(key, item) {
     editingSetId = key;
     createdQuestions = item.questions || [];
-    
     document.getElementById('quiz-set-title').value = item.title;
-    
     const conf = item.config || { penalty:'none', scoreUnit:'point', theme:'light' };
     document.getElementById('config-penalty').value = conf.penalty;
     document.getElementById('config-score-unit').value = conf.scoreUnit;
     document.getElementById('config-theme').value = conf.theme;
-
     document.getElementById('save-to-cloud-btn').textContent = '🔄 更新して完了';
-
     renderQuestionList();
     window.showView(window.views.creator);
 }
@@ -171,20 +171,16 @@ document.getElementById('creator-back-btn').addEventListener('click', () => ente
 document.getElementById('add-question-btn').addEventListener('click', () => {
     const qText = document.getElementById('question-text').value.trim();
     const correctIndex = parseInt(document.getElementById('correct-index').value);
-    
     const cBlue = document.querySelector('.btn-blue.choice-input').value.trim() || "A";
     const cRed = document.querySelector('.btn-red.choice-input').value.trim() || "B";
     const cGreen = document.querySelector('.btn-green.choice-input').value.trim() || "C";
     const cYellow = document.querySelector('.btn-yellow.choice-input').value.trim() || "D";
-
     if(!qText) { alert('問題文を入力してください'); return; }
-
     createdQuestions.push({
         q: qText,
         c: [cBlue, cRed, cGreen, cYellow],
         correctIndex: correctIndex
     });
-
     renderQuestionList();
     document.getElementById('question-text').value = '';
     document.getElementById('question-text').focus();
@@ -193,7 +189,6 @@ document.getElementById('add-question-btn').addEventListener('click', () => {
 function renderQuestionList() {
     const list = document.getElementById('q-list');
     list.innerHTML = '';
-    
     createdQuestions.forEach((q, index) => {
         const li = document.createElement('li');
         li.textContent = `Q${index + 1}. ${q.q}`;
@@ -215,20 +210,17 @@ function renderQuestionList() {
 document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
     if(createdQuestions.length === 0) { alert('問題がありません'); return; }
     const title = document.getElementById('quiz-set-title').value.trim() || "無題のセット";
-    
     const config = {
         penalty: document.getElementById('config-penalty').value,
         scoreUnit: document.getElementById('config-score-unit').value,
         theme: document.getElementById('config-theme').value
     };
-
     const saveData = {
         title: title,
         config: config,
         questions: createdQuestions,
         createdAt: firebase.database.ServerValue.TIMESTAMP
     };
-
     if (editingSetId) {
         window.db.ref(`saved_sets/${currentShowId}/${editingSetId}`).update(saveData)
         .then(() => {
@@ -244,8 +236,15 @@ document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
     }
 });
 
+
+/* --- 3. スタジオ進行モード --- */
 function startRoom() {
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    
+    // プレイリスト初期化
+    periodPlaylist = [];
+    renderPeriodTimeline();
+    
     window.db.ref(`rooms/${currentRoomId}`).set({
         questions: [],
         status: { step: 'standby', qIndex: 0 },
@@ -261,7 +260,8 @@ function enterHostMode(roomId) {
     document.getElementById('host-room-id').textContent = roomId;
     document.getElementById('studio-show-id').textContent = currentShowId;
     
-    const select = document.getElementById('period-select');
+    // セット一覧をプルダウンにセット
+    const select = document.getElementById('studio-set-select');
     select.innerHTML = '<option value="">読み込み中...</option>';
     
     window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
@@ -270,11 +270,10 @@ function enterHostMode(roomId) {
         if(data) {
             Object.keys(data).forEach(key => {
                 const item = data[key];
-                const payload = { q: item.questions, c: item.config || { theme:'light' } };
-                const icon = (payload.c.theme === 'dark') ? '💰' : '🌈';
+                // ここでは問題をJSON化せず、IDを持たせる（あとで参照するため）
                 const opt = document.createElement('option');
-                opt.value = JSON.stringify(payload);
-                opt.textContent = `${icon} ${item.title}`;
+                opt.value = JSON.stringify({ q: item.questions, c: item.config || {theme:'light'}, t: item.title });
+                opt.textContent = item.title;
                 select.appendChild(opt);
             });
         }
@@ -291,8 +290,91 @@ function enterHostMode(roomId) {
     setupStudioButtons(roomId);
 }
 
+// ★ピリオドを追加する処理
+function addPeriodToPlaylist() {
+    const select = document.getElementById('studio-set-select');
+    const json = select.value;
+    if(!json) { alert("セットを選んでください"); return; }
+    
+    const data = JSON.parse(json); // { q, c, t }
+    
+    // 上書き用ルールを取得
+    const overridePenalty = document.getElementById('studio-rule-penalty').value;
+    const overrideTheme = document.getElementById('studio-rule-theme').value;
+    
+    // 設定オブジェクトを作成
+    const newConfig = {
+        penalty: overridePenalty,
+        theme: overrideTheme,
+        scoreUnit: data.c.scoreUnit || 'point' // スコア単位は元のまま継承
+    };
+    
+    // リストに追加
+    periodPlaylist.push({
+        title: data.t,
+        questions: data.q,
+        config: newConfig
+    });
+    
+    renderPeriodTimeline();
+}
+
+// ★タイムライン描画処理
+function renderPeriodTimeline() {
+    const container = document.getElementById('period-timeline');
+    container.innerHTML = '';
+    
+    if(periodPlaylist.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#999; font-size:0.9em;">セットを追加してください</p>';
+        return;
+    }
+
+    periodPlaylist.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'timeline-card';
+        div.innerHTML = `
+            <div>
+                <h5>第${index + 1}ピリオド: ${item.title}</h5>
+                <div class="info">
+                    全${item.questions.length}問 / ${item.config.theme === 'dark' ? '💰ミリオネア' : '🌈感謝祭'} / 
+                    ${item.config.penalty === 'immediate' ? '☠️即脱落' : '継続'}
+                </div>
+            </div>
+            <button class="play-btn" onclick="playPeriod(${index})">再生 ▶</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// ★ピリオド再生（グローバル関数にする必要あり）
+window.playPeriod = function(index) {
+    if(!periodPlaylist[index]) return;
+    
+    // 他の再生ボタンを無効化したり、現在再生中をハイライトする処理は省略（シンプル化のため）
+    const item = periodPlaylist[index];
+    
+    studioQuestions = item.questions;
+    currentConfig = item.config;
+    currentQIndex = 0;
+    
+    // Firebase同期
+    window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
+    window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
+    window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0 });
+    
+    // 画面表示切り替え
+    document.getElementById('control-panel').classList.remove('hidden');
+    document.getElementById('current-period-title').textContent = `Now Playing: 第${index+1}ピリオド (${item.title})`;
+    
+    document.getElementById('host-new-period-btn').classList.remove('hidden');
+    document.getElementById('host-start-btn').classList.add('hidden');
+    
+    alert(`第${index+1}ピリオドをセットしました！\n「全員復活させてスタート」を押してください。`);
+    updateKanpe();
+};
+
+
 function setupStudioButtons(roomId) {
-    const btnLoad = document.getElementById('host-load-period-btn');
     const btnNewPeriod = document.getElementById('host-new-period-btn');
     const btnStart = document.getElementById('host-start-btn');
     const btnShowAns = document.getElementById('host-show-answer-btn');
@@ -302,38 +384,16 @@ function setupStudioButtons(roomId) {
     const btnClose = document.getElementById('host-close-studio-btn');
     const rankingBackBtn = document.getElementById('ranking-back-btn');
     
-    btnLoad.onclick = () => {
-        const json = document.getElementById('period-select').value;
-        if(!json) return;
-        if(studioQuestions.length > 0 && !confirm("問題を読み込み直しますか？")) return;
-
-        const data = JSON.parse(json);
-        studioQuestions = data.q;
-        currentConfig = data.c;
-        currentQIndex = 0;
-
-        window.db.ref(`rooms/${roomId}/questions`).set(studioQuestions);
-        window.db.ref(`rooms/${roomId}/config`).set(currentConfig);
-        window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: 0 });
-
-        alert(`セット完了！\nテーマ: ${currentConfig.theme}\n単位: ${currentConfig.scoreUnit}`);
-        updateKanpe();
-        
-        btnStart.classList.add('hidden');
-        btnNewPeriod.classList.remove('hidden');
-        document.getElementById('period-load-area').classList.add('hidden');
-    };
+    // btnLoadは廃止
 
     btnNewPeriod.onclick = () => {
         if(!studioQuestions.length) return;
         if(!confirm("全員を復活させて開始しますか？")) return;
-
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(p => p.ref.update({ isAlive: true, periodScore:0, periodTime:0, lastTime:99999 }));
         });
         currentQIndex = 0;
         updateKanpe();
-
         btnStart.classList.remove('hidden');
         btnNewPeriod.classList.add('hidden');
         document.getElementById('host-status-area').textContent = "スタンバイ...";
@@ -394,7 +454,7 @@ function setupStudioButtons(roomId) {
         if(currentQIndex >= studioQuestions.length) {
             alert("終了！");
             btnNext.classList.add('hidden');
-            document.getElementById('period-load-area').classList.remove('hidden');
+            // 次の問題へボタンを隠すだけに留める（次のピリオドはリストから再生するので）
             return;
         }
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
