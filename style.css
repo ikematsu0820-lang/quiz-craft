@@ -1,3 +1,5 @@
+/* ... (既存部分はそのまま) ... */
+
 body {
     font-family: "Helvetica Neue", Arial, sans-serif;
     max-width: 600px;
@@ -42,7 +44,6 @@ button:active { transform: scale(0.98); }
 
 .btn-block { display: block; width: 100%; padding: 12px; margin-bottom: 10px; }
 
-/* 感謝祭カラー */
 .btn-blue   { background-color: #0055ff; color: white; }
 .btn-red    { background-color: #ff0055; color: white; }
 .btn-green  { background-color: #00aa00; color: white; }
@@ -100,22 +101,18 @@ input[type="text"], select {
 .timeline-card {
     background: #fff;
     border: 1px solid #ccc;
-    border-left: 5px solid #0055ff;
-    padding: 10px;
+    border-left: 6px solid #aaa;
+    padding: 12px;
     border-radius: 4px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-.timeline-card.active {
-    background: #e6f0ff;
-    border-color: #0044cc;
-    border-left-width: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 .timeline-card h5 {
     margin: 0 0 5px 0;
     font-size: 1.1em;
+    color: #333;
 }
 .timeline-card .info {
     font-size: 0.8em;
@@ -125,7 +122,7 @@ input[type="text"], select {
     background: #28a745;
     color: white;
     border: none;
-    padding: 5px 12px;
+    padding: 8px 15px;
     border-radius: 4px;
     font-size: 0.9em;
     cursor: pointer;
@@ -169,7 +166,7 @@ body.dark-theme .answer-btn[data-index="1"]::before { content: "B: "; color: whi
 body.dark-theme .answer-btn[data-index="2"]::before { content: "C: "; color: white; }
 body.dark-theme .answer-btn[data-index="3"]::before { content: "D: "; color: white; }
 
-/* ランキング用 */
+/* ランキング */
 .ranking-container {
     max-height: 400px;
     overflow-y: auto;
