@@ -1,6 +1,5 @@
 /* =========================================================
- * host.js
- * 役割：司会者（Host）のロジック。作成、編集、保存、スタジオ進行
+ * host.js (Fixed Back Button)
  * =======================================================*/
 
 let currentShowId = null;
@@ -10,11 +9,8 @@ let currentRoomId = null;
 let currentQIndex = 0;
 let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light' };
 let editingSetId = null;
-
-// ★追加：設定画面からどこに戻るかを制御するフラグ
 let returnToCreator = false;
 
-/* --- 1. ログイン & ダッシュボード --- */
 document.addEventListener('DOMContentLoaded', () => {
     const hostBtn = document.getElementById('main-host-btn');
     if(hostBtn) hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
@@ -33,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const createBtn = document.getElementById('dash-create-btn');
     if(createBtn) createBtn.addEventListener('click', initCreatorMode);
 
-    // ★ダッシュボードから設定へ（戻り先はダッシュボード）
     const configBtn = document.getElementById('dash-config-btn');
     if(configBtn) {
         configBtn.addEventListener('click', () => {
@@ -45,7 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const studioBtn = document.getElementById('dash-studio-btn');
     if(studioBtn) studioBtn.addEventListener('click', startRoom);
 
-    // ★作成画面から設定へ（戻り先は作成画面）
     const creatorConfigBtn = document.getElementById('creator-go-config-btn');
     if(creatorConfigBtn) {
         creatorConfigBtn.addEventListener('click', () => {
@@ -54,18 +48,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ★設定画面のOKボタン（戻り先へ分岐）
+    // ★修正：下のOKボタン
     const configOkBtn = document.getElementById('config-ok-btn');
     if(configOkBtn) {
-        configOkBtn.addEventListener('click', () => {
-            if(returnToCreator) {
-                window.showView(window.views.creator);
-            } else {
-                enterDashboard();
-            }
-        });
+        configOkBtn.addEventListener('click', goBackFromConfig);
+    }
+
+    // ★追加：右上の戻るボタン
+    const configHeaderBackBtn = document.getElementById('config-header-back-btn');
+    if(configHeaderBackBtn) {
+        configHeaderBackBtn.addEventListener('click', goBackFromConfig);
     }
 });
+
+// ★共通の戻る処理関数
+function goBackFromConfig() {
+    if(returnToCreator) {
+        window.showView(window.views.creator);
+    } else {
+        enterDashboard();
+    }
+}
 
 function enterDashboard() {
     window.showView(window.views.dashboard);
@@ -131,14 +134,11 @@ function loadSavedSets() {
     });
 }
 
-/* --- 2. 問題作成 & 編集モード --- */
-
 function initCreatorMode() {
     editingSetId = null;
     createdQuestions = [];
     document.getElementById('quiz-set-title').value = '';
     
-    // 設定をデフォルトに戻す
     document.getElementById('config-penalty').value = 'none';
     document.getElementById('config-score-unit').value = 'point';
     document.getElementById('config-theme').value = 'light';
@@ -155,7 +155,6 @@ function loadSetForEditing(key, item) {
     
     document.getElementById('quiz-set-title').value = item.title;
     
-    // 設定を復元（別の画面にあるinput要素にセット）
     const conf = item.config || { penalty:'none', scoreUnit:'point', theme:'light' };
     document.getElementById('config-penalty').value = conf.penalty;
     document.getElementById('config-score-unit').value = conf.scoreUnit;
@@ -218,7 +217,6 @@ document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
     if(createdQuestions.length === 0) { alert('問題がありません'); return; }
     const title = document.getElementById('quiz-set-title').value.trim() || "無題のセット";
     
-    // ★設定画面（別のdiv）にある値を読み取る
     const config = {
         penalty: document.getElementById('config-penalty').value,
         scoreUnit: document.getElementById('config-score-unit').value,
@@ -247,7 +245,6 @@ document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
     }
 });
 
-/* --- 3. スタジオ進行モード --- */
 function startRoom() {
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     
