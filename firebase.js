@@ -28,7 +28,7 @@ window.views = {
     creator: 'creator-view',
     config: 'config-view',
     hostControl: 'host-control-view',
-    ranking: 'ranking-view', // ランキング画面
+    ranking: 'ranking-view',
     respondent: 'respondent-view',
     playerGame: 'player-game-view'
 };
@@ -39,7 +39,7 @@ window.showView = function(targetId) {
     if(target) {
         target.classList.remove('hidden');
     }
-    // 画面遷移時に一度ライトテーマに戻す（プレイヤー側で再適用される）
+    // 画面遷移時に一度ライトテーマに戻す
     document.body.classList.remove('dark-theme');
 };
 
