@@ -9,9 +9,10 @@ let studioQuestions = [];
 let currentRoomId = null;
 let currentQIndex = 0;
 let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light' };
-
-// ★追加：編集中かどうかを管理する変数
 let editingSetId = null;
+
+// ★追加：設定画面からどこに戻るかを制御するフラグ
+let returnToCreator = false;
 
 /* --- 1. ログイン & ダッシュボード --- */
 document.addEventListener('DOMContentLoaded', () => {
@@ -32,9 +33,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const createBtn = document.getElementById('dash-create-btn');
     if(createBtn) createBtn.addEventListener('click', initCreatorMode);
 
+    // ★ダッシュボードから設定へ（戻り先はダッシュボード）
     const configBtn = document.getElementById('dash-config-btn');
     if(configBtn) {
         configBtn.addEventListener('click', () => {
+            returnToCreator = false;
             window.showView(window.views.config);
         });
     }
@@ -42,8 +45,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const studioBtn = document.getElementById('dash-studio-btn');
     if(studioBtn) studioBtn.addEventListener('click', startRoom);
 
-    const configBackBtn = document.getElementById('config-back-btn');
-    if(configBackBtn) configBackBtn.addEventListener('click', () => enterDashboard());
+    // ★作成画面から設定へ（戻り先は作成画面）
+    const creatorConfigBtn = document.getElementById('creator-go-config-btn');
+    if(creatorConfigBtn) {
+        creatorConfigBtn.addEventListener('click', () => {
+            returnToCreator = true;
+            window.showView(window.views.config);
+        });
+    }
+
+    // ★設定画面のOKボタン（戻り先へ分岐）
+    const configOkBtn = document.getElementById('config-ok-btn');
+    if(configOkBtn) {
+        configOkBtn.addEventListener('click', () => {
+            if(returnToCreator) {
+                window.showView(window.views.creator);
+            } else {
+                enterDashboard();
+            }
+        });
+    }
 });
 
 function enterDashboard() {
@@ -80,12 +101,10 @@ function loadSavedSets() {
                 </div>
             `;
 
-            // ボタンエリア
             const btnArea = document.createElement('div');
             btnArea.style.display = 'flex';
             btnArea.style.gap = '5px';
 
-            // ★編集ボタン
             const editBtn = document.createElement('button');
             editBtn.textContent = '編集';
             editBtn.style.backgroundColor = '#2c3e50';
@@ -94,7 +113,6 @@ function loadSavedSets() {
             editBtn.style.padding = '4px 8px';
             editBtn.onclick = () => loadSetForEditing(key, item);
 
-            // 削除ボタン
             const delBtn = document.createElement('button');
             delBtn.className = 'delete-btn';
             delBtn.textContent = '削除';
@@ -115,9 +133,8 @@ function loadSavedSets() {
 
 /* --- 2. 問題作成 & 編集モード --- */
 
-// 新規作成モード初期化
 function initCreatorMode() {
-    editingSetId = null; // IDをクリア（新規扱い）
+    editingSetId = null;
     createdQuestions = [];
     document.getElementById('quiz-set-title').value = '';
     
@@ -126,27 +143,24 @@ function initCreatorMode() {
     document.getElementById('config-score-unit').value = 'point';
     document.getElementById('config-theme').value = 'light';
     
-    // ボタンのラベルを「保存」に戻す
     document.getElementById('save-to-cloud-btn').textContent = '☁️ クラウドに保存して完了';
     
     renderQuestionList();
     window.showView(window.views.creator);
 }
 
-// ★編集モード読み込み
 function loadSetForEditing(key, item) {
-    editingSetId = key; // 編集中のIDを記憶
+    editingSetId = key;
     createdQuestions = item.questions || [];
     
-    // タイトルと設定を復元
     document.getElementById('quiz-set-title').value = item.title;
     
+    // 設定を復元（別の画面にあるinput要素にセット）
     const conf = item.config || { penalty:'none', scoreUnit:'point', theme:'light' };
     document.getElementById('config-penalty').value = conf.penalty;
     document.getElementById('config-score-unit').value = conf.scoreUnit;
     document.getElementById('config-theme').value = conf.theme;
 
-    // ボタンのラベルを「更新」に変更して分かりやすく
     document.getElementById('save-to-cloud-btn').textContent = '🔄 更新して完了';
 
     renderQuestionList();
@@ -172,13 +186,11 @@ document.getElementById('add-question-btn').addEventListener('click', () => {
         correctIndex: correctIndex
     });
 
-    renderQuestionList(); // リスト再描画
-
+    renderQuestionList();
     document.getElementById('question-text').value = '';
     document.getElementById('question-text').focus();
 });
 
-// ★リスト描画関数（共通化）
 function renderQuestionList() {
     const list = document.getElementById('q-list');
     list.innerHTML = '';
@@ -187,7 +199,6 @@ function renderQuestionList() {
         const li = document.createElement('li');
         li.textContent = `Q${index + 1}. ${q.q}`;
         
-        // 簡易削除機能（編集中に間違えたとき用）
         const delSpan = document.createElement('span');
         delSpan.textContent = ' [x]';
         delSpan.style.color = 'red';
@@ -198,18 +209,16 @@ function renderQuestionList() {
             renderQuestionList();
         };
         li.appendChild(delSpan);
-        
         list.appendChild(li);
     });
-    
     document.getElementById('q-count').textContent = createdQuestions.length;
 }
 
-// クラウド保存（新規 or 更新）
 document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
     if(createdQuestions.length === 0) { alert('問題がありません'); return; }
     const title = document.getElementById('quiz-set-title').value.trim() || "無題のセット";
     
+    // ★設定画面（別のdiv）にある値を読み取る
     const config = {
         penalty: document.getElementById('config-penalty').value,
         scoreUnit: document.getElementById('config-score-unit').value,
@@ -223,7 +232,6 @@ document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
         createdAt: firebase.database.ServerValue.TIMESTAMP
     };
 
-    // ★分岐：編集中なら更新、そうでなければ新規作成
     if (editingSetId) {
         window.db.ref(`saved_sets/${currentShowId}/${editingSetId}`).update(saveData)
         .then(() => {
