@@ -1,7 +1,22 @@
 /* =========================================================
  * firebase.js
+ * 役割：通信の初期化、共通の便利機能（画面切り替えなど）
  * =======================================================*/
-// ... (前半のFirebase設定部分は変更なし) ...
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDl9kq_jJb_zvYc3lfTfL_oTQrdqv2Abww",
+  databaseURL: "https://quizcraft-56950-default-rtdb.asia-southeast1.firebasedatabase.app/",
+  authDomain: "quizcraft-56950.firebaseapp.com",
+  projectId: "quizcraft-56950",
+  storageBucket: "quizcraft-56950.firebasestorage.app",
+  messagingSenderId: "556267695492",
+  appId: "1:556267695492:web:9855ff279731300b4101d1",
+  measurementId: "G-3HRYY8ZC2W"
+};
+
+if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 
 window.db = firebase.database();
 
@@ -13,7 +28,7 @@ window.views = {
     creator: 'creator-view',
     config: 'config-view',
     hostControl: 'host-control-view',
-    ranking: 'ranking-view', // ★追加：ランキング画面
+    ranking: 'ranking-view', // ランキング画面
     respondent: 'respondent-view',
     playerGame: 'player-game-view'
 };
@@ -24,6 +39,7 @@ window.showView = function(targetId) {
     if(target) {
         target.classList.remove('hidden');
     }
+    // 画面遷移時に一度ライトテーマに戻す（プレイヤー側で再適用される）
     document.body.classList.remove('dark-theme');
 };
 
