@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>All Star Quiz Cloud</title>
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 
 <div id="main-view" class="view">
     <h1 class="app-title">ALL STAR QUIZ</h1>
-    <p style="text-align:center; color:#666;">Cloud Edition v8</p>
+    <p style="text-align:center; color:#666;">Cloud Edition v9</p>
     <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
         <button id="main-host-btn" class="btn-primary">司会者 (Host)</button>
         <button id="main-player-btn" class="btn-success">回答者 (Player)</button>
@@ -90,15 +90,17 @@
     <div style="background:#f0f8ff; padding:15px; border:2px solid #87ceeb; border-radius:8px; margin-bottom:20px;">
         <h3 style="margin:0 0 10px 0; color:#0055ff; font-size:1.1em; text-align:center;">➕ ピリオド（セット）を構成に追加</h3>
         
-        <label style="font-size:0.8em; font-weight:bold; color:#666;">1. セットを選択</label>
+        <div id="participation-setting-area" class="hidden">
+            <label style="font-size:0.8em; font-weight:bold; color:#666;">1. 参加者設定 (スタート時)</label>
+            <select id="config-initial-status" class="btn-block" style="margin-bottom:15px; padding:10px; background:#fffbe6; border:1px solid #e6b800; font-weight:bold;">
+                <option value="revive">👑 全員復活してスタート</option>
+                <option value="continue">☠️ 生存者のみで継続 (敗者復活なし)</option>
+            </select>
+        </div>
+
+        <label style="font-size:0.8em; font-weight:bold; color:#666;">2. セットを選択</label>
         <select id="config-set-select" class="btn-block" style="background:white; margin-bottom:10px; padding:10px; font-weight:bold; border:1px solid #aaa;">
             <option value="">読み込み中...</option>
-        </select>
-
-        <label style="font-size:0.8em; font-weight:bold; color:#666;">2. 参加者設定 (スタート時)</label>
-        <select id="config-initial-status" class="btn-block" style="margin-bottom:15px; padding:10px; background:#fffbe6; border:1px solid #e6b800; font-weight:bold;">
-            <option value="revive">👑 全員復活してスタート</option>
-            <option value="continue">☠️ 生存者のみで継続 (敗者復活なし)</option>
         </select>
 
         <label style="font-size:0.8em; font-weight:bold; color:#666;">3. ルールを決定</label>
@@ -112,10 +114,21 @@
                 <option value="dark">ミリオネ風</option>
             </select>
         </div>
-        <select id="config-score-unit" class="btn-block" style="margin-bottom:10px;">
-            <option value="point">ポイント (1問1点)</option>
-            <option value="currency">通貨 (¥10,000〜)</option>
-        </select>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:10px;">
+            <select id="config-time-limit" style="font-size:0.9em; padding:8px; border-radius:4px; border:1px solid #ddd; font-weight:bold;">
+                <option value="0">⏳ 時間無制限</option>
+                <option value="10">⏳ 10秒</option>
+                <option value="15">⏳ 15秒</option>
+                <option value="20">⏳ 20秒</option>
+                <option value="30">⏳ 30秒</option>
+                <option value="60">⏳ 60秒</option>
+            </select>
+            <select id="config-score-unit" style="font-size:0.9em; padding:8px; border-radius:4px; border:1px solid #ddd;">
+                <option value="point">ポイント制</option>
+                <option value="currency">通貨制 (¥)</option>
+            </select>
+        </div>
         
         <button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:12px; border:none; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.2);">
             リストに追加 ⬇
@@ -146,6 +159,7 @@
         <div style="background:#333; color:#fff; display:inline-block; padding:2px 8px; font-size:0.8em; border-radius:3px; margin-bottom:5px;">司会者用カンペ</div>
         <div id="kanpe-question" style="font-weight:bold; font-size:1.1em; margin-bottom:5px;"></div>
         <div id="kanpe-answer" style="color:#d00; font-weight:bold;"></div>
+        <div id="kanpe-time-limit" style="font-size:0.8em; color:#666; margin-top:5px;"></div>
     </div>
     
     <div id="host-status-area" style="text-align:center; margin-bottom:15px; font-weight:bold; color:#666;">準備中...</div>
@@ -159,6 +173,7 @@
 
     <div id="control-panel" class="hidden" style="margin-top:20px; border-top:2px solid #333; padding-top:15px;">
         <h3 id="current-period-title" style="text-align:center; margin:0 0 10px 0; background:#eee; padding:5px;"></h3>
+        <button id="host-new-period-btn" class="btn-warning btn-block hidden" style="border:2px solid #fff;">👑 全員復活させてスタート</button>
         <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;">問題 START！</button>
         <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;">正解発表</button>
         <button id="host-next-btn" class="btn-info btn-block hidden" style="padding:15px;">次の問題へ</button>
@@ -221,8 +236,8 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="host.js?v=8"></script>
-<script src="player.js?v=8"></script>
+<script src="host.js?v=9"></script>
+<script src="player.js?v=9"></script>
 
 </body>
 </html>
