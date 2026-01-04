@@ -1,5 +1,5 @@
 /* =========================================================
- * host.js (v9: Auto-toggle Revive & Time Limit)
+ * host.js (v10: Slowest Elimination Logic)
  * =======================================================*/
 
 let currentShowId = null;
@@ -7,7 +7,8 @@ let createdQuestions = [];
 let studioQuestions = [];
 let currentRoomId = null;
 let currentQIndex = 0;
-let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light', timeLimit: 0 };
+// eliminationRule: 'none' | 'wrong_only' | 'wrong_and_slowest'
+let currentConfig = { eliminationRule: 'none', scoreUnit: 'point', theme: 'light', timeLimit: 0 };
 let editingSetId = null;
 let returnToCreator = false;
 let periodPlaylist = [];
@@ -153,7 +154,8 @@ function renderQuestionList() {
 function saveToCloud() {
     if(createdQuestions.length === 0) { alert('問題がありません'); return; }
     const title = document.getElementById('quiz-set-title').value.trim() || "無題のセット";
-    const defaultConf = { penalty: 'none', scoreUnit: 'point', theme: 'light' };
+    // デフォルト保存時はランキングモードにしておく
+    const defaultConf = { eliminationRule: 'none', scoreUnit: 'point', theme: 'light' };
     const saveData = {
         title: title,
         config: defaultConf,
@@ -190,7 +192,6 @@ function enterConfigMode() {
     renderConfigPreview();
 }
 
-// ★UI制御: リストが空なら参加者設定を隠す
 function updateBuilderUI() {
     const settingArea = document.getElementById('participation-setting-area');
     if (periodPlaylist.length === 0) {
@@ -207,7 +208,6 @@ function addPeriodToPlaylist() {
     
     const data = JSON.parse(json);
     
-    // ★判定: 1つ目は強制的にRevive、2つ目以降は選択値
     let initialStatus = 'revive';
     if (periodPlaylist.length > 0) {
         initialStatus = document.getElementById('config-initial-status').value;
@@ -215,10 +215,10 @@ function addPeriodToPlaylist() {
 
     const newConfig = {
         initialStatus: initialStatus,
-        penalty: document.getElementById('config-penalty').value,
+        eliminationRule: document.getElementById('config-elimination-rule').value, // ★脱落ルール取得
         scoreUnit: document.getElementById('config-score-unit').value,
         theme: document.getElementById('config-theme').value,
-        timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0 // 制限時間
+        timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0
     };
     
     periodPlaylist.push({
@@ -228,7 +228,7 @@ function addPeriodToPlaylist() {
     });
     
     renderConfigPreview();
-    updateBuilderUI(); // 次のセットのためにUI更新
+    updateBuilderUI(); 
 }
 
 function renderConfigPreview() {
@@ -249,14 +249,18 @@ function renderConfigPreview() {
         div.style.display = "flex";
         div.style.justifyContent = "space-between";
         
-        // 1つ目は「START」と表記、2つ目以降は設定を表示
         let statusText = "START";
         if (index > 0) {
             statusText = (item.config.initialStatus === 'continue') ? '☠️継続' : '👑復活';
         }
         
+        // 脱落設定の表示
+        let ruleText = "脱落なし";
+        if(item.config.eliminationRule === 'wrong_only') ruleText = "不正解脱落";
+        if(item.config.eliminationRule === 'wrong_and_slowest') ruleText = "最遅も脱落";
+
         div.innerHTML = `
-            <span><b>${index+1}. ${item.title}</b> [${statusText}] <small>(${item.config.timeLimit}s)</small></span>
+            <span><b>${index+1}. ${item.title}</b> [${statusText}] <small>(${ruleText})</small></span>
             <span style="color:#d00; cursor:pointer;" onclick="removeFromPlaylist(${index})">[削除]</span>
         `;
         container.appendChild(div);
@@ -266,7 +270,7 @@ function renderConfigPreview() {
 window.removeFromPlaylist = function(index) {
     periodPlaylist.splice(index, 1);
     renderConfigPreview();
-    updateBuilderUI(); // 削除後もUI状態チェック
+    updateBuilderUI();
 };
 
 // --- Studio Mode ---
@@ -275,7 +279,7 @@ function startRoom() {
         if(!confirm("プレイリストが空です。スタジオへ移動しますか？")) return;
     }
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    currentPeriodIndex = -1;
+    currentPeriodIndex = -1; 
     
     window.db.ref(`rooms/${currentRoomId}`).set({
         questions: [],
@@ -327,7 +331,7 @@ function renderStudioTimeline() {
             <div>
                 <h5>第${index + 1}ピリオド: ${item.title}</h5>
                 <div class="info">
-                    ${statusText} / 全${item.questions.length}問 / ⏳${item.config.timeLimit}秒
+                    ${statusText} / 全${item.questions.length}問 / ⏳${item.config.timeLimit}s
                 </div>
             </div>
             <button class="play-btn" onclick="playPeriod(${index})">再生 ▶</button>
@@ -351,11 +355,9 @@ window.playPeriod = function(index) {
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
     window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0 });
     
-    // 参加者状態更新
     window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
         snap.forEach(p => {
             let updateData = { periodScore: 0, periodTime: 0, lastTime: 99999 };
-            // 初回(index0) または revive設定なら復活
             if (index === 0 || currentConfig.initialStatus !== 'continue') {
                 updateData.isAlive = true;
             }
@@ -370,8 +372,7 @@ window.playPeriod = function(index) {
     document.getElementById('host-show-answer-btn').classList.add('hidden');
     document.getElementById('host-next-btn').classList.add('hidden');
     
-    const info = (index === 0 || currentConfig.initialStatus !== 'continue') ? '全員復活' : '生存者のみ';
-    alert(`第${index+1}ピリオドをセットしました！\n（${info}）`);
+    alert(`第${index+1}ピリオドをセットしました！`);
     updateKanpe();
 };
 
@@ -391,21 +392,48 @@ function setupStudioButtons(roomId) {
         document.getElementById('host-status-area').textContent = "Thinking Time...";
     };
 
+    // ★正解発表 & 脱落処理
     btnShowAns.onclick = () => {
         const q = studioQuestions[currentQIndex];
         const correctIdx = q.correctIndex;
         
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
+            let slowestId = null;
+            let maxTime = -1;
+
             snap.forEach(p => {
                 const val = p.val();
                 if(!val.isAlive) return;
-                if(val.lastAnswer === correctIdx) {
+
+                const isCorrect = (val.lastAnswer === correctIdx);
+                
+                // 1. スコア加算
+                if(isCorrect) {
                     const t = val.lastTime || 99999;
                     p.ref.update({ periodScore: (val.periodScore||0)+1, periodTime: (val.periodTime||0)+t });
-                } else {
-                    if(currentConfig.penalty === 'immediate') p.ref.update({ isAlive: false });
+                    
+                    // 最遅候補を探す（「最遅も脱落」ルールの場合）
+                    if (currentConfig.eliminationRule === 'wrong_and_slowest') {
+                        if (t > maxTime) {
+                            maxTime = t;
+                            slowestId = p.key;
+                        }
+                    }
+                } 
+                // 2. 不正解者の脱落判定
+                else {
+                    if(currentConfig.eliminationRule !== 'none') {
+                        p.ref.update({ isAlive: false });
+                    }
                 }
             });
+
+            // 3. 一番遅い正解者の脱落処理（プレッシャー脱落）
+            if (currentConfig.eliminationRule === 'wrong_and_slowest' && slowestId) {
+                // 正解者が1人しかいない場合は、優勝者なので落とさない（オプション）
+                // 今回はシンプルに「一番遅いなら問答無用」で落とします
+                window.db.ref(`rooms/${roomId}/players/${slowestId}`).update({ isAlive: false });
+            }
         });
         
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
@@ -484,7 +512,6 @@ function updateKanpe() {
         const labels = (currentConfig.theme === 'dark') ? ["A","B","C","D"] : ["青","赤","緑","黄"];
         document.getElementById('kanpe-answer').textContent = `正解: ${labels[q.correctIndex]} (${q.c[q.correctIndex]})`;
         
-        // カンペに制限時間を表示
         const timeLimit = currentConfig.timeLimit || 0;
         const timeText = timeLimit > 0 ? `⏳ ${timeLimit}秒` : '⏳ 無制限';
         const limitEl = document.getElementById('kanpe-time-limit');
@@ -515,7 +542,7 @@ function renderRankingView(data) {
         if (rank === 1) rankClass += ' rank-1';
         else if (rank === 2) rankClass += ' rank-2';
         else if (rank === 3) rankClass += ' rank-3';
-        if (!r.isAlive && currentConfig.penalty === 'immediate') {
+        if (!r.isAlive && currentConfig.eliminationRule !== 'none') {
             div.style.opacity = "0.6"; div.style.background = "#eee";
         }
         div.className = rankClass;
