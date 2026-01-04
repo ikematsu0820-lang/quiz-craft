@@ -40,7 +40,6 @@
         <button id="dash-config-btn" class="btn-primary" style="height:80px; font-weight:bold; font-size:0.9em; background-color:#2c3e50;">⚙️ セット設定</button>
         <button id="dash-studio-btn" class="btn-danger" style="height:80px; font-weight:bold; font-size:0.9em;">🎥 スタジオへ</button>
     </div>
-    
     <h4 style="border-bottom:2px solid #ddd;">保存済みセット</h4>
     <div id="dash-set-list" style="max-height:300px; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:5px;"></div>
 </div>
@@ -48,7 +47,7 @@
 <div id="creator-view" class="view hidden">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2 style="margin:0;">問題作成</h2>
-        <button id="creator-back-btn" style="background:#999; padding:5px 10px;">戻る</button>
+        <button id="creator-back-btn" style="background:#999; padding:5px 10px;">ダッシュボードへ</button>
     </div>
     <hr>
     <div style="margin-bottom:15px;">
@@ -56,24 +55,9 @@
         <input type="text" id="quiz-set-title" class="btn-block" placeholder="例: 第1ステージ" style="margin-bottom:10px;">
     </div>
 
-    <fieldset style="border:2px solid #333; padding:10px; border-radius:8px; margin-bottom:20px; background:#f9f9f9;">
-        <legend style="font-weight:bold; background:#333; color:#fff; padding:0 5px;">⚙️ ルール設定 (旧)</legend>
-        <label style="font-size:0.9em; font-weight:bold;">☠️ 誤答時のペナルティ</label>
-        <select id="config-penalty" class="btn-block" style="margin-bottom:5px;">
-            <option value="none">なし（継続参加）</option>
-            <option value="immediate">即脱落（間違えたら終了）</option>
-        </select>
-        <label style="font-size:0.9em; font-weight:bold;">💰 スコア単位</label>
-        <select id="config-score-unit" class="btn-block" style="margin-bottom:5px;">
-            <option value="point">ポイント (1問1点)</option>
-            <option value="currency">通貨 (¥10,000〜)</option>
-        </select>
-        <label style="font-size:0.9em; font-weight:bold;">🎨 画面テーマ</label>
-        <select id="config-theme" class="btn-block" style="margin-bottom:5px;">
-            <option value="light">ライト (感謝祭風)</option>
-            <option value="dark">ダーク (ミリオネア風)</option>
-        </select>
-    </fieldset>
+    <button id="creator-go-config-btn" class="btn-block" style="background:#2c3e50; color:white; margin-bottom:20px;">
+        ⚙️ ルール設定を確認・変更する
+    </button>
 
     <div style="background:#fff0f5; padding:15px; border-radius:8px; border:2px solid #ff69b4;">
         <h3 style="margin-top:0; color:#c71585;">新規問題</h3>
@@ -103,13 +87,29 @@
 <div id="config-view" class="view hidden">
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h2 style="margin:0;">セット設定</h2>
-        <button id="config-back-btn" style="background:#999; padding:5px 10px;">戻る</button>
-    </div>
+        </div>
     <hr>
-    <div style="text-align:center; padding:50px 0; color:#666;">
-        <p>🚧 ここに細かい設定機能が入ります 🚧</p>
-        <p>（現在は準備中です）</p>
-    </div>
+    
+    <fieldset style="border:2px solid #333; padding:10px; border-radius:8px; margin-bottom:20px; background:#f9f9f9;">
+        <legend style="font-weight:bold; background:#333; color:#fff; padding:0 5px;">⚙️ ルール設定</legend>
+        <label style="font-size:0.9em; font-weight:bold;">☠️ 誤答時のペナルティ</label>
+        <select id="config-penalty" class="btn-block" style="margin-bottom:5px;">
+            <option value="none">なし（継続参加）</option>
+            <option value="immediate">即脱落（間違えたら終了）</option>
+        </select>
+        <label style="font-size:0.9em; font-weight:bold;">💰 スコア単位</label>
+        <select id="config-score-unit" class="btn-block" style="margin-bottom:5px;">
+            <option value="point">ポイント (1問1点)</option>
+            <option value="currency">通貨 (¥10,000〜)</option>
+        </select>
+        <label style="font-size:0.9em; font-weight:bold;">🎨 画面テーマ</label>
+        <select id="config-theme" class="btn-block" style="margin-bottom:5px;">
+            <option value="light">ライト (感謝祭風)</option>
+            <option value="dark">ダーク (ミリオネア風)</option>
+        </select>
+    </fieldset>
+
+    <button id="config-ok-btn" class="btn-primary btn-block" style="padding:15px; font-weight:bold;">✅ OK (戻る)</button>
 </div>
 
 <div id="host-control-view" class="view hidden">
