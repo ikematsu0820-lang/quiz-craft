@@ -1,6 +1,6 @@
 /* =========================================================
  * host.js
- * 役割：司会者（Host）のロジック。作成、編集、スタジオ進行、プレイリスト
+ * 役割：司会者（Host）のロジック。
  * =======================================================*/
 
 let currentShowId = null;
@@ -22,7 +22,7 @@ const RANKING_MONEY_TREE = [
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 画面遷移・ボタン設定
+    // ボタンイベントの紐付け（既存）
     const hostBtn = document.getElementById('main-host-btn');
     if(hostBtn) hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
 
@@ -144,10 +144,13 @@ function initCreatorMode() {
     editingSetId = null;
     createdQuestions = [];
     document.getElementById('quiz-set-title').value = '';
+    
     document.getElementById('config-penalty').value = 'none';
     document.getElementById('config-score-unit').value = 'point';
     document.getElementById('config-theme').value = 'light';
+    
     document.getElementById('save-to-cloud-btn').textContent = '☁️ クラウドに保存して完了';
+    
     renderQuestionList();
     window.showView(window.views.creator);
 }
@@ -155,12 +158,16 @@ function initCreatorMode() {
 function loadSetForEditing(key, item) {
     editingSetId = key;
     createdQuestions = item.questions || [];
+    
     document.getElementById('quiz-set-title').value = item.title;
+    
     const conf = item.config || { penalty:'none', scoreUnit:'point', theme:'light' };
     document.getElementById('config-penalty').value = conf.penalty;
     document.getElementById('config-score-unit').value = conf.scoreUnit;
     document.getElementById('config-theme').value = conf.theme;
+
     document.getElementById('save-to-cloud-btn').textContent = '🔄 更新して完了';
+
     renderQuestionList();
     window.showView(window.views.creator);
 }
@@ -170,16 +177,20 @@ document.getElementById('creator-back-btn').addEventListener('click', () => ente
 document.getElementById('add-question-btn').addEventListener('click', () => {
     const qText = document.getElementById('question-text').value.trim();
     const correctIndex = parseInt(document.getElementById('correct-index').value);
+    
     const cBlue = document.querySelector('.btn-blue.choice-input').value.trim() || "A";
     const cRed = document.querySelector('.btn-red.choice-input').value.trim() || "B";
     const cGreen = document.querySelector('.btn-green.choice-input').value.trim() || "C";
     const cYellow = document.querySelector('.btn-yellow.choice-input').value.trim() || "D";
+
     if(!qText) { alert('問題文を入力してください'); return; }
+
     createdQuestions.push({
         q: qText,
         c: [cBlue, cRed, cGreen, cYellow],
         correctIndex: correctIndex
     });
+
     renderQuestionList();
     document.getElementById('question-text').value = '';
     document.getElementById('question-text').focus();
@@ -188,9 +199,11 @@ document.getElementById('add-question-btn').addEventListener('click', () => {
 function renderQuestionList() {
     const list = document.getElementById('q-list');
     list.innerHTML = '';
+    
     createdQuestions.forEach((q, index) => {
         const li = document.createElement('li');
         li.textContent = `Q${index + 1}. ${q.q}`;
+        
         const delSpan = document.createElement('span');
         delSpan.textContent = ' [x]';
         delSpan.style.color = 'red';
@@ -209,17 +222,20 @@ function renderQuestionList() {
 document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
     if(createdQuestions.length === 0) { alert('問題がありません'); return; }
     const title = document.getElementById('quiz-set-title').value.trim() || "無題のセット";
+    
     const config = {
         penalty: document.getElementById('config-penalty').value,
         scoreUnit: document.getElementById('config-score-unit').value,
         theme: document.getElementById('config-theme').value
     };
+
     const saveData = {
         title: title,
         config: config,
         questions: createdQuestions,
         createdAt: firebase.database.ServerValue.TIMESTAMP
     };
+
     if (editingSetId) {
         window.db.ref(`saved_sets/${currentShowId}/${editingSetId}`).update(saveData)
         .then(() => {
