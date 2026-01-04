@@ -1,5 +1,5 @@
 /* =========================================================
- * host.js (v6: Removed Manual Elimination)
+ * host.js (v7: Fix Config Builder & Remove Elimination)
  * =======================================================*/
 
 let currentShowId = null;
@@ -41,13 +41,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const configBtn = document.getElementById('dash-config-btn');
     if(configBtn) {
         configBtn.addEventListener('click', () => {
-            enterConfigMode(); 
+            enterConfigMode(); // ★ここ重要：セット設定画面に入るときに一覧を読み込む
         });
     }
 
     const studioBtn = document.getElementById('dash-studio-btn');
     if(studioBtn) studioBtn.addEventListener('click', startRoom);
 
+    // セット設定画面のボタン
     const configAddBtn = document.getElementById('config-add-playlist-btn');
     if(configAddBtn) configAddBtn.addEventListener('click', addPeriodToPlaylist);
 
@@ -57,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const configHeaderBackBtn = document.getElementById('config-header-back-btn');
     if(configHeaderBackBtn) configHeaderBackBtn.addEventListener('click', () => enterDashboard());
 
+    // 作成画面のボタン
     const addQBtn = document.getElementById('add-question-btn');
     if(addQBtn) addQBtn.addEventListener('click', addQuestion);
     
@@ -67,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(creatorBackBtn) creatorBackBtn.addEventListener('click', () => enterDashboard());
 });
 
-// --- Dashboard & Config ---
+// --- Dashboard & Loading ---
 function enterDashboard() {
     window.showView(window.views.dashboard);
     document.getElementById('dashboard-show-id').textContent = currentShowId;
@@ -113,6 +115,7 @@ function loadSavedSets() {
     });
 }
 
+// --- Creator Mode ---
 function initCreatorMode() {
     editingSetId = null;
     createdQuestions = [];
@@ -163,10 +166,13 @@ function saveToCloud() {
     .then(() => { alert(`「${title}」を新規保存しました！`); enterDashboard(); });
 }
 
-// --- Config Mode ---
+// --- ★ Config Mode (修正版：セット選択をここで処理) ---
 function enterConfigMode() {
     window.showView(window.views.config);
+    
+    // Config画面にある「セット選択」プルダウンをロード
     const select = document.getElementById('config-set-select');
+    if(!select) return; // エラー防止
     select.innerHTML = '<option value="">読み込み中...</option>';
     
     window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
@@ -193,6 +199,7 @@ function addPeriodToPlaylist() {
     if(!json) { alert("セットを選んでください"); return; }
     
     const data = JSON.parse(json);
+    // Config画面で設定したルールを取得
     const newConfig = {
         penalty: document.getElementById('config-penalty').value,
         scoreUnit: document.getElementById('config-score-unit').value,
@@ -243,7 +250,7 @@ function startRoom() {
         if(!confirm("プレイリストが空です。スタジオへ移動しますか？")) return;
     }
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    currentPeriodIndex = -1; // 初期化
+    currentPeriodIndex = -1; 
     
     window.db.ref(`rooms/${currentRoomId}`).set({
         questions: [],
@@ -321,7 +328,6 @@ window.playPeriod = function(index) {
     document.getElementById('host-new-period-btn').classList.remove('hidden');
     document.getElementById('host-start-btn').classList.add('hidden');
     document.getElementById('host-show-answer-btn').classList.add('hidden');
-    // eliminateボタンは削除したので非表示処理も不要
     document.getElementById('host-next-btn').classList.add('hidden');
     
     alert(`第${index+1}ピリオドをセットしました！\n「全員復活させてスタート」を押してください。`);
@@ -332,7 +338,6 @@ function setupStudioButtons(roomId) {
     const btnNewPeriod = document.getElementById('host-new-period-btn');
     const btnStart = document.getElementById('host-start-btn');
     const btnShowAns = document.getElementById('host-show-answer-btn');
-    // Eliminateボタン削除
     const btnNext = document.getElementById('host-next-btn');
     const btnRanking = document.getElementById('host-ranking-btn');
     const btnClose = document.getElementById('host-close-studio-btn');
@@ -370,6 +375,7 @@ function setupStudioButtons(roomId) {
                     const t = val.lastTime || 99999;
                     p.ref.update({ periodScore: (val.periodScore||0)+1, periodTime: (val.periodTime||0)+t });
                 } else {
+                    // ★自動脱落判定：設定が immediate ならここで落とす
                     if(currentConfig.penalty === 'immediate') p.ref.update({ isAlive: false });
                 }
             });
@@ -377,11 +383,10 @@ function setupStudioButtons(roomId) {
         
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
         btnShowAns.classList.add('hidden');
-        // Eliminateボタン表示処理削除
         btnNext.classList.remove('hidden');
         document.getElementById('host-status-area').textContent = "正解発表";
 
-        // ボタンの切り替えロジック
+        // ボタンの切り替え
         if (currentQIndex >= studioQuestions.length - 1) {
             if (currentPeriodIndex < periodPlaylist.length - 1) {
                 btnNext.textContent = "⏭ 次のピリオドへ進む";
@@ -398,8 +403,6 @@ function setupStudioButtons(roomId) {
             btnNext.classList.add('btn-info');
         }
     };
-
-    // Eliminateボタンのクリックイベント削除
 
     btnNext.onclick = () => {
         if (currentQIndex >= studioQuestions.length - 1) {
@@ -421,7 +424,6 @@ function setupStudioButtons(roomId) {
         updateKanpe();
         btnStart.classList.remove('hidden');
         btnNext.classList.add('hidden');
-        // Eliminateボタン非表示処理削除
         document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} スタンバイ...`;
     };
 
