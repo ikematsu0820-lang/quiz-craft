@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>All Star Quiz Cloud</title>
-<link rel="stylesheet" href="style.css?v=7.1">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 
 <div id="main-view" class="view">
     <h1 class="app-title">ALL STAR QUIZ</h1>
-    <p style="text-align:center; color:#666;">Cloud Edition v7.1</p>
+    <p style="text-align:center; color:#666;">Cloud Edition v8</p>
     <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
         <button id="main-host-btn" class="btn-primary">司会者 (Host)</button>
         <button id="main-player-btn" class="btn-success">回答者 (Player)</button>
@@ -95,7 +95,13 @@
             <option value="">読み込み中...</option>
         </select>
 
-        <label style="font-size:0.8em; font-weight:bold; color:#666;">2. ルールを決定</label>
+        <label style="font-size:0.8em; font-weight:bold; color:#666;">2. 参加者設定 (スタート時)</label>
+        <select id="config-initial-status" class="btn-block" style="margin-bottom:15px; padding:10px; background:#fffbe6; border:1px solid #e6b800; font-weight:bold;">
+            <option value="revive">👑 全員復活してスタート</option>
+            <option value="continue">☠️ 生存者のみで継続 (敗者復活なし)</option>
+        </select>
+
+        <label style="font-size:0.8em; font-weight:bold; color:#666;">3. ルールを決定</label>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:10px;">
             <select id="config-penalty" style="font-size:0.9em; padding:8px; border-radius:4px; border:1px solid #ddd;">
                 <option value="none">継続参加</option>
@@ -153,7 +159,6 @@
 
     <div id="control-panel" class="hidden" style="margin-top:20px; border-top:2px solid #333; padding-top:15px;">
         <h3 id="current-period-title" style="text-align:center; margin:0 0 10px 0; background:#eee; padding:5px;"></h3>
-        <button id="host-new-period-btn" class="btn-warning btn-block hidden" style="border:2px solid #fff;">👑 全員復活させてスタート</button>
         <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;">問題 START！</button>
         <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;">正解発表</button>
         <button id="host-next-btn" class="btn-info btn-block hidden" style="padding:15px;">次の問題へ</button>
@@ -216,8 +221,8 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="host.js?v=7.1"></script>
-<script src="player.js?v=7.1"></script>
+<script src="host.js?v=8"></script>
+<script src="player.js?v=8"></script>
 
 </body>
 </html>
