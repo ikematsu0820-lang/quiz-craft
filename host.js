@@ -1,5 +1,6 @@
 /* =========================================================
- * host.js (Fixed Back Button)
+ * host.js
+ * 役割：司会者（Host）のロジック。作成、編集、保存、スタジオ進行
  * =======================================================*/
 
 let currentShowId = null;
@@ -10,6 +11,12 @@ let currentQIndex = 0;
 let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light' };
 let editingSetId = null;
 let returnToCreator = false;
+
+const RANKING_MONEY_TREE = [
+    10000, 20000, 30000, 50000, 100000,
+    200000, 300000, 500000, 750000, 1000000,
+    1500000, 2500000, 5000000, 7500000, 10000000
+];
 
 document.addEventListener('DOMContentLoaded', () => {
     const hostBtn = document.getElementById('main-host-btn');
@@ -48,20 +55,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ★修正：下のOKボタン
     const configOkBtn = document.getElementById('config-ok-btn');
-    if(configOkBtn) {
-        configOkBtn.addEventListener('click', goBackFromConfig);
-    }
+    if(configOkBtn) configOkBtn.addEventListener('click', goBackFromConfig);
 
-    // ★追加：右上の戻るボタン
     const configHeaderBackBtn = document.getElementById('config-header-back-btn');
-    if(configHeaderBackBtn) {
-        configHeaderBackBtn.addEventListener('click', goBackFromConfig);
-    }
+    if(configHeaderBackBtn) configHeaderBackBtn.addEventListener('click', goBackFromConfig);
 });
 
-// ★共通の戻る処理関数
 function goBackFromConfig() {
     if(returnToCreator) {
         window.showView(window.views.creator);
@@ -197,7 +197,6 @@ function renderQuestionList() {
     createdQuestions.forEach((q, index) => {
         const li = document.createElement('li');
         li.textContent = `Q${index + 1}. ${q.q}`;
-        
         const delSpan = document.createElement('span');
         delSpan.textContent = ' [x]';
         delSpan.style.color = 'red';
@@ -247,7 +246,6 @@ document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
 
 function startRoom() {
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    
     window.db.ref(`rooms/${currentRoomId}`).set({
         questions: [],
         status: { step: 'standby', qIndex: 0 },
@@ -274,7 +272,6 @@ function enterHostMode(roomId) {
                 const item = data[key];
                 const payload = { q: item.questions, c: item.config || { theme:'light' } };
                 const icon = (payload.c.theme === 'dark') ? '💰' : '🌈';
-                
                 const opt = document.createElement('option');
                 opt.value = JSON.stringify(payload);
                 opt.textContent = `${icon} ${item.title}`;
@@ -303,6 +300,7 @@ function setupStudioButtons(roomId) {
     const btnNext = document.getElementById('host-next-btn');
     const btnRanking = document.getElementById('host-ranking-btn');
     const btnClose = document.getElementById('host-close-studio-btn');
+    const rankingBackBtn = document.getElementById('ranking-back-btn');
     
     btnLoad.onclick = () => {
         const json = document.getElementById('period-select').value;
@@ -352,12 +350,10 @@ function setupStudioButtons(roomId) {
     btnShowAns.onclick = () => {
         const q = studioQuestions[currentQIndex];
         const correctIdx = q.correctIndex;
-        
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(p => {
                 const val = p.val();
                 if(!val.isAlive) return;
-                
                 if(val.lastAnswer === correctIdx) {
                     const t = val.lastTime || 99999;
                     p.ref.update({ periodScore: (val.periodScore||0)+1, periodTime: (val.periodTime||0)+t });
@@ -416,16 +412,16 @@ function setupStudioButtons(roomId) {
             let ranking = [];
             snap.forEach(p => {
                 const v = p.val();
-                if(v.isAlive) ranking.push({ name: v.name, score: v.periodScore, time: v.periodTime });
+                ranking.push({ name: v.name, score: v.periodScore, time: v.periodTime, isAlive: v.isAlive });
             });
             ranking.sort((a,b) => (b.score - a.score) || (a.time - b.time));
-            
-            let msg = "🏆 ランキング 🏆\n";
-            ranking.slice(0,10).forEach((r,i) => {
-                msg += `${i+1}. ${r.name} (${r.score}pt / ${(r.time/1000).toFixed(2)}s)\n`;
-            });
-            alert(msg);
+            renderRankingView(ranking);
+            window.showView(window.views.ranking);
         });
+    };
+
+    rankingBackBtn.onclick = () => {
+        window.showView(window.views.hostControl);
     };
     
     btnClose.onclick = () => {
@@ -444,4 +440,44 @@ function updateKanpe() {
     } else {
         kanpeArea.classList.add('hidden');
     }
+}
+
+function renderRankingView(data) {
+    const list = document.getElementById('ranking-list');
+    list.innerHTML = '';
+    if (data.length === 0) {
+        list.innerHTML = '<p style="padding:20px;">参加者がいません</p>';
+        return;
+    }
+    const isCurrency = (currentConfig.scoreUnit === 'currency');
+    data.forEach((r, i) => {
+        const rank = i + 1;
+        const div = document.createElement('div');
+        let rankClass = 'rank-row';
+        if (rank === 1) rankClass += ' rank-1';
+        else if (rank === 2) rankClass += ' rank-2';
+        else if (rank === 3) rankClass += ' rank-3';
+        if (!r.isAlive && currentConfig.penalty === 'immediate') {
+            div.style.opacity = "0.6";
+            div.style.background = "#eee";
+        }
+        div.className = rankClass;
+        let scoreText = `${r.score}問`;
+        if (isCurrency) {
+            const amount = (r.score > 0) ? RANKING_MONEY_TREE[Math.min(r.score-1, RANKING_MONEY_TREE.length-1)] : 0;
+            scoreText = `¥${amount.toLocaleString()}`;
+        }
+        const timeText = `${(r.time/1000).toFixed(2)}s`;
+        div.innerHTML = `
+            <div style="display:flex; align-items:center;">
+                <span class="rank-badge">${rank}</span>
+                <span>${r.name}</span>
+            </div>
+            <div class="rank-score">
+                ${scoreText}<br>
+                <small>${timeText}</small>
+            </div>
+        `;
+        list.appendChild(div);
+    });
 }
