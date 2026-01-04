@@ -1,22 +1,7 @@
 /* =========================================================
  * firebase.js
- * 役割：通信の初期化、共通の便利機能（画面切り替えなど）
  * =======================================================*/
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDl9kq_jJb_zvYc3lfTfL_oTQrdqv2Abww",
-  databaseURL: "https://quizcraft-56950-default-rtdb.asia-southeast1.firebasedatabase.app/",
-  authDomain: "quizcraft-56950.firebaseapp.com",
-  projectId: "quizcraft-56950",
-  storageBucket: "quizcraft-56950.firebasestorage.app",
-  messagingSenderId: "556267695492",
-  appId: "1:556267695492:web:9855ff279731300b4101d1",
-  measurementId: "G-3HRYY8ZC2W"
-};
-
-if (typeof firebase !== 'undefined' && !firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
+// ... (前半のFirebase設定部分は変更なし) ...
 
 window.db = firebase.database();
 
@@ -26,8 +11,9 @@ window.views = {
     hostLogin: 'host-login-view',
     dashboard: 'host-dashboard-view',
     creator: 'creator-view',
-    config: 'config-view', // ★追加：設定画面
+    config: 'config-view',
     hostControl: 'host-control-view',
+    ranking: 'ranking-view', // ★追加：ランキング画面
     respondent: 'respondent-view',
     playerGame: 'player-game-view'
 };
