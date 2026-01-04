@@ -14,12 +14,10 @@ const firebaseConfig = {
   measurementId: "G-3HRYY8ZC2W"
 };
 
-// Firebase初期化
 if (typeof firebase !== 'undefined' && !firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
-// どこからでも使えるようにグローバル変数にする
 window.db = firebase.database();
 
 /* --- 共通：画面切り替え機能 --- */
@@ -28,22 +26,18 @@ window.views = {
     hostLogin: 'host-login-view',
     dashboard: 'host-dashboard-view',
     creator: 'creator-view',
+    config: 'config-view', // ★追加：設定画面
     hostControl: 'host-control-view',
     respondent: 'respondent-view',
     playerGame: 'player-game-view'
 };
 
 window.showView = function(targetId) {
-    // 全てのviewを隠す
     document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-    
-    // 指定されたviewだけ表示
     const target = document.getElementById(targetId);
     if(target) {
         target.classList.remove('hidden');
     }
-    
-    // テーマリセット（画面遷移時にライトテーマに戻す）
     document.body.classList.remove('dark-theme');
 };
 
@@ -51,7 +45,6 @@ window.showView = function(targetId) {
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.back-to-main').forEach(btn => {
         btn.addEventListener('click', () => {
-            // ログアウト扱いでトップへ
             window.showView(window.views.main);
         });
     });
