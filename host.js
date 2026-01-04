@@ -1,6 +1,5 @@
 /* =========================================================
- * host.js
- * 役割：司会者（Host）のロジック。
+ * host.js (Updated for Playlist & Config Sync)
  * =======================================================*/
 
 let currentShowId = null;
@@ -8,11 +7,10 @@ let createdQuestions = [];
 let studioQuestions = [];
 let currentRoomId = null;
 let currentQIndex = 0;
+// デフォルト設定
 let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light' };
 let editingSetId = null;
 let returnToCreator = false;
-
-// ★追加：番組構成リスト
 let periodPlaylist = [];
 
 const RANKING_MONEY_TREE = [
@@ -22,7 +20,7 @@ const RANKING_MONEY_TREE = [
 ];
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ボタンイベントの紐付け（既存）
+    // 画面遷移・ボタン設定
     const hostBtn = document.getElementById('main-host-btn');
     if(hostBtn) hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
 
@@ -44,6 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if(configBtn) {
         configBtn.addEventListener('click', () => {
             returnToCreator = false;
+            // 設定画面を開くときは現在の設定を反映させる
+            updateConfigViewInputs();
             window.showView(window.views.config);
         });
     }
@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(creatorConfigBtn) {
         creatorConfigBtn.addEventListener('click', () => {
             returnToCreator = true;
+            updateConfigViewInputs();
             window.showView(window.views.config);
         });
     }
@@ -65,12 +66,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const configHeaderBackBtn = document.getElementById('config-header-back-btn');
     if(configHeaderBackBtn) configHeaderBackBtn.addEventListener('click', goBackFromConfig);
 
-    // ★追加：「リストに追加」ボタン
     const addPeriodBtn = document.getElementById('studio-add-period-btn');
     if(addPeriodBtn) addPeriodBtn.addEventListener('click', addPeriodToPlaylist);
 });
 
+// ★設定画面の表示を更新する関数
+function updateConfigViewInputs() {
+    document.getElementById('config-penalty').value = currentConfig.penalty || 'none';
+    document.getElementById('config-score-unit').value = currentConfig.scoreUnit || 'point';
+    document.getElementById('config-theme').value = currentConfig.theme || 'light';
+}
+
 function goBackFromConfig() {
+    // 戻る時に設定値を保存
+    currentConfig = {
+        penalty: document.getElementById('config-penalty').value,
+        scoreUnit: document.getElementById('config-score-unit').value,
+        theme: document.getElementById('config-theme').value
+    };
+
     if(returnToCreator) {
         window.showView(window.views.creator);
     } else {
@@ -144,13 +158,9 @@ function initCreatorMode() {
     editingSetId = null;
     createdQuestions = [];
     document.getElementById('quiz-set-title').value = '';
-    
-    document.getElementById('config-penalty').value = 'none';
-    document.getElementById('config-score-unit').value = 'point';
-    document.getElementById('config-theme').value = 'light';
-    
+    // デフォルト設定
+    currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light' };
     document.getElementById('save-to-cloud-btn').textContent = '☁️ クラウドに保存して完了';
-    
     renderQuestionList();
     window.showView(window.views.creator);
 }
@@ -158,16 +168,12 @@ function initCreatorMode() {
 function loadSetForEditing(key, item) {
     editingSetId = key;
     createdQuestions = item.questions || [];
-    
     document.getElementById('quiz-set-title').value = item.title;
     
-    const conf = item.config || { penalty:'none', scoreUnit:'point', theme:'light' };
-    document.getElementById('config-penalty').value = conf.penalty;
-    document.getElementById('config-score-unit').value = conf.scoreUnit;
-    document.getElementById('config-theme').value = conf.theme;
-
+    // 設定をロード
+    currentConfig = item.config || { penalty:'none', scoreUnit:'point', theme:'light' };
+    
     document.getElementById('save-to-cloud-btn').textContent = '🔄 更新して完了';
-
     renderQuestionList();
     window.showView(window.views.creator);
 }
@@ -177,20 +183,16 @@ document.getElementById('creator-back-btn').addEventListener('click', () => ente
 document.getElementById('add-question-btn').addEventListener('click', () => {
     const qText = document.getElementById('question-text').value.trim();
     const correctIndex = parseInt(document.getElementById('correct-index').value);
-    
     const cBlue = document.querySelector('.btn-blue.choice-input').value.trim() || "A";
     const cRed = document.querySelector('.btn-red.choice-input').value.trim() || "B";
     const cGreen = document.querySelector('.btn-green.choice-input').value.trim() || "C";
     const cYellow = document.querySelector('.btn-yellow.choice-input').value.trim() || "D";
-
     if(!qText) { alert('問題文を入力してください'); return; }
-
     createdQuestions.push({
         q: qText,
         c: [cBlue, cRed, cGreen, cYellow],
         correctIndex: correctIndex
     });
-
     renderQuestionList();
     document.getElementById('question-text').value = '';
     document.getElementById('question-text').focus();
@@ -199,11 +201,9 @@ document.getElementById('add-question-btn').addEventListener('click', () => {
 function renderQuestionList() {
     const list = document.getElementById('q-list');
     list.innerHTML = '';
-    
     createdQuestions.forEach((q, index) => {
         const li = document.createElement('li');
         li.textContent = `Q${index + 1}. ${q.q}`;
-        
         const delSpan = document.createElement('span');
         delSpan.textContent = ' [x]';
         delSpan.style.color = 'red';
@@ -223,15 +223,9 @@ document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
     if(createdQuestions.length === 0) { alert('問題がありません'); return; }
     const title = document.getElementById('quiz-set-title').value.trim() || "無題のセット";
     
-    const config = {
-        penalty: document.getElementById('config-penalty').value,
-        scoreUnit: document.getElementById('config-score-unit').value,
-        theme: document.getElementById('config-theme').value
-    };
-
     const saveData = {
         title: title,
-        config: config,
+        config: currentConfig, // 現在保持している設定を保存
         questions: createdQuestions,
         createdAt: firebase.database.ServerValue.TIMESTAMP
     };
@@ -254,8 +248,6 @@ document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
 /* --- 3. スタジオ進行モード --- */
 function startRoom() {
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    
-    // プレイリスト初期化
     periodPlaylist = [];
     renderPeriodTimeline();
     
@@ -274,7 +266,6 @@ function enterHostMode(roomId) {
     document.getElementById('host-room-id').textContent = roomId;
     document.getElementById('studio-show-id').textContent = currentShowId;
     
-    // セット一覧をプルダウンにセット
     const select = document.getElementById('studio-set-select');
     select.innerHTML = '<option value="">読み込み中...</option>';
     
@@ -284,8 +275,8 @@ function enterHostMode(roomId) {
         if(data) {
             Object.keys(data).forEach(key => {
                 const item = data[key];
-                // ここでは問題をJSON化せず、IDを持たせる（あとで参照するため）
                 const opt = document.createElement('option');
+                // 値としてJSON文字列を持たせる
                 opt.value = JSON.stringify({ q: item.questions, c: item.config || {theme:'light'}, t: item.title });
                 opt.textContent = item.title;
                 select.appendChild(opt);
@@ -304,7 +295,6 @@ function enterHostMode(roomId) {
     setupStudioButtons(roomId);
 }
 
-// ★ピリオドを追加する処理
 function addPeriodToPlaylist() {
     const select = document.getElementById('studio-set-select');
     const json = select.value;
@@ -316,14 +306,12 @@ function addPeriodToPlaylist() {
     const overridePenalty = document.getElementById('studio-rule-penalty').value;
     const overrideTheme = document.getElementById('studio-rule-theme').value;
     
-    // 設定オブジェクトを作成
     const newConfig = {
         penalty: overridePenalty,
         theme: overrideTheme,
-        scoreUnit: data.c.scoreUnit || 'point' // スコア単位は元のまま継承
+        scoreUnit: data.c.scoreUnit || 'point'
     };
     
-    // リストに追加
     periodPlaylist.push({
         title: data.t,
         questions: data.q,
@@ -333,7 +321,6 @@ function addPeriodToPlaylist() {
     renderPeriodTimeline();
 }
 
-// ★タイムライン描画処理
 function renderPeriodTimeline() {
     const container = document.getElementById('period-timeline');
     container.innerHTML = '';
@@ -360,22 +347,18 @@ function renderPeriodTimeline() {
     });
 }
 
-// ★ピリオド再生（グローバル関数）
 window.playPeriod = function(index) {
     if(!periodPlaylist[index]) return;
     
     const item = periodPlaylist[index];
-    
     studioQuestions = item.questions;
-    currentConfig = item.config;
+    currentConfig = item.config; // グローバル設定を更新
     currentQIndex = 0;
     
-    // Firebase同期
     window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
     window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0 });
     
-    // 画面表示切り替え
     document.getElementById('control-panel').classList.remove('hidden');
     document.getElementById('current-period-title').textContent = `Now Playing: 第${index+1}ピリオド (${item.title})`;
     
@@ -385,7 +368,6 @@ window.playPeriod = function(index) {
     alert(`第${index+1}ピリオドをセットしました！\n「全員復活させてスタート」を押してください。`);
     updateKanpe();
 };
-
 
 function setupStudioButtons(roomId) {
     const btnNewPeriod = document.getElementById('host-new-period-btn');
