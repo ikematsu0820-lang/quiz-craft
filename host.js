@@ -1,6 +1,6 @@
 /* =========================================================
  * host.js
- * 役割：司会者（Host）のロジック。作成、保存、スタジオ進行
+ * 役割：司会者（Host）のロジック。作成、編集、保存、スタジオ進行
  * =======================================================*/
 
 let currentShowId = null;
@@ -9,6 +9,9 @@ let studioQuestions = [];
 let currentRoomId = null;
 let currentQIndex = 0;
 let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light' };
+
+// ★追加：編集中かどうかを管理する変数
+let editingSetId = null;
 
 /* --- 1. ログイン & ダッシュボード --- */
 document.addEventListener('DOMContentLoaded', () => {
@@ -29,7 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const createBtn = document.getElementById('dash-create-btn');
     if(createBtn) createBtn.addEventListener('click', initCreatorMode);
 
-    // ★追加：設定画面への遷移
     const configBtn = document.getElementById('dash-config-btn');
     if(configBtn) {
         configBtn.addEventListener('click', () => {
@@ -40,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const studioBtn = document.getElementById('dash-studio-btn');
     if(studioBtn) studioBtn.addEventListener('click', startRoom);
 
-    // ★追加：設定画面から戻る
     const configBackBtn = document.getElementById('config-back-btn');
     if(configBackBtn) configBackBtn.addEventListener('click', () => enterDashboard());
 });
@@ -78,6 +79,22 @@ function loadSavedSets() {
                     </div>
                 </div>
             `;
+
+            // ボタンエリア
+            const btnArea = document.createElement('div');
+            btnArea.style.display = 'flex';
+            btnArea.style.gap = '5px';
+
+            // ★編集ボタン
+            const editBtn = document.createElement('button');
+            editBtn.textContent = '編集';
+            editBtn.style.backgroundColor = '#2c3e50';
+            editBtn.style.color = 'white';
+            editBtn.style.fontSize = '0.8em';
+            editBtn.style.padding = '4px 8px';
+            editBtn.onclick = () => loadSetForEditing(key, item);
+
+            // 削除ボタン
             const delBtn = document.createElement('button');
             delBtn.className = 'delete-btn';
             delBtn.textContent = '削除';
@@ -87,18 +104,52 @@ function loadSavedSets() {
                     div.remove();
                 }
             };
-            div.appendChild(delBtn);
+
+            btnArea.appendChild(editBtn);
+            btnArea.appendChild(delBtn);
+            div.appendChild(btnArea);
             listEl.appendChild(div);
         });
     });
 }
 
-/* --- 2. 問題作成モード --- */
+/* --- 2. 問題作成 & 編集モード --- */
+
+// 新規作成モード初期化
 function initCreatorMode() {
+    editingSetId = null; // IDをクリア（新規扱い）
     createdQuestions = [];
-    document.getElementById('q-list').innerHTML = '';
-    document.getElementById('q-count').textContent = '0';
     document.getElementById('quiz-set-title').value = '';
+    
+    // 設定をデフォルトに戻す
+    document.getElementById('config-penalty').value = 'none';
+    document.getElementById('config-score-unit').value = 'point';
+    document.getElementById('config-theme').value = 'light';
+    
+    // ボタンのラベルを「保存」に戻す
+    document.getElementById('save-to-cloud-btn').textContent = '☁️ クラウドに保存して完了';
+    
+    renderQuestionList();
+    window.showView(window.views.creator);
+}
+
+// ★編集モード読み込み
+function loadSetForEditing(key, item) {
+    editingSetId = key; // 編集中のIDを記憶
+    createdQuestions = item.questions || [];
+    
+    // タイトルと設定を復元
+    document.getElementById('quiz-set-title').value = item.title;
+    
+    const conf = item.config || { penalty:'none', scoreUnit:'point', theme:'light' };
+    document.getElementById('config-penalty').value = conf.penalty;
+    document.getElementById('config-score-unit').value = conf.scoreUnit;
+    document.getElementById('config-theme').value = conf.theme;
+
+    // ボタンのラベルを「更新」に変更して分かりやすく
+    document.getElementById('save-to-cloud-btn').textContent = '🔄 更新して完了';
+
+    renderQuestionList();
     window.showView(window.views.creator);
 }
 
@@ -121,16 +172,40 @@ document.getElementById('add-question-btn').addEventListener('click', () => {
         correctIndex: correctIndex
     });
 
-    const list = document.getElementById('q-list');
-    const li = document.createElement('li');
-    li.textContent = `Q${createdQuestions.length}. ${qText}`;
-    list.appendChild(li);
-    document.getElementById('q-count').textContent = createdQuestions.length;
+    renderQuestionList(); // リスト再描画
 
     document.getElementById('question-text').value = '';
     document.getElementById('question-text').focus();
 });
 
+// ★リスト描画関数（共通化）
+function renderQuestionList() {
+    const list = document.getElementById('q-list');
+    list.innerHTML = '';
+    
+    createdQuestions.forEach((q, index) => {
+        const li = document.createElement('li');
+        li.textContent = `Q${index + 1}. ${q.q}`;
+        
+        // 簡易削除機能（編集中に間違えたとき用）
+        const delSpan = document.createElement('span');
+        delSpan.textContent = ' [x]';
+        delSpan.style.color = 'red';
+        delSpan.style.cursor = 'pointer';
+        delSpan.style.marginLeft = '10px';
+        delSpan.onclick = () => {
+            createdQuestions.splice(index, 1);
+            renderQuestionList();
+        };
+        li.appendChild(delSpan);
+        
+        list.appendChild(li);
+    });
+    
+    document.getElementById('q-count').textContent = createdQuestions.length;
+}
+
+// クラウド保存（新規 or 更新）
 document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
     if(createdQuestions.length === 0) { alert('問題がありません'); return; }
     const title = document.getElementById('quiz-set-title').value.trim() || "無題のセット";
@@ -141,15 +216,27 @@ document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
         theme: document.getElementById('config-theme').value
     };
 
-    window.db.ref(`saved_sets/${currentShowId}`).push({
+    const saveData = {
         title: title,
         config: config,
         questions: createdQuestions,
         createdAt: firebase.database.ServerValue.TIMESTAMP
-    }).then(() => {
-        alert(`保存しました！`);
-        enterDashboard();
-    }).catch(err => alert("保存エラー: " + err.message));
+    };
+
+    // ★分岐：編集中なら更新、そうでなければ新規作成
+    if (editingSetId) {
+        window.db.ref(`saved_sets/${currentShowId}/${editingSetId}`).update(saveData)
+        .then(() => {
+            alert(`「${title}」を更新しました！`);
+            enterDashboard();
+        }).catch(err => alert("更新エラー: " + err.message));
+    } else {
+        window.db.ref(`saved_sets/${currentShowId}`).push(saveData)
+        .then(() => {
+            alert(`「${title}」を新規保存しました！`);
+            enterDashboard();
+        }).catch(err => alert("保存エラー: " + err.message));
+    }
 });
 
 /* --- 3. スタジオ進行モード --- */
