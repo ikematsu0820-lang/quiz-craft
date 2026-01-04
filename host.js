@@ -1,5 +1,5 @@
 /* =========================================================
- * host.js (v8: Auto Revive Logic)
+ * host.js (v9: Auto-toggle Revive & Time Limit)
  * =======================================================*/
 
 let currentShowId = null;
@@ -7,7 +7,7 @@ let createdQuestions = [];
 let studioQuestions = [];
 let currentRoomId = null;
 let currentQIndex = 0;
-let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light' };
+let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light', timeLimit: 0 };
 let editingSetId = null;
 let returnToCreator = false;
 let periodPlaylist = [];
@@ -164,9 +164,11 @@ function saveToCloud() {
     .then(() => { alert(`「${title}」を新規保存しました！`); enterDashboard(); });
 }
 
-// --- Config Mode ---
+// --- ★ Config Mode ---
 function enterConfigMode() {
     window.showView(window.views.config);
+    updateBuilderUI(); // UI状態の更新
+
     const select = document.getElementById('config-set-select');
     select.innerHTML = '<option value="">読み込み中...</option>';
     
@@ -188,6 +190,16 @@ function enterConfigMode() {
     renderConfigPreview();
 }
 
+// ★UI制御: リストが空なら参加者設定を隠す
+function updateBuilderUI() {
+    const settingArea = document.getElementById('participation-setting-area');
+    if (periodPlaylist.length === 0) {
+        settingArea.classList.add('hidden');
+    } else {
+        settingArea.classList.remove('hidden');
+    }
+}
+
 function addPeriodToPlaylist() {
     const select = document.getElementById('config-set-select');
     const json = select.value;
@@ -195,14 +207,18 @@ function addPeriodToPlaylist() {
     
     const data = JSON.parse(json);
     
-    // ★新機能：開始時の状態を取得
-    const initialStatus = document.getElementById('config-initial-status').value; // 'revive' or 'continue'
+    // ★判定: 1つ目は強制的にRevive、2つ目以降は選択値
+    let initialStatus = 'revive';
+    if (periodPlaylist.length > 0) {
+        initialStatus = document.getElementById('config-initial-status').value;
+    }
 
     const newConfig = {
-        initialStatus: initialStatus, // 保存
+        initialStatus: initialStatus,
         penalty: document.getElementById('config-penalty').value,
         scoreUnit: document.getElementById('config-score-unit').value,
-        theme: document.getElementById('config-theme').value
+        theme: document.getElementById('config-theme').value,
+        timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0 // 制限時間
     };
     
     periodPlaylist.push({
@@ -210,7 +226,9 @@ function addPeriodToPlaylist() {
         questions: data.q,
         config: newConfig
     });
+    
     renderConfigPreview();
+    updateBuilderUI(); // 次のセットのためにUI更新
 }
 
 function renderConfigPreview() {
@@ -231,11 +249,14 @@ function renderConfigPreview() {
         div.style.display = "flex";
         div.style.justifyContent = "space-between";
         
-        // 復活設定の表示
-        const statusText = (item.config.initialStatus === 'continue') ? '☠️継続' : '👑復活';
+        // 1つ目は「START」と表記、2つ目以降は設定を表示
+        let statusText = "START";
+        if (index > 0) {
+            statusText = (item.config.initialStatus === 'continue') ? '☠️継続' : '👑復活';
+        }
         
         div.innerHTML = `
-            <span><b>${index+1}. ${item.title}</b> [${statusText}]</span>
+            <span><b>${index+1}. ${item.title}</b> [${statusText}] <small>(${item.config.timeLimit}s)</small></span>
             <span style="color:#d00; cursor:pointer;" onclick="removeFromPlaylist(${index})">[削除]</span>
         `;
         container.appendChild(div);
@@ -245,6 +266,7 @@ function renderConfigPreview() {
 window.removeFromPlaylist = function(index) {
     periodPlaylist.splice(index, 1);
     renderConfigPreview();
+    updateBuilderUI(); // 削除後もUI状態チェック
 };
 
 // --- Studio Mode ---
@@ -253,7 +275,7 @@ function startRoom() {
         if(!confirm("プレイリストが空です。スタジオへ移動しますか？")) return;
     }
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    currentPeriodIndex = -1; // 初期化
+    currentPeriodIndex = -1;
     
     window.db.ref(`rooms/${currentRoomId}`).set({
         questions: [],
@@ -296,13 +318,16 @@ function renderStudioTimeline() {
         div.className = 'timeline-card';
         if (index === currentPeriodIndex) div.classList.add('active');
         
-        const statusText = (item.config.initialStatus === 'continue') ? '継続' : '全員復活';
+        let statusText = "START";
+        if (index > 0) {
+            statusText = (item.config.initialStatus === 'continue') ? '継続' : '全員復活';
+        }
         
         div.innerHTML = `
             <div>
                 <h5>第${index + 1}ピリオド: ${item.title}</h5>
                 <div class="info">
-                    ${statusText} / 全${item.questions.length}問 / ${item.config.theme === 'dark' ? '💰ミリオネ' : '🌈感謝祭'}
+                    ${statusText} / 全${item.questions.length}問 / ⏳${item.config.timeLimit}秒
                 </div>
             </div>
             <button class="play-btn" onclick="playPeriod(${index})">再生 ▶</button>
@@ -311,7 +336,6 @@ function renderStudioTimeline() {
     });
 }
 
-// ★ピリオド再生ロジック（自動処理）
 window.playPeriod = function(index) {
     if(!periodPlaylist[index]) return;
     const item = periodPlaylist[index];
@@ -323,27 +347,22 @@ window.playPeriod = function(index) {
     
     renderStudioTimeline();
     
-    // 基本情報の更新
     window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
     window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0 });
     
-    // ★ここで参加者の状態を自動更新
+    // 参加者状態更新
     window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
         snap.forEach(p => {
-            // periodScore, periodTime は必ずリセット
             let updateData = { periodScore: 0, periodTime: 0, lastTime: 99999 };
-            
-            // 全員復活設定なら、isAliveをtrueに。継続なら触らない。
-            if (currentConfig.initialStatus !== 'continue') {
+            // 初回(index0) または revive設定なら復活
+            if (index === 0 || currentConfig.initialStatus !== 'continue') {
                 updateData.isAlive = true;
             }
-            
             p.ref.update(updateData);
         });
     });
 
-    // 画面更新：いきなりSTARTボタンを表示
     document.getElementById('control-panel').classList.remove('hidden');
     document.getElementById('current-period-title').textContent = `Now Playing: 第${index+1}ピリオド (${item.title})`;
     
@@ -351,7 +370,8 @@ window.playPeriod = function(index) {
     document.getElementById('host-show-answer-btn').classList.add('hidden');
     document.getElementById('host-next-btn').classList.add('hidden');
     
-    alert(`第${index+1}ピリオドをセットしました！\n（${currentConfig.initialStatus === 'continue' ? '生存者のみ' : '全員復活'}）`);
+    const info = (index === 0 || currentConfig.initialStatus !== 'continue') ? '全員復活' : '生存者のみ';
+    alert(`第${index+1}ピリオドをセットしました！\n（${info}）`);
     updateKanpe();
 };
 
@@ -363,8 +383,6 @@ function setupStudioButtons(roomId) {
     const btnClose = document.getElementById('host-close-studio-btn');
     const rankingBackBtn = document.getElementById('ranking-back-btn');
     
-    // 全員復活ボタンの定義は削除済み
-
     btnStart.onclick = () => {
         const now = firebase.database.ServerValue.TIMESTAMP;
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', qIndex: currentQIndex, startTime: now });
@@ -465,6 +483,21 @@ function updateKanpe() {
         document.getElementById('kanpe-question').textContent = `Q${currentQIndex+1}. ${q.q}`;
         const labels = (currentConfig.theme === 'dark') ? ["A","B","C","D"] : ["青","赤","緑","黄"];
         document.getElementById('kanpe-answer').textContent = `正解: ${labels[q.correctIndex]} (${q.c[q.correctIndex]})`;
+        
+        // カンペに制限時間を表示
+        const timeLimit = currentConfig.timeLimit || 0;
+        const timeText = timeLimit > 0 ? `⏳ ${timeLimit}秒` : '⏳ 無制限';
+        const limitEl = document.getElementById('kanpe-time-limit');
+        if(!limitEl) {
+            const div = document.createElement('div');
+            div.id = 'kanpe-time-limit';
+            div.style.fontSize = "0.8em";
+            div.style.color = "#666";
+            div.style.marginTop = "5px";
+            kanpeArea.appendChild(div);
+        }
+        document.getElementById('kanpe-time-limit').textContent = timeText;
+
     } else {
         kanpeArea.classList.add('hidden');
     }
