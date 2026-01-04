@@ -12,31 +12,37 @@ let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light' };
 
 /* --- 1. ログイン & ダッシュボード --- */
 document.addEventListener('DOMContentLoaded', () => {
-    // トップ画面のボタン
     const hostBtn = document.getElementById('main-host-btn');
-    if(hostBtn) {
-        hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
-    }
+    if(hostBtn) hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
 
-    // ログイン実行
     const loginBtn = document.getElementById('host-login-submit-btn');
     if(loginBtn) {
         loginBtn.addEventListener('click', () => {
             const input = document.getElementById('show-id-input').value.trim().toUpperCase();
             if(!input) { alert("番組IDを入力してください"); return; }
             if(!/^[A-Z0-9_-]+$/.test(input)) { alert("ID文字種エラー"); return; }
-            
             currentShowId = input;
             enterDashboard();
         });
     }
 
-    // ダッシュボードのボタン
     const createBtn = document.getElementById('dash-create-btn');
     if(createBtn) createBtn.addEventListener('click', initCreatorMode);
 
+    // ★追加：設定画面への遷移
+    const configBtn = document.getElementById('dash-config-btn');
+    if(configBtn) {
+        configBtn.addEventListener('click', () => {
+            window.showView(window.views.config);
+        });
+    }
+
     const studioBtn = document.getElementById('dash-studio-btn');
     if(studioBtn) studioBtn.addEventListener('click', startRoom);
+
+    // ★追加：設定画面から戻る
+    const configBackBtn = document.getElementById('config-back-btn');
+    if(configBackBtn) configBackBtn.addEventListener('click', () => enterDashboard());
 });
 
 function enterDashboard() {
@@ -45,7 +51,6 @@ function enterDashboard() {
     loadSavedSets();
 }
 
-// 保存済みセットの読み込み
 function loadSavedSets() {
     const listEl = document.getElementById('dash-set-list');
     listEl.innerHTML = '<p style="text-align:center;">読み込み中...</p>';
@@ -53,18 +58,15 @@ function loadSavedSets() {
     window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
         const data = snap.val();
         listEl.innerHTML = '';
-        
         if(!data) {
             listEl.innerHTML = '<p style="text-align:center; color:#999;">保存されたセットはありません</p>';
             return;
         }
-
         Object.keys(data).forEach(key => {
             const item = data[key];
             const div = document.createElement('div');
             div.className = 'set-item';
             
-            // 設定情報の表示
             const conf = item.config || {};
             const themeName = conf.theme === 'dark' ? '💰ミリオネア風' : '🌈感謝祭風';
             
@@ -76,7 +78,6 @@ function loadSavedSets() {
                     </div>
                 </div>
             `;
-            
             const delBtn = document.createElement('button');
             delBtn.className = 'delete-btn';
             delBtn.textContent = '削除';
@@ -120,24 +121,20 @@ document.getElementById('add-question-btn').addEventListener('click', () => {
         correctIndex: correctIndex
     });
 
-    // リスト更新
     const list = document.getElementById('q-list');
     const li = document.createElement('li');
     li.textContent = `Q${createdQuestions.length}. ${qText}`;
     list.appendChild(li);
     document.getElementById('q-count').textContent = createdQuestions.length;
 
-    // フォームクリア
     document.getElementById('question-text').value = '';
     document.getElementById('question-text').focus();
 });
 
-// クラウド保存
 document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
     if(createdQuestions.length === 0) { alert('問題がありません'); return; }
     const title = document.getElementById('quiz-set-title').value.trim() || "無題のセット";
     
-    // 設定値の取得
     const config = {
         penalty: document.getElementById('config-penalty').value,
         scoreUnit: document.getElementById('config-score-unit').value,
@@ -159,11 +156,10 @@ document.getElementById('save-to-cloud-btn').addEventListener('click', () => {
 function startRoom() {
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     
-    // 部屋初期化
     window.db.ref(`rooms/${currentRoomId}`).set({
         questions: [],
         status: { step: 'standby', qIndex: 0 },
-        config: { theme: 'light', scoreUnit: 'point' }, // デフォルト
+        config: { theme: 'light', scoreUnit: 'point' },
         players: {}
     }).then(() => {
         enterHostMode(currentRoomId);
@@ -175,7 +171,6 @@ function enterHostMode(roomId) {
     document.getElementById('host-room-id').textContent = roomId;
     document.getElementById('studio-show-id').textContent = currentShowId;
     
-    // セット一覧をロード用プルダウンにセット
     const select = document.getElementById('period-select');
     select.innerHTML = '<option value="">読み込み中...</option>';
     
@@ -185,7 +180,6 @@ function enterHostMode(roomId) {
         if(data) {
             Object.keys(data).forEach(key => {
                 const item = data[key];
-                // 設定と問題をJSONにしてvalueに入れる
                 const payload = { q: item.questions, c: item.config || { theme:'light' } };
                 const icon = (payload.c.theme === 'dark') ? '💰' : '🌈';
                 
@@ -197,7 +191,6 @@ function enterHostMode(roomId) {
         }
     });
 
-    // プレイヤー人数監視
     window.db.ref(`rooms/${roomId}/players`).on('value', snap => {
         const players = snap.val() || {};
         const total = Object.keys(players).length;
@@ -219,7 +212,6 @@ function setupStudioButtons(roomId) {
     const btnRanking = document.getElementById('host-ranking-btn');
     const btnClose = document.getElementById('host-close-studio-btn');
     
-    // ロード
     btnLoad.onclick = () => {
         const json = document.getElementById('period-select').value;
         if(!json) return;
@@ -227,10 +219,9 @@ function setupStudioButtons(roomId) {
 
         const data = JSON.parse(json);
         studioQuestions = data.q;
-        currentConfig = data.c; // 設定更新
+        currentConfig = data.c;
         currentQIndex = 0;
 
-        // Firebase同期
         window.db.ref(`rooms/${roomId}/questions`).set(studioQuestions);
         window.db.ref(`rooms/${roomId}/config`).set(currentConfig);
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: 0 });
@@ -239,11 +230,10 @@ function setupStudioButtons(roomId) {
         updateKanpe();
         
         btnStart.classList.add('hidden');
-        btnNewPeriod.classList.remove('hidden'); // 開始ボタン出現
+        btnNewPeriod.classList.remove('hidden');
         document.getElementById('period-load-area').classList.add('hidden');
     };
 
-    // 全員復活＆開始
     btnNewPeriod.onclick = () => {
         if(!studioQuestions.length) return;
         if(!confirm("全員を復活させて開始しますか？")) return;
@@ -259,7 +249,6 @@ function setupStudioButtons(roomId) {
         document.getElementById('host-status-area').textContent = "スタンバイ...";
     };
 
-    // START
     btnStart.onclick = () => {
         const now = firebase.database.ServerValue.TIMESTAMP;
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', qIndex: currentQIndex, startTime: now });
@@ -268,7 +257,6 @@ function setupStudioButtons(roomId) {
         document.getElementById('host-status-area').textContent = "Thinking Time...";
     };
 
-    // 正解発表
     btnShowAns.onclick = () => {
         const q = studioQuestions[currentQIndex];
         const correctIdx = q.correctIndex;
@@ -282,7 +270,6 @@ function setupStudioButtons(roomId) {
                     const t = val.lastTime || 99999;
                     p.ref.update({ periodScore: (val.periodScore||0)+1, periodTime: (val.periodTime||0)+t });
                 } else {
-                    // 設定が即死なら脱落させる
                     if(currentConfig.penalty === 'immediate') {
                         p.ref.update({ isAlive: false });
                     }
@@ -296,7 +283,6 @@ function setupStudioButtons(roomId) {
         document.getElementById('host-status-area').textContent = "正解発表";
     };
 
-    // 予選落ち
     btnEliminate.onclick = () => {
         if(!confirm("最も遅い1名を脱落させますか？")) return;
         const correctIdx = studioQuestions[currentQIndex].correctIndex;
@@ -315,7 +301,6 @@ function setupStudioButtons(roomId) {
         });
     };
 
-    // 次へ
     btnNext.onclick = () => {
         currentQIndex++;
         if(currentQIndex >= studioQuestions.length) {
@@ -334,7 +319,6 @@ function setupStudioButtons(roomId) {
         document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} スタンバイ...`;
     };
 
-    // ランキング
     btnRanking.onclick = () => {
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
             let ranking = [];
@@ -352,7 +336,6 @@ function setupStudioButtons(roomId) {
         });
     };
     
-    // 閉じる
     btnClose.onclick = () => {
         if(confirm("ダッシュボードに戻りますか？")) enterDashboard();
     };
