@@ -1,16 +1,208 @@
-<div id="host-control-view" class="view hidden">
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>All Star Quiz Cloud</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="main-view" class="view">
+    <h1 class="app-title">ALL STAR QUIZ</h1>
+    <p style="text-align:center; color:#666;">Custom Cloud Edition</p>
+
+    <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
+        <button id="main-host-btn" class="btn-primary">司会者 (Host)</button>
+        <button id="main-player-btn" class="btn-success">回答者 (Player)</button>
     </div>
+</div>
+
+<div id="host-login-view" class="view hidden">
+    <h2>番組IDを入力</h2>
+    <hr>
+    <div style="text-align:center;">
+        <input type="text" id="show-id-input" placeholder="例: QUIZ2026" 
+               style="text-align:center; font-size:1.5em; text-transform:uppercase; margin-bottom:15px;">
+        <button id="host-login-submit-btn" class="btn-primary btn-block">ログイン / 新規作成</button>
+        <button class="back-to-main btn-block" style="background:#ccc; color:#333; margin-top:10px;">戻る</button>
+    </div>
+</div>
+
+<div id="host-dashboard-view" class="view hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0;">📺 番組: <span id="dashboard-show-id" style="color:#e91e63;">---</span></h3>
+        <button class="back-to-main" style="font-size:0.8em;">ログアウト</button>
+    </div>
+    <hr>
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-bottom:20px;">
+        <button id="dash-create-btn" class="btn-info" style="height:80px; font-weight:bold; font-size:0.9em;">📝 セット作成</button>
+        <button id="dash-config-btn" class="btn-primary" style="height:80px; font-weight:bold; font-size:0.9em; background-color:#2c3e50;">⚙️ セット設定</button>
+        <button id="dash-studio-btn" class="btn-danger" style="height:80px; font-weight:bold; font-size:0.9em;">🎥 スタジオへ</button>
+    </div>
+    <h4 style="border-bottom:2px solid #ddd;">保存済みセット</h4>
+    <div id="dash-set-list" style="max-height:300px; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:5px;"></div>
+</div>
+
+<div id="creator-view" class="view hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="margin:0;">問題作成</h2>
+        <button id="creator-back-btn" style="background:#999; padding:5px 10px;">ダッシュボードへ</button>
+    </div>
+    <hr>
+    <div style="margin-bottom:15px;">
+        <label style="font-weight:bold;">セット名</label>
+        <input type="text" id="quiz-set-title" class="btn-block" placeholder="例: 第1ステージ" style="margin-bottom:10px;">
+    </div>
+
+    <button id="creator-go-config-btn" class="btn-block" style="background:#2c3e50; color:white; margin-bottom:20px;">
+        ⚙️ ルール設定を確認・変更する
+    </button>
+
+    <div style="background:#fff0f5; padding:15px; border-radius:8px; border:2px solid #ff69b4;">
+        <h3 style="margin-top:0; color:#c71585;">新規問題</h3>
+        <input type="text" id="question-text" class="btn-block" placeholder="問題文" style="margin-bottom:10px;">
+        <div id="choices-container" style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+            <input type="text" class="choice-input btn-blue" placeholder="A">
+            <input type="text" class="choice-input btn-red" placeholder="B">
+            <input type="text" class="choice-input btn-green" placeholder="C">
+            <input type="text" class="choice-input btn-yellow" placeholder="D">
+        </div>
+        <select id="correct-index" class="btn-block" style="margin-top:10px;">
+            <option value="0">正解: A (青)</option>
+            <option value="1">正解: B (赤)</option>
+            <option value="2">正解: C (緑)</option>
+            <option value="3">正解: D (黄)</option>
+        </select>
+        <button id="add-question-btn" class="btn-primary btn-block" style="margin-top:10px;">リストに追加</button>
+    </div>
+
+    <div style="margin-top:20px;">
+        <h4>作成中のリスト (<span id="q-count">0</span>問)</h4>
+        <ul id="q-list" style="background:white; padding:10px; border:1px solid #ddd; min-height:50px; list-style:none;"></ul>
+        <button id="save-to-cloud-btn" class="btn-success btn-block" style="padding:15px; font-weight:bold; margin-top:15px;">☁️ クラウドに保存して完了</button>
+    </div>
+</div>
+
+<div id="config-view" class="view hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="margin:0;">セット設定</h2>
+        <button id="config-header-back-btn" style="background:#999; padding:5px 10px; font-size:0.8em;">戻る</button>
+    </div>
+    <hr>
+    
+    <fieldset style="border:2px solid #333; padding:10px; border-radius:8px; margin-bottom:20px; background:#f9f9f9;">
+        <legend style="font-weight:bold; background:#333; color:#fff; padding:0 5px;">⚙️ ルール設定</legend>
+        <label style="font-size:0.9em; font-weight:bold;">☠️ 誤答時のペナルティ</label>
+        <select id="config-penalty" class="btn-block" style="margin-bottom:5px;">
+            <option value="none">なし（継続参加）</option>
+            <option value="immediate">即脱落（間違えたら終了）</option>
+        </select>
+        <label style="font-size:0.9em; font-weight:bold;">💰 スコア単位</label>
+        <select id="config-score-unit" class="btn-block" style="margin-bottom:5px;">
+            <option value="point">ポイント (1問1点)</option>
+            <option value="currency">通貨 (¥10,000〜)</option>
+        </select>
+        <label style="font-size:0.9em; font-weight:bold;">🎨 画面テーマ</label>
+        <select id="config-theme" class="btn-block" style="margin-bottom:5px;">
+            <option value="light">ライト (感謝祭風)</option>
+            <option value="dark">ダーク (ミリオネア風)</option>
+        </select>
+    </fieldset>
+
+    <button id="config-ok-btn" class="btn-primary btn-block" style="padding:15px; font-weight:bold;">✅ OK (戻る)</button>
+</div>
+
+<div id="host-control-view" class="view hidden">
+    <div style="background:#111; color:white; padding:10px; border-radius:8px; text-align:center; margin-bottom:10px; border:4px solid gold;">
+        <div style="font-size:0.8em; color:gold;">ON AIR / <span id="studio-show-id">---</span></div>
+        <div id="host-room-id" style="font-size:2em; font-weight:bold; letter-spacing:3px;">---</div>
+        <div style="display:flex; justify-content:space-around; margin-top:5px; font-size:0.9em;">
+            <div>参加: <span id="host-player-count">0</span></div>
+            <div>生存: <span id="host-alive-count" style="color:#00ff00; font-weight:bold;">0</span></div>
+        </div>
+    </div>
+    <div id="host-kanpe-area" class="kanpe-card hidden">
+        <div style="background:#333; color:#fff; display:inline-block; padding:2px 8px; font-size:0.8em; border-radius:3px; margin-bottom:5px;">司会者用カンペ</div>
+        <div id="kanpe-question" style="font-weight:bold; font-size:1.1em; margin-bottom:5px;"></div>
+        <div id="kanpe-answer" style="color:#d00; font-weight:bold;"></div>
+    </div>
+    <div id="host-status-area" style="text-align:center; margin-bottom:15px; font-weight:bold; color:#666;">準備中...</div>
+    <div id="period-load-area" style="background:#eee; padding:10px; border-radius:5px; margin-bottom:15px; border:2px solid #ccc;">
+        <h4 style="margin:0 0 5px 0;">📂 クラウドからロード</h4>
+        <select id="period-select" class="btn-block" style="background:white;"></select>
+        <button id="host-load-period-btn" class="btn-dark btn-block">読み込んでセットする</button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+        <button id="host-new-period-btn" class="btn-warning btn-block hidden" style="border:2px solid #fff;">👑 全員復活させてスタート</button>
+        <hr style="margin:5px 0; border-color:#ccc;">
+        <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;">問題 START！</button>
+        <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;">正解発表</button>
+        <button id="host-eliminate-slowest-btn" class="btn-dark btn-block hidden">☠️ 予選落ち (一番遅い人を脱落)</button>
+        <button id="host-next-btn" class="btn-info btn-block hidden" style="padding:15px;">次の問題へ</button>
+        <hr>
+        <button id="host-ranking-btn" class="btn-success btn-block">🏆 ランキング集計</button>
+        <button id="host-close-studio-btn" style="background:#555; margin-top:10px;" class="btn-block">スタジオを閉じて戻る</button>
+    </div>
+</div>
 
 <div id="ranking-view" class="view hidden" style="text-align:center;">
     <h2 style="font-family: 'Arial Black'; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">
         PERIOD RANKING
     </h2>
     <p id="ranking-subtitle" style="color:#666; margin-bottom:20px;">成績発表</p>
-    
     <div id="ranking-list" class="ranking-container"></div>
-
-    <button id="ranking-back-btn" class="btn-primary btn-block" style="margin-top:20px;">
-        🔙 スタジオに戻る
-    </button>
+    <button id="ranking-back-btn" class="btn-primary btn-block" style="margin-top:20px;">🔙 スタジオに戻る</button>
 </div>
 
+<div id="respondent-view" class="view hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>エントリー</h2>
+        <button class="back-to-main">戻る</button>
+    </div>
+    <hr>
+    <div style="text-align:center; padding:20px 0;">
+        <input type="text" id="room-code-input" placeholder="部屋コード (6桁)" maxlength="6"
+               style="font-size:1.5em; width:200px; text-align:center; text-transform:uppercase; margin-bottom:20px;">
+        <input type="text" id="player-name-input" placeholder="名前を入力" 
+               style="font-size:1.2em; width:200px; text-align:center; margin-bottom:20px; display:block; margin:0 auto 20px auto;">
+        <button id="join-room-btn" class="btn-primary btn-block">参加する</button>
+    </div>
+</div>
+<div id="player-game-view" class="view hidden">
+    <div id="player-status-bar" style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.9em; padding:5px; background:#eee; border-radius:4px;">
+        <span id="player-name-disp" style="font-weight:bold;">名無し</span>
+        <span id="alive-badge" style="background:#00ff00; color:black; padding:2px 6px; border-radius:4px; font-weight:bold;">STAND UP</span>
+    </div>
+    <div id="score-display-area" class="hidden" style="text-align:center; margin-bottom:10px; font-weight:bold; font-size:1.2em; color:#0056b3;">
+        Score: <span id="current-score-value">0</span>
+    </div>
+    <div id="player-lobby-msg" style="text-align:center; padding:40px 0;">
+        <h2>Ready?</h2>
+        <p>画面を注視してください</p>
+    </div>
+    <div id="player-quiz-area" class="hidden">
+        <div id="question-text-disp" style="background:#fff; border:2px solid #333; padding:15px; border-radius:8px; font-weight:bold; margin-bottom:15px; min-height:60px;">問題文</div>
+        <div id="player-choices-area" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; height:200px;">
+            <button class="answer-btn btn-blue" data-index="0">1</button>
+            <button class="answer-btn btn-red" data-index="1">2</button>
+            <button class="answer-btn btn-green" data-index="2">3</button>
+            <button class="answer-btn btn-yellow" data-index="3">4</button>
+        </div>
+        <div id="answer-timer-disp" style="text-align:right; font-family:monospace; margin-top:5px; color:#666;"></div>
+    </div>
+    <div id="player-wait-msg" class="hidden" style="text-align:center; padding:20px; font-weight:bold;">ANSWERED!<br>祈ってお待ちください...</div>
+    <div id="player-dead-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:999;">
+        <h1 style="color:gray; font-size:3em;">GAME OVER</h1>
+        <p>脱落...</p>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="firebase.js"></script>
+<script src="host.js"></script>
+<script src="player.js"></script>
+
+</body>
+</html>
