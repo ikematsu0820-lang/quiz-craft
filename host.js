@@ -1,5 +1,5 @@
 /* =========================================================
- * host.js (v5: Continuous Period Play)
+ * host.js (v6: Removed Manual Elimination)
  * =======================================================*/
 
 let currentShowId = null;
@@ -11,7 +11,6 @@ let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light' };
 let editingSetId = null;
 let returnToCreator = false;
 let periodPlaylist = [];
-// ★追加：現在再生中のピリオド番号
 let currentPeriodIndex = -1;
 
 const RANKING_MONEY_TREE = [
@@ -285,7 +284,6 @@ function renderStudioTimeline() {
     periodPlaylist.forEach((item, index) => {
         const div = document.createElement('div');
         div.className = 'timeline-card';
-        // 再生中は色を変える
         if (index === currentPeriodIndex) div.classList.add('active');
         
         div.innerHTML = `
@@ -306,12 +304,12 @@ window.playPeriod = function(index) {
     if(!periodPlaylist[index]) return;
     const item = periodPlaylist[index];
     
-    currentPeriodIndex = index; // 現在地を更新
+    currentPeriodIndex = index;
     studioQuestions = item.questions;
     currentConfig = item.config;
     currentQIndex = 0;
     
-    renderStudioTimeline(); // アクティブ表示更新
+    renderStudioTimeline();
     
     window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
@@ -323,7 +321,7 @@ window.playPeriod = function(index) {
     document.getElementById('host-new-period-btn').classList.remove('hidden');
     document.getElementById('host-start-btn').classList.add('hidden');
     document.getElementById('host-show-answer-btn').classList.add('hidden');
-    document.getElementById('host-eliminate-slowest-btn').classList.add('hidden');
+    // eliminateボタンは削除したので非表示処理も不要
     document.getElementById('host-next-btn').classList.add('hidden');
     
     alert(`第${index+1}ピリオドをセットしました！\n「全員復活させてスタート」を押してください。`);
@@ -334,7 +332,7 @@ function setupStudioButtons(roomId) {
     const btnNewPeriod = document.getElementById('host-new-period-btn');
     const btnStart = document.getElementById('host-start-btn');
     const btnShowAns = document.getElementById('host-show-answer-btn');
-    const btnEliminate = document.getElementById('host-eliminate-slowest-btn');
+    // Eliminateボタン削除
     const btnNext = document.getElementById('host-next-btn');
     const btnRanking = document.getElementById('host-ranking-btn');
     const btnClose = document.getElementById('host-close-studio-btn');
@@ -379,54 +377,33 @@ function setupStudioButtons(roomId) {
         
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
         btnShowAns.classList.add('hidden');
-        btnEliminate.classList.remove('hidden');
+        // Eliminateボタン表示処理削除
         btnNext.classList.remove('hidden');
         document.getElementById('host-status-area').textContent = "正解発表";
 
-        // ★ここで「次の問題」か「次のピリオド」か判定してボタンを変える
+        // ボタンの切り替えロジック
         if (currentQIndex >= studioQuestions.length - 1) {
-            // 最後の問題だった場合
             if (currentPeriodIndex < periodPlaylist.length - 1) {
                 btnNext.textContent = "⏭ 次のピリオドへ進む";
                 btnNext.classList.remove('btn-info');
-                btnNext.classList.add('btn-warning'); // 目立つ色に
+                btnNext.classList.add('btn-warning');
             } else {
                 btnNext.textContent = "🏁 全工程終了";
                 btnNext.classList.remove('btn-info');
                 btnNext.classList.add('btn-dark');
             }
         } else {
-            // 通常
             btnNext.textContent = "次の問題へ";
             btnNext.classList.remove('btn-warning', 'btn-dark');
             btnNext.classList.add('btn-info');
         }
     };
 
-    btnEliminate.onclick = () => {
-        if(!confirm("最も遅い1名を脱落させますか？")) return;
-        const correctIdx = studioQuestions[currentQIndex].correctIndex;
-        window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
-            let target = null, maxT = -1;
-            snap.forEach(p => {
-                const v = p.val();
-                if(v.isAlive && v.lastAnswer === correctIdx) {
-                    if(v.lastTime > maxT) { maxT = v.lastTime; target = p.key; }
-                }
-            });
-            if(target) {
-                window.db.ref(`rooms/${roomId}/players/${target}`).update({ isAlive: false });
-                alert(`脱落: ${(maxT/1000).toFixed(2)}秒`);
-            } else { alert("対象なし"); }
-        });
-    };
+    // Eliminateボタンのクリックイベント削除
 
-    // ★Nextボタンのロジック変更
     btnNext.onclick = () => {
-        // もし最終問題だったら
         if (currentQIndex >= studioQuestions.length - 1) {
             if (currentPeriodIndex < periodPlaylist.length - 1) {
-                // 次のピリオドへ自動遷移
                 if(confirm("このピリオドは終了です。次のピリオドへ進みますか？")) {
                     playPeriod(currentPeriodIndex + 1);
                 }
@@ -437,7 +414,6 @@ function setupStudioButtons(roomId) {
             return;
         }
 
-        // 通常の問題進行
         currentQIndex++;
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(p => p.ref.update({ lastAnswer: -1, lastTime: 99999 }));
@@ -445,7 +421,7 @@ function setupStudioButtons(roomId) {
         updateKanpe();
         btnStart.classList.remove('hidden');
         btnNext.classList.add('hidden');
-        btnEliminate.classList.add('hidden');
+        // Eliminateボタン非表示処理削除
         document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} スタンバイ...`;
     };
 
