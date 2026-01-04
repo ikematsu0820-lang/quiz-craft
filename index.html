@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>All Star Quiz Cloud</title>
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
 <div id="main-view" class="view">
     <h1 class="app-title">ALL STAR QUIZ</h1>
-    <p style="text-align:center; color:#666;">Cloud Edition v9</p>
+    <p style="text-align:center; color:#666;">Cloud Edition v10</p>
     <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
         <button id="main-host-btn" class="btn-primary">司会者 (Host)</button>
         <button id="main-player-btn" class="btn-success">回答者 (Player)</button>
@@ -90,44 +90,57 @@
     <div style="background:#f0f8ff; padding:15px; border:2px solid #87ceeb; border-radius:8px; margin-bottom:20px;">
         <h3 style="margin:0 0 10px 0; color:#0055ff; font-size:1.1em; text-align:center;">➕ ピリオド（セット）を構成に追加</h3>
         
-        <div id="participation-setting-area" class="hidden">
-            <label style="font-size:0.8em; font-weight:bold; color:#666;">1. 参加者設定 (スタート時)</label>
-            <select id="config-initial-status" class="btn-block" style="margin-bottom:15px; padding:10px; background:#fffbe6; border:1px solid #e6b800; font-weight:bold;">
+        <div id="participation-setting-area" class="hidden" style="margin-bottom:15px;">
+            <label class="config-label">1. 参加者設定</label>
+            <select id="config-initial-status" class="btn-block config-select highlight-select">
                 <option value="revive">👑 全員復活してスタート</option>
-                <option value="continue">☠️ 生存者のみで継続 (敗者復活なし)</option>
+                <option value="continue">☠️ 生存者のみで継続</option>
             </select>
         </div>
 
-        <label style="font-size:0.8em; font-weight:bold; color:#666;">2. セットを選択</label>
-        <select id="config-set-select" class="btn-block" style="background:white; margin-bottom:10px; padding:10px; font-weight:bold; border:1px solid #aaa;">
-            <option value="">読み込み中...</option>
-        </select>
-
-        <label style="font-size:0.8em; font-weight:bold; color:#666;">3. ルールを決定</label>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:10px;">
-            <select id="config-penalty" style="font-size:0.9em; padding:8px; border-radius:4px; border:1px solid #ddd;">
-                <option value="none">継続参加</option>
-                <option value="immediate">即脱落</option>
-            </select>
-            <select id="config-theme" style="font-size:0.9em; padding:8px; border-radius:4px; border:1px solid #ddd;">
-                <option value="light">感謝祭風</option>
-                <option value="dark">ミリオネ風</option>
+        <div style="margin-bottom:15px;">
+            <label class="config-label">2. セットを選択</label>
+            <select id="config-set-select" class="btn-block config-select">
+                <option value="">読み込み中...</option>
             </select>
         </div>
-        
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-bottom:10px;">
-            <select id="config-time-limit" style="font-size:0.9em; padding:8px; border-radius:4px; border:1px solid #ddd; font-weight:bold;">
-                <option value="0">⏳ 時間無制限</option>
-                <option value="10">⏳ 10秒</option>
-                <option value="15">⏳ 15秒</option>
-                <option value="20">⏳ 20秒</option>
-                <option value="30">⏳ 30秒</option>
-                <option value="60">⏳ 60秒</option>
+
+        <div style="margin-bottom:15px;">
+            <label class="config-label">3. ルール設定</label>
+            
+            <label style="font-size:0.8em; color:#666;">▼ 脱落条件</label>
+            <select id="config-elimination-rule" class="btn-block config-select" style="margin-bottom:8px;">
+                <option value="none">🏆 脱落なし（ランキング戦）</option>
+                <option value="wrong_only">☠️ 不正解者のみ脱落</option>
+                <option value="wrong_and_slowest">☠️ 不正解 ＋ 一番遅い人も脱落</option>
             </select>
-            <select id="config-score-unit" style="font-size:0.9em; padding:8px; border-radius:4px; border:1px solid #ddd;">
-                <option value="point">ポイント制</option>
-                <option value="currency">通貨制 (¥)</option>
-            </select>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px;">
+                <div>
+                    <label style="font-size:0.7em; color:#666;">制限時間</label>
+                    <select id="config-time-limit" class="config-select">
+                        <option value="0">無制限</option>
+                        <option value="10">10秒</option>
+                        <option value="20">20秒</option>
+                        <option value="30">30秒</option>
+                        <option value="60">60秒</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.7em; color:#666;">スコア</label>
+                    <select id="config-score-unit" class="config-select">
+                        <option value="point">Pt</option>
+                        <option value="currency">円</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.7em; color:#666;">テーマ</label>
+                    <select id="config-theme" class="config-select">
+                        <option value="light">感謝祭</option>
+                        <option value="dark">ミリオネ</option>
+                    </select>
+                </div>
+            </div>
         </div>
         
         <button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:12px; border:none; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.2);">
@@ -236,8 +249,8 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="host.js?v=9"></script>
-<script src="player.js?v=9"></script>
+<script src="host.js?v=10"></script>
+<script src="player.js?v=10"></script>
 
 </body>
 </html>
