@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>All Star Quiz Cloud</title>
-<link rel="stylesheet" href="style.css?v=11">
+<link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
 
 <div id="main-view" class="view">
     <h1 class="app-title">ALL STAR QUIZ</h1>
-    <p style="text-align:center; color:#666;">Cloud Edition v11</p>
+    <p style="text-align:center; color:#666;">Cloud Edition v12</p>
     <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
         <button id="main-host-btn" class="btn-primary">司会者 (Host)</button>
         <button id="main-player-btn" class="btn-success">回答者 (Player)</button>
@@ -92,7 +92,16 @@
             <select id="config-initial-status" class="btn-block config-select highlight-select">
                 <option value="revive">全員復活してスタート</option>
                 <option value="continue">生存者のみで継続</option>
-            </select>
+                <option value="ranking">成績上位者が進出</option> </select>
+            
+            <div id="config-pass-count-area" class="hidden" style="margin-top:5px; padding:10px; background:#fff; border:1px solid #e6b800; border-radius:4px;">
+                <label style="font-size:0.8em; color:#d00; font-weight:bold;">通過人数を指定</label>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span>上位</span>
+                    <input type="number" id="config-pass-count" value="5" min="1" style="width:60px; text-align:center; padding:5px;">
+                    <span>名まで</span>
+                </div>
+            </div>
         </div>
 
         <div style="margin-bottom:15px;">
@@ -239,8 +248,8 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="host.js?v=11"></script>
-<script src="player.js?v=11"></script>
+<script src="host.js?v=12"></script>
+<script src="player.js?v=12"></script>
 
 </body>
 </html>
