@@ -1,28 +1,16 @@
-<div id="config-view" class="view hidden">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2 style="margin:0;">セット設定</h2>
-        <button id="config-header-back-btn" style="background:#999; padding:5px 10px; font-size:0.8em;">戻る</button>
+<div id="host-control-view" class="view hidden">
     </div>
-    <hr>
-    
-    <fieldset style="border:2px solid #333; padding:10px; border-radius:8px; margin-bottom:20px; background:#f9f9f9;">
-        <legend style="font-weight:bold; background:#333; color:#fff; padding:0 5px;">⚙️ ルール設定</legend>
-        <label style="font-size:0.9em; font-weight:bold;">☠️ 誤答時のペナルティ</label>
-        <select id="config-penalty" class="btn-block" style="margin-bottom:5px;">
-            <option value="none">なし（継続参加）</option>
-            <option value="immediate">即脱落（間違えたら終了）</option>
-        </select>
-        <label style="font-size:0.9em; font-weight:bold;">💰 スコア単位</label>
-        <select id="config-score-unit" class="btn-block" style="margin-bottom:5px;">
-            <option value="point">ポイント (1問1点)</option>
-            <option value="currency">通貨 (¥10,000〜)</option>
-        </select>
-        <label style="font-size:0.9em; font-weight:bold;">🎨 画面テーマ</label>
-        <select id="config-theme" class="btn-block" style="margin-bottom:5px;">
-            <option value="light">ライト (感謝祭風)</option>
-            <option value="dark">ダーク (ミリオネア風)</option>
-        </select>
-    </fieldset>
 
-    <button id="config-ok-btn" class="btn-primary btn-block" style="padding:15px; font-weight:bold;">✅ OK (戻る)</button>
+<div id="ranking-view" class="view hidden" style="text-align:center;">
+    <h2 style="font-family: 'Arial Black'; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">
+        PERIOD RANKING
+    </h2>
+    <p id="ranking-subtitle" style="color:#666; margin-bottom:20px;">成績発表</p>
+    
+    <div id="ranking-list" class="ranking-container"></div>
+
+    <button id="ranking-back-btn" class="btn-primary btn-block" style="margin-top:20px;">
+        🔙 スタジオに戻る
+    </button>
 </div>
+
