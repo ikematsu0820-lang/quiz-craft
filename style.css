@@ -96,7 +96,7 @@ input[type="text"], select {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* ▼▼▼ ダークテーマ（ミリオネア風） ▼▼▼ */
+/* ダークテーマ */
 body.dark-theme {
     background-color: #000022;
     color: #e0e0e0;
@@ -120,8 +120,6 @@ body.dark-theme #score-display-area {
     background: #111;
     padding: 5px;
 }
-
-/* 回答ボタン（黒×金） */
 body.dark-theme .answer-btn {
     background: linear-gradient(to bottom, #333, #000);
     border: 2px solid #ffd700;
@@ -130,8 +128,56 @@ body.dark-theme .answer-btn {
     font-family: serif;
     text-shadow: 1px 1px 0 #000;
 }
-/* A,B,C,D表記 */
 body.dark-theme .answer-btn[data-index="0"]::before { content: "A: "; color: white; }
 body.dark-theme .answer-btn[data-index="1"]::before { content: "B: "; color: white; }
 body.dark-theme .answer-btn[data-index="2"]::before { content: "C: "; color: white; }
 body.dark-theme .answer-btn[data-index="3"]::before { content: "D: "; color: white; }
+
+/* ランキング用 */
+.ranking-container {
+    max-height: 400px;
+    overflow-y: auto;
+    background: #f9f9f9;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+}
+.rank-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    margin-bottom: 8px;
+    padding: 10px 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #333;
+}
+.rank-1 {
+    background: linear-gradient(to right, #ffd700, #fffacd);
+    border: 2px solid #daa520;
+    color: #554400;
+}
+.rank-2 {
+    background: linear-gradient(to right, #c0c0c0, #f5f5f5);
+    border: 2px solid #a9a9a9;
+}
+.rank-3 {
+    background: linear-gradient(to right, #cd7f32, #fff5ee);
+    border: 2px solid #a0522d;
+    color: #5a2d0c;
+}
+.rank-badge {
+    display: inline-block;
+    width: 30px;
+    text-align: center;
+    margin-right: 10px;
+    font-family: 'Arial Black', sans-serif;
+}
+.rank-score {
+    font-family: monospace;
+    font-size: 0.9em;
+    color: #555;
+}
