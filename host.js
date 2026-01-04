@@ -1,5 +1,5 @@
 /* =========================================================
- * host.js (v10: Slowest Elimination Logic)
+ * host.js (v11: No Emojis, Restore Edit, Remove Theme)
  * =======================================================*/
 
 let currentShowId = null;
@@ -7,8 +7,8 @@ let createdQuestions = [];
 let studioQuestions = [];
 let currentRoomId = null;
 let currentQIndex = 0;
-// eliminationRule: 'none' | 'wrong_only' | 'wrong_and_slowest'
-let currentConfig = { eliminationRule: 'none', scoreUnit: 'point', theme: 'light', timeLimit: 0 };
+// themeは一応内部的に 'light' 固定で保持
+let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light', timeLimit: 0 };
 let editingSetId = null;
 let returnToCreator = false;
 let periodPlaylist = [];
@@ -90,15 +90,28 @@ function loadSavedSets() {
             const item = data[key];
             const div = document.createElement('div');
             div.className = 'set-item';
-            const themeName = (item.config && item.config.theme === 'dark') ? '💰ミリオネア風' : '🌈感謝祭風';
+            
             div.innerHTML = `
                 <div>
-                    <span>${item.title}</span> <span style="font-size:0.8em; background:#eee; padding:2px 5px; border-radius:3px;">${themeName}</span>
+                    <span>${item.title}</span>
                     <div style="font-size:0.8em; color:#666;">
                         ${new Date(item.createdAt).toLocaleDateString()} / 全${item.questions.length}問
                     </div>
                 </div>
             `;
+            const btnArea = document.createElement('div');
+            btnArea.style.display = 'flex';
+            btnArea.style.gap = '5px';
+
+            // ★復活：編集ボタン
+            const editBtn = document.createElement('button');
+            editBtn.textContent = '編集';
+            editBtn.style.backgroundColor = '#2c3e50';
+            editBtn.style.color = 'white';
+            editBtn.style.fontSize = '0.8em';
+            editBtn.style.padding = '4px 8px';
+            editBtn.onclick = () => loadSetForEditing(key, item);
+
             const delBtn = document.createElement('button');
             delBtn.className = 'delete-btn';
             delBtn.textContent = '削除';
@@ -108,7 +121,10 @@ function loadSavedSets() {
                     div.remove();
                 }
             };
-            div.appendChild(delBtn);
+            
+            btnArea.appendChild(editBtn);
+            btnArea.appendChild(delBtn);
+            div.appendChild(btnArea);
             listEl.appendChild(div);
         });
     });
@@ -119,7 +135,16 @@ function initCreatorMode() {
     editingSetId = null;
     createdQuestions = [];
     document.getElementById('quiz-set-title').value = '';
-    document.getElementById('save-to-cloud-btn').textContent = '☁️ クラウドに保存して完了';
+    document.getElementById('save-to-cloud-btn').textContent = 'クラウドに保存して完了';
+    renderQuestionList();
+    window.showView(window.views.creator);
+}
+
+function loadSetForEditing(key, item) {
+    editingSetId = key;
+    createdQuestions = item.questions || [];
+    document.getElementById('quiz-set-title').value = item.title;
+    document.getElementById('save-to-cloud-btn').textContent = '更新して完了';
     renderQuestionList();
     window.showView(window.views.creator);
 }
@@ -146,6 +171,13 @@ function renderQuestionList() {
     createdQuestions.forEach((q, index) => {
         const li = document.createElement('li');
         li.textContent = `Q${index + 1}. ${q.q}`;
+        const delSpan = document.createElement('span');
+        delSpan.textContent = ' [x]';
+        delSpan.style.color = 'red';
+        delSpan.style.cursor = 'pointer';
+        delSpan.style.marginLeft = '10px';
+        delSpan.onclick = () => { createdQuestions.splice(index, 1); renderQuestionList(); };
+        li.appendChild(delSpan);
         list.appendChild(li);
     });
     document.getElementById('q-count').textContent = createdQuestions.length;
@@ -154,7 +186,6 @@ function renderQuestionList() {
 function saveToCloud() {
     if(createdQuestions.length === 0) { alert('問題がありません'); return; }
     const title = document.getElementById('quiz-set-title').value.trim() || "無題のセット";
-    // デフォルト保存時はランキングモードにしておく
     const defaultConf = { eliminationRule: 'none', scoreUnit: 'point', theme: 'light' };
     const saveData = {
         title: title,
@@ -162,14 +193,20 @@ function saveToCloud() {
         questions: createdQuestions,
         createdAt: firebase.database.ServerValue.TIMESTAMP
     };
-    window.db.ref(`saved_sets/${currentShowId}`).push(saveData)
-    .then(() => { alert(`「${title}」を新規保存しました！`); enterDashboard(); });
+    
+    if (editingSetId) {
+        window.db.ref(`saved_sets/${currentShowId}/${editingSetId}`).update(saveData)
+        .then(() => { alert(`「${title}」を更新しました！`); enterDashboard(); });
+    } else {
+        window.db.ref(`saved_sets/${currentShowId}`).push(saveData)
+        .then(() => { alert(`「${title}」を新規保存しました！`); enterDashboard(); });
+    }
 }
 
-// --- ★ Config Mode ---
+// --- Config Mode ---
 function enterConfigMode() {
     window.showView(window.views.config);
-    updateBuilderUI(); // UI状態の更新
+    updateBuilderUI();
 
     const select = document.getElementById('config-set-select');
     select.innerHTML = '<option value="">読み込み中...</option>';
@@ -213,11 +250,12 @@ function addPeriodToPlaylist() {
         initialStatus = document.getElementById('config-initial-status').value;
     }
 
+    // ★テーマ設定は削除し、デフォルト light にする
     const newConfig = {
         initialStatus: initialStatus,
-        eliminationRule: document.getElementById('config-elimination-rule').value, // ★脱落ルール取得
+        eliminationRule: document.getElementById('config-elimination-rule').value,
         scoreUnit: document.getElementById('config-score-unit').value,
-        theme: document.getElementById('config-theme').value,
+        theme: 'light', // 固定
         timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0
     };
     
@@ -251,10 +289,9 @@ function renderConfigPreview() {
         
         let statusText = "START";
         if (index > 0) {
-            statusText = (item.config.initialStatus === 'continue') ? '☠️継続' : '👑復活';
+            statusText = (item.config.initialStatus === 'continue') ? '継続' : '復活';
         }
         
-        // 脱落設定の表示
         let ruleText = "脱落なし";
         if(item.config.eliminationRule === 'wrong_only') ruleText = "不正解脱落";
         if(item.config.eliminationRule === 'wrong_and_slowest') ruleText = "最遅も脱落";
@@ -324,14 +361,14 @@ function renderStudioTimeline() {
         
         let statusText = "START";
         if (index > 0) {
-            statusText = (item.config.initialStatus === 'continue') ? '継続' : '全員復活';
+            statusText = (item.config.initialStatus === 'continue') ? '継続' : '復活';
         }
         
         div.innerHTML = `
             <div>
                 <h5>第${index + 1}ピリオド: ${item.title}</h5>
                 <div class="info">
-                    ${statusText} / 全${item.questions.length}問 / ⏳${item.config.timeLimit}s
+                    ${statusText} / 全${item.questions.length}問 / 制限${item.config.timeLimit}秒
                 </div>
             </div>
             <button class="play-btn" onclick="playPeriod(${index})">再生 ▶</button>
@@ -372,7 +409,7 @@ window.playPeriod = function(index) {
     document.getElementById('host-show-answer-btn').classList.add('hidden');
     document.getElementById('host-next-btn').classList.add('hidden');
     
-    alert(`第${index+1}ピリオドをセットしました！`);
+    alert(`第${index+1}ピリオドをセットしました`);
     updateKanpe();
 };
 
@@ -392,7 +429,6 @@ function setupStudioButtons(roomId) {
         document.getElementById('host-status-area').textContent = "Thinking Time...";
     };
 
-    // ★正解発表 & 脱落処理
     btnShowAns.onclick = () => {
         const q = studioQuestions[currentQIndex];
         const correctIdx = q.correctIndex;
@@ -407,12 +443,10 @@ function setupStudioButtons(roomId) {
 
                 const isCorrect = (val.lastAnswer === correctIdx);
                 
-                // 1. スコア加算
                 if(isCorrect) {
                     const t = val.lastTime || 99999;
                     p.ref.update({ periodScore: (val.periodScore||0)+1, periodTime: (val.periodTime||0)+t });
                     
-                    // 最遅候補を探す（「最遅も脱落」ルールの場合）
                     if (currentConfig.eliminationRule === 'wrong_and_slowest') {
                         if (t > maxTime) {
                             maxTime = t;
@@ -420,7 +454,6 @@ function setupStudioButtons(roomId) {
                         }
                     }
                 } 
-                // 2. 不正解者の脱落判定
                 else {
                     if(currentConfig.eliminationRule !== 'none') {
                         p.ref.update({ isAlive: false });
@@ -428,10 +461,7 @@ function setupStudioButtons(roomId) {
                 }
             });
 
-            // 3. 一番遅い正解者の脱落処理（プレッシャー脱落）
             if (currentConfig.eliminationRule === 'wrong_and_slowest' && slowestId) {
-                // 正解者が1人しかいない場合は、優勝者なので落とさない（オプション）
-                // 今回はシンプルに「一番遅いなら問答無用」で落とします
                 window.db.ref(`rooms/${roomId}/players/${slowestId}`).update({ isAlive: false });
             }
         });
@@ -443,11 +473,11 @@ function setupStudioButtons(roomId) {
 
         if (currentQIndex >= studioQuestions.length - 1) {
             if (currentPeriodIndex < periodPlaylist.length - 1) {
-                btnNext.textContent = "⏭ 次のピリオドへ進む";
+                btnNext.textContent = "次のピリオドへ進む";
                 btnNext.classList.remove('btn-info');
                 btnNext.classList.add('btn-warning');
             } else {
-                btnNext.textContent = "🏁 全工程終了";
+                btnNext.textContent = "全工程終了";
                 btnNext.classList.remove('btn-info');
                 btnNext.classList.add('btn-dark');
             }
@@ -513,7 +543,7 @@ function updateKanpe() {
         document.getElementById('kanpe-answer').textContent = `正解: ${labels[q.correctIndex]} (${q.c[q.correctIndex]})`;
         
         const timeLimit = currentConfig.timeLimit || 0;
-        const timeText = timeLimit > 0 ? `⏳ ${timeLimit}秒` : '⏳ 無制限';
+        const timeText = timeLimit > 0 ? `制限 ${timeLimit}秒` : '制限なし';
         const limitEl = document.getElementById('kanpe-time-limit');
         if(!limitEl) {
             const div = document.createElement('div');
