@@ -1,5 +1,5 @@
 /* =========================================================
- * host.js (v4: Builder in Config, Player in Studio)
+ * host.js (v5: Continuous Period Play)
  * =======================================================*/
 
 let currentShowId = null;
@@ -7,11 +7,12 @@ let createdQuestions = [];
 let studioQuestions = [];
 let currentRoomId = null;
 let currentQIndex = 0;
-// 現在のグローバル設定（再生中のピリオドのもの）
 let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light' };
 let editingSetId = null;
-// 番組構成リスト（グローバル変数）
+let returnToCreator = false;
 let periodPlaylist = [];
+// ★追加：現在再生中のピリオド番号
+let currentPeriodIndex = -1;
 
 const RANKING_MONEY_TREE = [
     10000, 20000, 30000, 50000, 100000,
@@ -38,18 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const createBtn = document.getElementById('dash-create-btn');
     if(createBtn) createBtn.addEventListener('click', initCreatorMode);
 
-    // ★セット設定（構成作成）画面へ
     const configBtn = document.getElementById('dash-config-btn');
     if(configBtn) {
         configBtn.addEventListener('click', () => {
-            enterConfigMode(); // ここでセット一覧を読み込む
+            enterConfigMode(); 
         });
     }
 
     const studioBtn = document.getElementById('dash-studio-btn');
     if(studioBtn) studioBtn.addEventListener('click', startRoom);
 
-    // セット設定画面のボタン
     const configAddBtn = document.getElementById('config-add-playlist-btn');
     if(configAddBtn) configAddBtn.addEventListener('click', addPeriodToPlaylist);
 
@@ -59,7 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const configHeaderBackBtn = document.getElementById('config-header-back-btn');
     if(configHeaderBackBtn) configHeaderBackBtn.addEventListener('click', () => enterDashboard());
 
-    // 作成画面のボタン
     const addQBtn = document.getElementById('add-question-btn');
     if(addQBtn) addQBtn.addEventListener('click', addQuestion);
     
@@ -70,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(creatorBackBtn) creatorBackBtn.addEventListener('click', () => enterDashboard());
 });
 
-// --- Dashboard & Loading ---
+// --- Dashboard & Config ---
 function enterDashboard() {
     window.showView(window.views.dashboard);
     document.getElementById('dashboard-show-id').textContent = currentShowId;
@@ -101,7 +99,6 @@ function loadSavedSets() {
                     </div>
                 </div>
             `;
-            // 削除ボタンのみ（編集は複雑になるので今回は省略）
             const delBtn = document.createElement('button');
             delBtn.className = 'delete-btn';
             delBtn.textContent = '削除';
@@ -117,7 +114,6 @@ function loadSavedSets() {
     });
 }
 
-// --- Creator Mode (問題作成) ---
 function initCreatorMode() {
     editingSetId = null;
     createdQuestions = [];
@@ -157,7 +153,6 @@ function renderQuestionList() {
 function saveToCloud() {
     if(createdQuestions.length === 0) { alert('問題がありません'); return; }
     const title = document.getElementById('quiz-set-title').value.trim() || "無題のセット";
-    // デフォルト設定で保存
     const defaultConf = { penalty: 'none', scoreUnit: 'point', theme: 'light' };
     const saveData = {
         title: title,
@@ -169,11 +164,9 @@ function saveToCloud() {
     .then(() => { alert(`「${title}」を新規保存しました！`); enterDashboard(); });
 }
 
-// --- ★ Config Mode (セット設定・プレイリスト作成) ---
+// --- Config Mode ---
 function enterConfigMode() {
     window.showView(window.views.config);
-    
-    // 保存済みセットをプルダウンにロード
     const select = document.getElementById('config-set-select');
     select.innerHTML = '<option value="">読み込み中...</option>';
     
@@ -184,7 +177,6 @@ function enterConfigMode() {
             Object.keys(data).forEach(key => {
                 const item = data[key];
                 const opt = document.createElement('option');
-                // JSONにして値に埋め込む
                 opt.value = JSON.stringify({ q: item.questions, c: item.config || {}, t: item.title });
                 opt.textContent = item.title;
                 select.appendChild(opt);
@@ -193,8 +185,6 @@ function enterConfigMode() {
             select.innerHTML = '<option value="">セットがありません</option>';
         }
     });
-    
-    // 既存のリストを表示
     renderConfigPreview();
 }
 
@@ -203,22 +193,18 @@ function addPeriodToPlaylist() {
     const json = select.value;
     if(!json) { alert("セットを選んでください"); return; }
     
-    const data = JSON.parse(json); // {q, c, t}
-    
-    // 画面の入力値で設定を作る
+    const data = JSON.parse(json);
     const newConfig = {
         penalty: document.getElementById('config-penalty').value,
         scoreUnit: document.getElementById('config-score-unit').value,
         theme: document.getElementById('config-theme').value
     };
     
-    // グローバルリストに追加
     periodPlaylist.push({
         title: data.t,
         questions: data.q,
         config: newConfig
     });
-    
     renderConfigPreview();
 }
 
@@ -239,7 +225,6 @@ function renderConfigPreview() {
         div.style.fontSize = "0.9em";
         div.style.display = "flex";
         div.style.justifyContent = "space-between";
-        
         div.innerHTML = `
             <span><b>${index+1}. ${item.title}</b> (${item.config.theme})</span>
             <span style="color:#d00; cursor:pointer;" onclick="removeFromPlaylist(${index})">[削除]</span>
@@ -248,19 +233,18 @@ function renderConfigPreview() {
     });
 }
 
-// グローバル関数（削除用）
 window.removeFromPlaylist = function(index) {
     periodPlaylist.splice(index, 1);
     renderConfigPreview();
 };
 
-// --- ★ Studio Mode (再生のみ) ---
+// --- Studio Mode ---
 function startRoom() {
     if(periodPlaylist.length === 0) {
         if(!confirm("プレイリストが空です。スタジオへ移動しますか？")) return;
     }
-
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    currentPeriodIndex = -1; // 初期化
     
     window.db.ref(`rooms/${currentRoomId}`).set({
         questions: [],
@@ -276,8 +260,6 @@ function enterHostMode(roomId) {
     window.showView(window.views.hostControl);
     document.getElementById('host-room-id').textContent = roomId;
     document.getElementById('studio-show-id').textContent = currentShowId;
-    
-    // タイムライン描画
     renderStudioTimeline();
 
     window.db.ref(`rooms/${roomId}/players`).on('value', snap => {
@@ -303,6 +285,9 @@ function renderStudioTimeline() {
     periodPlaylist.forEach((item, index) => {
         const div = document.createElement('div');
         div.className = 'timeline-card';
+        // 再生中は色を変える
+        if (index === currentPeriodIndex) div.classList.add('active');
+        
         div.innerHTML = `
             <div>
                 <h5>第${index + 1}ピリオド: ${item.title}</h5>
@@ -321,9 +306,12 @@ window.playPeriod = function(index) {
     if(!periodPlaylist[index]) return;
     const item = periodPlaylist[index];
     
+    currentPeriodIndex = index; // 現在地を更新
     studioQuestions = item.questions;
     currentConfig = item.config;
     currentQIndex = 0;
+    
+    renderStudioTimeline(); // アクティブ表示更新
     
     window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
@@ -334,6 +322,9 @@ window.playPeriod = function(index) {
     
     document.getElementById('host-new-period-btn').classList.remove('hidden');
     document.getElementById('host-start-btn').classList.add('hidden');
+    document.getElementById('host-show-answer-btn').classList.add('hidden');
+    document.getElementById('host-eliminate-slowest-btn').classList.add('hidden');
+    document.getElementById('host-next-btn').classList.add('hidden');
     
     alert(`第${index+1}ピリオドをセットしました！\n「全員復活させてスタート」を押してください。`);
     updateKanpe();
@@ -349,9 +340,7 @@ function setupStudioButtons(roomId) {
     const btnClose = document.getElementById('host-close-studio-btn');
     const rankingBackBtn = document.getElementById('ranking-back-btn');
     
-    // ... (ボタンイベントリスナーは前回と同じなので省略なしで記述) ...
-    if(btnNewPeriod) btnNewPeriod.onclick = () => {
-        if(!studioQuestions.length) return;
+    btnNewPeriod.onclick = () => {
         if(!confirm("全員を復活させて開始しますか？")) return;
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(p => p.ref.update({ isAlive: true, periodScore:0, periodTime:0, lastTime:99999 }));
@@ -363,7 +352,7 @@ function setupStudioButtons(roomId) {
         document.getElementById('host-status-area').textContent = "スタンバイ...";
     };
 
-    if(btnStart) btnStart.onclick = () => {
+    btnStart.onclick = () => {
         const now = firebase.database.ServerValue.TIMESTAMP;
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', qIndex: currentQIndex, startTime: now });
         btnStart.classList.add('hidden');
@@ -371,9 +360,10 @@ function setupStudioButtons(roomId) {
         document.getElementById('host-status-area').textContent = "Thinking Time...";
     };
 
-    if(btnShowAns) btnShowAns.onclick = () => {
+    btnShowAns.onclick = () => {
         const q = studioQuestions[currentQIndex];
         const correctIdx = q.correctIndex;
+        
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(p => {
                 const val = p.val();
@@ -386,14 +376,34 @@ function setupStudioButtons(roomId) {
                 }
             });
         });
+        
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
         btnShowAns.classList.add('hidden');
         btnEliminate.classList.remove('hidden');
         btnNext.classList.remove('hidden');
         document.getElementById('host-status-area').textContent = "正解発表";
+
+        // ★ここで「次の問題」か「次のピリオド」か判定してボタンを変える
+        if (currentQIndex >= studioQuestions.length - 1) {
+            // 最後の問題だった場合
+            if (currentPeriodIndex < periodPlaylist.length - 1) {
+                btnNext.textContent = "⏭ 次のピリオドへ進む";
+                btnNext.classList.remove('btn-info');
+                btnNext.classList.add('btn-warning'); // 目立つ色に
+            } else {
+                btnNext.textContent = "🏁 全工程終了";
+                btnNext.classList.remove('btn-info');
+                btnNext.classList.add('btn-dark');
+            }
+        } else {
+            // 通常
+            btnNext.textContent = "次の問題へ";
+            btnNext.classList.remove('btn-warning', 'btn-dark');
+            btnNext.classList.add('btn-info');
+        }
     };
 
-    if(btnEliminate) btnEliminate.onclick = () => {
+    btnEliminate.onclick = () => {
         if(!confirm("最も遅い1名を脱落させますか？")) return;
         const correctIdx = studioQuestions[currentQIndex].correctIndex;
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
@@ -411,13 +421,24 @@ function setupStudioButtons(roomId) {
         });
     };
 
-    if(btnNext) btnNext.onclick = () => {
-        currentQIndex++;
-        if(currentQIndex >= studioQuestions.length) {
-            alert("終了！");
-            btnNext.classList.add('hidden');
+    // ★Nextボタンのロジック変更
+    btnNext.onclick = () => {
+        // もし最終問題だったら
+        if (currentQIndex >= studioQuestions.length - 1) {
+            if (currentPeriodIndex < periodPlaylist.length - 1) {
+                // 次のピリオドへ自動遷移
+                if(confirm("このピリオドは終了です。次のピリオドへ進みますか？")) {
+                    playPeriod(currentPeriodIndex + 1);
+                }
+            } else {
+                alert("全てのピリオドが終了しました！お疲れ様でした！");
+                btnNext.classList.add('hidden');
+            }
             return;
         }
+
+        // 通常の問題進行
+        currentQIndex++;
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(p => p.ref.update({ lastAnswer: -1, lastTime: 99999 }));
         });
@@ -428,7 +449,7 @@ function setupStudioButtons(roomId) {
         document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} スタンバイ...`;
     };
 
-    if(btnRanking) btnRanking.onclick = () => {
+    btnRanking.onclick = () => {
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
             let ranking = [];
             snap.forEach(p => {
@@ -441,11 +462,11 @@ function setupStudioButtons(roomId) {
         });
     };
 
-    if(rankingBackBtn) rankingBackBtn.onclick = () => {
+    rankingBackBtn.onclick = () => {
         window.showView(window.views.hostControl);
     };
     
-    if(btnClose) btnClose.onclick = () => {
+    btnClose.onclick = () => {
         if(confirm("ダッシュボードに戻りますか？")) enterDashboard();
     };
 }
