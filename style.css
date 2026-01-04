@@ -1,139 +1,46 @@
-body {
-    font-family: "Helvetica Neue", Arial, sans-serif;
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 10px;
-    background-color: #f0f0f0;
-    color: #333;
-    transition: background 0.5s, color 0.5s;
-}
-.hidden { display: none !important; }
+/* ... (既存のスタイル) ... */
 
-.view {
+/* ▼▼▼ タイムライン用カード ▼▼▼ */
+.timeline-card {
     background: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
-    transition: background 0.5s, border 0.5s;
-}
-
-.app-title {
-    font-family: 'Arial Black', sans-serif;
-    color: #ff0055;
-    text-shadow: 2px 2px 0px #fff, 4px 4px 0px #000;
-    text-align: center;
-    margin-top: 0;
-}
-
-h1, h2, h3, h4 { text-align: center; margin-top: 0; }
-hr { border: 0; border-top: 1px solid #ddd; margin: 15px 0; }
-
-button {
-    cursor: pointer;
-    font-size: 16px;
-    border-radius: 5px;
-    border: none;
-    transition: transform 0.1s;
-    color: white;
-    font-weight: bold;
-}
-button:active { transform: scale(0.98); }
-
-.btn-block { display: block; width: 100%; padding: 12px; margin-bottom: 10px; }
-
-/* 感謝祭カラー */
-.btn-blue   { background-color: #0055ff; color: white; }
-.btn-red    { background-color: #ff0055; color: white; }
-.btn-green  { background-color: #00aa00; color: white; }
-.btn-yellow { background-color: #ffcc00; color: black; }
-
-.btn-primary { background-color: #333; }
-.btn-success { background-color: #28a745; }
-.btn-warning { background-color: #ff9800; color: #fff; }
-.btn-danger  { background-color: #dc3545; }
-.btn-dark    { background-color: #000; border: 1px solid #555; }
-.btn-info    { background-color: #17a2b8; }
-
-input[type="text"], select {
+    border: 1px solid #ccc;
+    border-left: 5px solid #0055ff; /* 青い帯 */
     padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    width: 100%;
-    box-sizing: border-box;
-    font-size: 16px;
-}
-
-.answer-btn {
-    font-size: 1.5em;
-    font-weight: bold;
-    border-radius: 8px;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
-}
-
-.set-item {
-    background: #fff;
-    border: 1px solid #ddd;
-    padding: 10px;
-    margin-bottom: 5px;
     border-radius: 4px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-.delete-btn {
-    background: #ffcccc; color: #d00;
-    font-size: 0.8em; padding: 4px 8px;
-    margin-left: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.kanpe-card {
-    background: #ffffe0;
-    border: 2px solid #f0e68c;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+.timeline-card.active {
+    background: #e6f0ff;
+    border-color: #0044cc;
+    border-left-width: 8px;
 }
 
-/* ダークテーマ */
-body.dark-theme {
-    background-color: #000022;
-    color: #e0e0e0;
+.timeline-card h5 {
+    margin: 0 0 5px 0;
+    font-size: 1.1em;
 }
-body.dark-theme .view {
-    background-color: #0d0d33;
-    border: 1px solid #555;
-    color: #fff;
-}
-body.dark-theme .app-title {
-    color: #ffd700;
-    text-shadow: 0 0 10px #ffd700;
-}
-body.dark-theme #player-status-bar {
-    background: #222;
-    border: 1px solid #444;
-}
-body.dark-theme #score-display-area {
-    color: #ffd700;
-    border: 1px solid gold;
-    background: #111;
-    padding: 5px;
-}
-body.dark-theme .answer-btn {
-    background: linear-gradient(to bottom, #333, #000);
-    border: 2px solid #ffd700;
-    color: #ffd700;
-    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-    font-family: serif;
-    text-shadow: 1px 1px 0 #000;
-}
-body.dark-theme .answer-btn[data-index="0"]::before { content: "A: "; color: white; }
-body.dark-theme .answer-btn[data-index="1"]::before { content: "B: "; color: white; }
-body.dark-theme .answer-btn[data-index="2"]::before { content: "C: "; color: white; }
-body.dark-theme .answer-btn[data-index="3"]::before { content: "D: "; color: white; }
 
-/* ランキング用 */
+.timeline-card .info {
+    font-size: 0.8em;
+    color: #666;
+}
+
+.play-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    cursor: pointer;
+}
+.play-btn:hover { background: #218838; }
+
+/* ... (ランキング用のスタイルなど) ... */
 .ranking-container {
     max-height: 400px;
     overflow-y: auto;
