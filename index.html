@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>All Star Quiz Cloud</title>
-<link rel="stylesheet" href="style.css?v=10">
+<link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
 
 <div id="main-view" class="view">
     <h1 class="app-title">ALL STAR QUIZ</h1>
-    <p style="text-align:center; color:#666;">Cloud Edition v10</p>
+    <p style="text-align:center; color:#666;">Cloud Edition v11</p>
     <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
         <button id="main-host-btn" class="btn-primary">司会者 (Host)</button>
         <button id="main-player-btn" class="btn-success">回答者 (Player)</button>
@@ -30,14 +30,14 @@
 
 <div id="host-dashboard-view" class="view hidden">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="margin:0;">📺 番組: <span id="dashboard-show-id" style="color:#e91e63;">---</span></h3>
+        <h3 style="margin:0;">番組: <span id="dashboard-show-id" style="color:#e91e63;">---</span></h3>
         <button class="back-to-main" style="font-size:0.8em;">ログアウト</button>
     </div>
     <hr>
     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; margin-bottom:20px;">
-        <button id="dash-create-btn" class="btn-info" style="height:80px; font-weight:bold; font-size:0.9em;">📝 セット作成</button>
-        <button id="dash-config-btn" class="btn-primary" style="height:80px; font-weight:bold; font-size:0.9em; background-color:#2c3e50;">⚙️ セット設定</button>
-        <button id="dash-studio-btn" class="btn-danger" style="height:80px; font-weight:bold; font-size:0.9em;">🎥 スタジオ</button>
+        <button id="dash-create-btn" class="btn-info" style="height:80px; font-weight:bold; font-size:0.9em;">セット作成</button>
+        <button id="dash-config-btn" class="btn-primary" style="height:80px; font-weight:bold; font-size:0.9em; background-color:#2c3e50;">セット設定</button>
+        <button id="dash-studio-btn" class="btn-danger" style="height:80px; font-weight:bold; font-size:0.9em;">スタジオ</button>
     </div>
     <h4 style="border-bottom:2px solid #ddd; padding-bottom:5px;">保存済みセット</h4>
     <div id="dash-set-list" style="max-height:300px; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:5px;"></div>
@@ -53,9 +53,6 @@
         <label style="font-weight:bold;">セット名</label>
         <input type="text" id="quiz-set-title" class="btn-block" placeholder="例: 第1ステージ" style="margin-bottom:10px;">
     </div>
-    <button id="creator-go-config-btn" class="btn-block" style="background:#2c3e50; color:white; margin-bottom:20px;">
-        ⚙️ ルール設定を確認・変更する
-    </button>
     <div style="background:#fff0f5; padding:15px; border-radius:8px; border:2px solid #ff69b4;">
         <h3 style="margin-top:0; color:#c71585;">新規問題</h3>
         <input type="text" id="question-text" class="btn-block" placeholder="問題文" style="margin-bottom:10px;">
@@ -76,7 +73,7 @@
     <div style="margin-top:20px;">
         <h4>作成中のリスト (<span id="q-count">0</span>問)</h4>
         <ul id="q-list" style="background:white; padding:10px; border:1px solid #ddd; min-height:50px; list-style:none;"></ul>
-        <button id="save-to-cloud-btn" class="btn-success btn-block" style="padding:15px; font-weight:bold; margin-top:15px;">☁️ クラウドに保存して完了</button>
+        <button id="save-to-cloud-btn" class="btn-success btn-block" style="padding:15px; font-weight:bold; margin-top:15px;">クラウドに保存して完了</button>
     </div>
 </div>
 
@@ -88,13 +85,13 @@
     <hr>
     
     <div style="background:#f0f8ff; padding:15px; border:2px solid #87ceeb; border-radius:8px; margin-bottom:20px;">
-        <h3 style="margin:0 0 10px 0; color:#0055ff; font-size:1.1em; text-align:center;">➕ ピリオド（セット）を構成に追加</h3>
+        <h3 style="margin:0 0 10px 0; color:#0055ff; font-size:1.1em; text-align:center;">ピリオド（セット）を構成に追加</h3>
         
         <div id="participation-setting-area" class="hidden" style="margin-bottom:15px;">
             <label class="config-label">1. 参加者設定</label>
             <select id="config-initial-status" class="btn-block config-select highlight-select">
-                <option value="revive">👑 全員復活してスタート</option>
-                <option value="continue">☠️ 生存者のみで継続</option>
+                <option value="revive">全員復活してスタート</option>
+                <option value="continue">生存者のみで継続</option>
             </select>
         </div>
 
@@ -110,12 +107,12 @@
             
             <label style="font-size:0.8em; color:#666;">▼ 脱落条件</label>
             <select id="config-elimination-rule" class="btn-block config-select" style="margin-bottom:8px;">
-                <option value="none">🏆 脱落なし（ランキング戦）</option>
-                <option value="wrong_only">☠️ 不正解者のみ脱落</option>
-                <option value="wrong_and_slowest">☠️ 不正解 ＋ 一番遅い人も脱落</option>
+                <option value="none">脱落なし（ランキング戦）</option>
+                <option value="wrong_only">不正解者のみ脱落</option>
+                <option value="wrong_and_slowest">不正解 ＋ 一番遅い人も脱落</option>
             </select>
 
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
                 <div>
                     <label style="font-size:0.7em; color:#666;">制限時間</label>
                     <select id="config-time-limit" class="config-select">
@@ -129,22 +126,15 @@
                 <div>
                     <label style="font-size:0.7em; color:#666;">スコア</label>
                     <select id="config-score-unit" class="config-select">
-                        <option value="point">Pt</option>
-                        <option value="currency">円</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="font-size:0.7em; color:#666;">テーマ</label>
-                    <select id="config-theme" class="config-select">
-                        <option value="light">感謝祭</option>
-                        <option value="dark">ミリオネ</option>
+                        <option value="point">ポイント制</option>
+                        <option value="currency">通貨制</option>
                     </select>
                 </div>
             </div>
         </div>
         
         <button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:12px; border:none; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.2);">
-            リストに追加 ⬇
+            リストに追加
         </button>
     </div>
 
@@ -155,7 +145,7 @@
         </div>
     </div>
 
-    <button id="config-go-studio-btn" class="btn-danger btn-block" style="padding:15px; font-weight:bold;">🎥 保存してスタジオへ</button>
+    <button id="config-go-studio-btn" class="btn-danger btn-block" style="padding:15px; font-weight:bold;">保存してスタジオへ</button>
 </div>
 
 <div id="host-control-view" class="view hidden">
@@ -186,12 +176,12 @@
 
     <div id="control-panel" class="hidden" style="margin-top:20px; border-top:2px solid #333; padding-top:15px;">
         <h3 id="current-period-title" style="text-align:center; margin:0 0 10px 0; background:#eee; padding:5px;"></h3>
-        <button id="host-new-period-btn" class="btn-warning btn-block hidden" style="border:2px solid #fff;">👑 全員復活させてスタート</button>
+        <button id="host-new-period-btn" class="btn-warning btn-block hidden" style="border:2px solid #fff;">全員復活させてスタート</button>
         <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;">問題 START！</button>
         <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;">正解発表</button>
         <button id="host-next-btn" class="btn-info btn-block hidden" style="padding:15px;">次の問題へ</button>
         <hr>
-        <button id="host-ranking-btn" class="btn-success btn-block">🏆 ランキング集計</button>
+        <button id="host-ranking-btn" class="btn-success btn-block">ランキング集計</button>
     </div>
 
     <button id="host-close-studio-btn" style="background:#555; margin-top:30px;" class="btn-block">スタジオを閉じて戻る</button>
@@ -200,7 +190,7 @@
 <div id="ranking-view" class="view hidden" style="text-align:center;">
     <h2 style="font-family: 'Arial Black'; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">PERIOD RANKING</h2>
     <div id="ranking-list" class="ranking-container"></div>
-    <button id="ranking-back-btn" class="btn-primary btn-block" style="margin-top:20px;">🔙 スタジオに戻る</button>
+    <button id="ranking-back-btn" class="btn-primary btn-block" style="margin-top:20px;">スタジオに戻る</button>
 </div>
 
 <div id="respondent-view" class="view hidden">
@@ -249,8 +239,8 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="host.js?v=10"></script>
-<script src="player.js?v=10"></script>
+<script src="host.js?v=11"></script>
+<script src="player.js?v=11"></script>
 
 </body>
 </html>
