@@ -1,7 +1,8 @@
 /* =========================================================
- * style.css (v10)
+ * style.css (v12: All Star Quiz Cloud)
  * =======================================================*/
-/* 1. Base */
+
+/* 1. 基本設定 (Base) */
 body {
     font-family: "Helvetica Neue", Arial, sans-serif;
     max-width: 600px;
@@ -11,8 +12,10 @@ body {
     color: #333;
     transition: background 0.5s, color 0.5s;
 }
+
 .hidden { display: none !important; }
 
+/* 画面の基本ボックス */
 .view {
     background: #fff;
     padding: 20px;
@@ -22,6 +25,7 @@ body {
     transition: background 0.5s, border 0.5s;
 }
 
+/* タイトルロゴ */
 .app-title {
     font-family: 'Arial Black', sans-serif;
     color: #ff0055;
@@ -33,6 +37,7 @@ body {
 h1, h2, h3, h4 { text-align: center; margin-top: 0; }
 hr { border: 0; border-top: 1px solid #ddd; margin: 15px 0; }
 
+/* 2. フォーム & ボタン (Forms & Buttons) */
 button {
     cursor: pointer;
     font-size: 16px;
@@ -46,6 +51,7 @@ button:active { transform: scale(0.98); }
 
 .btn-block { display: block; width: 100%; padding: 12px; margin-bottom: 10px; }
 
+/* 機能別ボタン色 */
 .btn-primary { background-color: #333; }
 .btn-success { background-color: #28a745; }
 .btn-warning { background-color: #ff9800; color: #fff; }
@@ -53,12 +59,13 @@ button:active { transform: scale(0.98); }
 .btn-dark    { background-color: #000; border: 1px solid #555; }
 .btn-info    { background-color: #17a2b8; }
 
+/* 選択肢カラー */
 .btn-blue   { background-color: #0055ff; color: white; }
 .btn-red    { background-color: #ff0055; color: white; }
 .btn-green  { background-color: #00aa00; color: white; }
 .btn-yellow { background-color: #ffcc00; color: black; }
 
-input[type="text"], select {
+input[type="text"], input[type="number"], select {
     padding: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
@@ -67,7 +74,7 @@ input[type="text"], select {
     font-size: 16px;
 }
 
-/* Config画面用 */
+/* ★セット設定画面（Config）用のスタイル */
 .config-label {
     display: block;
     font-size: 0.8em;
@@ -83,12 +90,15 @@ input[type="text"], select {
     width: 100%;
     margin-bottom: 5px;
 }
+/* 参加者設定のプルダウンを目立たせる */
 .highlight-select {
     background-color: #fffbe6;
     border: 1px solid #e6b800;
     font-weight: bold;
+    color: #b8860b;
 }
 
+/* 回答者用ボタン */
 .answer-btn {
     font-size: 1.5em;
     font-weight: bold;
@@ -96,6 +106,7 @@ input[type="text"], select {
     box-shadow: 0 4px 0 rgba(0,0,0,0.2);
 }
 
+/* 3. ホスト用デザイン (Host UI) */
 .set-item {
     background: #fff;
     border: 1px solid #ddd;
@@ -112,6 +123,7 @@ input[type="text"], select {
     margin-left: 10px;
 }
 
+/* カンペ */
 .kanpe-card {
     background: #ffffe0;
     border: 2px solid #f0e68c;
@@ -121,6 +133,7 @@ input[type="text"], select {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
+/* タイムラインカード */
 .timeline-card {
     background: #fff;
     border: 1px solid #ccc;
@@ -140,13 +153,14 @@ input[type="text"], select {
 .timeline-card h5 { margin: 0 0 5px 0; font-size: 1.1em; color: #333; }
 .timeline-card .info { font-size: 0.8em; color: #666; }
 
+/* 再生ボタン */
 .play-btn {
     background: #28a745; color: white; border: none;
     padding: 8px 15px; border-radius: 4px; font-size: 0.9em;
 }
 .play-btn:hover { background: #218838; }
 
-/* Ranking */
+/* 4. ランキング画面 (Ranking) */
 .ranking-container {
     max-height: 400px;
     overflow-y: auto;
@@ -174,7 +188,7 @@ input[type="text"], select {
 .rank-badge { display: inline-block; width: 30px; text-align: center; margin-right: 10px; font-family: 'Arial Black', sans-serif; }
 .rank-score { font-family: monospace; font-size: 0.9em; color: #555; text-align: right; }
 
-/* Dark Theme */
+/* 5. テーマ設定 (Dark Theme) */
 body.dark-theme { background-color: #000022; color: #e0e0e0; }
 body.dark-theme .view { background-color: #0d0d33; border: 1px solid #555; color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
 body.dark-theme .app-title { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
