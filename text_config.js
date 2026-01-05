@@ -1,11 +1,11 @@
 /* =========================================================
- * text_config.js (v48: Cleanup)
+ * text_config.js (v49: Advanced Modes)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v48",
+    Version: "Cloud Edition v49",
     
     // メインメニュー
     Main: {
@@ -94,28 +94,36 @@ const APP_TEXT = {
         SelectEmpty: "セットがありません",
         
         LabelMode: "回答モード",
-        ModeNormal: "一斉回答 (全員送信可)",
-        ModeBuzz: "早押し (早い者勝ち)",
+        ModeNormal: "一斉回答 (Simultaneous)",
+        ModeBuzz: "早押し (Buzz-in)",
+        ModeTurn: "順番回答 (Turn-based)", // ★v49追加
         
-        // 早押し詳細設定
-        LabelBuzzOrder: "▼ 押下順位ルール",
-        BuzzOrderFirst: "先着1名のみ (First Only)",
-        BuzzOrderHold: "順位保持 (誤答で次点へ)",
-        BuzzOrderReset: "順位リセット (全員再押し)",
-        
-        LabelBuzzPenalty: "▼ お手つきペナルティ",
-        BuzzPenaltyNone: "なし",
-        BuzzPenaltyTime3: "3秒ロック",
-        BuzzPenaltyTime5: "5秒ロック",
-        BuzzPenaltyTime10: "10秒ロック",
-        BuzzPenaltyQ: "その問題失格",
-        BuzzPenaltyPeriod: "そのピリオド失格",
+        // ★v49追加: 一斉回答設定
+        LabelNormalLimit: "▼ 回答回数制限",
+        NormalLimitOne: "1回のみ (修正不可)",
+        NormalLimitUnlimited: "何度でも修正可",
+
+        // ★v49修正: 早押し設定
+        LabelBuzzWrongAction: "▼ 誤答時の処理",
+        BuzzWrongNext: "次の人に権限移動",
+        BuzzWrongReset: "全員リセット (再早押し)",
+        BuzzWrongEnd: "その問題終了",
         
         LabelBuzzTime: "▼ 回答権取得後の制限時間",
         BuzzTimeNone: "無制限",
         BuzzTime3: "3秒",
         BuzzTime5: "5秒",
         BuzzTime10: "10秒",
+
+        // ★v49追加: 順番回答設定
+        LabelTurnOrder: "▼ 順番ルール",
+        TurnOrderFixed: "固定 (参加順)",
+        TurnOrderRandom: "ランダム",
+        TurnOrderRank: "成績順 (点数高い順)",
+        
+        LabelTurnPass: "▼ パス設定",
+        TurnPassOk: "パス可 (次へ回す)",
+        TurnPassNg: "パス不可",
 
         LabelRule: "ルール設定",
         LabelElim: "▼ 脱落条件",
@@ -125,8 +133,6 @@ const APP_TEXT = {
         LabelElimCount: "遅い順に",
         LabelElimCountSuffix: "名が脱落",
         LabelTime: "制限時間",
-        
-        // ★削除: LabelScore, LabelLoss など不要な項目
         
         HeadingCustomScore: "問題別配点・失点設定",
         LabelBulkPt: "得点一括:",
@@ -178,11 +184,12 @@ const APP_TEXT = {
         BtnRanking: "中間順位",
         BtnClose: "スタジオを閉じて戻る",
         BtnBackRanking: "スタジオに戻る",
-        BtnCorrect: "⭕️ 正解 (Correct)",
-        BtnWrong: "❌ 不正解 (Wrong)",
-        BtnResetBuzz: "早押しリセット",
-        MsgBuzzWin: "回答権獲得: ",
+        BtnCorrect: "⭕️ 正解",
+        BtnWrong: "❌ 不正解",
+        BtnPass: "パス (Skip)", // ★v49追加
+        MsgBuzzWin: "回答権: ",
         MsgBuzzWait: "回答権なし...",
+        MsgTurnWait: "順番待ち...",
         MsgConfirmLoad: "プログラムを読み込んでセットしますか？\n（現在の進行内容はリセットされます）",
         MsgLoaded: "セットしました。再生ボタンで開始してください。",
         MsgThinking: "Thinking Time...",
@@ -215,7 +222,9 @@ const APP_TEXT = {
         RankBoardTitle: "上位リーダーボード",
         BtnBuzz: "PUSH!",
         MsgBuzzLocked: "LOCKED",
-        MsgBuzzWin: "回答権獲得！<br>口頭で回答してください"
+        MsgBuzzWin: "回答権獲得！<br>口頭で回答してください",
+        MsgTurnYou: "あなたの番です！<br>回答してください",
+        MsgTurnWait: "さんの番です..."
     },
 
     // モニター
