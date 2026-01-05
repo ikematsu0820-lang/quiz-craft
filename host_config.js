@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v29: Ranking Settings)
+ * host_config.js (v30: Text Config Support)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -9,15 +9,36 @@ function enterConfigMode() {
     updateBuilderUI();
 
     const select = document.getElementById('config-set-select');
-    if(select) select.innerHTML = '<option value="">読み込み中...</option>';
+    if(!select) return;
     
+    // ルールプルダウン生成
+    const elimRuleSelect = document.getElementById('config-elimination-rule');
+    elimRuleSelect.innerHTML = `
+        <option value="none">${APP_TEXT.Config.RuleNone}</option>
+        <option value="wrong_only">${APP_TEXT.Config.RuleWrong}</option>
+        <option value="wrong_and_slowest">${APP_TEXT.Config.RuleSlow}</option>
+    `;
+    elimRuleSelect.onchange = updateBuilderUI;
+
+    // 失点プルダウン生成
+    const lossSelect = document.getElementById('config-loss-point');
+    lossSelect.innerHTML = `
+        <option value="0">${APP_TEXT.Config.LossNone}</option>
+        <option value="-1">-1</option>
+        <option value="-5">-5</option>
+        <option value="-10">-10</option>
+        <option value="-50">-50</option>
+        <option value="-100">-100</option>
+        <option value="reset">${APP_TEXT.Config.LossReset}</option>
+    `;
+
+    select.innerHTML = `<option value="">${APP_TEXT.Config.SelectLoading}</option>`;
     document.getElementById('config-custom-points-area').classList.add('hidden');
     selectedSetQuestions = [];
 
     window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
         const data = snap.val();
-        if(!select) return;
-        select.innerHTML = '<option value="">-- セットを選択 --</option>';
+        select.innerHTML = `<option value="">${APP_TEXT.Config.SelectDefault}</option>`;
         if(data) {
             Object.keys(data).forEach(key => {
                 const item = data[key];
@@ -27,25 +48,20 @@ function enterConfigMode() {
                 select.appendChild(opt);
             });
         } else {
-            select.innerHTML = '<option value="">セットがありません</option>';
+            select.innerHTML = `<option value="">${APP_TEXT.Config.SelectEmpty}</option>`;
         }
     });
     
-    const elimRuleSelect = document.getElementById('config-elimination-rule');
-    if(elimRuleSelect) elimRuleSelect.onchange = updateBuilderUI;
-
-    if(select) {
-        select.onchange = () => {
-            const val = select.value;
-            if(val) {
-                const data = JSON.parse(val);
-                selectedSetQuestions = data.q || [];
-                document.getElementById('config-custom-points-area').classList.add('hidden');
-            } else {
-                selectedSetQuestions = [];
-            }
-        };
-    }
+    select.onchange = () => {
+        const val = select.value;
+        if(val) {
+            const data = JSON.parse(val);
+            selectedSetQuestions = data.q || [];
+            document.getElementById('config-custom-points-area').classList.add('hidden');
+        } else {
+            selectedSetQuestions = [];
+        }
+    };
 
     const customScoreBtn = document.getElementById('config-custom-score-btn');
     if(customScoreBtn) customScoreBtn.onclick = toggleCustomScoreArea;
@@ -82,7 +98,7 @@ function toggleCustomScoreArea() {
     const list = document.getElementById('config-questions-list');
     
     if (selectedSetQuestions.length === 0) {
-        alert("先にセットを選択してください");
+        alert(APP_TEXT.Config.AlertNoSet);
         return;
     }
 
@@ -104,9 +120,9 @@ function toggleCustomScoreArea() {
                     <span style="font-weight:bold; color:#666;">Q${i+1}.</span> ${q.q}
                 </div>
                 <div style="display:flex; align-items:center; gap:5px;">
-                    <span style="font-size:0.7em; color:#0055ff;">得</span>
+                    <span style="font-size:0.7em; color:#0055ff;">Pt</span>
                     <input type="number" class="q-point-input" data-index="${i}" value="${pts}" min="1" style="width:40px; text-align:center; padding:5px; border:1px solid #0055ff; border-radius:4px;">
-                    <span style="font-size:0.7em; color:#d00;">失</span>
+                    <span style="font-size:0.7em; color:#d00;">Loss</span>
                     <input type="number" class="q-loss-input" data-index="${i}" value="${loss}" min="0" style="width:40px; text-align:center; padding:5px; border:1px solid #d00; border-radius:4px;">
                 </div>
             `;
@@ -121,10 +137,9 @@ function toggleCustomScoreArea() {
 function addPeriodToPlaylist() {
     const select = document.getElementById('config-set-select');
     const json = select.value;
-    if(!json) { alert("セットを選んでください"); return; }
+    if(!json) { alert(APP_TEXT.Config.AlertNoSet); return; }
     
     const data = JSON.parse(json);
-    
     const questionsWithPoints = JSON.parse(JSON.stringify(data.q)); 
     const pointInputs = document.querySelectorAll('.q-point-input');
     const lossInputs = document.querySelectorAll('.q-loss-input');
@@ -150,10 +165,9 @@ function addPeriodToPlaylist() {
         });
     }
 
-    // デフォルト設定
-    let initialStatus = 'revive';
+    let initialStatus = 'revive'; 
     let passCount = 5;
-    let intermediateRanking = false; // ★追加：中間発表
+    let intermediateRanking = false; // 中間発表フラグ
 
     let elimCount = 1;
     if (document.getElementById('config-elimination-rule').value === 'wrong_and_slowest') {
@@ -166,7 +180,7 @@ function addPeriodToPlaylist() {
     const newConfig = {
         initialStatus: initialStatus,
         passCount: passCount,
-        intermediateRanking: intermediateRanking, // ★保存
+        intermediateRanking: intermediateRanking,
         eliminationRule: document.getElementById('config-elimination-rule').value,
         eliminationCount: elimCount,
         lossPoint: lossPoint,
@@ -192,7 +206,7 @@ function renderConfigPreview() {
     container.innerHTML = '';
     
     if(periodPlaylist.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#999; font-size:0.8em;">まだ追加されていません</p>';
+        container.innerHTML = `<p style="text-align:center; color:#999; font-size:0.8em;">${APP_TEXT.Config.AlertEmptyList}</p>`;
         return;
     }
     
@@ -208,25 +222,24 @@ function renderConfigPreview() {
             const isRanking = (item.config.initialStatus === 'ranking');
             const isInterRank = item.config.intermediateRanking;
             
-            // ★変更：中間発表のチェックボックスを追加
             settingDiv.innerHTML = `
-                <div style="font-size:0.7em; color:#666; font-weight:bold; margin-bottom:3px;">ピリオド間設定</div>
+                <div style="font-size:0.7em; color:#666; font-weight:bold; margin-bottom:3px;">${APP_TEXT.Config.InterHeading}</div>
                 <div style="display:flex; flex-direction:column; gap:5px;">
                     <div style="display:flex; gap:5px; align-items:center;">
                         <select class="inter-status-select" data-index="${index}">
-                            <option value="revive" ${item.config.initialStatus === 'revive' ? 'selected' : ''}>全員復活してスタート</option>
-                            <option value="continue" ${item.config.initialStatus === 'continue' ? 'selected' : ''}>生存者のみで継続</option>
-                            <option value="ranking" ${item.config.initialStatus === 'ranking' ? 'selected' : ''}>成績上位者が進出</option>
+                            <option value="revive" ${item.config.initialStatus === 'revive' ? 'selected' : ''}>${APP_TEXT.Config.StatusRevive}</option>
+                            <option value="continue" ${item.config.initialStatus === 'continue' ? 'selected' : ''}>${APP_TEXT.Config.StatusContinue}</option>
+                            <option value="ranking" ${item.config.initialStatus === 'ranking' ? 'selected' : ''}>${APP_TEXT.Config.StatusRanking}</option>
                         </select>
                         <div class="inter-pass-area ${isRanking ? '' : 'hidden'}" style="display:flex; align-items:center; gap:3px;">
-                            <span style="font-size:0.8em;">上位</span>
+                            <span style="font-size:0.8em;">${APP_TEXT.Config.LabelTop}</span>
                             <input type="number" class="inter-pass-input" data-index="${index}" value="${item.config.passCount}" min="1" style="width:50px; padding:5px; text-align:center;">
-                            <span style="font-size:0.8em;">名</span>
+                            <span style="font-size:0.8em;">${APP_TEXT.Config.LabelName}</span>
                         </div>
                     </div>
                     <label style="font-size:0.9em; cursor:pointer;">
                         <input type="checkbox" class="inter-ranking-chk" data-index="${index}" ${isInterRank ? 'checked' : ''}>
-                        この前に中間発表を行う
+                        ${APP_TEXT.Config.CheckInterRank}
                     </label>
                 </div>
             `;
@@ -237,23 +250,22 @@ function renderConfigPreview() {
         div.className = 'timeline-card';
         div.style.marginBottom = "0"; 
         
-        let ruleText = "脱落なし";
-        if(item.config.eliminationRule === 'wrong_only') ruleText = "不正解脱落";
-        if(item.config.eliminationRule === 'wrong_and_slowest') ruleText = `遅い${item.config.eliminationCount}人脱落`;
+        let ruleText = "None";
+        if(item.config.eliminationRule === 'wrong_only') ruleText = "WrongOut";
+        if(item.config.eliminationRule === 'wrong_and_slowest') ruleText = `Slow${item.config.eliminationCount}Out`;
 
         div.innerHTML = `
             <div style="flex:1;">
                 <div style="font-weight:bold; font-size:1.1em;">${index+1}. ${item.title}</div>
                 <div style="font-size:0.8em; color:#666;">
-                    ${ruleText} / ${item.config.timeLimit}秒 / 失点:${item.config.lossPoint}
+                    ${ruleText} / ${item.config.timeLimit}s / Loss:${item.config.lossPoint}
                 </div>
             </div>
-            <button class="delete-btn" onclick="removeFromPlaylist(${index})">削除</button>
+            <button class="delete-btn" onclick="removeFromPlaylist(${index})">Del</button>
         `;
         container.appendChild(div);
     });
 
-    // イベントリスナー
     document.querySelectorAll('.inter-status-select').forEach(sel => {
         sel.addEventListener('change', (e) => {
             const idx = e.target.getAttribute('data-index');
@@ -275,7 +287,6 @@ function renderConfigPreview() {
         });
     });
 
-    // ★中間発表チェックの監視
     document.querySelectorAll('.inter-ranking-chk').forEach(chk => {
         chk.addEventListener('change', (e) => {
             const idx = e.target.getAttribute('data-index');
@@ -292,34 +303,32 @@ window.removeFromPlaylist = function(index) {
 
 function saveProgramToCloud() {
     if(periodPlaylist.length === 0) {
-        alert("構成リストが空です");
+        alert(APP_TEXT.Config.AlertEmptyList);
         return;
     }
     const titleInput = document.getElementById('config-program-title');
     const title = titleInput.value.trim();
     if(!title) {
-        alert("プログラム名を入力してください");
+        alert(APP_TEXT.Config.AlertNoTitle);
         return;
     }
 
-    // ★最終結果発表の設定を保存
     const finalRanking = document.getElementById('config-final-ranking-chk').checked;
-
     const cleanPlaylist = JSON.parse(JSON.stringify(periodPlaylist));
 
     const saveObj = {
         title: title,
         playlist: cleanPlaylist, 
-        finalRanking: finalRanking, // ★保存
+        finalRanking: finalRanking,
         createdAt: firebase.database.ServerValue.TIMESTAMP
     };
 
     window.db.ref(`saved_programs/${currentShowId}`).push(saveObj)
     .then(() => {
-        alert(`プログラム「${title}」を保存しました！\nダッシュボードに戻ります。`);
+        alert(APP_TEXT.Config.MsgSaved);
         titleInput.value = '';
         periodPlaylist = []; 
         enterDashboard(); 
     })
-    .catch(err => alert("保存エラー: " + err.message));
+    .catch(err => alert("Error: " + err.message));
 }
