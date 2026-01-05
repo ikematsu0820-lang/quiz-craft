@@ -1,0 +1,183 @@
+/* =========================================================
+ * style_host.css (v40: Host/Admin Styles)
+ * =======================================================*/
+
+/* 問題作成画面フォーム */
+.choice-row {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 5px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.choice-correct-chk {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.choice-text-input, .sort-text-input {
+    border: none;
+    outline: none;
+    font-size: 1em;
+    padding: 5px;
+    background: transparent;
+    flex: 1;
+}
+
+.choice-text-input:focus, .sort-text-input:focus {
+    background: #f0f8ff;
+    border-bottom: 1px solid #0055ff;
+}
+
+/* セット設定画面 */
+.config-label {
+    display: block;
+    font-size: 0.8em;
+    font-weight: bold;
+    color: #666;
+    margin-bottom: 5px;
+}
+.config-select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-size: 0.9em;
+    width: 100%;
+    margin-bottom: 5px;
+}
+.highlight-select {
+    background-color: #fffbe6;
+    border: 1px solid #e6b800;
+    font-weight: bold;
+    color: #b8860b;
+}
+
+/* ダッシュボードリスト */
+.set-item {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.delete-btn {
+    background: #ffcccc; color: #d00;
+    font-size: 0.8em; padding: 4px 8px;
+    margin-left: 10px;
+}
+
+/* カンペ */
+.kanpe-card {
+    background: #ffffe0;
+    border: 2px solid #f0e68c;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* タイムラインカード */
+.timeline-card {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-left: 6px solid #ccc; 
+    padding: 15px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+    opacity: 0.6; 
+}
+
+.timeline-card.active {
+    background: #e6f0ff; 
+    border-color: #0055ff;
+    border-left-color: #0055ff; 
+    opacity: 1; 
+    transform: scale(1.02); 
+    box-shadow: 0 4px 8px rgba(0,85,255,0.2);
+    font-weight: bold;
+}
+
+.timeline-card h5 { margin: 0 0 5px 0; font-size: 1.2em; color: #333; }
+.timeline-card .info { font-size: 0.9em; color: #666; }
+
+/* ピリオド間設定 */
+.playlist-arrow-container {
+    text-align: center;
+    margin: -5px 0; 
+    position: relative;
+    z-index: 1;
+}
+
+.playlist-arrow {
+    width: 0; 
+    height: 0; 
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 15px solid #2c3e50; 
+    margin: 0 auto;
+}
+
+.playlist-inter-setting {
+    background: #fffbe6; 
+    border: 2px solid #e6b800; 
+    border-radius: 6px;
+    padding: 10px;
+    margin: 5px 20px 15px 20px; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.inter-status-select {
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-weight: bold;
+    color: #333;
+    flex: 1;
+    width: 100%;
+}
+
+.inter-pass-input {
+    border: 1px solid #aaa;
+    border-radius: 4px;
+}
+
+/* ホスト用ランキングリスト */
+.ranking-container {
+    max-height: 400px;
+    overflow-y: auto;
+    background: #f9f9f9;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+}
+.rank-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    margin-bottom: 8px;
+    padding: 10px 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #333;
+}
+.rank-1 { background: linear-gradient(to right, #ffd700, #fffacd); border: 2px solid #daa520; color: #554400; transform: scale(1.02); }
+.rank-2 { background: linear-gradient(to right, #c0c0c0, #f5f5f5); border: 2px solid #a9a9a9; }
+.rank-3 { background: linear-gradient(to right, #cd7f32, #fff5ee); border: 2px solid #a0522d; color: #5a2d0c; }
+.rank-badge { display: inline-block; width: 30px; text-align: center; margin-right: 10px; font-family: 'Arial Black', sans-serif; }
+.rank-score { font-family: monospace; font-size: 0.9em; color: #555; text-align: right; }
