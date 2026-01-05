@@ -1,11 +1,11 @@
 /* =========================================================
- * text_config.js (v49: Advanced Modes)
+ * text_config.js (v50: Editing & Shuffle)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v49",
+    Version: "Cloud Edition v50",
     
     // メインメニュー
     Main: {
@@ -41,16 +41,30 @@ const APP_TEXT = {
         LabelSetName: "セット名",
         PlaceholderSetName: "例: 第1ステージ",
         HeadingNewQ: "新規問題追加",
+        HeadingEditQ: "問題編集", // ★v50
         LabelType: "問題形式",
         TypeChoice: "選択式",
         TypeSort: "並べ替え",
         TypeText: "自由入力",
         PlaceholderQ: "問題文を入力",
         BtnAdd: "リストに追加",
+        BtnUpdateQ: "更新する", // ★v50
+        BtnCancel: "キャンセル", // ★v50
         ListHeading: "作成中のリスト",
         BtnSave: "クラウドに保存して完了",
         BtnUpdate: "更新して完了",
         OptMulti: "正解を選択",
+        
+        // ★v50追加
+        LabelTextFormat: "回答形式",
+        TextFormatWritten: "記述式",
+        TextFormatOral: "口頭 (正解入力任意)",
+        LabelSortInitial: "初期配置",
+        SortInitialRandom: "ランダム (推奨)",
+        SortInitialFixed: "固定 (作成順)",
+        DescSort: "※正解の順番（上から下）で入力してください",
+        DescText: "※正解キーワード（カンマ区切り）",
+
         BtnAddChoice: "＋ 選択肢を追加",
         BtnAddSort: "＋ 項目を追加",
         
@@ -80,7 +94,10 @@ const APP_TEXT = {
         AlertLessChoice: "選択肢は2つ以上必要です",
         AlertMaxChoice: "選択肢は最大10個までです",
         AlertNoCorrect: "正解を選んでください",
-        AlertNoTextAns: "正解を入力してください"
+        AlertNoTextAns: "正解を入力してください",
+        MsgSavedToast: "保存しました！", // ★v50
+        MsgAddedToast: "追加しました",
+        MsgUpdatedToast: "更新しました"
     },
 
     // セット設定 (Config)
@@ -96,14 +113,17 @@ const APP_TEXT = {
         LabelMode: "回答モード",
         ModeNormal: "一斉回答 (Simultaneous)",
         ModeBuzz: "早押し (Buzz-in)",
-        ModeTurn: "順番回答 (Turn-based)", // ★v49追加
+        ModeTurn: "順番回答 (Turn-based)",
         
-        // ★v49追加: 一斉回答設定
         LabelNormalLimit: "▼ 回答回数制限",
         NormalLimitOne: "1回のみ (修正不可)",
         NormalLimitUnlimited: "何度でも修正可",
+        
+        // ★v50追加
+        LabelShuffle: "選択肢シャッフル",
+        ShuffleOn: "する (ランダム配置)",
+        ShuffleOff: "しない (固定配置)",
 
-        // ★v49修正: 早押し設定
         LabelBuzzWrongAction: "▼ 誤答時の処理",
         BuzzWrongNext: "次の人に権限移動",
         BuzzWrongReset: "全員リセット (再早押し)",
@@ -115,7 +135,6 @@ const APP_TEXT = {
         BuzzTime5: "5秒",
         BuzzTime10: "10秒",
 
-        // ★v49追加: 順番回答設定
         LabelTurnOrder: "▼ 順番ルール",
         TurnOrderFixed: "固定 (参加順)",
         TurnOrderRandom: "ランダム",
@@ -186,7 +205,7 @@ const APP_TEXT = {
         BtnBackRanking: "スタジオに戻る",
         BtnCorrect: "⭕️ 正解",
         BtnWrong: "❌ 不正解",
-        BtnPass: "パス (Skip)", // ★v49追加
+        BtnPass: "パス (Skip)",
         MsgBuzzWin: "回答権: ",
         MsgBuzzWait: "回答権なし...",
         MsgTurnWait: "順番待ち...",
@@ -224,7 +243,8 @@ const APP_TEXT = {
         MsgBuzzLocked: "LOCKED",
         MsgBuzzWin: "回答権獲得！<br>口頭で回答してください",
         MsgTurnYou: "あなたの番です！<br>回答してください",
-        MsgTurnWait: "さんの番です..."
+        MsgTurnWait: "さんの番です...",
+        BtnAnswered: "回答しました" // ★v50追加
     },
 
     // モニター
