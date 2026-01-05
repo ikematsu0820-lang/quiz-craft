@@ -1,0 +1,119 @@
+/* =========================================================
+ * style_common.css (v40: Common Styles)
+ * =======================================================*/
+
+/* 基本設定 */
+body {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 10px;
+    background-color: #f0f0f0;
+    color: #333;
+    transition: background 0.5s, color 0.5s;
+}
+
+.hidden { display: none !important; }
+
+/* 画面の基本ボックス */
+.view {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    transition: background 0.5s, border 0.5s;
+}
+
+/* ヘッダー周り */
+.view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.header-back-btn {
+    background-color: #555;
+    color: white;
+    font-size: 0.8em;
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+}
+
+/* ロゴ・タイトル */
+.app-logo {
+    max-width: 80%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.app-logo-small {
+    max-width: 200px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.app-title {
+    font-family: 'Arial Black', sans-serif;
+    color: #ff0055;
+    text-shadow: 2px 2px 0px #fff, 4px 4px 0px #000;
+    text-align: center;
+    margin-top: 0;
+}
+
+h1, h2, h3, h4 { text-align: center; margin-top: 0; }
+hr { border: 0; border-top: 1px solid #ddd; margin: 15px 0; }
+
+/* フォーム & ボタン */
+button {
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 5px;
+    border: none;
+    transition: transform 0.1s;
+    color: white;
+    font-weight: bold;
+}
+button:active { transform: scale(0.98); }
+
+.btn-block { display: block; width: 100%; padding: 12px; margin-bottom: 10px; }
+
+/* 機能別ボタン色 */
+.btn-primary { background-color: #333; }
+.btn-success { background-color: #28a745; }
+.btn-warning { background-color: #ff9800; color: #fff; }
+.btn-danger  { background-color: #dc3545; }
+.btn-dark    { background-color: #000; border: 1px solid #555; }
+.btn-info    { background-color: #17a2b8; }
+
+.btn-logout {
+    background-color: #555;
+    color: white;
+    font-size: 0.8em;
+    padding: 5px 10px;
+}
+
+/* 選択肢カラー (共通) */
+.btn-blue   { background-color: #0055ff; color: white; }
+.btn-red    { background-color: #ff0055; color: white; }
+.btn-green  { background-color: #00aa00; color: white; }
+.btn-yellow { background-color: #ffcc00; color: black; }
+
+input[type="text"], input[type="number"], select {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+/* ダークテーマ (共通部分) */
+body.dark-theme { background-color: #000022; color: #e0e0e0; }
+body.dark-theme .view { background-color: #0d0d33; border: 1px solid #555; color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+body.dark-theme .app-title { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
