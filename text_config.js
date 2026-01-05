@@ -1,11 +1,11 @@
 /* =========================================================
- * text_config.js (v34: Viewer on Dashboard)
+ * text_config.js (v35: Home Button & Monitor Layout)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v34",
+    Version: "Cloud Edition v35",
     
     // メインメニュー
     Main: {
@@ -18,7 +18,7 @@ const APP_TEXT = {
         Title: "番組IDを入力",
         Placeholder: "例: QUIZ2026",
         SubmitBtn: "ログイン / 新規作成",
-        BackBtn: "戻る",
+        BackBtn: "🏠 ホーム", // ★変更
         AlertEmpty: "番組IDを入力してください",
         AlertError: "ID文字種エラー"
     },
@@ -29,7 +29,7 @@ const APP_TEXT = {
         BtnCreate: "セット作成",
         BtnConfig: "セット設定",
         BtnStudio: "スタジオ",
-        BtnViewer: "モニター (Viewer)", // ★追加
+        BtnViewer: "モニター (Viewer)",
         SetListTitle: "保存済みセット (素材)",
         DeleteConfirm: "削除しますか？"
     },
@@ -37,7 +37,7 @@ const APP_TEXT = {
     // セット作成
     Creator: {
         Title: "問題作成",
-        BackBtn: "ダッシュボードへ",
+        BackBtn: "ダッシュボード", // ここはダッシュボードに戻る
         LabelSetName: "セット名",
         PlaceholderSetName: "例: 第1ステージ",
         HeadingNewQ: "新規問題追加",
@@ -63,7 +63,7 @@ const APP_TEXT = {
     // セット設定
     Config: {
         Title: "セット設定",
-        BackBtn: "戻る",
+        BackBtn: "ダッシュボード",
         HeadingAdd: "ピリオド（セット）を構成に追加",
         LabelSet: "1. セットを選択",
         SelectDefault: "-- セットを選択 --",
