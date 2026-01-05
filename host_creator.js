@@ -1,5 +1,5 @@
 /* =========================================================
- * host_creator.js (v54: Multi-Answer & Special Modes)
+ * host_creator.js (v56: Fixed Type)
  * =======================================================*/
 
 let editingQuestionIndex = null;
@@ -15,6 +15,12 @@ window.initCreatorMode = function() {
     
     renderQuestionList();
     window.showView(window.views.creator);
+    
+    // Type Selectを初期化（アンロック）
+    const typeSelect = document.getElementById('creator-q-type');
+    typeSelect.disabled = false;
+    document.getElementById('creator-type-locked-msg').classList.add('hidden');
+    renderCreatorForm(typeSelect.value); // 初期フォーム表示
 };
 
 window.loadSetForEditing = function(key, item) {
@@ -23,8 +29,16 @@ window.loadSetForEditing = function(key, item) {
     document.getElementById('quiz-set-title').value = item.title;
     document.getElementById('save-to-cloud-btn').textContent = APP_TEXT.Creator.BtnUpdate;
     
+    const typeSelect = document.getElementById('creator-q-type');
+    
     if(createdQuestions.length > 0) {
         const firstQ = createdQuestions[0];
+        
+        // 保存された問題形式を復元してロック
+        typeSelect.value = firstQ.type;
+        typeSelect.disabled = true;
+        document.getElementById('creator-type-locked-msg').classList.remove('hidden');
+
         if(firstQ.layout) document.getElementById('creator-set-layout').value = firstQ.layout;
         if(firstQ.align) updateAlignUI(firstQ.align);
         if(firstQ.design) {
@@ -40,6 +54,8 @@ window.loadSetForEditing = function(key, item) {
         document.getElementById('creator-special-mode').value = firstQ.specialMode || 'none';
     } else {
         resetGlobalSettings();
+        typeSelect.disabled = false;
+        document.getElementById('creator-type-locked-msg').classList.add('hidden');
     }
 
     resetForm();
@@ -48,12 +64,20 @@ window.loadSetForEditing = function(key, item) {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Type選択の初期化
     const typeSelect = document.getElementById('creator-q-type');
-    if(typeSelect) {
-        typeSelect.addEventListener('change', (e) => {
+    typeSelect.innerHTML = `
+        <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
+        <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
+        <option value="text">${APP_TEXT.Creator.TypeText}</option>
+        <option value="multi">${APP_TEXT.Creator.TypeMulti}</option>
+    `;
+    typeSelect.addEventListener('change', (e) => {
+        // 問題がなければフォーム切り替え
+        if (createdQuestions.length === 0) {
             renderCreatorForm(e.target.value);
-        });
-    }
+        }
+    });
 
     document.querySelectorAll('.btn-align').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -62,15 +86,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // ... (画像アップロード関連は既存維持)
     const imgBtn = document.getElementById('design-bg-image-btn');
     const imgInput = document.getElementById('design-bg-image-file');
     const clearBtn = document.getElementById('design-bg-clear-btn');
-
     if(imgBtn && imgInput) {
         imgBtn.addEventListener('click', () => imgInput.click());
         imgInput.addEventListener('change', handleImageUpload);
     }
-    
     if(clearBtn) {
         clearBtn.addEventListener('click', () => {
             document.getElementById('design-bg-image-data').value = "";
@@ -154,16 +177,9 @@ function resetForm() {
     document.getElementById('update-question-area').classList.add('hidden');
     document.getElementById('question-text').value = '';
     
-    const typeSelect = document.getElementById('creator-q-type');
-    typeSelect.innerHTML = `
-        <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
-        <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
-        <option value="text">${APP_TEXT.Creator.TypeText}</option>
-        <option value="multi">${APP_TEXT.Creator.TypeMulti}</option>
-    `;
-    typeSelect.value = 'choice';
-    typeSelect.disabled = false;
-    renderCreatorForm('choice');
+    // フォームの中身を、現在のType設定に合わせて再描画
+    const currentType = document.getElementById('creator-q-type').value;
+    renderCreatorForm(currentType);
 }
 
 function renderCreatorForm(type, data = null) {
@@ -373,6 +389,7 @@ function getQuestionDataFromForm() {
     const qText = document.getElementById('question-text').value.trim();
     if(!qText) { alert(APP_TEXT.Creator.AlertNoQ); return null; }
 
+    // ★v56: 上部の固定プルダウンから取得
     const type = document.getElementById('creator-q-type').value;
     let newQ = { q: qText, type: type, points: 1, loss: 0 };
 
@@ -431,6 +448,10 @@ function addQuestion() {
         resetForm();
         renderQuestionList();
         window.showToast(APP_TEXT.Creator.MsgAddedToast);
+        
+        // ★v56: 1問追加されたらタイプをロック
+        document.getElementById('creator-q-type').disabled = true;
+        document.getElementById('creator-type-locked-msg').classList.remove('hidden');
     }
 }
 
@@ -453,11 +474,12 @@ function editQuestion(index) {
     document.getElementById('add-question-btn').classList.add('hidden');
     document.getElementById('update-question-area').classList.remove('hidden');
     
-    document.getElementById('creator-q-type').value = q.type;
-    document.getElementById('creator-q-type').disabled = true;
     document.getElementById('question-text').value = q.q;
     
-    renderCreatorForm(q.type, q);
+    // 編集時はその問題のデータをフォームに入れる（Typeは共通なので変更不要）
+    const type = document.getElementById('creator-q-type').value;
+    renderCreatorForm(type, q);
+    
     document.getElementById('creator-view').scrollIntoView({behavior: "smooth"});
 }
 
@@ -476,6 +498,14 @@ function deleteQuestion(index) {
         if(editingQuestionIndex === index) resetForm();
         else if(editingQuestionIndex > index) editingQuestionIndex--;
         renderQuestionList();
+        
+        // ★v56: 全削除されたらロック解除
+        if(createdQuestions.length === 0) {
+            document.getElementById('creator-q-type').disabled = false;
+            document.getElementById('creator-type-locked-msg').classList.add('hidden');
+            // リセット時にフォームを再描画
+            renderCreatorForm(document.getElementById('creator-q-type').value);
+        }
     }
 }
 
