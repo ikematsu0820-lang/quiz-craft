@@ -1,6 +1,9 @@
 /* =========================================================
- * host_config.js (v49: Multi-Mode Configuration)
+ * host_config.js (v50: Shuffle Config Added)
  * =======================================================*/
+
+// ... (enterConfigMode, updateModeDetails, loadSavedProgramsInConfig, updateBuilderUI, toggleCustomScoreArea は v49 と同じ) ...
+// 変更があるのは addPeriodToPlaylist のみ
 
 let selectedSetQuestions = [];
 
@@ -11,7 +14,6 @@ function enterConfigMode() {
     const select = document.getElementById('config-set-select');
     if(!select) return;
     
-    // ルールプルダウン生成
     const elimRuleSelect = document.getElementById('config-elimination-rule');
     elimRuleSelect.innerHTML = `
         <option value="none">${APP_TEXT.Config.RuleNone}</option>
@@ -20,13 +22,12 @@ function enterConfigMode() {
     `;
     elimRuleSelect.onchange = updateBuilderUI;
 
-    // ★v49: モード選択ロジック（3パターン分岐）
     const modeSelect = document.getElementById('config-mode-select');
     if (modeSelect) {
         modeSelect.addEventListener('change', (e) => {
             updateModeDetails(e.target.value);
         });
-        updateModeDetails(modeSelect.value); // 初期表示
+        updateModeDetails(modeSelect.value);
     }
 
     select.innerHTML = `<option value="">${APP_TEXT.Config.SelectLoading}</option>`;
@@ -94,7 +95,6 @@ function updateModeDetails(mode) {
     }
 }
 
-// ... (loadSavedProgramsInConfig, updateBuilderUI, toggleCustomScoreArea は v48 と同じ) ...
 function loadSavedProgramsInConfig() {
     const listEl = document.getElementById('config-saved-programs-list');
     if(!listEl) return;
@@ -250,6 +250,12 @@ function addPeriodToPlaylist() {
     }
 
     const mode = document.getElementById('config-mode-select').value;
+    
+    // ★v50: シャッフル設定の取得
+    let shuffle = 'off';
+    if (mode === 'normal') shuffle = document.getElementById('config-shuffle-choices').value;
+    else if (mode === 'buzz') shuffle = document.getElementById('config-buzz-shuffle').value;
+    else if (mode === 'turn') shuffle = document.getElementById('config-turn-shuffle').value;
 
     const newConfig = {
         initialStatus: initialStatus,
@@ -263,12 +269,13 @@ function addPeriodToPlaylist() {
         timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0,
         mode: mode,
         
-        // ★v49: 詳細設定の保存
         normalLimit: document.getElementById('config-normal-limit').value,
         buzzWrongAction: document.getElementById('config-buzz-wrong-action').value,
         buzzTime: parseInt(document.getElementById('config-buzz-timer').value) || 0,
         turnOrder: document.getElementById('config-turn-order').value,
-        turnPass: document.getElementById('config-turn-pass').value
+        turnPass: document.getElementById('config-turn-pass').value,
+        
+        shuffleChoices: shuffle // ★追加
     };
     
     periodPlaylist.push({
@@ -283,6 +290,7 @@ function addPeriodToPlaylist() {
 }
 
 function renderConfigPreview() {
+    // (省略 - v49と同じ)
     const container = document.getElementById('config-playlist-preview');
     if(!container) return;
     container.innerHTML = '';
@@ -336,7 +344,6 @@ function renderConfigPreview() {
         if(item.config.eliminationRule === 'wrong_only') ruleText = "WrongOut";
         if(item.config.eliminationRule === 'wrong_and_slowest') ruleText = `Slow${item.config.eliminationCount}Out`;
         
-        // ★v49: モード表示
         let modeLabel = item.config.mode.toUpperCase(); 
 
         div.innerHTML = `
@@ -351,7 +358,6 @@ function renderConfigPreview() {
         container.appendChild(div);
     });
 
-    // ... (イベントリスナー類は変更なし) ...
     document.querySelectorAll('.inter-status-select').forEach(sel => {
         sel.addEventListener('change', (e) => {
             const idx = e.target.getAttribute('data-index');
@@ -411,7 +417,7 @@ function saveProgramToCloud() {
 
     window.db.ref(`saved_programs/${currentShowId}`).push(saveObj)
     .then(() => {
-        alert(APP_TEXT.Config.MsgSaved);
+        window.showToast(APP_TEXT.Config.MsgSaved); // ★alert -> toast
         titleInput.value = '';
         periodPlaylist = []; 
         loadSavedProgramsInConfig(); 
