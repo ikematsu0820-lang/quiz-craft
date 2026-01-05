@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v54: Full Code)
+ * host_studio.js (v56: Per-Question Time Limit)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
@@ -665,6 +665,7 @@ function nextTaQuestion(roomId) {
     }, 5000);
 }
 
+// ★v56: カンペ更新時に個別制限時間を反映
 function updateKanpe() {
     const kanpeArea = document.getElementById('host-kanpe-area');
     if(studioQuestions.length === 0) {
@@ -724,7 +725,8 @@ function updateKanpe() {
         }
         document.getElementById('kanpe-answer').textContent = ansText;
         
-        const timeLimit = currentConfig.timeLimit || 0;
+        // ★v56: 個別時間がある場合はそれを表示
+        const timeLimit = (q.timeLimit !== undefined && q.timeLimit > 0) ? q.timeLimit : 0;
         const points = q.points || 1;
         const loss = q.loss || 0;
         document.getElementById('kanpe-point').textContent = `Pt:${points} / Loss:-${loss}`;
