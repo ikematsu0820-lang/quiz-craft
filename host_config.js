@@ -1,9 +1,6 @@
 /* =========================================================
- * host_config.js (v50: Shuffle Config Added)
+ * host_config.js (v51: Time Attack Config)
  * =======================================================*/
-
-// ... (enterConfigMode, updateModeDetails, loadSavedProgramsInConfig, updateBuilderUI, toggleCustomScoreArea は v49 と同じ) ...
-// 変更があるのは addPeriodToPlaylist のみ
 
 let selectedSetQuestions = [];
 
@@ -92,6 +89,9 @@ function updateModeDetails(mode) {
         document.getElementById('config-buzz-details').classList.remove('hidden');
     } else if (mode === 'turn') {
         document.getElementById('config-turn-details').classList.remove('hidden');
+    } else if (mode === 'time_attack') {
+        // ★v51: タイムショック用説明
+        document.getElementById('config-time-attack-details').classList.remove('hidden');
     }
 }
 
@@ -250,8 +250,6 @@ function addPeriodToPlaylist() {
     }
 
     const mode = document.getElementById('config-mode-select').value;
-    
-    // ★v50: シャッフル設定の取得
     let shuffle = 'off';
     if (mode === 'normal') shuffle = document.getElementById('config-shuffle-choices').value;
     else if (mode === 'buzz') shuffle = document.getElementById('config-buzz-shuffle').value;
@@ -267,7 +265,7 @@ function addPeriodToPlaylist() {
         scoreUnit: 'point',
         theme: 'light',
         timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0,
-        mode: mode,
+        mode: mode, 
         
         normalLimit: document.getElementById('config-normal-limit').value,
         buzzWrongAction: document.getElementById('config-buzz-wrong-action').value,
@@ -275,7 +273,7 @@ function addPeriodToPlaylist() {
         turnOrder: document.getElementById('config-turn-order').value,
         turnPass: document.getElementById('config-turn-pass').value,
         
-        shuffleChoices: shuffle // ★追加
+        shuffleChoices: shuffle
     };
     
     periodPlaylist.push({
@@ -290,7 +288,6 @@ function addPeriodToPlaylist() {
 }
 
 function renderConfigPreview() {
-    // (省略 - v49と同じ)
     const container = document.getElementById('config-playlist-preview');
     if(!container) return;
     container.innerHTML = '';
@@ -417,7 +414,7 @@ function saveProgramToCloud() {
 
     window.db.ref(`saved_programs/${currentShowId}`).push(saveObj)
     .then(() => {
-        window.showToast(APP_TEXT.Config.MsgSaved); // ★alert -> toast
+        window.showToast(APP_TEXT.Config.MsgSaved);
         titleInput.value = '';
         periodPlaylist = []; 
         loadSavedProgramsInConfig(); 
