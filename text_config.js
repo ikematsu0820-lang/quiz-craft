@@ -1,11 +1,11 @@
 /* =========================================================
- * text_config.js (v41: Creator Layout Redesign)
+ * text_config.js (v44: Design Customization)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v41",
+    Version: "Cloud Edition v44",
     
     // メインメニュー
     Main: {
@@ -54,9 +54,9 @@ const APP_TEXT = {
         BtnAddChoice: "＋ 選択肢を追加",
         BtnAddSort: "＋ 項目を追加",
         
-        // ★下部設定エリア用
+        // セット設定エリア
         HeadingSettings: "セット設定 (全体共通)",
-        LabelLayout: "モニター表示レイアウト",
+        LabelLayout: "モニターレイアウト",
         LayoutStandard: "標準 (上:問題 / 下:選択肢)",
         LayoutSplitList: "左右分割 (右:縦書き問題 / 左:リスト)",
         LayoutSplitGrid: "左右分割 (右:縦書き問題 / 左:グリッド)",
@@ -64,6 +64,15 @@ const APP_TEXT = {
         AlignLeft: "左揃え",
         AlignCenter: "中央揃え",
         AlignRight: "右揃え",
+        
+        // ★v44追加: デザイン設定
+        LabelDesign: "デザイン設定",
+        LabelTextColor: "文字色",
+        LabelFrameColor: "枠・ボタン色",
+        LabelBgColor: "背景色",
+        LabelBgImage: "背景画像 (自動圧縮)",
+        BtnSelectImage: "画像を選択",
+        MsgImageLoaded: "画像セット完了",
 
         AlertNoQ: "問題文を入力してください",
         AlertLessChoice: "選択肢は2つ以上必要です",
