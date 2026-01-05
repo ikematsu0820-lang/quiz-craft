@@ -1,5 +1,5 @@
 /* =========================================================
- * viewer.js (v35: New Monitor View Logic)
+ * viewer.js (v36: Choices Display)
  * =======================================================*/
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -45,9 +45,20 @@ function startViewerListener(roomId) {
                 const q = qSnap.val();
                 mainText.textContent = q.q;
                 
-                if(q.type === 'choice') {
-                    // 選択肢を表示 (大画面用に改行など入れる)
-                    subText.textContent = q.c.join('  /  ');
+                // ★変更: 選択肢の表示 (Choice & Sort)
+                if(q.type === 'choice' || q.type === 'sort') {
+                    let choicesHtml = '<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:30px; margin-top:30px;">';
+                    q.c.forEach((choice, i) => {
+                        const prefix = (q.type === 'choice') ? String.fromCharCode(65 + i) : (i + 1);
+                        choicesHtml += `
+                            <div style="background:rgba(255,255,255,0.15); padding:15px 30px; border-radius:10px; border:2px solid #777; font-size:0.8em; min-width:200px;">
+                                <span style="color:gold; font-weight:bold; font-size:1.2em; margin-right:10px;">${prefix}.</span>
+                                <span>${choice}</span>
+                            </div>
+                        `;
+                    });
+                    choicesHtml += '</div>';
+                    subText.innerHTML = choicesHtml;
                 } else {
                     subText.textContent = "";
                 }
@@ -61,15 +72,15 @@ function startViewerListener(roomId) {
                 mainText.textContent = q.q;
                 
                 let ansStr = "";
-                if(q.type === 'sort') ansStr = q.c.join('→');
+                if(q.type === 'sort') ansStr = q.c.join(' → ');
                 else if(q.type === 'text') ansStr = q.correct[0];
                 else {
                     const cIdx = (q.correctIndex !== undefined) ? q.correctIndex : q.correct[0];
-                    ansStr = q.c[cIdx];
+                    const prefix = String.fromCharCode(65 + cIdx);
+                    ansStr = `${prefix}. ${q.c[cIdx]}`;
                 }
                 
-                // 大画面用に装飾
-                subText.innerHTML = `<span style="color:#d00; background:white; padding:5px 20px; border-radius:10px;">正解: ${ansStr}</span>`;
+                subText.innerHTML = `<span style="color:#ff3333; background:white; padding:10px 40px; border-radius:15px; font-weight:bold;">正解: ${ansStr}</span>`;
             });
         }
         else if (st.step === 'ranking') {
@@ -94,10 +105,8 @@ function renderViewerRanking(roomId, container) {
         });
         list.sort((a,b) => (b.score - a.score) || (a.time - b.time));
         
-        // 上位10名を表示
         const top10 = list.slice(0, 10);
         
-        // 大画面用テーブル（vw単位で調整）
         let html = '<table style="width:100%; font-size:3vw; border-collapse:collapse; color:white;">';
         top10.forEach((p, i) => {
             const color = i === 0 ? 'gold' : (i === 1 ? 'silver' : (i === 2 ? '#cd7f32' : 'white'));
