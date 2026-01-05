@@ -1,9 +1,10 @@
 /* =========================================================
- * style.css (v26: All Star Quiz Cloud - Full Edition)
+ * style.css (v29: Quiz Studio - Full Edition)
  * =======================================================*/
 
 /* 1. 基本設定 (Base) */
 body {
+    /* 読みやすい標準フォント */
     font-family: "Helvetica Neue", Arial, sans-serif;
     max-width: 600px;
     margin: 0 auto;
@@ -25,7 +26,22 @@ body {
     transition: background 0.5s, border 0.5s;
 }
 
-/* タイトルロゴ */
+/* ★v29: ロゴ画像のスタイル */
+.app-logo {
+    max-width: 80%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.app-logo-small {
+    max-width: 200px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+/* タイトル文字（画像がない場合のバックアップ用） */
 .app-title {
     font-family: 'Arial Black', sans-serif;
     color: #ff0055;
@@ -158,11 +174,11 @@ input[type="text"], input[type="number"], select {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* タイムラインカード */
+/* タイムラインカード（番組構成リスト） */
 .timeline-card {
     background: #fff;
     border: 1px solid #ccc;
-    border-left: 6px solid #ccc; 
+    border-left: 6px solid #ccc; /* 未選択はグレー */
     padding: 15px;
     border-radius: 4px;
     display: flex;
@@ -174,9 +190,9 @@ input[type="text"], input[type="number"], select {
 }
 
 .timeline-card.active {
-    background: #e6f0ff; 
+    background: #e6f0ff; /* 薄い青背景 */
     border-color: #0055ff;
-    border-left-color: #0055ff; 
+    border-left-color: #0055ff; /* 青い帯 */
     opacity: 1; 
     transform: scale(1.02); 
     box-shadow: 0 4px 8px rgba(0,85,255,0.2);
@@ -257,6 +273,12 @@ input[type="text"], input[type="number"], select {
     font-size: 6em;
     margin-bottom: 20px;
     animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* ★v29: ランキング発表オーバーレイ */
+#player-ranking-overlay {
+    transition: opacity 0.3s;
+    text-align: center;
 }
 
 @keyframes popIn {
