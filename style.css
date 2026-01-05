@@ -1,5 +1,5 @@
 /* =========================================================
- * style.css (v14: Single Master Play Button Support)
+ * style.css (v18: Inter-Period Settings Support)
  * =======================================================*/
 
 /* 1. 基本設定 (Base) */
@@ -90,6 +90,7 @@ input[type="text"], input[type="number"], select {
     width: 100%;
     margin-bottom: 5px;
 }
+/* 参加者設定のプルダウンを目立たせる */
 .highlight-select {
     background-color: #fffbe6;
     border: 1px solid #e6b800;
@@ -132,7 +133,7 @@ input[type="text"], input[type="number"], select {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* タイムラインカード（リスト表示用・v14対応） */
+/* タイムラインカード（リスト表示用） */
 .timeline-card {
     background: #fff;
     border: 1px solid #ccc;
@@ -144,7 +145,7 @@ input[type="text"], input[type="number"], select {
     align-items: center;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     transition: all 0.3s;
-    opacity: 0.6; /* 未選択は少し薄くして「待機中」感を出す */
+    opacity: 0.8; 
 }
 
 /* アクティブ（再生対象）のスタイル */
@@ -152,14 +153,57 @@ input[type="text"], input[type="number"], select {
     background: #e6f0ff; /* 薄い青背景 */
     border-color: #0055ff;
     border-left-color: #0055ff; /* 青い帯 */
-    opacity: 1; /* くっきり表示 */
-    transform: scale(1.02); /* 少し大きく強調 */
+    opacity: 1; 
+    transform: scale(1.02); 
     box-shadow: 0 4px 8px rgba(0,85,255,0.2);
     font-weight: bold;
 }
 
 .timeline-card h5 { margin: 0 0 5px 0; font-size: 1.2em; color: #333; }
 .timeline-card .info { font-size: 0.9em; color: #666; }
+
+/* ★v18追加: リスト内の接続矢印と設定パネル */
+.playlist-arrow-container {
+    text-align: center;
+    margin: -5px 0; /* カードとの隙間を詰める */
+    position: relative;
+    z-index: 1;
+}
+
+.playlist-arrow {
+    width: 0; 
+    height: 0; 
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 15px solid #2c3e50; /* 濃いグレーの三角 */
+    margin: 0 auto;
+}
+
+.playlist-inter-setting {
+    background: #fffbe6; /* 薄い黄色 */
+    border: 2px solid #e6b800; /* 黄色の枠線 */
+    border-radius: 6px;
+    padding: 10px;
+    margin: 5px 20px 15px 20px; /* 左右にマージンをとって少し小さく */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+/* パネル内のプルダウン */
+.inter-status-select {
+    padding: 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-weight: bold;
+    color: #333;
+    flex: 1;
+    width: 100%;
+}
+
+.inter-pass-input {
+    border: 1px solid #aaa;
+    border-radius: 4px;
+}
 
 /* 4. ランキング画面 (Ranking) */
 .ranking-container {
