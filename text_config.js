@@ -1,11 +1,11 @@
 /* =========================================================
- * text_config.js (v31: Delete Program Support)
+ * text_config.js (v32: Config Program List)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v31",
+    Version: "Cloud Edition v32",
     
     // メインメニュー
     Main: {
@@ -33,7 +33,7 @@ const APP_TEXT = {
         DeleteConfirm: "削除しますか？"
     },
 
-    // セット作成 (Creator)
+    // セット作成
     Creator: {
         Title: "問題作成",
         BackBtn: "ダッシュボードへ",
@@ -90,6 +90,7 @@ const APP_TEXT = {
         PlaceholderProgName: "構成に名前をつけて保存",
         BtnSaveProg: "保存",
         BtnGoStudio: "保存してスタジオへ",
+        // ピリオド間
         InterHeading: "ピリオド間設定",
         StatusRevive: "全員復活してスタート",
         StatusContinue: "生存者のみで継続",
@@ -97,10 +98,17 @@ const APP_TEXT = {
         LabelTop: "上位",
         LabelName: "名",
         CheckInterRank: "この前に中間発表を行う",
+        // 保存済みプログラムリスト（★追加）
+        HeadingSavedProg: "保存済みプログラムリスト",
+        BtnLoadProg: "読込",
+        BtnDelProg: "削除",
+        MsgConfirmLoadProg: "このプログラムを読み込みますか？\n（現在の編集内容は破棄されます）",
+        MsgConfirmDelProg: "本当にこのプログラムを削除しますか？",
+        // アラート
         AlertNoSet: "セットを選んでください",
         AlertEmptyList: "構成リストが空です",
         AlertNoTitle: "プログラム名を入力してください",
-        MsgSaved: "プログラムを保存しました！\nダッシュボードに戻ります。"
+        MsgSaved: "プログラムを保存しました！"
     },
 
     // スタジオ (Studio)
@@ -114,7 +122,7 @@ const APP_TEXT = {
         HeadingLoad: "📂 プログラム読込",
         SelectProgDefault: "保存済みプログラムを選択...",
         BtnLoad: "読み込んでセット",
-        BtnDeleteProg: "削除", // ★追加
+        // BtnDeleteProg は削除しました
         BtnMasterPlay: "再生 ▶",
         BtnStart: "問題 START！",
         BtnAnswer: "正解発表",
@@ -126,9 +134,8 @@ const APP_TEXT = {
         BtnRanking: "中間順位",
         BtnClose: "スタジオを閉じて戻る",
         BtnBackRanking: "スタジオに戻る",
-        MsgNoPeriod: "再生するピリオドがありません",
+        // MsgNoPeriod は削除しました（ポップアップ廃止のため）
         MsgConfirmLoad: "プログラムを読み込んでセットしますか？\n（現在の進行内容はリセットされます）",
-        MsgConfirmDeleteProg: "本当にこのプログラムを削除しますか？\n（元に戻せません）", // ★追加
         MsgLoaded: "セットしました。再生ボタンで開始してください。",
         MsgThinking: "Thinking Time...",
         MsgAnswerCheck: "正解発表",
@@ -136,7 +143,7 @@ const APP_TEXT = {
         MsgConfirmBack: "ダッシュボードに戻りますか？"
     },
 
-    // プレイヤー (Player)
+    // プレイヤー
     Player: {
         TitleEntry: "エントリー",
         PlaceholderCode: "部屋コード (6桁)",
