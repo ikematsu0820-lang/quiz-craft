@@ -1,5 +1,5 @@
 /* =========================================================
- * host_creator.js (v44: Design Config & Image Compression)
+ * host_creator.js (v45: Granular Design Config)
  * =======================================================*/
 
 window.initCreatorMode = function() {
@@ -36,18 +36,25 @@ window.loadSetForEditing = function(key, item) {
         if(firstQ.layout) document.getElementById('creator-set-layout').value = firstQ.layout;
         if(firstQ.align) updateAlignUI(firstQ.align);
         
-        // ★v44: デザイン設定の復元
+        // ★v45: 詳細デザインの復元
         if(firstQ.design) {
-            document.getElementById('design-text-color').value = firstQ.design.textColor || "#ffffff";
-            document.getElementById('design-frame-color').value = firstQ.design.frameColor || "#2c5066";
-            document.getElementById('design-bg-color').value = firstQ.design.bgColor || "#222222";
+            // Main
+            document.getElementById('design-main-bg-color').value = firstQ.design.mainBgColor || "#222222";
             if(firstQ.design.bgImage) {
                 document.getElementById('design-bg-image-data').value = firstQ.design.bgImage;
                 document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgImageLoaded;
             } else {
                 document.getElementById('design-bg-image-data').value = "";
-                document.getElementById('design-bg-image-status').textContent = "";
+                document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgNoImage;
             }
+            // Question
+            document.getElementById('design-q-text').value = firstQ.design.qTextColor || "#ffffff";
+            document.getElementById('design-q-bg').value = firstQ.design.qBgColor || "#2c5066";
+            document.getElementById('design-q-border').value = firstQ.design.qBorderColor || "#ffffff";
+            // Choice
+            document.getElementById('design-c-text').value = firstQ.design.cTextColor || "#ffffff";
+            document.getElementById('design-c-bg').value = firstQ.design.cBgColor || "#365c75";
+            document.getElementById('design-c-border').value = firstQ.design.cBorderColor || "#ffffff";
         }
     } else {
         resetGlobalSettings();
@@ -83,16 +90,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ★v44: 画像アップロードボタンの処理
+    // 画像アップロード & クリア
     const imgBtn = document.getElementById('design-bg-image-btn');
     const imgInput = document.getElementById('design-bg-image-file');
+    const clearBtn = document.getElementById('design-bg-clear-btn');
+
     if(imgBtn && imgInput) {
         imgBtn.addEventListener('click', () => imgInput.click());
         imgInput.addEventListener('change', handleImageUpload);
     }
+    
+    if(clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            document.getElementById('design-bg-image-data').value = "";
+            document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgNoImage;
+            if(imgInput) imgInput.value = "";
+        });
+    }
 });
 
-// ★v44: 画像圧縮・Base64変換ロジック
 function handleImageUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -104,7 +120,6 @@ function handleImageUpload(e) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // 最大幅 1280px にリサイズ
             const MAX_WIDTH = 1280;
             let width = img.width;
             let height = img.height;
@@ -118,7 +133,6 @@ function handleImageUpload(e) {
             canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
 
-            // 圧縮してBase64取得 (JPEG, 品質0.7)
             const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
             
             document.getElementById('design-bg-image-data').value = dataUrl;
@@ -132,12 +146,19 @@ function handleImageUpload(e) {
 function resetGlobalSettings() {
     document.getElementById('creator-set-layout').value = 'standard';
     updateAlignUI('center');
-    // デザインリセット
-    document.getElementById('design-text-color').value = "#ffffff";
-    document.getElementById('design-frame-color').value = "#2c5066";
-    document.getElementById('design-bg-color').value = "#222222";
+    
+    // デザインリセット (デフォルト値)
+    document.getElementById('design-main-bg-color').value = "#222222";
     document.getElementById('design-bg-image-data').value = "";
-    document.getElementById('design-bg-image-status').textContent = "";
+    document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgNoImage;
+    
+    document.getElementById('design-q-text').value = "#ffffff";
+    document.getElementById('design-q-bg').value = "#2c5066";
+    document.getElementById('design-q-border').value = "#ffffff";
+    
+    document.getElementById('design-c-text').value = "#ffffff";
+    document.getElementById('design-c-bg').value = "#365c75";
+    document.getElementById('design-c-border').value = "#ffffff";
 }
 
 function updateAlignUI(align) {
@@ -356,23 +377,27 @@ function saveToCloud() {
     if(createdQuestions.length === 0) { alert('No questions'); return; }
     const title = document.getElementById('quiz-set-title').value.trim() || "Untitled";
     
-    // ★v44: デザイン設定を含めて全問題に適用
     const layout = document.getElementById('creator-set-layout').value;
     const align = document.getElementById('creator-set-align').value;
-    const textColor = document.getElementById('design-text-color').value;
-    const frameColor = document.getElementById('design-frame-color').value;
-    const bgColor = document.getElementById('design-bg-color').value;
-    const bgImage = document.getElementById('design-bg-image-data').value;
+    
+    // ★v45: 詳細デザインの取得
+    const design = {
+        mainBgColor: document.getElementById('design-main-bg-color').value,
+        bgImage: document.getElementById('design-bg-image-data').value,
+        
+        qTextColor: document.getElementById('design-q-text').value,
+        qBgColor: document.getElementById('design-q-bg').value,
+        qBorderColor: document.getElementById('design-q-border').value,
+        
+        cTextColor: document.getElementById('design-c-text').value,
+        cBgColor: document.getElementById('design-c-bg').value,
+        cBorderColor: document.getElementById('design-c-border').value
+    };
 
     createdQuestions.forEach(q => {
         q.layout = layout;
         q.align = align;
-        q.design = {
-            textColor: textColor,
-            frameColor: frameColor,
-            bgColor: bgColor,
-            bgImage: bgImage
-        };
+        q.design = design;
     });
 
     const defaultConf = { eliminationRule: 'none', scoreUnit: 'point', theme: 'light' };
