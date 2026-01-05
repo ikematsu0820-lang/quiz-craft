@@ -1,6 +1,9 @@
 /* =========================================================
- * host_creator.js (v45: Granular Design Config)
+ * host_creator.js (v50: Full Editing & Toast)
  * =======================================================*/
+
+// 編集モード管理
+let editingQuestionIndex = null;
 
 window.initCreatorMode = function() {
     editingSetId = null;
@@ -9,17 +12,7 @@ window.initCreatorMode = function() {
     document.getElementById('save-to-cloud-btn').textContent = APP_TEXT.Creator.BtnSave;
     
     resetGlobalSettings(); 
-    
-    const typeSelect = document.getElementById('creator-q-type');
-    if(typeSelect) {
-        typeSelect.innerHTML = `
-            <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
-            <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
-            <option value="text">${APP_TEXT.Creator.TypeText}</option>
-        `;
-        typeSelect.value = 'choice';
-        renderCreatorForm('choice');
-    }
+    resetForm();
     
     renderQuestionList();
     window.showView(window.views.creator);
@@ -35,10 +28,7 @@ window.loadSetForEditing = function(key, item) {
         const firstQ = createdQuestions[0];
         if(firstQ.layout) document.getElementById('creator-set-layout').value = firstQ.layout;
         if(firstQ.align) updateAlignUI(firstQ.align);
-        
-        // ★v45: 詳細デザインの復元
         if(firstQ.design) {
-            // Main
             document.getElementById('design-main-bg-color').value = firstQ.design.mainBgColor || "#222222";
             if(firstQ.design.bgImage) {
                 document.getElementById('design-bg-image-data').value = firstQ.design.bgImage;
@@ -47,11 +37,9 @@ window.loadSetForEditing = function(key, item) {
                 document.getElementById('design-bg-image-data').value = "";
                 document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgNoImage;
             }
-            // Question
             document.getElementById('design-q-text').value = firstQ.design.qTextColor || "#ffffff";
             document.getElementById('design-q-bg').value = firstQ.design.qBgColor || "#2c5066";
             document.getElementById('design-q-border').value = firstQ.design.qBorderColor || "#ffffff";
-            // Choice
             document.getElementById('design-c-text').value = firstQ.design.cTextColor || "#ffffff";
             document.getElementById('design-c-bg').value = firstQ.design.cBgColor || "#365c75";
             document.getElementById('design-c-border').value = firstQ.design.cBorderColor || "#ffffff";
@@ -60,17 +48,7 @@ window.loadSetForEditing = function(key, item) {
         resetGlobalSettings();
     }
 
-    const typeSelect = document.getElementById('creator-q-type');
-    if(typeSelect) {
-        typeSelect.innerHTML = `
-            <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
-            <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
-            <option value="text">${APP_TEXT.Creator.TypeText}</option>
-        `;
-        typeSelect.value = 'choice';
-        renderCreatorForm('choice'); 
-    }
-
+    resetForm();
     renderQuestionList();
     window.showView(window.views.creator);
 };
@@ -90,7 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 画像アップロード & クリア
     const imgBtn = document.getElementById('design-bg-image-btn');
     const imgInput = document.getElementById('design-bg-image-file');
     const clearBtn = document.getElementById('design-bg-clear-btn');
@@ -107,7 +84,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if(imgInput) imgInput.value = "";
         });
     }
+
+    // ★v50: 更新・キャンセルボタン
+    document.getElementById('update-question-btn').addEventListener('click', updateQuestion);
+    document.getElementById('cancel-update-btn').addEventListener('click', resetForm);
 });
+
+// トースト通知
+window.showToast = function(msg) {
+    const container = document.getElementById('toast-container');
+    const div = document.createElement('div');
+    div.className = 'toast-msg';
+    div.textContent = msg;
+    container.appendChild(div);
+    setTimeout(() => div.remove(), 3000);
+};
 
 function handleImageUpload(e) {
     const file = e.target.files[0];
@@ -119,22 +110,17 @@ function handleImageUpload(e) {
         img.onload = function() {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            
             const MAX_WIDTH = 1280;
             let width = img.width;
             let height = img.height;
-
             if (width > MAX_WIDTH) {
                 height *= MAX_WIDTH / width;
                 width = MAX_WIDTH;
             }
-
             canvas.width = width;
             canvas.height = height;
             ctx.drawImage(img, 0, 0, width, height);
-
             const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            
             document.getElementById('design-bg-image-data').value = dataUrl;
             document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgImageLoaded;
         };
@@ -146,16 +132,12 @@ function handleImageUpload(e) {
 function resetGlobalSettings() {
     document.getElementById('creator-set-layout').value = 'standard';
     updateAlignUI('center');
-    
-    // デザインリセット (デフォルト値)
     document.getElementById('design-main-bg-color').value = "#222222";
     document.getElementById('design-bg-image-data').value = "";
     document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgNoImage;
-    
     document.getElementById('design-q-text').value = "#ffffff";
     document.getElementById('design-q-bg').value = "#2c5066";
     document.getElementById('design-q-border').value = "#ffffff";
-    
     document.getElementById('design-c-text').value = "#ffffff";
     document.getElementById('design-c-bg').value = "#365c75";
     document.getElementById('design-c-border').value = "#ffffff";
@@ -172,7 +154,26 @@ function updateAlignUI(align) {
     });
 }
 
-function renderCreatorForm(type) {
+function resetForm() {
+    editingQuestionIndex = null;
+    document.getElementById('creator-form-title').textContent = APP_TEXT.Creator.HeadingNewQ;
+    document.getElementById('add-question-btn').classList.remove('hidden');
+    document.getElementById('update-question-area').classList.add('hidden');
+    document.getElementById('question-text').value = '';
+    
+    // Type Selectをリセット
+    const typeSelect = document.getElementById('creator-q-type');
+    typeSelect.innerHTML = `
+        <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
+        <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
+        <option value="text">${APP_TEXT.Creator.TypeText}</option>
+    `;
+    typeSelect.value = 'choice';
+    typeSelect.disabled = false;
+    renderCreatorForm('choice');
+}
+
+function renderCreatorForm(type, data = null) {
     const container = document.getElementById('creator-form-container');
     if(!container) return; 
     container.innerHTML = ''; 
@@ -181,8 +182,11 @@ function renderCreatorForm(type) {
         const settingsDiv = document.createElement('div');
         settingsDiv.style.marginBottom = '10px';
         settingsDiv.style.fontSize = '0.9em';
+        
+        const isMulti = data ? data.multi : false;
+        
         settingsDiv.innerHTML = `
-            <label style="margin-right:10px;"><input type="checkbox" id="opt-multi-select"> ${APP_TEXT.Creator.OptMulti}</label>
+            <label style="margin-right:10px;"><input type="checkbox" id="opt-multi-select" ${isMulti?'checked':''}> ${APP_TEXT.Creator.OptMulti}</label>
         `;
         container.appendChild(settingsDiv);
 
@@ -192,7 +196,14 @@ function renderCreatorForm(type) {
         choicesDiv.style.gap = '5px';
         container.appendChild(choicesDiv);
 
-        for(let i=0; i<4; i++) addChoiceInput(choicesDiv, i);
+        if (data) {
+            data.c.forEach((choiceText, i) => {
+                const isCorrect = data.correct.includes(i);
+                addChoiceInput(choicesDiv, i, choiceText, isCorrect);
+            });
+        } else {
+            for(let i=0; i<4; i++) addChoiceInput(choicesDiv, i);
+        }
 
         const addBtn = document.createElement('button');
         addBtn.textContent = APP_TEXT.Creator.BtnAddChoice;
@@ -203,11 +214,21 @@ function renderCreatorForm(type) {
         container.appendChild(addBtn);
 
     } else if (type === 'sort') {
-        const desc = document.createElement('p');
-        desc.style.fontSize = '0.8em';
-        desc.style.color = '#666';
-        desc.textContent = '※Correct Order (Top to Bottom)';
-        container.appendChild(desc);
+        // ★v50: 並べ替えオプション
+        const optDiv = document.createElement('div');
+        optDiv.style.marginBottom = '10px';
+        
+        const initVal = data ? data.initialOrder : 'random';
+        
+        optDiv.innerHTML = `
+            <p style="font-size:0.8em; color:#666; margin:0 0 5px 0;">${APP_TEXT.Creator.DescSort}</p>
+            <label style="font-size:0.8em; font-weight:bold;">${APP_TEXT.Creator.LabelSortInitial}</label>
+            <select id="sort-initial-order" style="padding:5px; font-size:0.9em;">
+                <option value="random" ${initVal==='random'?'selected':''}>${APP_TEXT.Creator.SortInitialRandom}</option>
+                <option value="fixed" ${initVal==='fixed'?'selected':''}>${APP_TEXT.Creator.SortInitialFixed}</option>
+            </select>
+        `;
+        container.appendChild(optDiv);
 
         const sortDiv = document.createElement('div');
         sortDiv.id = 'creator-sort-list';
@@ -216,7 +237,11 @@ function renderCreatorForm(type) {
         sortDiv.style.gap = '5px';
         container.appendChild(sortDiv);
 
-        for(let i=0; i<4; i++) addSortInput(sortDiv, i);
+        if (data) {
+            data.c.forEach((itemText, i) => addSortInput(sortDiv, i, itemText));
+        } else {
+            for(let i=0; i<4; i++) addSortInput(sortDiv, i);
+        }
 
         const addBtn = document.createElement('button');
         addBtn.textContent = APP_TEXT.Creator.BtnAddSort;
@@ -227,37 +252,51 @@ function renderCreatorForm(type) {
         container.appendChild(addBtn);
 
     } else if (type === 'text') {
-        const desc = document.createElement('p');
-        desc.style.fontSize = '0.8em';
-        desc.style.color = '#666';
-        desc.textContent = '※Correct Keywords (comma separated)';
-        container.appendChild(desc);
+        // ★v50: 自由入力オプション
+        const optDiv = document.createElement('div');
+        optDiv.style.marginBottom = '10px';
+        
+        const modeVal = data ? data.mode : 'written';
+        
+        optDiv.innerHTML = `
+            <label style="font-size:0.8em; font-weight:bold;">${APP_TEXT.Creator.LabelTextFormat}</label>
+            <select id="text-mode-select" style="padding:5px; font-size:0.9em;">
+                <option value="written" ${modeVal==='written'?'selected':''}>${APP_TEXT.Creator.TextFormatWritten}</option>
+                <option value="oral" ${modeVal==='oral'?'selected':''}>${APP_TEXT.Creator.TextFormatOral}</option>
+            </select>
+            <p style="font-size:0.8em; color:#666; margin:5px 0;">${APP_TEXT.Creator.DescText}</p>
+        `;
+        container.appendChild(optDiv);
 
         const input = document.createElement('input');
         input.type = 'text';
         input.id = 'creator-text-answer';
         input.className = 'btn-block';
         input.placeholder = 'e.g. Apple, Ringot, APPL';
+        if (data) input.value = data.correct.join(', ');
         container.appendChild(input);
     }
 }
 
-function addChoiceInput(parent, index) {
+function addChoiceInput(parent, index, text = "", checked = false) {
     if (parent.children.length >= 10) {
         alert(APP_TEXT.Creator.AlertMaxChoice);
         return;
     }
-
     const wrapper = document.createElement('div');
     wrapper.className = 'choice-row';
     const chk = document.createElement('input');
     chk.type = 'checkbox';
     chk.className = 'choice-correct-chk';
+    chk.checked = checked;
+    
     const inp = document.createElement('input');
     inp.type = 'text';
     inp.className = 'choice-text-input';
     inp.placeholder = 'Choice';
+    inp.value = text;
     inp.style.flex = '1';
+    
     const del = document.createElement('button');
     del.textContent = '×';
     del.style.background = '#ccc';
@@ -265,18 +304,18 @@ function addChoiceInput(parent, index) {
     del.style.width = '30px';
     del.style.padding = '5px';
     del.onclick = () => parent.removeChild(wrapper);
+    
     wrapper.appendChild(chk);
     wrapper.appendChild(inp);
     wrapper.appendChild(del);
     parent.appendChild(wrapper);
 }
 
-function addSortInput(parent) {
+function addSortInput(parent, index, text = "") {
     if (parent.children.length >= 10) {
         alert(APP_TEXT.Creator.AlertMaxChoice);
         return;
     }
-
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
     wrapper.style.alignItems = 'center';
@@ -287,6 +326,7 @@ function addSortInput(parent) {
     inp.type = 'text';
     inp.className = 'sort-text-input';
     inp.placeholder = 'Item';
+    inp.value = text;
     inp.style.flex = '1';
     const del = document.createElement('button');
     del.textContent = '×';
@@ -301,12 +341,11 @@ function addSortInput(parent) {
     parent.appendChild(wrapper);
 }
 
-function addQuestion() {
+function getQuestionDataFromForm() {
     const qText = document.getElementById('question-text').value.trim();
-    if(!qText) { alert(APP_TEXT.Creator.AlertNoQ); return; }
+    if(!qText) { alert(APP_TEXT.Creator.AlertNoQ); return null; }
 
     const type = document.getElementById('creator-q-type').value;
-    
     let newQ = { q: qText, type: type, points: 1, loss: 0 };
 
     if (type === 'choice') {
@@ -318,11 +357,11 @@ function addQuestion() {
             const isChk = row.querySelector('.choice-correct-chk').checked;
             if(text) {
                 options.push(text);
-                if(isChk) correct.push(options.length - 1);
+                if(isChk) correct.push(options.length - 1); // 詰め直したindex
             }
         });
-        if (options.length < 2) { alert(APP_TEXT.Creator.AlertLessChoice); return; }
-        if (correct.length === 0) { alert(APP_TEXT.Creator.AlertNoCorrect); return; }
+        if (options.length < 2) { alert(APP_TEXT.Creator.AlertLessChoice); return null; }
+        if (correct.length === 0) { alert(APP_TEXT.Creator.AlertNoCorrect); return null; }
         newQ.c = options; 
         newQ.correct = correct;
         newQ.correctIndex = correct[0];
@@ -333,43 +372,110 @@ function addQuestion() {
         const inputs = document.querySelectorAll('.sort-text-input');
         const options = [];
         inputs.forEach(inp => { if(inp.value.trim()) options.push(inp.value.trim()); });
-        if(options.length < 2) { alert(APP_TEXT.Creator.AlertLessChoice); return; }
+        if(options.length < 2) { alert(APP_TEXT.Creator.AlertLessChoice); return null; }
         newQ.c = options; 
         newQ.correct = options.map((_, i) => i);
+        // ★v50: 初期順序設定
+        newQ.initialOrder = document.getElementById('sort-initial-order').value;
 
     } else if (type === 'text') {
+        const mode = document.getElementById('text-mode-select').value;
+        newQ.mode = mode;
         const ansText = document.getElementById('creator-text-answer').value.trim();
-        if(!ansText) { alert(APP_TEXT.Creator.AlertNoTextAns); return; }
-        const answers = ansText.split(',').map(s => s.trim()).filter(s => s);
+        
+        if (mode === 'written' && !ansText) {
+            alert(APP_TEXT.Creator.AlertNoTextAns); return null;
+        }
+        // 口頭の場合は空でもOK（メモ扱い）
+        const answers = ansText ? ansText.split(',').map(s => s.trim()).filter(s => s) : [];
         newQ.correct = answers; 
     }
+    return newQ;
+}
 
-    createdQuestions.push(newQ);
+function addQuestion() {
+    const q = getQuestionDataFromForm();
+    if(q) {
+        createdQuestions.push(q);
+        resetForm();
+        renderQuestionList();
+        window.showToast(APP_TEXT.Creator.MsgAddedToast);
+    }
+}
+
+function updateQuestion() {
+    if(editingQuestionIndex === null) return;
+    const q = getQuestionDataFromForm();
+    if(q) {
+        // 既存のプロパティ（layout, designなど）を維持しつつ上書き
+        createdQuestions[editingQuestionIndex] = { ...createdQuestions[editingQuestionIndex], ...q };
+        resetForm();
+        renderQuestionList();
+        window.showToast(APP_TEXT.Creator.MsgUpdatedToast);
+    }
+}
+
+function editQuestion(index) {
+    editingQuestionIndex = index;
+    const q = createdQuestions[index];
+    
+    document.getElementById('creator-form-title').textContent = APP_TEXT.Creator.HeadingEditQ;
+    document.getElementById('add-question-btn').classList.add('hidden');
+    document.getElementById('update-question-area').classList.remove('hidden');
+    
+    document.getElementById('creator-q-type').value = q.type;
+    document.getElementById('creator-q-type').disabled = true; // タイプ変更は不可（複雑になるため）
+    document.getElementById('question-text').value = q.q;
+    
+    renderCreatorForm(q.type, q);
+    
+    // スクロールしてフォームを見せる
+    document.getElementById('creator-view').scrollIntoView({behavior: "smooth"});
+}
+
+function moveQuestion(index, direction) {
+    if (direction === -1 && index > 0) {
+        [createdQuestions[index], createdQuestions[index - 1]] = [createdQuestions[index - 1], createdQuestions[index]];
+    } else if (direction === 1 && index < createdQuestions.length - 1) {
+        [createdQuestions[index], createdQuestions[index + 1]] = [createdQuestions[index + 1], createdQuestions[index]];
+    }
     renderQuestionList();
-    document.getElementById('question-text').value = '';
-    document.getElementById('question-text').focus();
-    renderCreatorForm(type);
+}
+
+function deleteQuestion(index) {
+    if(confirm(APP_TEXT.Dashboard.DeleteConfirm)) {
+        createdQuestions.splice(index, 1);
+        // 編集中のものを削除したらフォームリセット
+        if(editingQuestionIndex === index) resetForm();
+        else if(editingQuestionIndex > index) editingQuestionIndex--;
+        
+        renderQuestionList();
+    }
 }
 
 function renderQuestionList() {
     const list = document.getElementById('q-list');
     list.innerHTML = '';
     createdQuestions.forEach((q, index) => {
-        const li = document.createElement('li');
+        const div = document.createElement('div');
+        div.className = 'q-list-item';
+        
         let typeIcon = '🔳';
         if(q.type === 'sort') typeIcon = '🔢';
         if(q.type === 'text') typeIcon = '✍️';
-        li.innerHTML = `${typeIcon} <b>Q${index + 1}.</b> ${q.q}`;
-        const delSpan = document.createElement('span');
-        delSpan.textContent = ' [x]';
-        delSpan.style.color = 'red';
-        delSpan.style.cursor = 'pointer';
-        delSpan.onclick = () => {
-            createdQuestions.splice(index, 1);
-            renderQuestionList();
-        };
-        li.appendChild(delSpan);
-        list.appendChild(li);
+        
+        div.innerHTML = `
+            <div class="q-list-content">
+                ${typeIcon} <b>Q${index + 1}.</b> ${q.q}
+            </div>
+            <div class="q-list-actions">
+                <button class="btn-mini btn-move" onclick="moveQuestion(${index}, -1)">↑</button>
+                <button class="btn-mini btn-move" onclick="moveQuestion(${index}, 1)">↓</button>
+                <button class="btn-mini btn-edit" onclick="editQuestion(${index})">Edit</button>
+                <button class="btn-mini btn-del" onclick="deleteQuestion(${index})">×</button>
+            </div>
+        `;
+        list.appendChild(div);
     });
 }
 
@@ -380,15 +486,12 @@ function saveToCloud() {
     const layout = document.getElementById('creator-set-layout').value;
     const align = document.getElementById('creator-set-align').value;
     
-    // ★v45: 詳細デザインの取得
     const design = {
         mainBgColor: document.getElementById('design-main-bg-color').value,
         bgImage: document.getElementById('design-bg-image-data').value,
-        
         qTextColor: document.getElementById('design-q-text').value,
         qBgColor: document.getElementById('design-q-bg').value,
         qBorderColor: document.getElementById('design-q-border').value,
-        
         cTextColor: document.getElementById('design-c-text').value,
         cBgColor: document.getElementById('design-c-bg').value,
         cBorderColor: document.getElementById('design-c-border').value
@@ -409,9 +512,15 @@ function saveToCloud() {
     };
     if (editingSetId) {
         window.db.ref(`saved_sets/${currentShowId}/${editingSetId}`).update(saveData)
-        .then(() => { alert(`Updated!`); enterDashboard(); });
+        .then(() => { 
+            window.showToast(APP_TEXT.Creator.MsgSavedToast);
+            enterDashboard(); 
+        });
     } else {
         window.db.ref(`saved_sets/${currentShowId}`).push(saveData)
-        .then(() => { alert(`Saved!`); enterDashboard(); });
+        .then(() => { 
+            window.showToast(APP_TEXT.Creator.MsgSavedToast);
+            enterDashboard(); 
+        });
     }
 }
