@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v53: Panel & Bomb Config)
+ * host_config.js (v54: Full Code)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -38,8 +38,12 @@ function enterConfigMode() {
             Object.keys(data).forEach(key => {
                 const item = data[key];
                 const opt = document.createElement('option');
-                opt.value = JSON.stringify({ q: item.questions, c: item.config || {}, t: item.title });
-                opt.textContent = item.title;
+                // データに specialMode を含める
+                const firstQ = (item.questions && item.questions.length > 0) ? item.questions[0] : {};
+                const spMode = firstQ.specialMode || 'none';
+                
+                opt.value = JSON.stringify({ q: item.questions, c: item.config || {}, t: item.title, sp: spMode });
+                opt.textContent = item.title + (spMode !== 'none' ? ` [${spMode}]` : '');
                 select.appendChild(opt);
             });
         } else {
@@ -53,8 +57,12 @@ function enterConfigMode() {
             const data = JSON.parse(val);
             selectedSetQuestions = data.q || [];
             document.getElementById('config-custom-points-area').classList.add('hidden');
+            
+            // スペシャルモード適用 & ロック
+            applySpecialModeLock(data.sp);
         } else {
             selectedSetQuestions = [];
+            unlockConfig();
         }
     };
 
@@ -78,6 +86,40 @@ function enterConfigMode() {
 
     loadSavedProgramsInConfig();
     renderConfigPreview();
+}
+
+function applySpecialModeLock(spMode) {
+    const modeSelect = document.getElementById('config-mode-select');
+    const lockMsg = document.getElementById('config-mode-locked-msg');
+    const ruleSec = document.getElementById('config-rule-section');
+    
+    if (spMode === 'time_attack') {
+        modeSelect.value = 'time_attack';
+        modeSelect.disabled = true;
+        lockMsg.classList.remove('hidden');
+        ruleSec.style.display = 'none'; 
+        updateModeDetails('time_attack');
+    } else if (spMode === 'panel_attack') {
+        modeSelect.value = 'panel_attack';
+        modeSelect.disabled = true;
+        lockMsg.classList.remove('hidden');
+        ruleSec.style.display = 'none';
+        updateModeDetails('panel_attack');
+    } else {
+        unlockConfig();
+    }
+}
+
+function unlockConfig() {
+    const modeSelect = document.getElementById('config-mode-select');
+    const lockMsg = document.getElementById('config-mode-locked-msg');
+    const ruleSec = document.getElementById('config-rule-section');
+    
+    modeSelect.disabled = false;
+    lockMsg.classList.add('hidden');
+    ruleSec.style.display = 'block';
+    
+    updateModeDetails(modeSelect.value);
 }
 
 function updateModeDetails(mode) {
@@ -207,10 +249,9 @@ function toggleCustomScoreArea() {
 function addPeriodToPlaylist() {
     const select = document.getElementById('config-set-select');
     const json = select.value;
-    // panelやbombはセット選択なしでもOKとする場合はここを調整するが、
-    // 基本は「セットなし」を選択肢に追加するか、ダミーセットを作る運用とする。
-    // 今回は「セットがありません」でなければOKとする。
-    if(!json && document.getElementById('config-mode-select').value !== 'panel_attack' && document.getElementById('config-mode-select').value !== 'bomb') {
+    const mode = document.getElementById('config-mode-select').value;
+
+    if(!json && mode !== 'panel_attack' && mode !== 'bomb') {
          alert(APP_TEXT.Config.AlertNoSet); return; 
     }
     
@@ -255,9 +296,6 @@ function addPeriodToPlaylist() {
         elimCount = parseInt(document.getElementById('config-elimination-count').value) || 1;
     }
 
-    const mode = document.getElementById('config-mode-select').value;
-    
-    // ★v53: ドボン用
     let bombCount = 10;
     let bombTarget = 'bomb1';
     if (mode === 'bomb') {
