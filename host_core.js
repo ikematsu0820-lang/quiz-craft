@@ -1,5 +1,5 @@
 /* =========================================================
- * host_core.js (v33: Viewer Nav & Creator Fix)
+ * host_core.js (v35: Navigation & Creator Button Fix)
  * =======================================================*/
 
 let currentShowId = null;
@@ -41,7 +41,7 @@ window.applyTextConfig = function() {
         'config-program-title': APP_TEXT.Config.PlaceholderProgName,
         'room-code-input': APP_TEXT.Player.PlaceholderCode,
         'player-name-input': APP_TEXT.Player.PlaceholderName,
-        'viewer-room-code': APP_TEXT.Player.PlaceholderCode // Viewer用
+        'viewer-room-code': APP_TEXT.Player.PlaceholderCode 
     };
     for(let id in phMap) {
         const el = document.getElementById(id);
@@ -62,8 +62,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ranking: document.getElementById('ranking-view'),
         respondent: document.getElementById('respondent-view'),
         playerGame: document.getElementById('player-game-view'),
-        viewerLogin: document.getElementById('viewer-login-view'), // ★追加
-        viewerMain: document.getElementById('viewer-main-view') // ★追加
+        viewerLogin: document.getElementById('viewer-login-view'), 
+        viewerMain: document.getElementById('viewer-main-view') 
     };
 
     const hostBtn = document.getElementById('main-host-btn');
@@ -72,9 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const playerBtn = document.getElementById('main-player-btn');
     if(playerBtn) playerBtn.addEventListener('click', () => window.showView(window.views.respondent));
 
-    // ★追加: モニターボタン
     const viewerBtn = document.getElementById('main-viewer-btn');
-    if(viewerBtn) viewerBtn.addEventListener('click', () => window.showView(window.views.viewerLogin));
+    // メインメニューのモニターボタンは削除されたため、ここでの処理は不要だが残っても無害
 
     const loginBtn = document.getElementById('host-login-submit-btn');
     if(loginBtn) {
@@ -87,14 +86,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ★修正: 戻るボタンは全てメインメニューへ
     document.querySelectorAll('.back-to-main').forEach(btn => {
         btn.addEventListener('click', () => window.showView(window.views.main));
     });
 
-    // ★修正: 不具合対策（関数を直接参照せず、クリック時にwindowから探す）
     const createBtn = document.getElementById('dash-create-btn');
     if(createBtn) createBtn.addEventListener('click', () => {
-        if(window.initCreatorMode) window.initCreatorMode();
+        if(typeof window.initCreatorMode === 'function') {
+            window.initCreatorMode();
+        } else {
+            console.error("initCreatorMode is not defined");
+        }
     });
 
     const configBtn = document.getElementById('dash-config-btn');
@@ -107,6 +110,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const studioBtn = document.getElementById('dash-studio-btn');
     if(studioBtn) studioBtn.addEventListener('click', startRoom);
+
+    // ダッシュボード内のモニターボタン
+    const dashViewerBtn = document.getElementById('dash-viewer-btn');
+    if(dashViewerBtn) dashViewerBtn.addEventListener('click', () => window.showView(window.views.viewerLogin));
 
     const configHeaderBackBtn = document.getElementById('config-header-back-btn');
     if(configHeaderBackBtn) configHeaderBackBtn.addEventListener('click', () => enterDashboard());
