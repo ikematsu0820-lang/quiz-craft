@@ -240,7 +240,7 @@ function renderConfigPreview() {
             <div style="flex:1;">
                 <div style="font-weight:bold; font-size:1.1em;">${index+1}. ${item.title}</div>
                 <div style="font-size:0.8em; color:#666;">
-                    ${ruleText} / ${item.config.timeLimit}秒
+                    ${ruleText} / ${item.config.timeLimit}秒 / 失点:${item.config.lossPoint}
                 </div>
             </div>
             <button class="delete-btn" onclick="removeFromPlaylist(${index})">削除</button>
