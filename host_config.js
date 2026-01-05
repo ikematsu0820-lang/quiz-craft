@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v47: Buzz Config Logic)
+ * host_config.js (v48: Cleanup Logic)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -20,19 +20,8 @@ function enterConfigMode() {
     `;
     elimRuleSelect.onchange = updateBuilderUI;
 
-    // 失点プルダウン生成
-    const lossSelect = document.getElementById('config-loss-point');
-    lossSelect.innerHTML = `
-        <option value="0">${APP_TEXT.Config.LossNone}</option>
-        <option value="-1">-1</option>
-        <option value="-5">-5</option>
-        <option value="-10">-10</option>
-        <option value="-50">-50</option>
-        <option value="-100">-100</option>
-        <option value="reset">${APP_TEXT.Config.LossReset}</option>
-    `;
+    // ★削除: lossSelectの生成ロジック
 
-    // ★v47: モード選択イベント
     const modeSelect = document.getElementById('config-mode-select');
     if (modeSelect) {
         modeSelect.addEventListener('change', (e) => {
@@ -43,7 +32,6 @@ function enterConfigMode() {
                 buzzDetails.classList.add('hidden');
             }
         });
-        // 初期状態チェック
         if (modeSelect.value === 'buzz') {
             document.getElementById('config-buzz-details').classList.remove('hidden');
         } else {
@@ -104,6 +92,7 @@ function enterConfigMode() {
     renderConfigPreview();
 }
 
+// ... (loadSavedProgramsInConfig, updateBuilderUI, toggleCustomScoreArea は変更なし) ...
 function loadSavedProgramsInConfig() {
     const listEl = document.getElementById('config-saved-programs-list');
     if(!listEl) return;
@@ -258,8 +247,10 @@ function addPeriodToPlaylist() {
         elimCount = parseInt(document.getElementById('config-elimination-count').value) || 1;
     }
 
-    let lossPoint = document.getElementById('config-loss-point').value;
-    if (lossPoint !== 'reset') lossPoint = parseInt(lossPoint);
+    // ★削除: lossPoint, scoreUnit の取得ロジック
+    // デフォルト値を設定
+    let lossPoint = 0; 
+    let scoreUnit = 'point';
 
     const mode = document.getElementById('config-mode-select').value;
 
@@ -269,12 +260,11 @@ function addPeriodToPlaylist() {
         intermediateRanking: intermediateRanking,
         eliminationRule: document.getElementById('config-elimination-rule').value,
         eliminationCount: elimCount,
-        lossPoint: lossPoint,
-        scoreUnit: document.getElementById('config-score-unit').value,
+        lossPoint: lossPoint, // デフォルト0
+        scoreUnit: scoreUnit, // デフォルトpoint
         theme: 'light',
         timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0,
         mode: mode,
-        // ★v47: 早押し詳細設定の保存
         buzzOrder: document.getElementById('config-buzz-order').value,
         buzzPenalty: document.getElementById('config-buzz-penalty').value,
         buzzTime: parseInt(document.getElementById('config-buzz-timer').value) || 0
@@ -347,11 +337,12 @@ function renderConfigPreview() {
         
         let modeLabel = (item.config.mode === 'buzz') ? 'Buzz' : 'Normal';
 
+        // ★修正: Lossの表示を削除（一括設定がないため）
         div.innerHTML = `
             <div style="flex:1;">
                 <div style="font-weight:bold; font-size:1.1em;">${index+1}. ${item.title}</div>
                 <div style="font-size:0.8em; color:#666;">
-                    [${modeLabel}] ${ruleText} / ${item.config.timeLimit}s / Loss:${item.config.lossPoint}
+                    [${modeLabel}] ${ruleText} / ${item.config.timeLimit}s
                 </div>
             </div>
             <button class="delete-btn" onclick="removeFromPlaylist(${index})">Del</button>
@@ -421,7 +412,7 @@ function saveProgramToCloud() {
         alert(APP_TEXT.Config.MsgSaved);
         titleInput.value = '';
         periodPlaylist = []; 
-        loadSavedProgramsInConfig(); // リスト更新
+        loadSavedProgramsInConfig(); 
         enterDashboard(); 
     })
     .catch(err => alert("Error: " + err.message));
