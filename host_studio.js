@@ -1,6 +1,8 @@
 /* =========================================================
- * host_studio.js (v26: Multi-Type Judge & Feedback)
+ * host_studio.js (v29: Studio Program Load & Ranking Sync)
  * =======================================================*/
+
+let currentProgramConfig = { finalRanking: true }; // デフォルト
 
 function startRoom() {
     if(periodPlaylist.length === 0) {
@@ -27,6 +29,9 @@ function enterHostMode(roomId) {
     document.getElementById('studio-timeline-area').classList.remove('hidden');
     document.getElementById('control-panel').classList.add('hidden');
     
+    // ★追加：スタジオ内でプログラムをロードする機能
+    loadProgramsInStudio();
+
     renderStudioTimeline();
 
     window.db.ref(`rooms/${roomId}/players`).on('value', snap => {
@@ -40,12 +45,50 @@ function enterHostMode(roomId) {
     setupStudioButtons(roomId);
 }
 
+// ★追加：スタジオ内プログラムローダー
+function loadProgramsInStudio() {
+    const select = document.getElementById('studio-program-select');
+    const btn = document.getElementById('studio-load-program-btn');
+    if(!select || !btn) return;
+
+    select.innerHTML = '<option value="">読み込み中...</option>';
+    
+    window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
+        const data = snap.val();
+        select.innerHTML = '<option value="">保存済みプログラムを選択...</option>';
+        if(data) {
+            Object.keys(data).forEach(key => {
+                const item = data[key];
+                const opt = document.createElement('option');
+                // JSONで持たせる
+                opt.value = JSON.stringify(item);
+                opt.textContent = item.title;
+                select.appendChild(opt);
+            });
+        }
+    });
+
+    btn.onclick = () => {
+        const val = select.value;
+        if(!val) { alert("プログラムを選択してください"); return; }
+        
+        const prog = JSON.parse(val);
+        if(confirm(`プログラム「${prog.title}」を読み込んでセットしますか？\n（現在の進行内容はリセットされます）`)) {
+            periodPlaylist = prog.playlist || [];
+            currentProgramConfig.finalRanking = (prog.finalRanking !== false); // デフォルトtrue
+            currentPeriodIndex = 0;
+            renderStudioTimeline();
+            alert("セットしました。再生ボタンで開始してください。");
+        }
+    };
+}
+
 function renderStudioTimeline() {
     const container = document.getElementById('studio-period-timeline');
     container.innerHTML = '';
     
     if(periodPlaylist.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#999; font-size:0.9em;">セット設定画面でリストを作成してください</p>';
+        container.innerHTML = '<p style="text-align:center; color:#999; font-size:0.9em;">セット設定画面でリストを作成するか、上のメニューからプログラムを読み込んでください</p>';
         document.getElementById('studio-footer-controls').classList.add('hidden');
         return;
     }
@@ -65,15 +108,15 @@ function renderStudioTimeline() {
             else statusText = '復活';
         }
         
-        let ruleText = "脱落なし";
-        if(item.config.eliminationRule === 'wrong_only') ruleText = "不正解脱落";
-        if(item.config.eliminationRule === 'wrong_and_slowest') ruleText = `遅い${item.config.eliminationCount}人脱落`;
+        // 中間発表表示
+        let interText = "";
+        if (item.config.intermediateRanking) interText = " <span style='color:blue; font-weight:bold;'>[中間発表あり]</span>";
 
         div.innerHTML = `
             <div>
-                <h5 style="margin:0;">第${index + 1}ピリオド: ${item.title}</h5>
+                <h5 style="margin:0;">第${index + 1}ピリオド: ${item.title}${interText}</h5>
                 <div class="info" style="margin-top:5px;">
-                    ${statusText} / 全${item.questions.length}問 / ${ruleText} / ${item.config.timeLimit}s
+                    ${statusText} / 全${item.questions.length}問 / ${item.config.timeLimit}s
                 </div>
             </div>
         `;
@@ -100,22 +143,34 @@ window.playPeriod = function(index) {
     
     document.getElementById('studio-timeline-area').classList.add('hidden');
     document.getElementById('control-panel').classList.remove('hidden');
+    document.getElementById('studio-program-loader').classList.add('hidden'); // ローダーも隠す
     
     window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
     window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0 });
     
     window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
+        // ... (生存判定ロジックはv26と同じ) ...
+        let players = [];
+        snap.forEach(p => {
+            const val = p.val();
+            players.push({ key: p.key, isAlive: val.isAlive, score: val.periodScore||0, time: val.periodTime||0 });
+        });
+        
+        let survivorsKeys = [];
+        if (currentConfig.initialStatus === 'ranking') {
+            let alivePlayers = players.filter(p => p.isAlive);
+            alivePlayers.sort((a,b) => (b.score - a.score) || (a.time - b.time));
+            const limit = currentConfig.passCount || 5;
+            survivorsKeys = alivePlayers.slice(0, limit).map(p => p.key);
+        }
+
         snap.forEach(p => {
             let updateData = { periodScore: 0, periodTime: 0, lastTime: 99999, lastResult: null };
             let newIsAlive = p.val().isAlive;
-
-            if (index === 0 || currentConfig.initialStatus === 'revive') {
-                newIsAlive = true;
-            } else if (currentConfig.initialStatus === 'ranking') {
-                // ここは前回のランキングロジックが必要だが、簡略化のため現状維持
-                // 本来は前のピリオドの結果を見る必要がある
-            }
+            if (index === 0 || currentConfig.initialStatus === 'revive') newIsAlive = true;
+            else if (currentConfig.initialStatus === 'ranking') newIsAlive = survivorsKeys.includes(p.key);
+            
             updateData.isAlive = newIsAlive;
             p.ref.update(updateData);
         });
@@ -126,6 +181,7 @@ window.playPeriod = function(index) {
     document.getElementById('host-start-btn').classList.remove('hidden');
     document.getElementById('host-show-answer-btn').classList.add('hidden');
     document.getElementById('host-next-btn').classList.add('hidden');
+    document.getElementById('host-ranking-btn').classList.remove('hidden'); // 通常表示
     
     updateKanpe();
 };
@@ -149,8 +205,8 @@ function setupStudioButtons(roomId) {
         document.getElementById('host-status-area').textContent = "Thinking Time...";
     };
 
-    // ★正解判定ロジック（多形式対応）
     btnShowAns.onclick = () => {
+        // ... (正解判定ロジック v26と同じ) ...
         const q = studioQuestions[currentQIndex];
         const points = parseInt(q.points) || 1;
         const loss = parseInt(q.loss) || 0;
@@ -158,29 +214,18 @@ function setupStudioButtons(roomId) {
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
             let slowestId = null;
             let maxTime = -1;
-
             snap.forEach(p => {
                 const val = p.val();
                 if(!val.isAlive) return;
-
                 const ans = val.lastAnswer;
                 let isCorrect = false;
-
-                // 形式別判定
                 if (q.type === 'sort') {
-                    // 並べ替え: 配列が完全一致するか
                     if (Array.isArray(ans) && JSON.stringify(ans) === JSON.stringify(q.correct)) isCorrect = true;
                 } else if (q.type === 'text') {
-                    // 自由入力: 正解リストに含まれるか (大文字小文字無視など調整可)
                     if (ans && q.correct.some(c => c.trim().toLowerCase() === ans.trim().toLowerCase())) isCorrect = true;
                 } else {
-                    // 選択式 (旧:correctIndex対応)
-                    if (q.correctIndex !== undefined) {
-                        isCorrect = (ans == q.correctIndex);
-                    } else if (q.correct) {
-                        // 複数選択など（今回は単一正解の配列として扱う）
-                        isCorrect = (ans == q.correct[0]); 
-                    }
+                    if (q.correctIndex !== undefined) isCorrect = (ans == q.correctIndex);
+                    else if (q.correct) isCorrect = (ans == q.correct[0]); 
                 }
                 
                 if(isCorrect) {
@@ -188,36 +233,22 @@ function setupStudioButtons(roomId) {
                     p.ref.update({ 
                         periodScore: (val.periodScore||0) + points, 
                         periodTime: (val.periodTime||0) + t,
-                        lastResult: 'win' // ★結果を書き込む
+                        lastResult: 'win'
                     });
-                    
                     if (currentConfig.eliminationRule === 'wrong_and_slowest') {
-                        if (t > maxTime) {
-                            maxTime = t;
-                            slowestId = p.key;
-                        }
+                        if (t > maxTime) { maxTime = t; slowestId = p.key; }
                     }
-                } 
-                else {
-                    // 不正解
+                } else {
                     let newScore = val.periodScore || 0;
                     if (loss > 0) newScore -= loss;
                     else if (currentConfig.lossPoint) {
                         if (currentConfig.lossPoint === 'reset') newScore = 0;
                         else newScore += parseInt(currentConfig.lossPoint);
                     }
-                    
-                    p.ref.update({ 
-                        periodScore: newScore,
-                        lastResult: 'lose' // ★結果を書き込む
-                    });
-
-                    if (currentConfig.eliminationRule !== 'none') {
-                        p.ref.update({ isAlive: false });
-                    }
+                    p.ref.update({ periodScore: newScore, lastResult: 'lose' });
+                    if (currentConfig.eliminationRule !== 'none') p.ref.update({ isAlive: false });
                 }
             });
-
             if (currentConfig.eliminationRule === 'wrong_and_slowest' && slowestId) {
                 window.db.ref(`rooms/${roomId}/players/${slowestId}`).update({ isAlive: false, lastResult: 'lose' });
             }
@@ -228,36 +259,80 @@ function setupStudioButtons(roomId) {
         btnNext.classList.remove('hidden');
         document.getElementById('host-status-area').textContent = "正解発表";
 
+        // ★ボタンの文言制御（中間発表・最終発表への分岐）
         if (currentQIndex >= studioQuestions.length - 1) {
+            // 次のピリオドがあるか確認
             if (currentPeriodIndex < periodPlaylist.length - 1) {
-                btnNext.textContent = "次のピリオドへ進む";
-                btnNext.classList.remove('btn-info');
-                btnNext.classList.add('btn-warning');
+                // 次のピリオドの中間発表フラグをチェック
+                const nextPeriod = periodPlaylist[currentPeriodIndex + 1];
+                if (nextPeriod.config.intermediateRanking) {
+                    btnNext.textContent = "中間発表へ";
+                    btnNext.className = "btn-success btn-block";
+                    // データ属性でフラグを立てる
+                    btnNext.dataset.action = "ranking"; 
+                } else {
+                    btnNext.textContent = "次のピリオドへ進む";
+                    btnNext.className = "btn-warning btn-block";
+                    btnNext.dataset.action = "next";
+                }
             } else {
-                btnNext.textContent = "全工程終了";
-                btnNext.classList.remove('btn-info');
-                btnNext.classList.add('btn-dark');
+                // 最終ピリオド終了後
+                if (currentProgramConfig.finalRanking) {
+                    btnNext.textContent = "最終結果発表へ";
+                    btnNext.className = "btn-danger btn-block";
+                    btnNext.dataset.action = "final";
+                } else {
+                    btnNext.textContent = "全工程終了";
+                    btnNext.className = "btn-dark btn-block";
+                    btnNext.dataset.action = "end";
+                }
             }
         } else {
             btnNext.textContent = "次の問題へ";
-            btnNext.classList.remove('btn-warning', 'btn-dark');
-            btnNext.classList.add('btn-info');
+            btnNext.className = "btn-info btn-block";
+            btnNext.dataset.action = "nextQ";
         }
     };
 
-    btnNext.onclick = () => {
-        if (currentQIndex >= studioQuestions.length - 1) {
-            if (currentPeriodIndex < periodPlaylist.length - 1) {
-                playPeriod(currentPeriodIndex + 1);
+    btnNext.onclick = (e) => {
+        const action = e.target.dataset.action;
+
+        if (action === "ranking" || action === "final") {
+            // ランキング画面へ（自動的にボタンを押したことにする）
+            btnRanking.click();
+            
+            // アラートの代わりに、ランキング画面から「次へ」進めるようにする
+            // 今回は簡易的に、ランキングを見た後「スタジオに戻る」と
+            // 自動的に次のピリオドへ進む準備ができている状態にする必要があるが、
+            // 構造上難しいので、ランキング画面から戻ったら手動で「次へ（playPeriod）」を呼ぶUIにするか、
+            // ここで一旦処理を止めてホストに任せる。
+            
+            // ★改良：ランキング表示中はボタンを「次へ進む」に変えておく
+            if (action === "ranking") {
+                btnNext.textContent = "ランキングを終了して次へ";
+                btnNext.className = "btn-warning btn-block";
+                btnNext.dataset.action = "next"; // 次回クリック時は次へ
             } else {
-                alert("全てのピリオドが終了しました！お疲れ様でした！");
-                btnNext.classList.add('hidden');
+                btnNext.textContent = "全工程終了";
+                btnNext.className = "btn-dark btn-block";
+                btnNext.dataset.action = "end";
             }
             return;
         }
 
+        if (action === "next") {
+            playPeriod(currentPeriodIndex + 1);
+            return;
+        }
+        
+        if (action === "end") {
+            alert("全てのピリオドが終了しました！お疲れ様でした！");
+            btnNext.classList.add('hidden');
+            return;
+        }
+
+        // nextQ
         currentQIndex++;
-        // 次の問題へ進む際、前回の回答と結果をリセット
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(p => p.ref.update({ lastAnswer: null, lastTime: 99999, lastResult: null }));
         });
@@ -267,7 +342,11 @@ function setupStudioButtons(roomId) {
         document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} スタンバイ...`;
     };
 
+    // ★ランキング表示・同期
     btnRanking.onclick = () => {
+        // ステータスを 'ranking' に更新して回答者画面を切り替える
+        window.db.ref(`rooms/${roomId}/status`).update({ step: 'ranking' });
+
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
             let ranking = [];
             snap.forEach(p => {
@@ -281,6 +360,8 @@ function setupStudioButtons(roomId) {
     };
 
     rankingBackBtn.onclick = () => {
+        // 戻る時にステータスを戻す？今回はそのまま standby に戻す
+        window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby' });
         window.showView(window.views.hostControl);
     };
     
@@ -308,29 +389,10 @@ function updateKanpe() {
         
         const timeLimit = currentConfig.timeLimit || 0;
         const timeText = timeLimit > 0 ? `制限 ${timeLimit}秒` : '制限なし';
-        
         const points = q.points || 1;
         const loss = q.loss || 0;
-        
-        const pointEl = document.getElementById('kanpe-point');
-        if(!pointEl) {
-             const div = document.createElement('div');
-             div.id = 'kanpe-point';
-             kanpeArea.appendChild(div);
-        }
         document.getElementById('kanpe-point').textContent = `配点:${points} / 失点:-${loss}`;
-
-        const limitEl = document.getElementById('kanpe-time-limit');
-        if(!limitEl) {
-            const div = document.createElement('div');
-            div.id = 'kanpe-time-limit';
-            div.style.fontSize = "0.8em";
-            div.style.color = "#666";
-            div.style.marginTop = "5px";
-            kanpeArea.appendChild(div);
-        }
         document.getElementById('kanpe-time-limit').textContent = timeText;
-
     } else {
         kanpeArea.classList.add('hidden');
     }
@@ -353,16 +415,14 @@ function renderRankingView(data) {
         }
         div.className = rankClass;
         let scoreText = `${r.score}点`;
-        if (isCurrency) {
-            scoreText = `¥${r.score.toLocaleString()}`;
-        }
-        const timeText = `${(r.time/1000).toFixed(2)}s`;
+        if (isCurrency) scoreText = `¥${r.score.toLocaleString()}`;
+        
         div.innerHTML = `
             <div style="display:flex; align-items:center;">
                 <span class="rank-badge">${rank}</span>
                 <span>${r.name}</span>
             </div>
-            <div class="rank-score">${scoreText}<br><small>${timeText}</small></div>
+            <div class="rank-score">${scoreText}</div>
         `;
         list.appendChild(div);
     });
