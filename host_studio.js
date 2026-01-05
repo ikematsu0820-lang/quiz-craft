@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v53: Panel & Bomb Logic)
+ * host_studio.js (v54: Full Code)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
@@ -38,6 +38,7 @@ function enterHostMode(roomId) {
     document.getElementById('host-manual-judge-area').classList.add('hidden');
     document.getElementById('host-panel-control-area').classList.add('hidden');
     document.getElementById('host-bomb-control-area').classList.add('hidden');
+    document.getElementById('host-multi-control-area').classList.add('hidden');
     
     updateKanpe(); 
     loadProgramsInStudio();
@@ -192,6 +193,7 @@ window.playPeriod = function(index) {
     document.getElementById('control-panel').classList.remove('hidden');
     document.getElementById('host-panel-control-area').classList.add('hidden');
     document.getElementById('host-bomb-control-area').classList.add('hidden');
+    document.getElementById('host-multi-control-area').classList.add('hidden');
     
     if (currentConfig.mode === 'time_attack') {
         currentConfig.timeLimit = 5;
@@ -203,7 +205,7 @@ window.playPeriod = function(index) {
         startBombGame(currentRoomId);
     } else {
         window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
-        window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0, currentAnswerer: null, isBuzzActive: false });
+        window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0, currentAnswerer: null, isBuzzActive: false, multiState: [] });
         updateKanpe();
     }
 
@@ -257,7 +259,6 @@ window.playPeriod = function(index) {
 
     document.getElementById('current-period-title').textContent = `${item.title}`;
     
-    // ボタン表示リセット
     const btnStart = document.getElementById('host-start-btn');
     const btnStartTA = document.getElementById('host-start-ta-btn');
     const btnShowAns = document.getElementById('host-show-answer-btn');
@@ -286,7 +287,6 @@ window.playPeriod = function(index) {
     }
 };
 
-// ★v53: パネルアタックロジック
 function startPanelGame(roomId) {
     const panels = Array(25).fill(0);
     window.db.ref(`rooms/${roomId}/status`).update({
@@ -319,7 +319,6 @@ function updateHostPanelColor(btn, val) {
     btn.style.background = colors[val];
 }
 
-// ★v53: ドボンロジック
 function startBombGame(roomId) {
     const count = currentConfig.bombCount || 10;
     const cards = [];
@@ -677,6 +676,33 @@ function updateKanpe() {
         kanpeArea.classList.remove('hidden');
         
         let questionHtml = `Q${currentQIndex+1}. ${q.q}`;
+        
+        if (q.type === 'multi') {
+            document.getElementById('host-multi-control-area').classList.remove('hidden');
+            const mGrid = document.getElementById('host-multi-grid');
+            mGrid.innerHTML = '';
+            
+            window.db.ref(`rooms/${currentRoomId}/status/multiState`).once('value', snap => {
+                const states = snap.val() || Array(q.c.length).fill(false);
+                
+                q.c.forEach((ans, i) => {
+                    const btn = document.createElement('div');
+                    btn.className = 'multi-ans-btn';
+                    if(states[i]) btn.classList.add('opened');
+                    btn.textContent = ans;
+                    
+                    btn.onclick = () => {
+                        window.db.ref(`rooms/${currentRoomId}/status/multiState/${i}`).set(!states[i]);
+                        states[i] = !states[i];
+                        if(states[i]) btn.classList.add('opened'); else btn.classList.remove('opened');
+                    };
+                    mGrid.appendChild(btn);
+                });
+            });
+        } else {
+            document.getElementById('host-multi-control-area').classList.add('hidden');
+        }
+
         if (q.type === 'choice' || q.type === 'sort') {
             questionHtml += '<div style="margin-top:10px; font-weight:normal; font-size:0.9em; color:#333; background:rgba(255,255,255,0.5); padding:5px; border-radius:4px;">';
             q.c.forEach((choice, i) => {
@@ -690,6 +716,7 @@ function updateKanpe() {
         let ansText = "";
         if (q.type === 'sort') ansText = `正解順: ${q.c.join(' → ')}`;
         else if (q.type === 'text') ansText = `正解: ${q.correct.join(' / ')}`;
+        else if (q.type === 'multi') ansText = `全${q.c.length}項目`;
         else {
             const cIdx = (q.correctIndex !== undefined) ? q.correctIndex : q.correct[0];
             const charLabel = String.fromCharCode(65 + cIdx); 
