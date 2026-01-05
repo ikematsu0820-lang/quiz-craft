@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>All Star Quiz Cloud</title>
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
 
 <div id="main-view" class="view">
     <h1 class="app-title">ALL STAR QUIZ</h1>
-    <p style="text-align:center; color:#666;">Cloud Edition v15</p>
+    <p style="text-align:center; color:#666;">Cloud Edition v16</p>
     <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
         <button id="main-host-btn" class="btn-primary">司会者 (Host)</button>
         <button id="main-player-btn" class="btn-success">回答者 (Player)</button>
@@ -39,8 +39,14 @@
         <button id="dash-config-btn" class="btn-primary" style="height:80px; font-weight:bold; font-size:0.9em; background-color:#2c3e50;">セット設定</button>
         <button id="dash-studio-btn" class="btn-danger" style="height:80px; font-weight:bold; font-size:0.9em;">スタジオ</button>
     </div>
-    <h4 style="border-bottom:2px solid #ddd; padding-bottom:5px;">保存済みセット</h4>
-    <div id="dash-set-list" style="max-height:300px; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:5px;"></div>
+
+    <div style="background:#e6f0ff; padding:10px; border-radius:8px; margin-bottom:20px; border:2px solid #0055ff;">
+        <h4 style="margin:0 0 10px 0; color:#0055ff;">📂 保存済みプログラム (構成)</h4>
+        <div id="dash-program-list" style="max-height:200px; overflow-y:auto; background:#fff; padding:10px; border-radius:5px;"></div>
+    </div>
+
+    <h4 style="border-bottom:2px solid #ddd; padding-bottom:5px;">📝 保存済みセット (素材)</h4>
+    <div id="dash-set-list" style="max-height:200px; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:5px;"></div>
 </div>
 
 <div id="creator-view" class="view hidden">
@@ -148,12 +154,17 @@
 
     <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
         <h4 style="color:#333; margin:0 0 10px 0;">現在の番組構成リスト</h4>
-        <div id="config-playlist-preview" style="background:#eee; padding:10px; border-radius:5px; min-height:50px;">
+        <div id="config-playlist-preview" style="background:#eee; padding:10px; border-radius:5px; min-height:50px; margin-bottom:10px;">
             <p style="text-align:center; color:#999; font-size:0.8em;">まだ追加されていません</p>
+        </div>
+        
+        <div style="display:flex; gap:5px; margin-bottom:15px;">
+            <input type="text" id="config-program-title" placeholder="構成に名前をつけて保存 (例: 2026新春SP)" style="flex:1;">
+            <button id="config-save-program-btn" class="btn-info" style="flex:0 0 80px;">保存</button>
         </div>
     </div>
 
-    <button id="config-go-studio-btn" class="btn-danger btn-block" style="padding:15px; font-weight:bold;">保存してスタジオへ</button>
+    <button id="config-go-studio-btn" class="btn-danger btn-block" style="padding:15px; font-weight:bold;">スタジオへ移動 (保存せずに開始)</button>
 </div>
 
 <div id="host-control-view" class="view hidden">
@@ -252,11 +263,11 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="host_core.js?v=15"></script>
-<script src="host_creator.js?v=15"></script>
-<script src="host_config.js?v=15"></script>
-<script src="host_studio.js?v=15"></script>
-<script src="player.js?v=15"></script>
+<script src="host_core.js?v=16"></script>
+<script src="host_creator.js?v=16"></script>
+<script src="host_config.js?v=16"></script>
+<script src="host_studio.js?v=16"></script>
+<script src="player.js?v=16"></script>
 
 </body>
 </html>
