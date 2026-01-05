@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v25: Crash Prevention Fix)
+ * host_config.js (v29: Ranking Settings)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -11,13 +11,12 @@ function enterConfigMode() {
     const select = document.getElementById('config-set-select');
     if(select) select.innerHTML = '<option value="">読み込み中...</option>';
     
-    const pointArea = document.getElementById('config-custom-points-area');
-    if(pointArea) pointArea.classList.add('hidden');
+    document.getElementById('config-custom-points-area').classList.add('hidden');
     selectedSetQuestions = [];
 
     window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
         const data = snap.val();
-        if(!select) return; // 安全策
+        if(!select) return;
         select.innerHTML = '<option value="">-- セットを選択 --</option>';
         if(data) {
             Object.keys(data).forEach(key => {
@@ -41,7 +40,7 @@ function enterConfigMode() {
             if(val) {
                 const data = JSON.parse(val);
                 selectedSetQuestions = data.q || [];
-                if(pointArea) pointArea.classList.add('hidden');
+                document.getElementById('config-custom-points-area').classList.add('hidden');
             } else {
                 selectedSetQuestions = [];
             }
@@ -82,8 +81,6 @@ function toggleCustomScoreArea() {
     const area = document.getElementById('config-custom-points-area');
     const list = document.getElementById('config-questions-list');
     
-    if(!area || !list) return; // 安全策
-
     if (selectedSetQuestions.length === 0) {
         alert("先にセットを選択してください");
         return;
@@ -153,8 +150,11 @@ function addPeriodToPlaylist() {
         });
     }
 
-    let initialStatus = 'revive'; 
+    // デフォルト設定
+    let initialStatus = 'revive';
     let passCount = 5;
+    let intermediateRanking = false; // ★追加：中間発表
+
     let elimCount = 1;
     if (document.getElementById('config-elimination-rule').value === 'wrong_and_slowest') {
         elimCount = parseInt(document.getElementById('config-elimination-count').value) || 1;
@@ -166,6 +166,7 @@ function addPeriodToPlaylist() {
     const newConfig = {
         initialStatus: initialStatus,
         passCount: passCount,
+        intermediateRanking: intermediateRanking, // ★保存
         eliminationRule: document.getElementById('config-elimination-rule').value,
         eliminationCount: elimCount,
         lossPoint: lossPoint,
@@ -187,7 +188,7 @@ function addPeriodToPlaylist() {
 
 function renderConfigPreview() {
     const container = document.getElementById('config-playlist-preview');
-    if(!container) return; // 安全策
+    if(!container) return;
     container.innerHTML = '';
     
     if(periodPlaylist.length === 0) {
@@ -205,20 +206,28 @@ function renderConfigPreview() {
             const settingDiv = document.createElement('div');
             settingDiv.className = 'playlist-inter-setting';
             const isRanking = (item.config.initialStatus === 'ranking');
+            const isInterRank = item.config.intermediateRanking;
             
+            // ★変更：中間発表のチェックボックスを追加
             settingDiv.innerHTML = `
-                <div style="font-size:0.7em; color:#666; font-weight:bold; margin-bottom:3px;">開始時の参加者設定</div>
-                <div style="display:flex; gap:5px; align-items:center;">
-                    <select class="inter-status-select" data-index="${index}">
-                        <option value="revive" ${item.config.initialStatus === 'revive' ? 'selected' : ''}>全員復活してスタート</option>
-                        <option value="continue" ${item.config.initialStatus === 'continue' ? 'selected' : ''}>生存者のみで継続</option>
-                        <option value="ranking" ${item.config.initialStatus === 'ranking' ? 'selected' : ''}>成績上位者が進出</option>
-                    </select>
-                    <div class="inter-pass-area ${isRanking ? '' : 'hidden'}" style="display:flex; align-items:center; gap:3px;">
-                        <span style="font-size:0.8em;">上位</span>
-                        <input type="number" class="inter-pass-input" data-index="${index}" value="${item.config.passCount}" min="1" style="width:50px; padding:5px; text-align:center;">
-                        <span style="font-size:0.8em;">名</span>
+                <div style="font-size:0.7em; color:#666; font-weight:bold; margin-bottom:3px;">ピリオド間設定</div>
+                <div style="display:flex; flex-direction:column; gap:5px;">
+                    <div style="display:flex; gap:5px; align-items:center;">
+                        <select class="inter-status-select" data-index="${index}">
+                            <option value="revive" ${item.config.initialStatus === 'revive' ? 'selected' : ''}>全員復活してスタート</option>
+                            <option value="continue" ${item.config.initialStatus === 'continue' ? 'selected' : ''}>生存者のみで継続</option>
+                            <option value="ranking" ${item.config.initialStatus === 'ranking' ? 'selected' : ''}>成績上位者が進出</option>
+                        </select>
+                        <div class="inter-pass-area ${isRanking ? '' : 'hidden'}" style="display:flex; align-items:center; gap:3px;">
+                            <span style="font-size:0.8em;">上位</span>
+                            <input type="number" class="inter-pass-input" data-index="${index}" value="${item.config.passCount}" min="1" style="width:50px; padding:5px; text-align:center;">
+                            <span style="font-size:0.8em;">名</span>
+                        </div>
                     </div>
+                    <label style="font-size:0.9em; cursor:pointer;">
+                        <input type="checkbox" class="inter-ranking-chk" data-index="${index}" ${isInterRank ? 'checked' : ''}>
+                        この前に中間発表を行う
+                    </label>
                 </div>
             `;
             container.appendChild(settingDiv);
@@ -244,12 +253,13 @@ function renderConfigPreview() {
         container.appendChild(div);
     });
 
+    // イベントリスナー
     document.querySelectorAll('.inter-status-select').forEach(sel => {
         sel.addEventListener('change', (e) => {
             const idx = e.target.getAttribute('data-index');
             const val = e.target.value;
             periodPlaylist[idx].config.initialStatus = val;
-            const passArea = e.target.nextElementSibling;
+            const passArea = e.target.closest('div').querySelector('.inter-pass-area');
             if(passArea) {
                 if (val === 'ranking') passArea.classList.remove('hidden');
                 else passArea.classList.add('hidden');
@@ -262,6 +272,14 @@ function renderConfigPreview() {
             const idx = e.target.getAttribute('data-index');
             const val = parseInt(e.target.value) || 5;
             periodPlaylist[idx].config.passCount = val;
+        });
+    });
+
+    // ★中間発表チェックの監視
+    document.querySelectorAll('.inter-ranking-chk').forEach(chk => {
+        chk.addEventListener('change', (e) => {
+            const idx = e.target.getAttribute('data-index');
+            periodPlaylist[idx].config.intermediateRanking = e.target.checked;
         });
     });
 }
@@ -284,11 +302,15 @@ function saveProgramToCloud() {
         return;
     }
 
+    // ★最終結果発表の設定を保存
+    const finalRanking = document.getElementById('config-final-ranking-chk').checked;
+
     const cleanPlaylist = JSON.parse(JSON.stringify(periodPlaylist));
 
     const saveObj = {
         title: title,
         playlist: cleanPlaylist, 
+        finalRanking: finalRanking, // ★保存
         createdAt: firebase.database.ServerValue.TIMESTAMP
     };
 
