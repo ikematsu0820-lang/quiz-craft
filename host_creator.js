@@ -8,9 +8,12 @@ function initCreatorMode() {
     document.getElementById('quiz-set-title').value = '';
     document.getElementById('save-to-cloud-btn').textContent = 'クラウドに保存して完了';
     
-    // UI初期化：デフォルトは選択式
-    document.getElementById('creator-q-type').value = 'choice';
-    renderCreatorForm('choice');
+    // UI初期化
+    const typeSelect = document.getElementById('creator-q-type');
+    if(typeSelect) {
+        typeSelect.value = 'choice';
+        renderCreatorForm('choice');
+    }
     
     renderQuestionList();
     window.showView(window.views.creator);
@@ -22,7 +25,13 @@ function loadSetForEditing(key, item) {
     document.getElementById('quiz-set-title').value = item.title;
     document.getElementById('save-to-cloud-btn').textContent = '更新して完了';
     
-    renderCreatorForm('choice'); // フォームは初期状態へ
+    // デフォルトはchoiceに戻す
+    const typeSelect = document.getElementById('creator-q-type');
+    if(typeSelect) {
+        typeSelect.value = 'choice';
+        renderCreatorForm('choice'); 
+    }
+
     renderQuestionList();
     window.showView(window.views.creator);
 }
@@ -40,11 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // フォームの描画（タイプ別）
 function renderCreatorForm(type) {
     const container = document.getElementById('creator-form-container');
-    container.innerHTML = ''; // クリア
+    if(!container) return; // エラー回避
+    container.innerHTML = ''; 
 
     if (type === 'choice') {
         // --- 選択式 ---
-        // オプション設定
         const settingsDiv = document.createElement('div');
         settingsDiv.style.marginBottom = '10px';
         settingsDiv.style.fontSize = '0.9em';
@@ -56,17 +65,15 @@ function renderCreatorForm(type) {
         `;
         container.appendChild(settingsDiv);
 
-        // 選択肢コンテナ
         const choicesDiv = document.createElement('div');
         choicesDiv.id = 'creator-choices-list';
         choicesDiv.style.display = 'grid';
         choicesDiv.style.gap = '5px';
         container.appendChild(choicesDiv);
 
-        // デフォルト4択生成
+        // デフォルト4択
         for(let i=0; i<4; i++) addChoiceInput(choicesDiv, i);
 
-        // 追加ボタン
         const addBtn = document.createElement('button');
         addBtn.textContent = '＋ 選択肢を追加';
         addBtn.className = 'btn-info';
@@ -75,7 +82,6 @@ function renderCreatorForm(type) {
         addBtn.onclick = () => addChoiceInput(choicesDiv);
         container.appendChild(addBtn);
 
-        // 複数回答チェック時の挙動
         const multiChk = document.getElementById('opt-multi-select');
         multiChk.onchange = () => {
             const partial = document.getElementById('opt-partial-area');
@@ -98,7 +104,6 @@ function renderCreatorForm(type) {
         sortDiv.style.gap = '5px';
         container.appendChild(sortDiv);
 
-        // デフォルト4つ
         for(let i=0; i<4; i++) addSortInput(sortDiv, i);
 
         const addBtn = document.createElement('button');
@@ -126,7 +131,6 @@ function renderCreatorForm(type) {
     }
 }
 
-// 選択肢入力欄の追加
 function addChoiceInput(parent, index) {
     const wrapper = document.createElement('div');
     wrapper.className = 'choice-row';
@@ -134,19 +138,16 @@ function addChoiceInput(parent, index) {
     wrapper.style.alignItems = 'center';
     wrapper.style.gap = '5px';
 
-    // 正解チェックボックス
     const chk = document.createElement('input');
     chk.type = 'checkbox';
     chk.className = 'choice-correct-chk';
     
-    // テキスト入力
     const inp = document.createElement('input');
     inp.type = 'text';
     inp.className = 'choice-text-input';
     inp.placeholder = '選択肢';
     inp.style.flex = '1';
 
-    // 削除ボタン
     const del = document.createElement('button');
     del.textContent = '×';
     del.style.background = '#ccc';
@@ -161,7 +162,6 @@ function addChoiceInput(parent, index) {
     parent.appendChild(wrapper);
 }
 
-// 並べ替え項目入力欄の追加
 function addSortInput(parent) {
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
@@ -191,7 +191,6 @@ function addSortInput(parent) {
     parent.appendChild(wrapper);
 }
 
-// 問題の追加処理（形式に応じてデータ構築）
 function addQuestion() {
     const qText = document.getElementById('question-text').value.trim();
     if(!qText) { alert('問題文を入力してください'); return; }
@@ -208,16 +207,16 @@ function addQuestion() {
             const isChk = row.querySelector('.choice-correct-chk').checked;
             if(text) {
                 options.push(text);
-                if(isChk) correct.push(options.length - 1); // インデックス保存
+                if(isChk) correct.push(options.length - 1);
             }
         });
 
         if (options.length < 2) { alert('選択肢は2つ以上必要です'); return; }
         if (correct.length === 0) { alert('正解を選んでください'); return; }
 
-        newQ.c = options; // 互換性のため 'c' (choices)
-        newQ.correct = correct; // 配列で保存
-        newQ.correctIndex = correct[0]; // 旧互換性（単一正解用）
+        newQ.c = options; 
+        newQ.correct = correct;
+        newQ.correctIndex = correct[0]; // 互換用
         newQ.multi = document.getElementById('opt-multi-select').checked;
         newQ.partial = document.getElementById('opt-partial-credit').checked;
 
@@ -229,14 +228,12 @@ function addQuestion() {
         });
         if(options.length < 2) { alert('項目は2つ以上必要です'); return; }
         
-        newQ.c = options; // 正しい順序で保存
-        newQ.correct = options.map((_, i) => i); // [0, 1, 2...] 正解インデックス
+        newQ.c = options; 
+        newQ.correct = options.map((_, i) => i); // [0, 1, 2...]
 
     } else if (type === 'text') {
         const ansText = document.getElementById('creator-text-answer').value.trim();
         if(!ansText) { alert('正解を入力してください'); return; }
-        
-        // カンマ区切りで配列化
         const answers = ansText.split(',').map(s => s.trim()).filter(s => s);
         newQ.correct = answers; 
     }
@@ -244,11 +241,9 @@ function addQuestion() {
     createdQuestions.push(newQ);
     renderQuestionList();
     
-    // 入力クリア
     document.getElementById('question-text').value = '';
     document.getElementById('question-text').focus();
-    // フォーム内もリセット（再描画）
-    renderCreatorForm(type);
+    renderCreatorForm(type); // フォームリセット
 }
 
 function renderQuestionList() {
