@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v24: Points, Penalty & Save Fix)
+ * host_config.js (v25: Crash Prevention Fix)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -9,13 +9,15 @@ function enterConfigMode() {
     updateBuilderUI();
 
     const select = document.getElementById('config-set-select');
-    select.innerHTML = '<option value="">読み込み中...</option>';
+    if(select) select.innerHTML = '<option value="">読み込み中...</option>';
     
-    document.getElementById('config-custom-points-area').classList.add('hidden');
+    const pointArea = document.getElementById('config-custom-points-area');
+    if(pointArea) pointArea.classList.add('hidden');
     selectedSetQuestions = [];
 
     window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
         const data = snap.val();
+        if(!select) return; // 安全策
         select.innerHTML = '<option value="">-- セットを選択 --</option>';
         if(data) {
             Object.keys(data).forEach(key => {
@@ -33,23 +35,22 @@ function enterConfigMode() {
     const elimRuleSelect = document.getElementById('config-elimination-rule');
     if(elimRuleSelect) elimRuleSelect.onchange = updateBuilderUI;
 
-    select.onchange = () => {
-        const val = select.value;
-        if(val) {
-            const data = JSON.parse(val);
-            selectedSetQuestions = data.q || [];
-            document.getElementById('config-custom-points-area').classList.add('hidden');
-        } else {
-            selectedSetQuestions = [];
-        }
-    };
-
-    const customScoreBtn = document.getElementById('config-custom-score-btn');
-    if(customScoreBtn) {
-        customScoreBtn.onclick = toggleCustomScoreArea;
+    if(select) {
+        select.onchange = () => {
+            const val = select.value;
+            if(val) {
+                const data = JSON.parse(val);
+                selectedSetQuestions = data.q || [];
+                if(pointArea) pointArea.classList.add('hidden');
+            } else {
+                selectedSetQuestions = [];
+            }
+        };
     }
 
-    // 一括反映（得点）
+    const customScoreBtn = document.getElementById('config-custom-score-btn');
+    if(customScoreBtn) customScoreBtn.onclick = toggleCustomScoreArea;
+
     const bulkPtBtn = document.getElementById('config-bulk-point-btn');
     if(bulkPtBtn) {
         bulkPtBtn.onclick = () => {
@@ -57,7 +58,6 @@ function enterConfigMode() {
             document.querySelectorAll('.q-point-input').forEach(input => input.value = val);
         };
     }
-    // ★追加：一括反映（失点）
     const bulkLossBtn = document.getElementById('config-bulk-loss-btn');
     if(bulkLossBtn) {
         bulkLossBtn.onclick = () => {
@@ -72,10 +72,9 @@ function enterConfigMode() {
 function updateBuilderUI() {
     const rule = document.getElementById('config-elimination-rule').value;
     const countArea = document.getElementById('config-elimination-count-area');
-    if (rule === 'wrong_and_slowest') {
-        countArea.classList.remove('hidden');
-    } else {
-        countArea.classList.add('hidden');
+    if(countArea) {
+        if (rule === 'wrong_and_slowest') countArea.classList.remove('hidden');
+        else countArea.classList.add('hidden');
     }
 }
 
@@ -83,6 +82,8 @@ function toggleCustomScoreArea() {
     const area = document.getElementById('config-custom-points-area');
     const list = document.getElementById('config-questions-list');
     
+    if(!area || !list) return; // 安全策
+
     if (selectedSetQuestions.length === 0) {
         alert("先にセットを選択してください");
         return;
@@ -99,7 +100,7 @@ function toggleCustomScoreArea() {
             div.style.paddingBottom = '5px';
             
             const pts = q.points || 1;
-            const loss = q.loss || 0; // デフォルト失点は0
+            const loss = q.loss || 0;
 
             div.innerHTML = `
                 <div style="flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
@@ -127,43 +128,38 @@ function addPeriodToPlaylist() {
     
     const data = JSON.parse(json);
     
-    // 配点・失点の読み取り
     const questionsWithPoints = JSON.parse(JSON.stringify(data.q)); 
     const pointInputs = document.querySelectorAll('.q-point-input');
-    const lossInputs = document.querySelectorAll('.q-loss-input'); // ★
-    const isCustomPoints = !document.getElementById('config-custom-points-area').classList.contains('hidden');
+    const lossInputs = document.querySelectorAll('.q-loss-input');
+    
+    const area = document.getElementById('config-custom-points-area');
+    const isCustomPoints = area && !area.classList.contains('hidden');
     
     if (isCustomPoints && pointInputs.length > 0) {
         pointInputs.forEach(input => {
             const idx = parseInt(input.getAttribute('data-index'));
             const pts = parseInt(input.value) || 1;
-            if (questionsWithPoints[idx]) {
-                questionsWithPoints[idx].points = pts;
-            }
+            if (questionsWithPoints[idx]) questionsWithPoints[idx].points = pts;
         });
-        // ★失点も読み取る
         lossInputs.forEach(input => {
             const idx = parseInt(input.getAttribute('data-index'));
             const lss = parseInt(input.value) || 0;
-            if (questionsWithPoints[idx]) {
-                questionsWithPoints[idx].loss = lss;
-            }
+            if (questionsWithPoints[idx]) questionsWithPoints[idx].loss = lss;
         });
     } else {
         questionsWithPoints.forEach(q => {
             q.points = (q.points || 1);
-            q.loss = (q.loss || 0); // デフォルト失点は0
+            q.loss = (q.loss || 0);
         });
     }
 
-    let initialStatus = 'revive';
+    let initialStatus = 'revive'; 
     let passCount = 5;
     let elimCount = 1;
     if (document.getElementById('config-elimination-rule').value === 'wrong_and_slowest') {
         elimCount = parseInt(document.getElementById('config-elimination-count').value) || 1;
     }
 
-    // グローバル失点設定（デフォルト用として一応残すが、問題ごと設定を優先）
     let lossPoint = document.getElementById('config-loss-point').value;
     if (lossPoint !== 'reset') lossPoint = parseInt(lossPoint);
 
@@ -186,11 +182,12 @@ function addPeriodToPlaylist() {
     
     renderConfigPreview();
     updateBuilderUI();
-    document.getElementById('config-custom-points-area').classList.add('hidden');
+    if(area) area.classList.add('hidden');
 }
 
 function renderConfigPreview() {
     const container = document.getElementById('config-playlist-preview');
+    if(!container) return; // 安全策
     container.innerHTML = '';
     
     if(periodPlaylist.length === 0) {
@@ -217,7 +214,6 @@ function renderConfigPreview() {
                         <option value="continue" ${item.config.initialStatus === 'continue' ? 'selected' : ''}>生存者のみで継続</option>
                         <option value="ranking" ${item.config.initialStatus === 'ranking' ? 'selected' : ''}>成績上位者が進出</option>
                     </select>
-                    
                     <div class="inter-pass-area ${isRanking ? '' : 'hidden'}" style="display:flex; align-items:center; gap:3px;">
                         <span style="font-size:0.8em;">上位</span>
                         <input type="number" class="inter-pass-input" data-index="${index}" value="${item.config.passCount}" min="1" style="width:50px; padding:5px; text-align:center;">
@@ -254,8 +250,10 @@ function renderConfigPreview() {
             const val = e.target.value;
             periodPlaylist[idx].config.initialStatus = val;
             const passArea = e.target.nextElementSibling;
-            if (val === 'ranking') passArea.classList.remove('hidden');
-            else passArea.classList.add('hidden');
+            if(passArea) {
+                if (val === 'ranking') passArea.classList.remove('hidden');
+                else passArea.classList.add('hidden');
+            }
         });
     });
 
@@ -274,7 +272,6 @@ window.removeFromPlaylist = function(index) {
     updateBuilderUI();
 };
 
-// ★重要修正：保存時のエラー回避 (JSONクリーンアップ)
 function saveProgramToCloud() {
     if(periodPlaylist.length === 0) {
         alert("構成リストが空です");
@@ -287,7 +284,6 @@ function saveProgramToCloud() {
         return;
     }
 
-    // undefined を消すために一度文字列化して戻す
     const cleanPlaylist = JSON.parse(JSON.stringify(periodPlaylist));
 
     const saveObj = {
