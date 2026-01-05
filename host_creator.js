@@ -1,5 +1,5 @@
 /* =========================================================
- * host_creator.js (v56: Fixed Type)
+ * host_creator.js (v57: Free Types Update)
  * =======================================================*/
 
 let editingQuestionIndex = null;
@@ -16,11 +16,10 @@ window.initCreatorMode = function() {
     renderQuestionList();
     window.showView(window.views.creator);
     
-    // Type Selectを初期化（アンロック）
     const typeSelect = document.getElementById('creator-q-type');
     typeSelect.disabled = false;
     document.getElementById('creator-type-locked-msg').classList.add('hidden');
-    renderCreatorForm(typeSelect.value); // 初期フォーム表示
+    renderCreatorForm(typeSelect.value);
 };
 
 window.loadSetForEditing = function(key, item) {
@@ -33,8 +32,6 @@ window.loadSetForEditing = function(key, item) {
     
     if(createdQuestions.length > 0) {
         const firstQ = createdQuestions[0];
-        
-        // 保存された問題形式を復元してロック
         typeSelect.value = firstQ.type;
         typeSelect.disabled = true;
         document.getElementById('creator-type-locked-msg').classList.remove('hidden');
@@ -64,16 +61,13 @@ window.loadSetForEditing = function(key, item) {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Type選択の初期化
     const typeSelect = document.getElementById('creator-q-type');
     typeSelect.innerHTML = `
         <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
         <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
-        <option value="text">${APP_TEXT.Creator.TypeText}</option>
-        <option value="multi">${APP_TEXT.Creator.TypeMulti}</option>
+        <option value="free_oral">${APP_TEXT.Creator.TypeFreeOral}</option> <option value="free_written">${APP_TEXT.Creator.TypeFreeWritten}</option> <option value="multi">${APP_TEXT.Creator.TypeMulti}</option>
     `;
     typeSelect.addEventListener('change', (e) => {
-        // 問題がなければフォーム切り替え
         if (createdQuestions.length === 0) {
             renderCreatorForm(e.target.value);
         }
@@ -86,14 +80,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // ... (画像アップロード関連は既存維持)
     const imgBtn = document.getElementById('design-bg-image-btn');
     const imgInput = document.getElementById('design-bg-image-file');
     const clearBtn = document.getElementById('design-bg-clear-btn');
+
     if(imgBtn && imgInput) {
         imgBtn.addEventListener('click', () => imgInput.click());
         imgInput.addEventListener('change', handleImageUpload);
     }
+    
     if(clearBtn) {
         clearBtn.addEventListener('click', () => {
             document.getElementById('design-bg-image-data').value = "";
@@ -177,9 +172,9 @@ function resetForm() {
     document.getElementById('update-question-area').classList.add('hidden');
     document.getElementById('question-text').value = '';
     
-    // フォームの中身を、現在のType設定に合わせて再描画
-    const currentType = document.getElementById('creator-q-type').value;
-    renderCreatorForm(currentType);
+    // 現在のタイプに合わせてフォーム再描画
+    const type = document.getElementById('creator-q-type').value;
+    renderCreatorForm(type);
 }
 
 function renderCreatorForm(type, data = null) {
@@ -255,18 +250,10 @@ function renderCreatorForm(type, data = null) {
         addBtn.onclick = () => addSortInput(sortDiv);
         container.appendChild(addBtn);
 
-    } else if (type === 'text') {
+    } else if (type === 'free_oral' || type === 'free_written') { // ★v57: 統合
         const optDiv = document.createElement('div');
         optDiv.style.marginBottom = '10px';
-        const modeVal = data ? data.mode : 'written';
-        optDiv.innerHTML = `
-            <label style="font-size:0.8em; font-weight:bold;">${APP_TEXT.Creator.LabelTextFormat}</label>
-            <select id="text-mode-select" style="padding:5px; font-size:0.9em;">
-                <option value="written" ${modeVal==='written'?'selected':''}>${APP_TEXT.Creator.TextFormatWritten}</option>
-                <option value="oral" ${modeVal==='oral'?'selected':''}>${APP_TEXT.Creator.TextFormatOral}</option>
-            </select>
-            <p style="font-size:0.8em; color:#666; margin:5px 0;">${APP_TEXT.Creator.DescText}</p>
-        `;
+        optDiv.innerHTML = `<p style="font-size:0.8em; color:#666; margin:5px 0;">${APP_TEXT.Creator.DescText}</p>`;
         container.appendChild(optDiv);
 
         const input = document.createElement('input');
@@ -274,7 +261,7 @@ function renderCreatorForm(type, data = null) {
         input.id = 'creator-text-answer';
         input.className = 'btn-block';
         input.placeholder = 'e.g. Apple, Ringot, APPL';
-        if (data) input.value = data.correct.join(', ');
+        if (data && data.correct) input.value = data.correct.join(', ');
         container.appendChild(input);
 
     } else if (type === 'multi') {
@@ -389,7 +376,6 @@ function getQuestionDataFromForm() {
     const qText = document.getElementById('question-text').value.trim();
     if(!qText) { alert(APP_TEXT.Creator.AlertNoQ); return null; }
 
-    // ★v56: 上部の固定プルダウンから取得
     const type = document.getElementById('creator-q-type').value;
     let newQ = { q: qText, type: type, points: 1, loss: 0 };
 
@@ -422,11 +408,10 @@ function getQuestionDataFromForm() {
         newQ.correct = options.map((_, i) => i);
         newQ.initialOrder = document.getElementById('sort-initial-order').value;
 
-    } else if (type === 'text') {
-        const mode = document.getElementById('text-mode-select').value;
-        newQ.mode = mode;
+    } else if (type === 'free_written' || type === 'free_oral') { // ★v57
         const ansText = document.getElementById('creator-text-answer').value.trim();
-        if (mode === 'written' && !ansText) { alert(APP_TEXT.Creator.AlertNoTextAns); return null; }
+        // 記述式は答え必須、口頭は任意
+        if (type === 'free_written' && !ansText) { alert(APP_TEXT.Creator.AlertNoTextAns); return null; }
         const answers = ansText ? ansText.split(',').map(s => s.trim()).filter(s => s) : [];
         newQ.correct = answers; 
 
@@ -449,7 +434,6 @@ function addQuestion() {
         renderQuestionList();
         window.showToast(APP_TEXT.Creator.MsgAddedToast);
         
-        // ★v56: 1問追加されたらタイプをロック
         document.getElementById('creator-q-type').disabled = true;
         document.getElementById('creator-type-locked-msg').classList.remove('hidden');
     }
@@ -475,10 +459,7 @@ function editQuestion(index) {
     document.getElementById('update-question-area').classList.remove('hidden');
     
     document.getElementById('question-text').value = q.q;
-    
-    // 編集時はその問題のデータをフォームに入れる（Typeは共通なので変更不要）
-    const type = document.getElementById('creator-q-type').value;
-    renderCreatorForm(type, q);
+    renderCreatorForm(q.type, q);
     
     document.getElementById('creator-view').scrollIntoView({behavior: "smooth"});
 }
@@ -499,11 +480,9 @@ function deleteQuestion(index) {
         else if(editingQuestionIndex > index) editingQuestionIndex--;
         renderQuestionList();
         
-        // ★v56: 全削除されたらロック解除
         if(createdQuestions.length === 0) {
             document.getElementById('creator-q-type').disabled = false;
             document.getElementById('creator-type-locked-msg').classList.add('hidden');
-            // リセット時にフォームを再描画
             renderCreatorForm(document.getElementById('creator-q-type').value);
         }
     }
@@ -518,7 +497,8 @@ function renderQuestionList() {
         
         let typeIcon = '🔳';
         if(q.type === 'sort') typeIcon = '🔢';
-        if(q.type === 'text') typeIcon = '✍️';
+        if(q.type === 'free_oral') typeIcon = '🗣'; // ★v57
+        if(q.type === 'free_written') typeIcon = '✍️'; // ★v57
         if(q.type === 'multi') typeIcon = '📚';
         
         div.innerHTML = `
