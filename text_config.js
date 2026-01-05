@@ -1,12 +1,11 @@
 /* =========================================================
- * text_config.js (v30: Text Resource File)
- * ★文言の変更はここを編集してください
+ * text_config.js (v31: Delete Program Support)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
-    AppTitle: "Quiz Studio", // ロゴ画像の代替テキスト
-    Version: "Cloud Edition v30",
+    AppTitle: "Quiz Studio",
+    Version: "Cloud Edition v31",
     
     // メインメニュー
     Main: {
@@ -50,7 +49,6 @@ const APP_TEXT = {
         ListHeading: "作成中のリスト",
         BtnSave: "クラウドに保存して完了",
         BtnUpdate: "更新して完了",
-        // フォーム内
         OptMulti: "複数回答可",
         OptPartial: "部分点あり",
         BtnAddChoice: "＋ 選択肢を追加",
@@ -92,7 +90,6 @@ const APP_TEXT = {
         PlaceholderProgName: "構成に名前をつけて保存",
         BtnSaveProg: "保存",
         BtnGoStudio: "保存してスタジオへ",
-        // ピリオド間
         InterHeading: "ピリオド間設定",
         StatusRevive: "全員復活してスタート",
         StatusContinue: "生存者のみで継続",
@@ -117,21 +114,21 @@ const APP_TEXT = {
         HeadingLoad: "📂 プログラム読込",
         SelectProgDefault: "保存済みプログラムを選択...",
         BtnLoad: "読み込んでセット",
+        BtnDeleteProg: "削除", // ★追加
         BtnMasterPlay: "再生 ▶",
-        // コントロール
         BtnStart: "問題 START！",
         BtnAnswer: "正解発表",
         BtnNextQ: "次の問題へ",
         BtnNextPeriod: "次のピリオドへ進む",
-        BtnInterRanking: "中間発表へ", // ★要望反映
-        BtnFinalRanking: "最終結果発表へ", // ★要望反映
+        BtnInterRanking: "中間発表へ",
+        BtnFinalRanking: "最終結果発表へ",
         BtnEnd: "全工程終了",
-        BtnRanking: "中間順位", // ★要望反映（ランキング集計 -> 中間順位）
+        BtnRanking: "中間順位",
         BtnClose: "スタジオを閉じて戻る",
         BtnBackRanking: "スタジオに戻る",
-        // アラート
         MsgNoPeriod: "再生するピリオドがありません",
         MsgConfirmLoad: "プログラムを読み込んでセットしますか？\n（現在の進行内容はリセットされます）",
+        MsgConfirmDeleteProg: "本当にこのプログラムを削除しますか？\n（元に戻せません）", // ★追加
         MsgLoaded: "セットしました。再生ボタンで開始してください。",
         MsgThinking: "Thinking Time...",
         MsgAnswerCheck: "正解発表",
@@ -156,11 +153,10 @@ const APP_TEXT = {
         MsgWait: "集計中...",
         MsgDead: "GAME OVER",
         MsgDeadBody: "脱落...",
-        // ランキング画面
         RankTitle: "RANKING",
         RankYou: "あなたは...",
         RankUnit: "位",
         ScoreUnit: "点",
-        RankBoardTitle: "上位リーダーボード" // ★追加
+        RankBoardTitle: "上位リーダーボード"
     }
 };
