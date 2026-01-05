@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v46: Mode Selection)
+ * host_config.js (v47: Buzz Config Logic)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -31,6 +31,25 @@ function enterConfigMode() {
         <option value="-100">-100</option>
         <option value="reset">${APP_TEXT.Config.LossReset}</option>
     `;
+
+    // ★v47: モード選択イベント
+    const modeSelect = document.getElementById('config-mode-select');
+    if (modeSelect) {
+        modeSelect.addEventListener('change', (e) => {
+            const buzzDetails = document.getElementById('config-buzz-details');
+            if (e.target.value === 'buzz') {
+                buzzDetails.classList.remove('hidden');
+            } else {
+                buzzDetails.classList.add('hidden');
+            }
+        });
+        // 初期状態チェック
+        if (modeSelect.value === 'buzz') {
+            document.getElementById('config-buzz-details').classList.remove('hidden');
+        } else {
+            document.getElementById('config-buzz-details').classList.add('hidden');
+        }
+    }
 
     select.innerHTML = `<option value="">${APP_TEXT.Config.SelectLoading}</option>`;
     document.getElementById('config-custom-points-area').classList.add('hidden');
@@ -242,7 +261,6 @@ function addPeriodToPlaylist() {
     let lossPoint = document.getElementById('config-loss-point').value;
     if (lossPoint !== 'reset') lossPoint = parseInt(lossPoint);
 
-    // ★v46: モード設定取得
     const mode = document.getElementById('config-mode-select').value;
 
     const newConfig = {
@@ -255,7 +273,11 @@ function addPeriodToPlaylist() {
         scoreUnit: document.getElementById('config-score-unit').value,
         theme: 'light',
         timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0,
-        mode: mode // ★追加
+        mode: mode,
+        // ★v47: 早押し詳細設定の保存
+        buzzOrder: document.getElementById('config-buzz-order').value,
+        buzzPenalty: document.getElementById('config-buzz-penalty').value,
+        buzzTime: parseInt(document.getElementById('config-buzz-timer').value) || 0
     };
     
     periodPlaylist.push({
@@ -323,7 +345,6 @@ function renderConfigPreview() {
         if(item.config.eliminationRule === 'wrong_only') ruleText = "WrongOut";
         if(item.config.eliminationRule === 'wrong_and_slowest') ruleText = `Slow${item.config.eliminationCount}Out`;
         
-        // ★v46: モード表示
         let modeLabel = (item.config.mode === 'buzz') ? 'Buzz' : 'Normal';
 
         div.innerHTML = `
