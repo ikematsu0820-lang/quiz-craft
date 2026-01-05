@@ -1,12 +1,12 @@
 /* =========================================================
- * host_studio.js (v29: Studio Program Load & Ranking Sync)
+ * host_studio.js (v30: Ranking Sync & Text Config)
  * =======================================================*/
 
-let currentProgramConfig = { finalRanking: true }; // デフォルト
+let currentProgramConfig = { finalRanking: true };
 
 function startRoom() {
     if(periodPlaylist.length === 0) {
-        if(!confirm("プレイリストが空です。スタジオへ移動しますか？")) return;
+        if(!confirm(APP_TEXT.Studio.MsgNoPeriod)) return; // 簡易版メッセージ
     }
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     currentPeriodIndex = 0; 
@@ -29,9 +29,7 @@ function enterHostMode(roomId) {
     document.getElementById('studio-timeline-area').classList.remove('hidden');
     document.getElementById('control-panel').classList.add('hidden');
     
-    // ★追加：スタジオ内でプログラムをロードする機能
     loadProgramsInStudio();
-
     renderStudioTimeline();
 
     window.db.ref(`rooms/${roomId}/players`).on('value', snap => {
@@ -45,22 +43,20 @@ function enterHostMode(roomId) {
     setupStudioButtons(roomId);
 }
 
-// ★追加：スタジオ内プログラムローダー
 function loadProgramsInStudio() {
     const select = document.getElementById('studio-program-select');
     const btn = document.getElementById('studio-load-program-btn');
     if(!select || !btn) return;
 
-    select.innerHTML = '<option value="">読み込み中...</option>';
+    select.innerHTML = `<option value="">${APP_TEXT.Config.SelectLoading}</option>`;
     
     window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
         const data = snap.val();
-        select.innerHTML = '<option value="">保存済みプログラムを選択...</option>';
+        select.innerHTML = `<option value="">${APP_TEXT.Studio.SelectProgDefault}</option>`;
         if(data) {
             Object.keys(data).forEach(key => {
                 const item = data[key];
                 const opt = document.createElement('option');
-                // JSONで持たせる
                 opt.value = JSON.stringify(item);
                 opt.textContent = item.title;
                 select.appendChild(opt);
@@ -70,15 +66,14 @@ function loadProgramsInStudio() {
 
     btn.onclick = () => {
         const val = select.value;
-        if(!val) { alert("プログラムを選択してください"); return; }
-        
+        if(!val) return;
         const prog = JSON.parse(val);
-        if(confirm(`プログラム「${prog.title}」を読み込んでセットしますか？\n（現在の進行内容はリセットされます）`)) {
+        if(confirm(APP_TEXT.Studio.MsgConfirmLoad)) {
             periodPlaylist = prog.playlist || [];
-            currentProgramConfig.finalRanking = (prog.finalRanking !== false); // デフォルトtrue
+            currentProgramConfig.finalRanking = (prog.finalRanking !== false);
             currentPeriodIndex = 0;
             renderStudioTimeline();
-            alert("セットしました。再生ボタンで開始してください。");
+            alert(APP_TEXT.Studio.MsgLoaded);
         }
     };
 }
@@ -88,7 +83,7 @@ function renderStudioTimeline() {
     container.innerHTML = '';
     
     if(periodPlaylist.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#999; font-size:0.9em;">セット設定画面でリストを作成するか、上のメニューからプログラムを読み込んでください</p>';
+        container.innerHTML = '<p style="text-align:center; color:#999; font-size:0.9em;">Please load program</p>';
         document.getElementById('studio-footer-controls').classList.add('hidden');
         return;
     }
@@ -103,20 +98,19 @@ function renderStudioTimeline() {
         
         let statusText = "START";
         if (index > 0) {
-            if(item.config.initialStatus === 'continue') statusText = '継続';
-            else if(item.config.initialStatus === 'ranking') statusText = `上位${item.config.passCount}名`;
-            else statusText = '復活';
+            if(item.config.initialStatus === 'continue') statusText = APP_TEXT.Config.StatusContinue;
+            else if(item.config.initialStatus === 'ranking') statusText = APP_TEXT.Config.StatusRanking;
+            else statusText = APP_TEXT.Config.StatusRevive;
         }
         
-        // 中間発表表示
         let interText = "";
-        if (item.config.intermediateRanking) interText = " <span style='color:blue; font-weight:bold;'>[中間発表あり]</span>";
+        if (item.config.intermediateRanking) interText = " <span style='color:blue; font-weight:bold;'>[Ranking]</span>";
 
         div.innerHTML = `
             <div>
-                <h5 style="margin:0;">第${index + 1}ピリオド: ${item.title}${interText}</h5>
+                <h5 style="margin:0;">No.${index + 1}: ${item.title}${interText}</h5>
                 <div class="info" style="margin-top:5px;">
-                    ${statusText} / 全${item.questions.length}問 / ${item.config.timeLimit}s
+                    ${statusText} / ${item.questions.length}Q / ${item.config.timeLimit}s
                 </div>
             </div>
         `;
@@ -126,7 +120,7 @@ function renderStudioTimeline() {
 
 function playCurrentPeriod() {
     if(!periodPlaylist[currentPeriodIndex]) {
-        alert("再生するピリオドがありません");
+        alert(APP_TEXT.Studio.MsgNoPeriod);
         return;
     }
     playPeriod(currentPeriodIndex);
@@ -143,14 +137,13 @@ window.playPeriod = function(index) {
     
     document.getElementById('studio-timeline-area').classList.add('hidden');
     document.getElementById('control-panel').classList.remove('hidden');
-    document.getElementById('studio-program-loader').classList.add('hidden'); // ローダーも隠す
+    document.getElementById('studio-program-loader').classList.add('hidden'); 
     
     window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
     window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0 });
     
     window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
-        // ... (生存判定ロジックはv26と同じ) ...
         let players = [];
         snap.forEach(p => {
             const val = p.val();
@@ -176,12 +169,12 @@ window.playPeriod = function(index) {
         });
     });
 
-    document.getElementById('current-period-title').textContent = `Now Playing: 第${index+1}ピリオド (${item.title})`;
+    document.getElementById('current-period-title').textContent = `${item.title}`;
     
     document.getElementById('host-start-btn').classList.remove('hidden');
     document.getElementById('host-show-answer-btn').classList.add('hidden');
     document.getElementById('host-next-btn').classList.add('hidden');
-    document.getElementById('host-ranking-btn').classList.remove('hidden'); // 通常表示
+    document.getElementById('host-ranking-btn').classList.remove('hidden');
     
     updateKanpe();
 };
@@ -202,11 +195,10 @@ function setupStudioButtons(roomId) {
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', qIndex: currentQIndex, startTime: now });
         btnStart.classList.add('hidden');
         btnShowAns.classList.remove('hidden');
-        document.getElementById('host-status-area').textContent = "Thinking Time...";
+        document.getElementById('host-status-area').textContent = APP_TEXT.Studio.MsgThinking;
     };
 
     btnShowAns.onclick = () => {
-        // ... (正解判定ロジック v26と同じ) ...
         const q = studioQuestions[currentQIndex];
         const points = parseInt(q.points) || 1;
         const loss = parseInt(q.loss) || 0;
@@ -257,38 +249,33 @@ function setupStudioButtons(roomId) {
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
         btnShowAns.classList.add('hidden');
         btnNext.classList.remove('hidden');
-        document.getElementById('host-status-area').textContent = "正解発表";
+        document.getElementById('host-status-area').textContent = APP_TEXT.Studio.MsgAnswerCheck;
 
-        // ★ボタンの文言制御（中間発表・最終発表への分岐）
         if (currentQIndex >= studioQuestions.length - 1) {
-            // 次のピリオドがあるか確認
             if (currentPeriodIndex < periodPlaylist.length - 1) {
-                // 次のピリオドの中間発表フラグをチェック
                 const nextPeriod = periodPlaylist[currentPeriodIndex + 1];
                 if (nextPeriod.config.intermediateRanking) {
-                    btnNext.textContent = "中間発表へ";
+                    btnNext.textContent = APP_TEXT.Studio.BtnInterRanking;
                     btnNext.className = "btn-success btn-block";
-                    // データ属性でフラグを立てる
                     btnNext.dataset.action = "ranking"; 
                 } else {
-                    btnNext.textContent = "次のピリオドへ進む";
+                    btnNext.textContent = APP_TEXT.Studio.BtnNextPeriod;
                     btnNext.className = "btn-warning btn-block";
                     btnNext.dataset.action = "next";
                 }
             } else {
-                // 最終ピリオド終了後
                 if (currentProgramConfig.finalRanking) {
-                    btnNext.textContent = "最終結果発表へ";
+                    btnNext.textContent = APP_TEXT.Studio.BtnFinalRanking;
                     btnNext.className = "btn-danger btn-block";
                     btnNext.dataset.action = "final";
                 } else {
-                    btnNext.textContent = "全工程終了";
+                    btnNext.textContent = APP_TEXT.Studio.BtnEnd;
                     btnNext.className = "btn-dark btn-block";
                     btnNext.dataset.action = "end";
                 }
             }
         } else {
-            btnNext.textContent = "次の問題へ";
+            btnNext.textContent = APP_TEXT.Studio.BtnNextQ;
             btnNext.className = "btn-info btn-block";
             btnNext.dataset.action = "nextQ";
         }
@@ -298,22 +285,13 @@ function setupStudioButtons(roomId) {
         const action = e.target.dataset.action;
 
         if (action === "ranking" || action === "final") {
-            // ランキング画面へ（自動的にボタンを押したことにする）
-            btnRanking.click();
-            
-            // アラートの代わりに、ランキング画面から「次へ」進めるようにする
-            // 今回は簡易的に、ランキングを見た後「スタジオに戻る」と
-            // 自動的に次のピリオドへ進む準備ができている状態にする必要があるが、
-            // 構造上難しいので、ランキング画面から戻ったら手動で「次へ（playPeriod）」を呼ぶUIにするか、
-            // ここで一旦処理を止めてホストに任せる。
-            
-            // ★改良：ランキング表示中はボタンを「次へ進む」に変えておく
+            btnRanking.click(); // ランキング表示
             if (action === "ranking") {
-                btnNext.textContent = "ランキングを終了して次へ";
+                btnNext.textContent = "Continue";
                 btnNext.className = "btn-warning btn-block";
-                btnNext.dataset.action = "next"; // 次回クリック時は次へ
+                btnNext.dataset.action = "next"; 
             } else {
-                btnNext.textContent = "全工程終了";
+                btnNext.textContent = APP_TEXT.Studio.BtnEnd;
                 btnNext.className = "btn-dark btn-block";
                 btnNext.dataset.action = "end";
             }
@@ -326,7 +304,7 @@ function setupStudioButtons(roomId) {
         }
         
         if (action === "end") {
-            alert("全てのピリオドが終了しました！お疲れ様でした！");
+            alert(APP_TEXT.Studio.MsgAllEnd);
             btnNext.classList.add('hidden');
             return;
         }
@@ -339,12 +317,10 @@ function setupStudioButtons(roomId) {
         updateKanpe();
         btnStart.classList.remove('hidden');
         btnNext.classList.add('hidden');
-        document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} スタンバイ...`;
+        document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} Standby...`;
     };
 
-    // ★ランキング表示・同期
     btnRanking.onclick = () => {
-        // ステータスを 'ranking' に更新して回答者画面を切り替える
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'ranking' });
 
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
@@ -360,13 +336,12 @@ function setupStudioButtons(roomId) {
     };
 
     rankingBackBtn.onclick = () => {
-        // 戻る時にステータスを戻す？今回はそのまま standby に戻す
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby' });
         window.showView(window.views.hostControl);
     };
     
     btnClose.onclick = () => {
-        if(confirm("ダッシュボードに戻りますか？")) enterDashboard();
+        if(confirm(APP_TEXT.Studio.MsgConfirmBack)) enterDashboard();
     };
 }
 
@@ -388,11 +363,10 @@ function updateKanpe() {
         document.getElementById('kanpe-answer').textContent = ansText;
         
         const timeLimit = currentConfig.timeLimit || 0;
-        const timeText = timeLimit > 0 ? `制限 ${timeLimit}秒` : '制限なし';
         const points = q.points || 1;
         const loss = q.loss || 0;
-        document.getElementById('kanpe-point').textContent = `配点:${points} / 失点:-${loss}`;
-        document.getElementById('kanpe-time-limit').textContent = timeText;
+        document.getElementById('kanpe-point').textContent = `Pt:${points} / Loss:-${loss}`;
+        document.getElementById('kanpe-time-limit').textContent = timeLimit ? `${timeLimit}s` : "No Limit";
     } else {
         kanpeArea.classList.add('hidden');
     }
@@ -401,7 +375,7 @@ function updateKanpe() {
 function renderRankingView(data) {
     const list = document.getElementById('ranking-list');
     list.innerHTML = '';
-    if (data.length === 0) { list.innerHTML = '<p style="padding:20px;">参加者がいません</p>'; return; }
+    if (data.length === 0) { list.innerHTML = '<p style="padding:20px;">No players</p>'; return; }
     const isCurrency = (currentConfig.scoreUnit === 'currency');
     data.forEach((r, i) => {
         const rank = i + 1;
@@ -414,7 +388,7 @@ function renderRankingView(data) {
             div.style.opacity = "0.6"; div.style.background = "#eee";
         }
         div.className = rankClass;
-        let scoreText = `${r.score}点`;
+        let scoreText = `${r.score}`;
         if (isCurrency) scoreText = `¥${r.score.toLocaleString()}`;
         
         div.innerHTML = `
