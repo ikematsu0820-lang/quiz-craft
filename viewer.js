@@ -1,5 +1,5 @@
 /* =========================================================
- * viewer.js (v36: Choices Display)
+ * viewer.js (v41: Viewer with Alignment Logic)
  * =======================================================*/
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -21,9 +21,8 @@ function viewerConnect() {
 }
 
 function startViewerListener(roomId) {
+    const contentDiv = document.getElementById('viewer-content');
     const statusEl = document.getElementById('viewer-status');
-    const mainText = document.getElementById('viewer-main-text');
-    const subText = document.getElementById('viewer-sub-text');
     const rankArea = document.getElementById('viewer-ranking-area');
 
     // ステータス監視
@@ -31,66 +30,91 @@ function startViewerListener(roomId) {
         const st = snap.val();
         if(!st) return;
 
-        rankArea.style.display = 'none'; // デフォルト非表示
+        // ランキング時はエリア切り替え
+        if (st.step === 'ranking') {
+            statusEl.textContent = "RANKING";
+            contentDiv.innerHTML = ""; // クリア
+            rankArea.style.display = 'block';
+            contentDiv.appendChild(rankArea); // ランキングエリアを表示
+            renderViewerRanking(roomId, rankArea);
+            return;
+        }
+
+        // 通常問題進行時
+        rankArea.style.display = 'none';
+        
+        // 毎回コンテンツを再構築してレイアウト変更に対応
+        contentDiv.innerHTML = ""; 
+        contentDiv.appendChild(statusEl); // ステータスは常に上
         
         if (st.step === 'standby') {
             statusEl.textContent = APP_TEXT.Viewer.Waiting;
-            mainText.textContent = "待機中...";
-            subText.textContent = "";
+            const waitDiv = document.createElement('div');
+            waitDiv.textContent = "待機中...";
+            waitDiv.style.fontSize = "5vh";
+            waitDiv.style.marginTop = "20vh";
+            contentDiv.appendChild(waitDiv);
         }
-        else if (st.step === 'question') {
-            statusEl.textContent = "QUESTION";
-            // 問題文取得
-            window.db.ref(`rooms/${roomId}/questions/${st.qIndex}`).once('value', qSnap => {
-                const q = qSnap.val();
-                mainText.textContent = q.q;
-                
-                // ★変更: 選択肢の表示 (Choice & Sort)
-                if(q.type === 'choice' || q.type === 'sort') {
-                    let choicesHtml = '<div style="display:flex; flex-wrap:wrap; justify-content:center; gap:30px; margin-top:30px;">';
-                    q.c.forEach((choice, i) => {
-                        const prefix = (q.type === 'choice') ? String.fromCharCode(65 + i) : (i + 1);
-                        choicesHtml += `
-                            <div style="background:rgba(255,255,255,0.15); padding:15px 30px; border-radius:10px; border:2px solid #777; font-size:0.8em; min-width:200px;">
-                                <span style="color:gold; font-weight:bold; font-size:1.2em; margin-right:10px;">${prefix}.</span>
-                                <span>${choice}</span>
-                            </div>
-                        `;
-                    });
-                    choicesHtml += '</div>';
-                    subText.innerHTML = choicesHtml;
-                } else {
-                    subText.textContent = "";
-                }
-            });
-        }
-        else if (st.step === 'answer') {
-            statusEl.textContent = APP_TEXT.Viewer.AnswerCheck;
-            // 正解を表示
-            window.db.ref(`rooms/${roomId}/questions/${st.qIndex}`).once('value', qSnap => {
-                const q = qSnap.val();
-                mainText.textContent = q.q;
-                
-                let ansStr = "";
-                if(q.type === 'sort') ansStr = q.c.join(' → ');
-                else if(q.type === 'text') ansStr = q.correct[0];
-                else {
-                    const cIdx = (q.correctIndex !== undefined) ? q.correctIndex : q.correct[0];
-                    const prefix = String.fromCharCode(65 + cIdx);
-                    ansStr = `${prefix}. ${q.c[cIdx]}`;
-                }
-                
-                subText.innerHTML = `<span style="color:#ff3333; background:white; padding:10px 40px; border-radius:15px; font-weight:bold;">正解: ${ansStr}</span>`;
-            });
-        }
-        else if (st.step === 'ranking') {
-            statusEl.textContent = "RANKING";
-            mainText.textContent = "";
-            subText.textContent = "";
-            rankArea.style.display = 'block';
+        else if (st.step === 'question' || st.step === 'answer') {
+            statusEl.textContent = (st.step === 'question') ? "QUESTION" : APP_TEXT.Viewer.AnswerCheck;
             
-            // ランキング取得して表示
-            renderViewerRanking(roomId, rankArea);
+            // 問題データ取得
+            window.db.ref(`rooms/${roomId}/questions/${st.qIndex}`).once('value', qSnap => {
+                const q = qSnap.val();
+                
+                // レイアウトクラス決定
+                const layoutClass = 'layout-' + (q.layout || 'standard').replace('_', '-'); 
+                
+                const container = document.createElement('div');
+                container.className = `viewer-layout-container ${layoutClass}`;
+                
+                // 問題文エリア
+                const qArea = document.createElement('div');
+                qArea.className = 'q-area';
+                
+                // ★追加: 文字配置クラス適用
+                if(q.align) {
+                    qArea.classList.add('text-' + q.align);
+                } else {
+                    qArea.classList.add('text-center'); // デフォルト
+                }
+
+                qArea.textContent = q.q;
+                
+                // 選択肢エリア
+                const cArea = document.createElement('div');
+                cArea.className = 'c-area';
+                
+                if (q.type === 'choice' || q.type === 'sort') {
+                    q.c.forEach((choice, i) => {
+                        const item = document.createElement('div');
+                        item.className = 'choice-item';
+                        const prefix = (q.type === 'choice') ? String.fromCharCode(65 + i) : (i + 1);
+                        
+                        // 正解表示時のハイライト
+                        if (st.step === 'answer') {
+                            let isCorrect = false;
+                            if (q.type === 'choice') {
+                                if (q.correctIndex !== undefined && i === q.correctIndex) isCorrect = true;
+                                else if (q.correct && q.correct.includes(i)) isCorrect = true;
+                            }
+                            if (isCorrect) {
+                                item.style.background = "#d00"; // 正解色
+                                item.style.borderColor = "gold";
+                            } else {
+                                item.style.opacity = "0.5";
+                            }
+                        }
+
+                        item.innerHTML = `<span class="choice-prefix">${prefix}.</span> ${choice}`;
+                        cArea.appendChild(item);
+                    });
+                }
+
+                container.appendChild(qArea);
+                container.appendChild(cArea);
+                contentDiv.appendChild(container);
+            });
         }
     });
 }
@@ -107,7 +131,7 @@ function renderViewerRanking(roomId, container) {
         
         const top10 = list.slice(0, 10);
         
-        let html = '<table style="width:100%; font-size:3vw; border-collapse:collapse; color:white;">';
+        let html = '<table style="width:100%; font-size:3vw; border-collapse:collapse; color:white; margin-top:20px;">';
         top10.forEach((p, i) => {
             const color = i === 0 ? 'gold' : (i === 1 ? 'silver' : (i === 2 ? '#cd7f32' : 'white'));
             const rankSize = i < 3 ? '1.2em' : '1em';
