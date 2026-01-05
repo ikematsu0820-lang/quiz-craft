@@ -9,8 +9,8 @@ const APP_TEXT = {
     
     // メインメニュー
     Main: {
-        HostBtn: "司会者 (Host)",
-        PlayerBtn: "回答者 (Player)"
+        HostBtn: "クイズを作る",
+        PlayerBtn: "クイズに答える"
     },
 
     // ホストログイン
@@ -18,7 +18,7 @@ const APP_TEXT = {
         Title: "番組IDを入力",
         Placeholder: "例: QUIZ2026",
         SubmitBtn: "ログイン / 新規作成",
-        BackBtn: "🏠 ホーム", // ★変更
+        BackBtn: "ホーム", // ★変更
         AlertEmpty: "番組IDを入力してください",
         AlertError: "ID文字種エラー"
     },
@@ -29,8 +29,8 @@ const APP_TEXT = {
         BtnCreate: "セット作成",
         BtnConfig: "セット設定",
         BtnStudio: "スタジオ",
-        BtnViewer: "モニター (Viewer)",
-        SetListTitle: "保存済みセット (素材)",
+        BtnViewer: "モニター",
+        SetListTitle: "保存済みセット",
         DeleteConfirm: "削除しますか？"
     },
 
@@ -42,9 +42,9 @@ const APP_TEXT = {
         PlaceholderSetName: "例: 第1ステージ",
         HeadingNewQ: "新規問題追加",
         LabelType: "問題形式",
-        TypeChoice: "🔳 選択式 (Choice)",
-        TypeSort: "🔢 並べ替え (Sort)",
-        TypeText: "✍️ 自由入力 (Free Input)",
+        TypeChoice: "選択式",
+        TypeSort: "並べ替え",
+        TypeText: "自由入力",
         PlaceholderQ: "問題文を入力",
         BtnAdd: "リストに追加",
         ListHeading: "作成中のリスト",
@@ -64,16 +64,16 @@ const APP_TEXT = {
     Config: {
         Title: "セット設定",
         BackBtn: "ダッシュボード",
-        HeadingAdd: "ピリオド（セット）を構成に追加",
-        LabelSet: "1. セットを選択",
+        HeadingAdd: "ピリオドを構成に追加",
+        LabelSet: "セットを選択",
         SelectDefault: "-- セットを選択 --",
         SelectLoading: "読み込み中...",
         SelectEmpty: "セットがありません",
-        LabelRule: "2. ルール設定",
+        LabelRule: "ルール設定",
         LabelElim: "▼ 脱落条件",
-        RuleNone: "脱落なし（ランキング戦）",
+        RuleNone: "脱落なし",
         RuleWrong: "不正解者のみ脱落",
-        RuleSlow: "不正解 ＋ 一番遅い人も脱落",
+        RuleSlow: "不正解 ＋ 回答が遅い人も脱落",
         LabelElimCount: "遅い順に",
         LabelElimCountSuffix: "名が脱落",
         LabelTime: "制限時間",
@@ -117,7 +117,7 @@ const APP_TEXT = {
         LabelKanpe: "司会者用カンペ",
         StatusReady: "準備中...",
         HeadingList: "番組構成リスト",
-        HeadingLoad: "📂 プログラム読込",
+        HeadingLoad: "プログラム読込",
         SelectProgDefault: "保存済みプログラムを選択...",
         BtnLoad: "読み込んでセット",
         BtnMasterPlay: "再生 ▶",
@@ -150,7 +150,7 @@ const APP_TEXT = {
         BadgeDead: "DEAD",
         MsgLobbyHead: "Ready?",
         MsgLobbyBody: "画面を注視してください",
-        MsgAnswered: "ANSWERED!<br>祈ってお待ちください...",
+        MsgAnswered: "正解までしばらくお待ちください",
         MsgCorrect: "正解！",
         MsgWrong: "不正解...",
         MsgWait: "集計中...",
