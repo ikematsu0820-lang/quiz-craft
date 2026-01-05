@@ -1,5 +1,5 @@
 /* =========================================================
- * style_host.css (v41: Host Styles)
+ * style_host.css (v50: Creator List Styles)
  * =======================================================*/
 
 /* 問題作成画面フォーム */
@@ -34,7 +34,43 @@
     border-bottom: 1px solid #0055ff;
 }
 
-/* ★v41追加: 下部セット設定エリア */
+/* ★v50追加: リストアイテムの操作ボタン */
+.q-list-item {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.q-list-content {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    margin-right: 10px;
+}
+
+.q-list-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-mini {
+    padding: 2px 8px;
+    font-size: 0.8em;
+    border-radius: 3px;
+    border: none;
+    cursor: pointer;
+}
+.btn-edit { background: #2c3e50; color: white; }
+.btn-move { background: #ddd; color: #333; }
+.btn-del { background: #ffcccc; color: #d00; }
+
+/* 下部セット設定エリア */
 .creator-set-settings {
     border: 2px solid #333;
     background: #fff;
@@ -43,7 +79,6 @@
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-/* ★v41追加: 文字配置ボタン */
 .btn-align {
     flex: 1;
     background: #fff;
