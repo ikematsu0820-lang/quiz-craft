@@ -1,6 +1,5 @@
 /* =========================================================
- * host_config.js
- * 役割：セットのルール設定、番組構成リスト(プレイリスト)の構築
+ * host_config.js (v16: Program Saving)
  * =======================================================*/
 
 function enterConfigMode() {
@@ -17,7 +16,6 @@ function enterConfigMode() {
             Object.keys(data).forEach(key => {
                 const item = data[key];
                 const opt = document.createElement('option');
-                // JSONに固めてvalueに入れる
                 opt.value = JSON.stringify({ q: item.questions, c: item.config || {}, t: item.title });
                 opt.textContent = item.title;
                 select.appendChild(opt);
@@ -67,7 +65,7 @@ function addPeriodToPlaylist() {
         passCount: passCount,
         eliminationRule: document.getElementById('config-elimination-rule').value,
         scoreUnit: document.getElementById('config-score-unit').value,
-        theme: 'light', // テーマ選択は削除したので固定
+        theme: 'light',
         timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0
     };
     
@@ -123,3 +121,30 @@ window.removeFromPlaylist = function(index) {
     renderConfigPreview();
     updateBuilderUI();
 };
+
+// ★追加：プログラム（プレイリスト）を保存する
+function saveProgramToCloud() {
+    if(periodPlaylist.length === 0) {
+        alert("構成リストが空です");
+        return;
+    }
+    const titleInput = document.getElementById('config-program-title');
+    const title = titleInput.value.trim();
+    if(!title) {
+        alert("プログラム名を入力してください");
+        return;
+    }
+
+    const saveObj = {
+        title: title,
+        playlist: periodPlaylist, // 構成リストをまるごと保存
+        createdAt: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    window.db.ref(`saved_programs/${currentShowId}`).push(saveObj)
+    .then(() => {
+        alert(`プログラム「${title}」を保存しました！`);
+        titleInput.value = '';
+    })
+    .catch(err => alert("保存エラー: " + err.message));
+}
