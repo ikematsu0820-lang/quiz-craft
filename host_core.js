@@ -1,5 +1,5 @@
 /* =========================================================
- * host_core.js (v16: Program Loading)
+ * host_core.js (v17: Program Load Fix)
  * =======================================================*/
 
 let currentShowId = null;
@@ -10,7 +10,6 @@ let currentQIndex = 0;
 let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light', timeLimit: 0, passCount: 0 };
 let editingSetId = null;
 let returnToCreator = false;
-// ★ここにロードされたプログラムが入る
 let periodPlaylist = [];
 let currentPeriodIndex = -1;
 
@@ -42,8 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const configBtn = document.getElementById('dash-config-btn');
     if(configBtn) {
         configBtn.addEventListener('click', () => {
-            // 新規作成扱いでconfigへ（リストはクリアしないが、明示的にクリアしたほうが安全かも？）
-            // 今回は継続編集できるようにクリアしないでおく
+            // 新規作成時はリストをクリア
+            periodPlaylist = [];
             enterConfigMode(); 
         });
     }
@@ -68,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const configAddBtn = document.getElementById('config-add-playlist-btn');
     if(configAddBtn) configAddBtn.addEventListener('click', addPeriodToPlaylist);
 
+    // ★Config内の保存ボタン
     const configSaveProgBtn = document.getElementById('config-save-program-btn');
     if(configSaveProgBtn) configSaveProgBtn.addEventListener('click', saveProgramToCloud);
 
@@ -83,10 +83,9 @@ function enterDashboard() {
     window.showView(window.views.dashboard);
     document.getElementById('dashboard-show-id').textContent = currentShowId;
     loadSavedSets();
-    loadSavedPrograms(); // ★プログラムも読み込む
+    loadSavedPrograms();
 }
 
-// 保存済みセット（素材）の読み込み
 function loadSavedSets() {
     const listEl = document.getElementById('dash-set-list');
     listEl.innerHTML = '<p style="text-align:center;">読み込み中...</p>';
@@ -139,7 +138,6 @@ function loadSavedSets() {
     });
 }
 
-// ★保存済みプログラム（構成）の読み込み
 function loadSavedPrograms() {
     const listEl = document.getElementById('dash-program-list');
     listEl.innerHTML = '<p style="text-align:center;">読み込み中...</p>';
@@ -154,8 +152,8 @@ function loadSavedPrograms() {
         Object.keys(data).forEach(key => {
             const item = data[key];
             const div = document.createElement('div');
-            div.className = 'set-item'; // 同じスタイルを流用
-            div.style.borderLeft = "5px solid #0055ff"; // 青ラインで区別
+            div.className = 'set-item';
+            div.style.borderLeft = "5px solid #0055ff";
 
             const periodCount = item.playlist ? item.playlist.length : 0;
 
@@ -163,7 +161,7 @@ function loadSavedPrograms() {
                 <div style="cursor:pointer; flex:1;" onclick="loadProgramIntoConfig('${key}')">
                     <span style="font-weight:bold; color:#0055ff;">${item.title}</span>
                     <div style="font-size:0.8em; color:#666;">
-                        全${periodCount}ピリオド
+                        全${periodCount}ピリオド (クリックで読込)
                     </div>
                 </div>
             `;
@@ -183,13 +181,14 @@ function loadSavedPrograms() {
     });
 }
 
-// ★プログラムをクリックしたらConfigにロードして遷移
+// ★修正：プログラムを読み込んだら、それを保持して「編集（Config）」か「開始（Studio）」かを選べるようにする
+// 今回はユーザー体験をスムーズにするため、一度Config画面に入れてプレビューさせる
 window.loadProgramIntoConfig = function(key) {
     window.db.ref(`saved_programs/${currentShowId}/${key}`).once('value', snap => {
         const prog = snap.val();
         if(prog && prog.playlist) {
             periodPlaylist = prog.playlist; // グローバル変数にセット
-            alert(`プログラム「${prog.title}」を読み込みました`);
+            alert(`プログラム「${prog.title}」を読み込みました。\n構成を確認してスタジオへ移動してください。`);
             enterConfigMode(); // 設定画面へ
         }
     });
