@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>All Star Quiz Cloud</title>
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
 
 <div id="main-view" class="view">
     <h1 class="app-title">ALL STAR QUIZ</h1>
-    <p style="text-align:center; color:#666;">Cloud Edition v19</p>
+    <p style="text-align:center; color:#666;">Cloud Edition v20</p>
     <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
         <button id="main-host-btn" class="btn-primary">司会者 (Host)</button>
         <button id="main-player-btn" class="btn-success">回答者 (Player)</button>
@@ -101,7 +101,7 @@
             <select id="config-elimination-rule" class="btn-block config-select" style="margin-bottom:8px;">
                 <option value="none">脱落なし（ランキング戦）</option>
                 <option value="wrong_only">不正解者のみ脱落</option>
-                <option value="wrong_and_slowest">不正解 ＋ 遅い人も脱落</option>
+                <option value="wrong_and_slowest">不正解 ＋ 一番遅い人も脱落</option>
             </select>
             
             <div id="config-elimination-count-area" class="hidden" style="margin-bottom:8px; padding:8px; background:#fff; border:1px solid #ddd; border-radius:4px;">
@@ -125,11 +125,20 @@
                 </div>
                 <div>
                     <label style="font-size:0.7em; color:#666;">スコア</label>
-                    <select id="config-score-unit" class="config-select">
-                        <option value="point">ポイント制</option>
-                        <option value="currency">通貨制</option>
-                    </select>
+                    <div style="display:flex; gap:5px;">
+                        <select id="config-score-unit" class="config-select" style="flex:1;">
+                            <option value="point">ポイント制</option>
+                            <option value="currency">通貨制</option>
+                        </select>
+                        <button id="config-custom-score-btn" style="flex:0 0 40px; background:#666; padding:0; font-size:1.2em;" title="配点を個別に変更">📝</button>
+                    </div>
                 </div>
+            </div>
+
+            <div id="config-custom-points-area" class="hidden" style="margin-top:10px; padding:10px; background:#fff; border:2px solid #aaa; border-radius:5px;">
+                <h5 style="margin:0 0 10px 0; border-bottom:1px solid #ddd; padding-bottom:5px;">問題別配点設定</h5>
+                <div id="config-questions-list" style="font-size:0.9em; max-height:200px; overflow-y:auto;">
+                    </div>
             </div>
         </div>
         
@@ -168,7 +177,7 @@
         <div id="kanpe-question" style="font-weight:bold; font-size:1.1em; margin-bottom:5px;"></div>
         <div id="kanpe-answer" style="color:#d00; font-weight:bold;"></div>
         <div id="kanpe-time-limit" style="font-size:0.8em; color:#666; margin-top:5px;"></div>
-    </div>
+        <div id="kanpe-point" style="font-size:0.8em; color:#0055ff; font-weight:bold;"></div> </div>
     
     <div id="host-status-area" style="text-align:center; margin-bottom:15px; font-weight:bold; color:#666;">準備中...</div>
 
@@ -249,11 +258,11 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="host_core.js?v=19"></script>
-<script src="host_creator.js?v=19"></script>
-<script src="host_config.js?v=19"></script>
-<script src="host_studio.js?v=19"></script>
-<script src="player.js?v=19"></script>
+<script src="host_core.js?v=20"></script>
+<script src="host_creator.js?v=20"></script>
+<script src="host_config.js?v=20"></script>
+<script src="host_studio.js?v=20"></script>
+<script src="player.js?v=20"></script>
 
 </body>
 </html>
