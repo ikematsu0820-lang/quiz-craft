@@ -1,11 +1,11 @@
 /* =========================================================
- * text_config.js (v35: Home Button & Monitor Layout)
+ * text_config.js (v38: Wording Fix & Cleanup)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v35",
+    Version: "Cloud Edition v38",
     
     // メインメニュー
     Main: {
@@ -18,7 +18,7 @@ const APP_TEXT = {
         Title: "番組IDを入力",
         Placeholder: "例: QUIZ2026",
         SubmitBtn: "ログイン / 新規作成",
-        BackBtn: "ホーム", // ★変更
+        BackBtn: "ホーム",
         AlertEmpty: "番組IDを入力してください",
         AlertError: "ID文字種エラー"
     },
@@ -37,7 +37,7 @@ const APP_TEXT = {
     // セット作成
     Creator: {
         Title: "問題作成",
-        BackBtn: "ダッシュボード", // ここはダッシュボードに戻る
+        BackBtn: "ダッシュボード",
         LabelSetName: "セット名",
         PlaceholderSetName: "例: 第1ステージ",
         HeadingNewQ: "新規問題追加",
@@ -50,8 +50,8 @@ const APP_TEXT = {
         ListHeading: "作成中のリスト",
         BtnSave: "クラウドに保存して完了",
         BtnUpdate: "更新して完了",
-        OptMulti: "複数回答可",
-        OptPartial: "部分点あり",
+        OptMulti: "正解を選択", // ★変更
+        // OptPartial: "部分点あり", // ★削除
         BtnAddChoice: "＋ 選択肢を追加",
         BtnAddSort: "＋ 項目を追加",
         AlertNoQ: "問題文を入力してください",
