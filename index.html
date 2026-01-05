@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
 <link rel="stylesheet" href="style_common.css?v=55">
-<link rel="stylesheet" href="style_host.css?v=55">
+<link rel="stylesheet" href="style_host.css?v=56">
 <link rel="stylesheet" href="style_player.css?v=55">
 <link rel="stylesheet" href="style_viewer.css?v=55">
 </head>
@@ -60,10 +60,24 @@
         <button id="creator-back-btn" class="header-back-btn" data-text="Creator.BackBtn">Back</button>
     </div>
     <hr>
+    
+    <div class="creator-top-area">
+        <h4 style="margin:0 0 10px 0; color:#0055ff;" data-text="Creator.HeadingSettings">Set Settings</h4>
+        
+        <label style="font-size:0.8em; font-weight:bold;" data-text="Creator.LabelTypeFixed">Fixed Type</label>
+        <select id="creator-q-type" class="btn-block" style="background:#fff; font-weight:bold;"></select>
+        <p id="creator-type-locked-msg" class="creator-locked-msg hidden" data-text="Creator.MsgTypeLocked">Locked</p>
+        
+        <label style="font-size:0.8em; font-weight:bold; margin-top:10px; display:block;" data-text="Creator.LabelSpecialMode">Special Mode</label>
+        <select id="creator-special-mode" class="btn-block" style="background:#fff;">
+            <option value="none" data-text="Creator.SpecialModeNone">None</option>
+            <option value="time_attack" data-text="Creator.SpecialModeTimeAttack">Time Attack</option>
+            <option value="panel_attack" data-text="Creator.SpecialModePanel">Panel Attack</option>
+        </select>
+    </div>
+
     <div style="background:#fff0f5; padding:15px; border-radius:8px; border:2px solid #ff69b4; margin-bottom:20px;">
         <h3 id="creator-form-title" style="margin-top:0; color:#c71585;" data-text="Creator.HeadingNewQ">New Question</h3>
-        <label style="font-size:0.8em; font-weight:bold; color:#666;" data-text="Creator.LabelType">Type</label>
-        <select id="creator-q-type" class="btn-block" style="margin-bottom:10px; background:#fff;"></select>
         <input type="text" id="question-text" class="btn-block" placeholder="" style="margin-bottom:10px;">
         <div id="creator-form-container" style="margin-bottom:10px;"></div>
         <button id="add-question-btn" class="btn-primary btn-block" style="margin-top:10px;" data-text="Creator.BtnAdd">Add</button>
@@ -72,20 +86,11 @@
             <button id="cancel-update-btn" class="btn-dark" style="flex:1;" data-text="Creator.BtnCancel">Cancel</button>
         </div>
     </div>
+    
     <div class="creator-set-settings">
-        <h4 data-text="Creator.HeadingSettings" style="margin-top:0; border-bottom:1px solid #ccc; padding-bottom:5px;">Set Settings</h4>
         <label style="font-weight:bold;" data-text="Creator.LabelSetName">Set Name</label>
         <input type="text" id="quiz-set-title" class="btn-block" placeholder="" style="margin-bottom:15px;">
         
-        <div style="background:#e0f7fa; padding:10px; border-radius:5px; margin-bottom:15px; border:1px solid #00acc1;">
-            <label style="font-weight:bold; font-size:0.9em;" data-text="Creator.LabelSpecialMode">Special Mode</label>
-            <select id="creator-special-mode" class="btn-block" style="background:#fff; margin-top:5px;">
-                <option value="none" data-text="Creator.SpecialModeNone">None</option>
-                <option value="time_attack" data-text="Creator.SpecialModeTimeAttack">Time Attack</option>
-                <option value="panel_attack" data-text="Creator.SpecialModePanel">Panel Attack</option>
-            </select>
-        </div>
-
         <h5 data-text="Creator.ListHeading" style="margin:0 0 5px 0;">List</h5>
         <div id="q-list" style="background:white; padding:5px; border:1px solid #ddd; min-height:50px; margin-bottom:15px; max-height:300px; overflow-y:auto;"></div>
         
@@ -342,13 +347,13 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=55"></script>
-<script src="host_core.js?v=55"></script>
-<script src="host_creator.js?v=55"></script>
-<script src="host_config.js?v=55"></script>
-<script src="host_studio.js?v=55"></script>
-<script src="player.js?v=55"></script>
-<script src="viewer.js?v=55"></script>
+<script src="text_config.js?v=56"></script>
+<script src="host_core.js?v=54"></script>
+<script src="host_creator.js?v=56"></script>
+<script src="host_config.js?v=56"></script>
+<script src="host_studio.js?v=56"></script>
+<script src="player.js?v=54"></script>
+<script src="viewer.js?v=54"></script>
 
 </body>
 </html>
