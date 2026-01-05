@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v52: Robust Button Setup)
+ * host_studio.js (v53: Panel & Bomb Logic)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
@@ -36,6 +36,8 @@ function enterHostMode(roomId) {
     document.getElementById('control-panel').classList.add('hidden');
     document.getElementById('host-buzz-winner-area').classList.add('hidden');
     document.getElementById('host-manual-judge-area').classList.add('hidden');
+    document.getElementById('host-panel-control-area').classList.add('hidden');
+    document.getElementById('host-bomb-control-area').classList.add('hidden');
     
     updateKanpe(); 
     loadProgramsInStudio();
@@ -69,7 +71,6 @@ function identifyBuzzWinner(players) {
     if (candidates.length > 0) {
         candidates.sort((a, b) => a.time - b.time);
         const winner = candidates[0];
-        
         buzzWinnerId = winner.id;
         
         window.db.ref(`rooms/${currentRoomId}/status`).update({
@@ -160,7 +161,7 @@ function renderStudioTimeline() {
             <div>
                 <h5 style="margin:0;">No.${index + 1}: ${item.title}${interText}</h5>
                 <div class="info" style="margin-top:5px;">
-                    <span style="color:#d00; font-weight:bold;">[${modeText}]</span> ${statusText} / ${item.questions.length}Q
+                    <span style="color:#d00; font-weight:bold;">[${modeText}]</span> ${statusText}
                 </div>
             </div>
         `;
@@ -189,14 +190,24 @@ window.playPeriod = function(index) {
     
     document.getElementById('studio-timeline-area').classList.add('hidden');
     document.getElementById('control-panel').classList.remove('hidden');
+    document.getElementById('host-panel-control-area').classList.add('hidden');
+    document.getElementById('host-bomb-control-area').classList.add('hidden');
     
     if (currentConfig.mode === 'time_attack') {
         currentConfig.timeLimit = 5;
     }
 
+    if (currentConfig.mode === 'panel_attack') {
+        startPanelGame(currentRoomId);
+    } else if (currentConfig.mode === 'bomb') {
+        startBombGame(currentRoomId);
+    } else {
+        window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
+        window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0, currentAnswerer: null, isBuzzActive: false });
+        updateKanpe();
+    }
+
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
-    window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
-    window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0, currentAnswerer: null, isBuzzActive: false });
     
     window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
         let players = [];
@@ -264,7 +275,7 @@ window.playPeriod = function(index) {
     if (currentConfig.mode === 'time_attack') {
         if(btnStartTA) btnStartTA.classList.remove('hidden');
         document.getElementById('host-status-area').textContent = APP_TEXT.Studio.MsgTimeAttackReady;
-    } else {
+    } else if (currentConfig.mode !== 'panel_attack' && currentConfig.mode !== 'bomb') {
         if(btnStart) btnStart.classList.remove('hidden');
         document.getElementById('host-status-area').textContent = "Ready...";
     }
@@ -273,9 +284,72 @@ window.playPeriod = function(index) {
         buzzWinnerId = null;
         document.getElementById('host-buzz-winner-area').classList.add('hidden');
     }
-
-    updateKanpe();
 };
+
+// ★v53: パネルアタックロジック
+function startPanelGame(roomId) {
+    const panels = Array(25).fill(0);
+    window.db.ref(`rooms/${roomId}/status`).update({
+        step: 'panel',
+        panels: panels
+    });
+    
+    const grid = document.getElementById('host-panel-grid');
+    document.getElementById('host-panel-control-area').classList.remove('hidden');
+    grid.innerHTML = '';
+    
+    for(let i=0; i<25; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i+1;
+        btn.style.height = "40px";
+        btn.onclick = () => {
+            window.db.ref(`rooms/${roomId}/status/panels/${i}`).once('value', snap => {
+                let val = snap.val() || 0;
+                val = (val + 1) % 5;
+                window.db.ref(`rooms/${roomId}/status/panels/${i}`).set(val);
+                updateHostPanelColor(btn, val);
+            });
+        };
+        grid.appendChild(btn);
+    }
+}
+
+function updateHostPanelColor(btn, val) {
+    const colors = ['#ddd', '#ffaaaa', '#aaffaa', '#ffffff', '#aaaaff'];
+    btn.style.background = colors[val];
+}
+
+// ★v53: ドボンロジック
+function startBombGame(roomId) {
+    const count = currentConfig.bombCount || 10;
+    const cards = [];
+    for(let i=0; i<count; i++) cards.push({ type: 0, open: false });
+    
+    const targetIdx = Math.floor(Math.random() * count);
+    cards[targetIdx].type = 1; 
+    
+    window.db.ref(`rooms/${roomId}/status`).update({
+        step: 'bomb',
+        cards: cards
+    });
+    
+    const grid = document.getElementById('host-bomb-grid');
+    document.getElementById('host-bomb-control-area').classList.remove('hidden');
+    grid.innerHTML = '';
+    
+    for(let i=0; i<count; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i+1;
+        if(i === targetIdx) btn.textContent += " (★)"; 
+        btn.style.height = "40px";
+        btn.onclick = () => {
+            window.db.ref(`rooms/${roomId}/status/cards/${i}/open`).set(true);
+            btn.disabled = true;
+            btn.style.background = "#555";
+        };
+        grid.appendChild(btn);
+    }
+}
 
 function setupStudioButtons(roomId) {
     const btnMasterPlay = document.getElementById('studio-master-play-btn');
@@ -291,7 +365,6 @@ function setupStudioButtons(roomId) {
     const btnWrong = document.getElementById('host-judge-wrong-btn');
     const btnPass = document.getElementById('host-judge-pass-btn');
 
-    // ★重要: 閉じるボタンを最優先で設定
     if (btnClose) {
         btnClose.onclick = () => {
             periodPlaylist = [];
@@ -586,79 +659,4 @@ function nextTaQuestion(roomId) {
         currentAnswerer: buzzWinnerId 
     });
 
-    document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} (5s)`;
-
-    taTimer = setTimeout(() => {
-        nextTaQuestion(roomId);
-    }, 5000);
-}
-
-function updateKanpe() {
-    const kanpeArea = document.getElementById('host-kanpe-area');
-    if(studioQuestions.length === 0) {
-        kanpeArea.classList.add('hidden');
-        return;
-    }
-    if(studioQuestions.length > currentQIndex) {
-        const q = studioQuestions[currentQIndex];
-        kanpeArea.classList.remove('hidden');
-        
-        let questionHtml = `Q${currentQIndex+1}. ${q.q}`;
-        if (q.type === 'choice' || q.type === 'sort') {
-            questionHtml += '<div style="margin-top:10px; font-weight:normal; font-size:0.9em; color:#333; background:rgba(255,255,255,0.5); padding:5px; border-radius:4px;">';
-            q.c.forEach((choice, i) => {
-                const prefix = (q.type === 'choice') ? String.fromCharCode(65 + i) : (i + 1);
-                questionHtml += `<div><span style="font-weight:bold; color:#0055ff;">${prefix}.</span> ${choice}</div>`;
-            });
-            questionHtml += '</div>';
-        }
-        document.getElementById('kanpe-question').innerHTML = questionHtml; 
-        
-        let ansText = "";
-        if (q.type === 'sort') ansText = `正解順: ${q.c.join(' → ')}`;
-        else if (q.type === 'text') ansText = `正解: ${q.correct.join(' / ')}`;
-        else {
-            const cIdx = (q.correctIndex !== undefined) ? q.correctIndex : q.correct[0];
-            const charLabel = String.fromCharCode(65 + cIdx); 
-            ansText = `正解: ${charLabel}. ${q.c[cIdx]}`;
-        }
-        document.getElementById('kanpe-answer').textContent = ansText;
-        
-        const timeLimit = currentConfig.timeLimit || 0;
-        const points = q.points || 1;
-        const loss = q.loss || 0;
-        document.getElementById('kanpe-point').textContent = `Pt:${points} / Loss:-${loss}`;
-        document.getElementById('kanpe-time-limit').textContent = timeLimit ? `${timeLimit}s` : "No Limit";
-    } else {
-        kanpeArea.classList.add('hidden');
-    }
-}
-
-function renderRankingView(data) {
-    const list = document.getElementById('ranking-list');
-    list.innerHTML = '';
-    if (data.length === 0) { list.innerHTML = '<p style="padding:20px;">No players</p>'; return; }
-    
-    data.forEach((r, i) => {
-        const rank = i + 1;
-        const div = document.createElement('div');
-        let rankClass = 'rank-row';
-        if (rank === 1) rankClass += ' rank-1';
-        else if (rank === 2) rankClass += ' rank-2';
-        else if (rank === 3) rankClass += ' rank-3';
-        if (!r.isAlive && currentConfig.eliminationRule !== 'none') {
-            div.style.opacity = "0.6"; div.style.background = "#eee";
-        }
-        div.className = rankClass;
-        let scoreText = `${r.score}`; 
-        
-        div.innerHTML = `
-            <div style="display:flex; align-items:center;">
-                <span class="rank-badge">${rank}</span>
-                <span>${r.name}</span>
-            </div>
-            <div class="rank-score">${scoreText}</div>
-        `;
-        list.appendChild(div);
-    });
-}
+    document.getElementById('host-status-area').textContent = `Q${current
