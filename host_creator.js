@@ -1,8 +1,7 @@
 /* =========================================================
- * host_creator.js (v50: Full Editing & Toast)
+ * host_creator.js (v54: Multi-Answer & Special Modes)
  * =======================================================*/
 
-// 編集モード管理
 let editingQuestionIndex = null;
 
 window.initCreatorMode = function() {
@@ -30,13 +29,7 @@ window.loadSetForEditing = function(key, item) {
         if(firstQ.align) updateAlignUI(firstQ.align);
         if(firstQ.design) {
             document.getElementById('design-main-bg-color').value = firstQ.design.mainBgColor || "#222222";
-            if(firstQ.design.bgImage) {
-                document.getElementById('design-bg-image-data').value = firstQ.design.bgImage;
-                document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgImageLoaded;
-            } else {
-                document.getElementById('design-bg-image-data').value = "";
-                document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgNoImage;
-            }
+            document.getElementById('design-bg-image-data').value = firstQ.design.bgImage || "";
             document.getElementById('design-q-text').value = firstQ.design.qTextColor || "#ffffff";
             document.getElementById('design-q-bg').value = firstQ.design.qBgColor || "#2c5066";
             document.getElementById('design-q-border').value = firstQ.design.qBorderColor || "#ffffff";
@@ -44,6 +37,7 @@ window.loadSetForEditing = function(key, item) {
             document.getElementById('design-c-bg').value = firstQ.design.cBgColor || "#365c75";
             document.getElementById('design-c-border').value = firstQ.design.cBorderColor || "#ffffff";
         }
+        document.getElementById('creator-special-mode').value = firstQ.specialMode || 'none';
     } else {
         resetGlobalSettings();
     }
@@ -85,12 +79,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ★v50: 更新・キャンセルボタン
     document.getElementById('update-question-btn').addEventListener('click', updateQuestion);
     document.getElementById('cancel-update-btn').addEventListener('click', resetForm);
 });
 
-// トースト通知
 window.showToast = function(msg) {
     const container = document.getElementById('toast-container');
     const div = document.createElement('div');
@@ -132,6 +124,7 @@ function handleImageUpload(e) {
 function resetGlobalSettings() {
     document.getElementById('creator-set-layout').value = 'standard';
     updateAlignUI('center');
+    document.getElementById('creator-special-mode').value = 'none';
     document.getElementById('design-main-bg-color').value = "#222222";
     document.getElementById('design-bg-image-data').value = "";
     document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgNoImage;
@@ -161,12 +154,12 @@ function resetForm() {
     document.getElementById('update-question-area').classList.add('hidden');
     document.getElementById('question-text').value = '';
     
-    // Type Selectをリセット
     const typeSelect = document.getElementById('creator-q-type');
     typeSelect.innerHTML = `
         <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
         <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
         <option value="text">${APP_TEXT.Creator.TypeText}</option>
+        <option value="multi">${APP_TEXT.Creator.TypeMulti}</option>
     `;
     typeSelect.value = 'choice';
     typeSelect.disabled = false;
@@ -182,9 +175,7 @@ function renderCreatorForm(type, data = null) {
         const settingsDiv = document.createElement('div');
         settingsDiv.style.marginBottom = '10px';
         settingsDiv.style.fontSize = '0.9em';
-        
         const isMulti = data ? data.multi : false;
-        
         settingsDiv.innerHTML = `
             <label style="margin-right:10px;"><input type="checkbox" id="opt-multi-select" ${isMulti?'checked':''}> ${APP_TEXT.Creator.OptMulti}</label>
         `;
@@ -214,12 +205,9 @@ function renderCreatorForm(type, data = null) {
         container.appendChild(addBtn);
 
     } else if (type === 'sort') {
-        // ★v50: 並べ替えオプション
         const optDiv = document.createElement('div');
         optDiv.style.marginBottom = '10px';
-        
         const initVal = data ? data.initialOrder : 'random';
-        
         optDiv.innerHTML = `
             <p style="font-size:0.8em; color:#666; margin:0 0 5px 0;">${APP_TEXT.Creator.DescSort}</p>
             <label style="font-size:0.8em; font-weight:bold;">${APP_TEXT.Creator.LabelSortInitial}</label>
@@ -252,12 +240,9 @@ function renderCreatorForm(type, data = null) {
         container.appendChild(addBtn);
 
     } else if (type === 'text') {
-        // ★v50: 自由入力オプション
         const optDiv = document.createElement('div');
         optDiv.style.marginBottom = '10px';
-        
         const modeVal = data ? data.mode : 'written';
-        
         optDiv.innerHTML = `
             <label style="font-size:0.8em; font-weight:bold;">${APP_TEXT.Creator.LabelTextFormat}</label>
             <select id="text-mode-select" style="padding:5px; font-size:0.9em;">
@@ -275,28 +260,48 @@ function renderCreatorForm(type, data = null) {
         input.placeholder = 'e.g. Apple, Ringot, APPL';
         if (data) input.value = data.correct.join(', ');
         container.appendChild(input);
+
+    } else if (type === 'multi') {
+        const optDiv = document.createElement('div');
+        optDiv.innerHTML = `<p style="font-size:0.8em; color:#666; margin:0 0 5px 0;">${APP_TEXT.Creator.DescMulti}</p>`;
+        container.appendChild(optDiv);
+
+        const multiDiv = document.createElement('div');
+        multiDiv.id = 'creator-multi-list';
+        multiDiv.style.display = 'grid';
+        multiDiv.style.gap = '5px';
+        container.appendChild(multiDiv);
+
+        if (data) {
+            data.c.forEach((text, i) => addMultiInput(multiDiv, i, text));
+        } else {
+            for(let i=0; i<5; i++) addMultiInput(multiDiv, i);
+        }
+
+        const addBtn = document.createElement('button');
+        addBtn.textContent = APP_TEXT.Creator.BtnAddMulti;
+        addBtn.className = 'btn-info';
+        addBtn.style.marginTop = '10px';
+        addBtn.style.padding = '5px';
+        addBtn.onclick = () => addMultiInput(multiDiv);
+        container.appendChild(addBtn);
     }
 }
 
 function addChoiceInput(parent, index, text = "", checked = false) {
-    if (parent.children.length >= 10) {
-        alert(APP_TEXT.Creator.AlertMaxChoice);
-        return;
-    }
+    if (parent.children.length >= 10) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
     const wrapper = document.createElement('div');
     wrapper.className = 'choice-row';
     const chk = document.createElement('input');
     chk.type = 'checkbox';
     chk.className = 'choice-correct-chk';
     chk.checked = checked;
-    
     const inp = document.createElement('input');
     inp.type = 'text';
     inp.className = 'choice-text-input';
     inp.placeholder = 'Choice';
     inp.value = text;
     inp.style.flex = '1';
-    
     const del = document.createElement('button');
     del.textContent = '×';
     del.style.background = '#ccc';
@@ -304,7 +309,6 @@ function addChoiceInput(parent, index, text = "", checked = false) {
     del.style.width = '30px';
     del.style.padding = '5px';
     del.onclick = () => parent.removeChild(wrapper);
-    
     wrapper.appendChild(chk);
     wrapper.appendChild(inp);
     wrapper.appendChild(del);
@@ -312,10 +316,7 @@ function addChoiceInput(parent, index, text = "", checked = false) {
 }
 
 function addSortInput(parent, index, text = "") {
-    if (parent.children.length >= 10) {
-        alert(APP_TEXT.Creator.AlertMaxChoice);
-        return;
-    }
+    if (parent.children.length >= 10) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
     wrapper.style.alignItems = 'center';
@@ -326,6 +327,33 @@ function addSortInput(parent, index, text = "") {
     inp.type = 'text';
     inp.className = 'sort-text-input';
     inp.placeholder = 'Item';
+    inp.value = text;
+    inp.style.flex = '1';
+    const del = document.createElement('button');
+    del.textContent = '×';
+    del.style.background = '#ccc';
+    del.style.color = '#333';
+    del.style.width = '30px';
+    del.style.padding = '5px';
+    del.onclick = () => parent.removeChild(wrapper);
+    wrapper.appendChild(num);
+    wrapper.appendChild(inp);
+    wrapper.appendChild(del);
+    parent.appendChild(wrapper);
+}
+
+function addMultiInput(parent, index, text = "") {
+    if (parent.children.length >= 20) { alert("Max 20 answers"); return; }
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.alignItems = 'center';
+    wrapper.style.gap = '5px';
+    const num = document.createElement('span');
+    num.textContent = '✅'; 
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'multi-text-input';
+    inp.placeholder = 'Answer';
     inp.value = text;
     inp.style.flex = '1';
     const del = document.createElement('button');
@@ -357,7 +385,7 @@ function getQuestionDataFromForm() {
             const isChk = row.querySelector('.choice-correct-chk').checked;
             if(text) {
                 options.push(text);
-                if(isChk) correct.push(options.length - 1); // 詰め直したindex
+                if(isChk) correct.push(options.length - 1);
             }
         });
         if (options.length < 2) { alert(APP_TEXT.Creator.AlertLessChoice); return null; }
@@ -375,20 +403,23 @@ function getQuestionDataFromForm() {
         if(options.length < 2) { alert(APP_TEXT.Creator.AlertLessChoice); return null; }
         newQ.c = options; 
         newQ.correct = options.map((_, i) => i);
-        // ★v50: 初期順序設定
         newQ.initialOrder = document.getElementById('sort-initial-order').value;
 
     } else if (type === 'text') {
         const mode = document.getElementById('text-mode-select').value;
         newQ.mode = mode;
         const ansText = document.getElementById('creator-text-answer').value.trim();
-        
-        if (mode === 'written' && !ansText) {
-            alert(APP_TEXT.Creator.AlertNoTextAns); return null;
-        }
-        // 口頭の場合は空でもOK（メモ扱い）
+        if (mode === 'written' && !ansText) { alert(APP_TEXT.Creator.AlertNoTextAns); return null; }
         const answers = ansText ? ansText.split(',').map(s => s.trim()).filter(s => s) : [];
         newQ.correct = answers; 
+
+    } else if (type === 'multi') {
+        const inputs = document.querySelectorAll('.multi-text-input');
+        const options = [];
+        inputs.forEach(inp => { if(inp.value.trim()) options.push(inp.value.trim()); });
+        if(options.length < 1) { alert("At least 1 answer required"); return null; }
+        newQ.c = options;
+        newQ.correct = options; 
     }
     return newQ;
 }
@@ -407,7 +438,6 @@ function updateQuestion() {
     if(editingQuestionIndex === null) return;
     const q = getQuestionDataFromForm();
     if(q) {
-        // 既存のプロパティ（layout, designなど）を維持しつつ上書き
         createdQuestions[editingQuestionIndex] = { ...createdQuestions[editingQuestionIndex], ...q };
         resetForm();
         renderQuestionList();
@@ -424,12 +454,10 @@ function editQuestion(index) {
     document.getElementById('update-question-area').classList.remove('hidden');
     
     document.getElementById('creator-q-type').value = q.type;
-    document.getElementById('creator-q-type').disabled = true; // タイプ変更は不可（複雑になるため）
+    document.getElementById('creator-q-type').disabled = true;
     document.getElementById('question-text').value = q.q;
     
     renderCreatorForm(q.type, q);
-    
-    // スクロールしてフォームを見せる
     document.getElementById('creator-view').scrollIntoView({behavior: "smooth"});
 }
 
@@ -445,10 +473,8 @@ function moveQuestion(index, direction) {
 function deleteQuestion(index) {
     if(confirm(APP_TEXT.Dashboard.DeleteConfirm)) {
         createdQuestions.splice(index, 1);
-        // 編集中のものを削除したらフォームリセット
         if(editingQuestionIndex === index) resetForm();
         else if(editingQuestionIndex > index) editingQuestionIndex--;
-        
         renderQuestionList();
     }
 }
@@ -463,6 +489,7 @@ function renderQuestionList() {
         let typeIcon = '🔳';
         if(q.type === 'sort') typeIcon = '🔢';
         if(q.type === 'text') typeIcon = '✍️';
+        if(q.type === 'multi') typeIcon = '📚';
         
         div.innerHTML = `
             <div class="q-list-content">
@@ -485,6 +512,7 @@ function saveToCloud() {
     
     const layout = document.getElementById('creator-set-layout').value;
     const align = document.getElementById('creator-set-align').value;
+    const specialMode = document.getElementById('creator-special-mode').value;
     
     const design = {
         mainBgColor: document.getElementById('design-main-bg-color').value,
@@ -501,6 +529,7 @@ function saveToCloud() {
         q.layout = layout;
         q.align = align;
         q.design = design;
+        q.specialMode = specialMode;
     });
 
     const defaultConf = { eliminationRule: 'none', scoreUnit: 'point', theme: 'light' };
