@@ -1,11 +1,11 @@
 /* =========================================================
- * text_config.js (v53: Panel & Bomb Modes)
+ * text_config.js (v54: Final Polish)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v53",
+    Version: "Cloud Edition v54",
     
     // メインメニュー
     Main: {
@@ -26,7 +26,7 @@ const APP_TEXT = {
     // ダッシュボード
     Dashboard: {
         Logout: "ログアウト",
-        BtnCreate: "セット作成",
+        BtnCreate: "問題作成",
         BtnConfig: "セット設定",
         BtnStudio: "スタジオ",
         BtnViewer: "モニター",
@@ -34,7 +34,7 @@ const APP_TEXT = {
         DeleteConfirm: "削除しますか？"
     },
 
-    // セット作成
+    // 問題作成
     Creator: {
         Title: "問題作成",
         BackBtn: "ダッシュボード",
@@ -42,10 +42,13 @@ const APP_TEXT = {
         PlaceholderSetName: "例: 第1ステージ",
         HeadingNewQ: "新規問題追加",
         HeadingEditQ: "問題編集",
+        
         LabelType: "問題形式",
         TypeChoice: "選択式",
         TypeSort: "並べ替え",
         TypeText: "自由入力",
+        TypeMulti: "多答クイズ",
+        
         PlaceholderQ: "問題文を入力",
         BtnAdd: "リストに追加",
         BtnUpdateQ: "更新する",
@@ -61,13 +64,21 @@ const APP_TEXT = {
         LabelSortInitial: "初期配置",
         SortInitialRandom: "ランダム (推奨)",
         SortInitialFixed: "固定 (作成順)",
+        
         DescSort: "※正解の順番（上から下）で入力してください",
         DescText: "※正解キーワード（カンマ区切り）",
+        DescMulti: "※全ての項目が正解になります",
 
         BtnAddChoice: "＋ 選択肢を追加",
         BtnAddSort: "＋ 項目を追加",
+        BtnAddMulti: "＋ 正解を追加",
         
         HeadingSettings: "セット設定 (全体共通)",
+        LabelSpecialMode: "スペシャルモード設定",
+        SpecialModeNone: "特になし (通常)",
+        SpecialModeTimeAttack: "タイムショックモード",
+        SpecialModePanel: "パネルアタックモード",
+        
         LabelLayout: "モニターレイアウト",
         LayoutStandard: "標準 (上:問題 / 下:選択肢)",
         LayoutSplitList: "左右分割 (右:縦書き問題 / 左:リスト)",
@@ -113,9 +124,9 @@ const APP_TEXT = {
         ModeNormal: "一斉回答 (Simultaneous)",
         ModeBuzz: "早押し (Buzz-in)",
         ModeTurn: "順番回答 (Turn-based)",
-        ModeTimeAttack: "タイムショック (Time Attack)",
-        ModePanel: "パネルアタック (Panel 25)", // ★v53
-        ModeBomb: "ドボン / 宝探し (Bomb/Treasure)", // ★v53
+        ModeTimeAttack: "★タイムショック (固定)",
+        ModePanel: "★パネルアタック (固定)",
+        ModeBomb: "ドボン / 宝探し (Bomb/Treasure)",
         
         LabelNormalLimit: "▼ 回答回数制限",
         NormalLimitOne: "1回のみ (修正不可)",
@@ -145,7 +156,6 @@ const APP_TEXT = {
         TurnPassOk: "パス可 (次へ回す)",
         TurnPassNg: "パス不可",
         
-        // ★v53: ドボン設定
         LabelBombCount: "カード枚数",
         LabelBombTarget: "アタリ/ハズレ枚数",
 
@@ -183,7 +193,9 @@ const APP_TEXT = {
         AlertNoSet: "セットを選んでください",
         AlertEmptyList: "構成リストが空です",
         AlertNoTitle: "プログラム名を入力してください",
-        MsgSaved: "プログラムを保存しました！"
+        MsgSaved: "プログラムを保存しました！",
+        
+        MsgLockedMode: "※スペシャルモードのため設定は固定されます"
     },
 
     // スタジオ
@@ -225,9 +237,9 @@ const APP_TEXT = {
         MsgTimeAttackActive: "TIME SHOCK!",
         BtnStartTA: "カウント開始 (5s Loop)",
         
-        // ★v53
         LabelPanelControl: "パネル操作 (クリックで色変更)",
         LabelBombControl: "カード操作 (クリックでオープン)",
+        LabelMultiControl: "多答クイズ操作 (クリックでオープン)",
         MsgPanelActive: "Panel Attack Mode",
         MsgBombActive: "Bomb Game Mode"
     },
@@ -261,9 +273,9 @@ const APP_TEXT = {
         MsgTurnWait: "さんの番です...",
         BtnAnswered: "回答しました",
         MsgTimeAttack: "Time Shock Mode<br>モニターを見て回答してください",
-        // ★v53
         MsgPanelWait: "Panel Attack<br>モニターを見てください",
-        MsgBombWait: "Bomb Game<br>モニターを見てください"
+        MsgBombWait: "Bomb Game<br>モニターを見てください",
+        MsgMultiWait: "多答クイズ<br>モニターを見てください"
     },
 
     // モニター
