@@ -1,5 +1,5 @@
 /* =========================================================
- * style_viewer.css (v53: Panel & Bomb Styles)
+ * style_viewer.css (v54: Complete)
  * =======================================================*/
 
 :root {
@@ -93,7 +93,7 @@
     font-weight: bold;
 }
 
-/* ★v53: パネルアタック用グリッド */
+/* パネルアタック用グリッド */
 #viewer-panel-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -120,7 +120,7 @@
 .panel-white { background: #ffffff !important; color: #333 !important; box-shadow: 0 0 10px #fff; }
 .panel-blue { background: #0055ff !important; color: white !important; box-shadow: 0 0 10px #0055ff; }
 
-/* ★v53: ドボン用カードグリッド */
+/* ドボン用カードグリッド */
 #viewer-bomb-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr); 
@@ -130,6 +130,20 @@
     margin: 0 auto;
     align-content: center;
 }
+
+/* 多答クイズ用グリッド */
+#viewer-multi-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: center;
+    gap: 2vh;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+}
+
+/* カード共通 */
 .card-item {
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     border: 3px solid #fff;
@@ -140,26 +154,44 @@
     font-size: 5vh;
     color: white;
     cursor: pointer;
-    aspect-ratio: 2/3;
-    transition: transform 0.5s;
+    transition: transform 0.6s;
     transform-style: preserve-3d;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    
+    min-width: 200px;
+    min-height: 120px;
+    aspect-ratio: 2/3;
 }
+.card-item.multi {
+    aspect-ratio: auto; /* 多答は横長 */
+}
+
 .card-item.flipped {
     transform: rotateY(180deg);
     background: #fff;
+    color: #333;
 }
+
+.card-number {
+    position: absolute;
+    backface-visibility: hidden;
+}
+
 .card-content {
-    display: none;
+    transform: rotateY(180deg);
+    backface-visibility: hidden;
     font-size: 4vh;
     font-weight: bold;
+    text-align: center;
+    word-break: break-word;
+    padding: 10px;
+    display: block;
 }
-.card-item.flipped .card-number { display: none; }
-.card-item.flipped .card-content { display: block; transform: rotateY(180deg); }
 
 .card-safe { color: #00aa00; }
 .card-out { color: #d00; font-size: 6vh; }
 
-/* レイアウト関連 (既存) */
+/* レイアウト関連 */
 .text-left { justify-content: flex-start !important; text-align: left !important; }
 .text-center { justify-content: center !important; text-align: center !important; }
 .text-right { justify-content: flex-end !important; text-align: right !important; }
