@@ -4,18 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>All Star Quiz Cloud</title>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
-
-<link rel="stylesheet" href="style.css?v=22">
+<link rel="stylesheet" href="style.css?v=24">
 </head>
 <body>
 
 <div id="main-view" class="view">
     <h1 class="app-title">ALL STAR QUIZ</h1>
-    <p style="text-align:center; color:#666;">Cloud Edition v22</p>
+    <p style="text-align:center; color:#666;">Cloud Edition v24</p>
     <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
         <button id="main-host-btn" class="btn-primary">司会者 (Host)</button>
         <button id="main-player-btn" class="btn-success">回答者 (Player)</button>
@@ -140,26 +135,20 @@
                 </div>
             </div>
 
-            <div style="margin-top:5px;">
-                <label style="font-size:0.7em; color:#666;">不正解時の失点 (Penalty)</label>
-                <select id="config-loss-point" class="config-select">
-                    <option value="0">なし (0点)</option>
-                    <option value="-1">-1点</option>
-                    <option value="-5">-5点</option>
-                    <option value="-10">-10点</option>
-                    <option value="-50">-50点</option>
-                    <option value="-100">-100点</option>
-                    <option value="reset">0点にリセット</option>
-                </select>
-            </div>
-
             <div id="config-custom-points-area" class="hidden" style="margin-top:10px; padding:10px; background:#fff; border:2px solid #aaa; border-radius:5px;">
-                <h5 style="margin:0 0 10px 0; border-bottom:1px solid #ddd; padding-bottom:5px;">問題別配点設定</h5>
+                <h5 style="margin:0 0 10px 0; border-bottom:1px solid #ddd; padding-bottom:5px;">問題別配点・失点設定</h5>
                 
-                <div style="display:flex; justify-content:flex-end; align-items:center; gap:5px; margin-bottom:10px; background:#f9f9f9; padding:5px;">
-                    <span style="font-size:0.8em;">一括反映:</span>
-                    <input type="number" id="config-bulk-point-input" value="1" min="1" style="width:50px; text-align:center;">
-                    <button id="config-bulk-point-btn" style="padding:2px 8px; font-size:0.8em; background:#0055ff;">反映</button>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:5px; margin-bottom:10px; background:#f9f9f9; padding:5px; font-size:0.8em;">
+                    <div>
+                        <span style="color:#0055ff; font-weight:bold;">得点一括:</span>
+                        <input type="number" id="config-bulk-point-input" value="1" min="1" style="width:40px; text-align:center;">
+                        <button id="config-bulk-point-btn" style="padding:2px 6px;">反映</button>
+                    </div>
+                    <div>
+                        <span style="color:#d00; font-weight:bold;">失点一括:</span>
+                        <input type="number" id="config-bulk-loss-input" value="0" min="0" style="width:40px; text-align:center;">
+                        <button id="config-bulk-loss-btn" style="padding:2px 6px;">反映</button>
+                    </div>
                 </div>
 
                 <div id="config-questions-list" style="font-size:0.9em; max-height:200px; overflow-y:auto;"></div>
@@ -232,7 +221,7 @@
 </div>
 
 <div id="ranking-view" class="view hidden" style="text-align:center;">
-    <h2 style="font-family: 'Dela Gothic One', cursive; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">PERIOD RANKING</h2>
+    <h2 style="font-family: 'Arial Black'; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">PERIOD RANKING</h2>
     <div id="ranking-list" class="ranking-container"></div>
     <button id="ranking-back-btn" class="btn-primary btn-block" style="margin-top:20px;">スタジオに戻る</button>
 </div>
@@ -283,11 +272,11 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="host_core.js?v=22"></script>
-<script src="host_creator.js?v=22"></script>
-<script src="host_config.js?v=22"></script>
-<script src="host_studio.js?v=22"></script>
-<script src="player.js?v=22"></script>
+<script src="host_core.js?v=24"></script>
+<script src="host_creator.js?v=24"></script>
+<script src="host_config.js?v=24"></script>
+<script src="host_studio.js?v=24"></script>
+<script src="player.js?v=24"></script>
 
 </body>
 </html>
