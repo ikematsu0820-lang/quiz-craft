@@ -1,10 +1,11 @@
 /* =========================================================
- * host_studio.js (v49: Turn & Advanced Rules)
+ * host_studio.js (v51: Time Attack Loop)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
 let buzzWinnerId = null;
-let turnQueue = []; // 順番回答用のキュー
+let turnQueue = [];
+let taTimer = null; // ★v51: タイマー用変数
 
 function startRoom() {
     studioQuestions = [];
@@ -60,7 +61,6 @@ function identifyBuzzWinner(players) {
     let candidates = [];
     Object.keys(players).forEach(key => {
         const p = players[key];
-        // 誤答済み、ロック中、または既に権限を持ったことがある(簡易実装)人は除外
         if (p.buzzTime && !p.isLocked && p.lastResult !== 'lose') {
             candidates.push({ id: key, time: p.buzzTime, name: p.name });
         }
@@ -84,13 +84,10 @@ function identifyBuzzWinner(players) {
         
         document.getElementById('host-manual-judge-area').classList.remove('hidden');
         document.getElementById('host-show-answer-btn').classList.add('hidden');
-        
-        // パスボタンは早押しでは使わないので隠す
         document.getElementById('host-judge-pass-btn').classList.add('hidden');
     }
 }
 
-// ... (loadProgramsInStudio, renderStudioTimeline, playCurrentPeriod は変更なし) ...
 function loadProgramsInStudio() {
     const select = document.getElementById('studio-program-select');
     const btn = document.getElementById('studio-load-program-btn');
@@ -184,11 +181,17 @@ window.playPeriod = function(index) {
     studioQuestions = item.questions;
     currentConfig = item.config;
     currentQIndex = 0;
-    turnQueue = []; // キューリセット
+    turnQueue = [];
+    if(taTimer) clearTimeout(taTimer); // タイマーリセット
     
     document.getElementById('studio-timeline-area').classList.add('hidden');
     document.getElementById('control-panel').classList.remove('hidden');
     
+    // ★v51: タイムショックなら強制5秒
+    if (currentConfig.mode === 'time_attack') {
+        currentConfig.timeLimit = 5;
+    }
+
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
     window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
     window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0, currentAnswerer: null, isBuzzActive: false });
@@ -200,7 +203,13 @@ window.playPeriod = function(index) {
             players.push({ key: p.key, isAlive: val.isAlive, score: val.periodScore||0, time: val.periodTime||0, name: val.name });
         });
         
-        // 生存者判定
+        // タイムショックの挑戦者を決める（簡易的にリストの先頭の人）
+        if (currentConfig.mode === 'time_attack' && players.length > 0) {
+            buzzWinnerId = players[0].key; // 挑戦者ID
+            document.getElementById('host-buzz-winner-name').textContent = players[0].name;
+            document.getElementById('host-buzz-winner-area').classList.remove('hidden');
+        }
+
         let survivorsKeys = [];
         if (currentConfig.initialStatus === 'ranking') {
             let alivePlayers = players.filter(p => p.isAlive);
@@ -209,20 +218,17 @@ window.playPeriod = function(index) {
             survivorsKeys = alivePlayers.slice(0, limit).map(p => p.key);
         }
 
-        // ★v49: 順番回答用のキュー作成
         if (currentConfig.mode === 'turn') {
             let activePlayers = players.filter(p => {
                 if (index === 0 || currentConfig.initialStatus === 'revive') return true;
                 if (currentConfig.initialStatus === 'ranking') return survivorsKeys.includes(p.key);
                 return p.isAlive;
             });
-
             if (currentConfig.turnOrder === 'random') {
                 activePlayers.sort(() => Math.random() - 0.5);
             } else if (currentConfig.turnOrder === 'rank') {
                 activePlayers.sort((a,b) => (b.score - a.score));
             } else {
-                // fixed (join order - keys are roughly chronological)
                 activePlayers.sort((a,b) => a.key.localeCompare(b.key));
             }
             turnQueue = activePlayers.map(p => p.key);
@@ -233,22 +239,33 @@ window.playPeriod = function(index) {
             let newIsAlive = p.val().isAlive;
             if (index === 0 || currentConfig.initialStatus === 'revive') newIsAlive = true;
             else if (currentConfig.initialStatus === 'ranking') newIsAlive = survivorsKeys.includes(p.key);
-            
-            updateData.isAlive = newIsAlive;
             p.ref.update(updateData);
         });
     });
 
     document.getElementById('current-period-title').textContent = `${item.title}`;
     
-    document.getElementById('host-start-btn').classList.remove('hidden');
+    // ボタン表示制御
+    document.getElementById('host-start-btn').classList.add('hidden');
+    document.getElementById('host-start-ta-btn').classList.add('hidden');
     document.getElementById('host-show-answer-btn').classList.add('hidden');
     document.getElementById('host-next-btn').classList.add('hidden');
     document.getElementById('host-ranking-btn').classList.remove('hidden');
-    
-    buzzWinnerId = null;
-    document.getElementById('host-buzz-winner-area').classList.add('hidden');
     document.getElementById('host-manual-judge-area').classList.add('hidden');
+
+    if (currentConfig.mode === 'time_attack') {
+        document.getElementById('host-start-ta-btn').classList.remove('hidden');
+        document.getElementById('host-status-area').textContent = APP_TEXT.Studio.MsgTimeAttackReady;
+    } else {
+        document.getElementById('host-start-btn').classList.remove('hidden');
+        document.getElementById('host-status-area').textContent = "Ready...";
+    }
+    
+    // Buzz表示リセット(TA以外)
+    if(currentConfig.mode !== 'time_attack') {
+        buzzWinnerId = null;
+        document.getElementById('host-buzz-winner-area').classList.add('hidden');
+    }
 
     updateKanpe();
 };
@@ -256,6 +273,7 @@ window.playPeriod = function(index) {
 function setupStudioButtons(roomId) {
     const btnMasterPlay = document.getElementById('studio-master-play-btn');
     const btnStart = document.getElementById('host-start-btn');
+    const btnStartTA = document.getElementById('host-start-ta-btn'); // ★v51
     const btnShowAns = document.getElementById('host-show-answer-btn');
     const btnNext = document.getElementById('host-next-btn');
     const btnRanking = document.getElementById('host-ranking-btn');
@@ -268,6 +286,13 @@ function setupStudioButtons(roomId) {
 
     if(btnMasterPlay) btnMasterPlay.onclick = playCurrentPeriod;
 
+    // ★v51: タイムショック開始
+    if(btnStartTA) btnStartTA.onclick = () => {
+        btnStartTA.classList.add('hidden');
+        document.getElementById('host-manual-judge-area').classList.remove('hidden');
+        startTaLoop(roomId);
+    };
+
     btnStart.onclick = () => {
         const now = firebase.database.ServerValue.TIMESTAMP;
         let updateData = { step: 'question', qIndex: currentQIndex, startTime: now };
@@ -276,33 +301,22 @@ function setupStudioButtons(roomId) {
             updateData.isBuzzActive = true;
             updateData.currentAnswerer = null;
             buzzWinnerId = null; 
-            
             window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
                 snap.forEach(p => p.ref.update({ buzzTime: null, lastResult: null }));
             });
         }
         else if (currentConfig.mode === 'turn') {
             if (turnQueue.length > 0) {
-                // キューの先頭の人を指名
-                const nextPlayer = turnQueue[0]; // 先頭（回っても削除せず末尾に移動させる運用）
+                const nextPlayer = turnQueue[0]; 
                 updateData.currentAnswerer = nextPlayer;
-                buzzWinnerId = nextPlayer; // ジャッジ用にID保持
-                
-                // ジャッジボタン表示
+                buzzWinnerId = nextPlayer; 
                 document.getElementById('host-manual-judge-area').classList.remove('hidden');
-                
-                // 名前表示
                 window.db.ref(`rooms/${roomId}/players/${nextPlayer}/name`).once('value', snap => {
                     document.getElementById('host-buzz-winner-name').textContent = snap.val();
                     document.getElementById('host-buzz-winner-area').classList.remove('hidden');
                 });
-
-                // パスボタン
-                if (currentConfig.turnPass === 'ok') {
-                    btnPass.classList.remove('hidden');
-                } else {
-                    btnPass.classList.add('hidden');
-                }
+                if (currentConfig.turnPass === 'ok') btnPass.classList.remove('hidden');
+                else btnPass.classList.add('hidden');
             } else {
                 alert("No active players in queue");
                 return;
@@ -321,6 +335,20 @@ function setupStudioButtons(roomId) {
     };
 
     btnCorrect.onclick = () => {
+        // ★v51: タイムショックの正解
+        if (currentConfig.mode === 'time_attack') {
+            if(buzzWinnerId) {
+                window.db.ref(`rooms/${roomId}/players/${buzzWinnerId}`).once('value', snap => {
+                    const val = snap.val();
+                    snap.ref.update({ periodScore: (val.periodScore||0) + 1 });
+                });
+            }
+            // ループは止めないが、次の問題へ即遷移するなら
+            clearTimeout(taTimer);
+            nextTaQuestion(roomId);
+            return;
+        }
+
         if (!buzzWinnerId) return;
         const q = studioQuestions[currentQIndex];
         const points = parseInt(q.points) || 1;
@@ -333,10 +361,7 @@ function setupStudioButtons(roomId) {
             });
         });
 
-        // 順番回答なら、正解したら次の問題へ行く前に、キューを回す？
-        // 通常、正解したらその問題は終了なので、次の問題では次の人が答える
         if (currentConfig.mode === 'turn') {
-            // 正解者は列の最後尾へ
             const p = turnQueue.shift();
             turnQueue.push(p);
         }
@@ -344,8 +369,14 @@ function setupStudioButtons(roomId) {
         finishQuestion(roomId);
     };
 
-    // ★v49: 誤答時の処理（早押し/順番）
     btnWrong.onclick = () => {
+        // ★v51: タイムショックの不正解
+        if (currentConfig.mode === 'time_attack') {
+            clearTimeout(taTimer);
+            nextTaQuestion(roomId);
+            return;
+        }
+
         if (!buzzWinnerId) return;
         const q = studioQuestions[currentQIndex];
         const loss = parseInt(q.loss) || 0;
@@ -363,26 +394,16 @@ function setupStudioButtons(roomId) {
         });
 
         if (currentConfig.mode === 'turn') {
-            // 順番回答: 間違えたら次の人へ
             const p = turnQueue.shift();
             turnQueue.push(p);
-            
             const nextPlayer = turnQueue[0];
             buzzWinnerId = nextPlayer;
-            
-            // Firebase更新
             window.db.ref(`rooms/${roomId}/status`).update({ currentAnswerer: nextPlayer });
-            
-            // 表示更新
             window.db.ref(`rooms/${roomId}/players/${nextPlayer}/name`).once('value', snap => {
                 document.getElementById('host-buzz-winner-name').textContent = snap.val();
             });
-            
         } else {
-            // 早押し: 設定によって分岐
             const action = currentConfig.buzzWrongAction;
-            
-            // 共通: 表示リセット
             buzzWinnerId = null;
             document.getElementById('host-buzz-winner-area').classList.add('hidden');
             document.getElementById('host-manual-judge-area').classList.add('hidden');
@@ -390,31 +411,22 @@ function setupStudioButtons(roomId) {
             if (action === 'end') {
                 finishQuestion(roomId);
             } else if (action === 'reset') {
-                // 全員リセットして再開
                 window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
                     snap.forEach(p => p.ref.update({ buzzTime: null }));
                 });
                 window.db.ref(`rooms/${roomId}/status`).update({ currentAnswerer: null, isBuzzActive: true });
             } else {
-                // next (次点へ)
-                // identifyBuzzWinner が次のループで呼ばれるので、statusだけ戻す
-                // 誤答者は lastResult: 'lose' なので除外される
                 window.db.ref(`rooms/${roomId}/status`).update({ currentAnswerer: null, isBuzzActive: true });
             }
         }
     };
 
-    // ★v49: パスボタン
     btnPass.onclick = () => {
         if (currentConfig.mode !== 'turn') return;
-        
-        // キューを回すだけ
         const p = turnQueue.shift();
         turnQueue.push(p);
-        
         const nextPlayer = turnQueue[0];
         buzzWinnerId = nextPlayer;
-        
         window.db.ref(`rooms/${roomId}/status`).update({ currentAnswerer: nextPlayer });
         window.db.ref(`rooms/${roomId}/players/${nextPlayer}/name`).once('value', snap => {
             document.getElementById('host-buzz-winner-name').textContent = snap.val();
@@ -422,8 +434,6 @@ function setupStudioButtons(roomId) {
     };
 
     btnShowAns.onclick = () => {
-        // (自動判定ロジックは省略 - v47と同じ)
-        // 最後に finishQuestion を呼ぶ
         finishQuestion(roomId);
     };
 
@@ -432,18 +442,25 @@ function setupStudioButtons(roomId) {
         
         btnShowAns.classList.add('hidden');
         document.getElementById('host-manual-judge-area').classList.add('hidden'); 
-        document.getElementById('host-buzz-winner-area').classList.add('hidden'); 
+        if(currentConfig.mode !== 'time_attack') {
+            document.getElementById('host-buzz-winner-area').classList.add('hidden'); 
+        }
         
         btnNext.classList.remove('hidden');
         document.getElementById('host-status-area').textContent = APP_TEXT.Studio.MsgAnswerCheck;
 
-        // 次へボタンの分岐 (省略)
         if (currentQIndex >= studioQuestions.length - 1) {
             if (currentPeriodIndex < periodPlaylist.length - 1) {
-                // ...
-                btnNext.textContent = APP_TEXT.Studio.BtnNextPeriod;
-                btnNext.className = "btn-warning btn-block";
-                btnNext.dataset.action = "next";
+                const nextPeriod = periodPlaylist[currentPeriodIndex + 1];
+                if (nextPeriod.config.intermediateRanking) {
+                    btnNext.textContent = APP_TEXT.Studio.BtnInterRanking;
+                    btnNext.className = "btn-success btn-block";
+                    btnNext.dataset.action = "ranking"; 
+                } else {
+                    btnNext.textContent = APP_TEXT.Studio.BtnNextPeriod;
+                    btnNext.className = "btn-warning btn-block";
+                    btnNext.dataset.action = "next";
+                }
             } else {
                 if (currentProgramConfig.finalRanking) {
                     btnNext.textContent = APP_TEXT.Studio.BtnFinalRanking;
@@ -522,8 +539,45 @@ function setupStudioButtons(roomId) {
         currentRoomId = null;
         studioQuestions = [];
         currentQIndex = 0;
+        if(taTimer) clearTimeout(taTimer);
         enterDashboard();
     };
+}
+
+// ★v51: タイムショック進行ループ
+function startTaLoop(roomId) {
+    currentQIndex = -1; 
+    nextTaQuestion(roomId);
+}
+
+function nextTaQuestion(roomId) {
+    currentQIndex++;
+    
+    // 終了判定
+    if (currentQIndex >= studioQuestions.length) {
+        document.getElementById('host-manual-judge-area').classList.add('hidden');
+        document.getElementById('host-status-area').textContent = "FINISHED";
+        alert(APP_TEXT.Studio.MsgAllEnd);
+        return;
+    }
+
+    updateKanpe();
+    
+    const now = firebase.database.ServerValue.TIMESTAMP;
+    window.db.ref(`rooms/${roomId}/status`).update({
+        step: 'question',
+        qIndex: currentQIndex,
+        startTime: now,
+        isBuzzActive: false,
+        currentAnswerer: buzzWinnerId 
+    });
+
+    document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} (5s)`;
+
+    // 5秒後に自動で次へ
+    taTimer = setTimeout(() => {
+        nextTaQuestion(roomId);
+    }, 5000);
 }
 
 function updateKanpe() {
