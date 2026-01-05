@@ -1,22 +1,22 @@
 /* =========================================================
- * host_studio.js (v43: Return to Program Select)
+ * host_studio.js (v46: Buzz Logic & Manual Judge)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
+let buzzWinnerId = null;
 
 function startRoom() {
-    // 完全にリセット
     studioQuestions = [];
-    periodPlaylist = []; // プレイリストも空にする
+    periodPlaylist = [];
     currentQIndex = 0;
     currentPeriodIndex = 0;
-    currentConfig = { theme: 'light', scoreUnit: 'point' };
+    currentConfig = { theme: 'light', scoreUnit: 'point', mode: 'normal' };
 
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     
     window.db.ref(`rooms/${currentRoomId}`).set({
         questions: [],
-        status: { step: 'standby', qIndex: 0 },
+        status: { step: 'standby', qIndex: 0, currentAnswerer: null, isBuzzActive: false },
         config: currentConfig,
         players: {}
     }).then(() => {
@@ -29,15 +29,14 @@ function enterHostMode(roomId) {
     document.getElementById('host-room-id').textContent = roomId;
     document.getElementById('studio-show-id').textContent = currentShowId;
     
-    // ★修正: 最初はタイムラインを隠し、ローダーを表示
-    document.getElementById('studio-timeline-area').classList.add('hidden');
     document.getElementById('studio-program-loader').classList.remove('hidden');
+    document.getElementById('studio-timeline-area').classList.add('hidden');
     document.getElementById('control-panel').classList.add('hidden');
+    document.getElementById('host-buzz-winner-area').classList.add('hidden');
+    document.getElementById('host-manual-judge-area').classList.add('hidden');
     
+    updateKanpe(); 
     loadProgramsInStudio();
-    // renderStudioTimeline(); // ここでは呼ばない（ロード後に呼ぶ）
-    
-    updateKanpe(); // カンペリセット
 
     window.db.ref(`rooms/${roomId}/players`).on('value', snap => {
         const players = snap.val() || {};
@@ -45,9 +44,54 @@ function enterHostMode(roomId) {
         const alive = Object.values(players).filter(p => p.isAlive).length;
         document.getElementById('host-player-count').textContent = total;
         document.getElementById('host-alive-count').textContent = alive;
+        
+        // ★v46: 早押し判定ロジック呼び出し
+        if (currentConfig.mode === 'buzz') {
+            identifyBuzzWinner(players);
+        }
     });
 
     setupStudioButtons(roomId);
+}
+
+// ★v46: 早押し勝者特定ロジック
+function identifyBuzzWinner(players) {
+    // 既に勝者が決まっていたら何もしない
+    if (buzzWinnerId) return;
+
+    let candidates = [];
+    Object.keys(players).forEach(key => {
+        const p = players[key];
+        if (p.buzzTime) {
+            candidates.push({ id: key, time: p.buzzTime, name: p.name });
+        }
+    });
+
+    if (candidates.length > 0) {
+        // タイムスタンプ順にソート
+        candidates.sort((a, b) => a.time - b.time);
+        const winner = candidates[0];
+        
+        // 勝者確定処理
+        buzzWinnerId = winner.id;
+        
+        // Firebase更新 (全員に通知)
+        window.db.ref(`rooms/${currentRoomId}/status`).update({
+            currentAnswerer: winner.id,
+            isBuzzActive: false // 早押し停止
+        });
+
+        // 司会者画面表示
+        const winArea = document.getElementById('host-buzz-winner-area');
+        const winName = document.getElementById('host-buzz-winner-name');
+        winName.textContent = winner.name;
+        winArea.classList.remove('hidden');
+        
+        // ジャッジボタン表示
+        document.getElementById('host-manual-judge-area').classList.remove('hidden');
+        // 正解表示ボタンなどは隠す（手動ジャッジなので）
+        document.getElementById('host-show-answer-btn').classList.add('hidden');
+    }
 }
 
 function loadProgramsInStudio() {
@@ -80,7 +124,6 @@ function loadProgramsInStudio() {
             currentProgramConfig.finalRanking = (prog.finalRanking !== false);
             currentPeriodIndex = 0;
             
-            // ★追加: ロード完了時に画面を切り替え
             document.getElementById('studio-program-loader').classList.add('hidden');
             document.getElementById('studio-timeline-area').classList.remove('hidden');
             
@@ -93,8 +136,6 @@ function loadProgramsInStudio() {
 function renderStudioTimeline() {
     const container = document.getElementById('studio-period-timeline');
     container.innerHTML = '';
-    
-    // プレイリストが空なら何もしない（画面切り替えは loadProgramsInStudio で制御済み）
     if(periodPlaylist.length === 0) return;
 
     document.getElementById('studio-footer-controls').classList.remove('hidden');
@@ -116,11 +157,13 @@ function renderStudioTimeline() {
         let interText = "";
         if (item.config.intermediateRanking) interText = " <span style='color:blue; font-weight:bold;'>[Ranking]</span>";
 
+        let modeText = item.config.mode === 'buzz' ? '[Buzz]' : '[Normal]';
+
         div.innerHTML = `
             <div>
                 <h5 style="margin:0;">No.${index + 1}: ${item.title}${interText}</h5>
                 <div class="info" style="margin-top:5px;">
-                    ${statusText} / ${item.questions.length}Q / ${item.config.timeLimit}s
+                    <span style="color:#d00; font-weight:bold;">${modeText}</span> ${statusText} / ${item.questions.length}Q
                 </div>
             </div>
         `;
@@ -147,12 +190,13 @@ window.playPeriod = function(index) {
     
     document.getElementById('studio-timeline-area').classList.add('hidden');
     document.getElementById('control-panel').classList.remove('hidden');
-    // document.getElementById('studio-program-loader').classList.add('hidden'); // 既に隠れているはず
     
-    window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
+    // ★v46: モード情報をFirebaseに保存
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
-    window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0 });
+    window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
+    window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0, currentAnswerer: null, isBuzzActive: false });
     
+    // プレイヤー状態リセット
     window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
         let players = [];
         snap.forEach(p => {
@@ -169,7 +213,7 @@ window.playPeriod = function(index) {
         }
 
         snap.forEach(p => {
-            let updateData = { periodScore: 0, periodTime: 0, lastTime: 99999, lastResult: null };
+            let updateData = { periodScore: 0, periodTime: 0, lastTime: 99999, lastResult: null, buzzTime: null }; // buzzTimeリセット
             let newIsAlive = p.val().isAlive;
             if (index === 0 || currentConfig.initialStatus === 'revive') newIsAlive = true;
             else if (currentConfig.initialStatus === 'ranking') newIsAlive = survivorsKeys.includes(p.key);
@@ -186,6 +230,11 @@ window.playPeriod = function(index) {
     document.getElementById('host-next-btn').classList.add('hidden');
     document.getElementById('host-ranking-btn').classList.remove('hidden');
     
+    // Buzz系UI隠す
+    buzzWinnerId = null;
+    document.getElementById('host-buzz-winner-area').classList.add('hidden');
+    document.getElementById('host-manual-judge-area').classList.add('hidden');
+
     updateKanpe();
 };
 
@@ -198,17 +247,99 @@ function setupStudioButtons(roomId) {
     const btnClose = document.getElementById('host-close-studio-btn');
     const rankingBackBtn = document.getElementById('ranking-back-btn');
     
+    // ★v46追加ボタン
+    const btnCorrect = document.getElementById('host-judge-correct-btn');
+    const btnWrong = document.getElementById('host-judge-wrong-btn');
+
     if(btnMasterPlay) btnMasterPlay.onclick = playCurrentPeriod;
 
     btnStart.onclick = () => {
         const now = firebase.database.ServerValue.TIMESTAMP;
-        window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', qIndex: currentQIndex, startTime: now });
+        
+        let updateData = { step: 'question', qIndex: currentQIndex, startTime: now };
+        
+        // ★v46: 早押しモードなら受付開始
+        if (currentConfig.mode === 'buzz') {
+            updateData.isBuzzActive = true;
+            updateData.currentAnswerer = null;
+            buzzWinnerId = null; // ローカル変数もリセット
+            
+            // 全員のbuzzTimeをクリア
+            window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
+                snap.forEach(p => p.ref.update({ buzzTime: null }));
+            });
+        }
+
+        window.db.ref(`rooms/${roomId}/status`).update(updateData);
+        
         btnStart.classList.add('hidden');
-        btnShowAns.classList.remove('hidden');
-        document.getElementById('host-status-area').textContent = APP_TEXT.Studio.MsgThinking;
+        
+        if (currentConfig.mode === 'buzz') {
+            document.getElementById('host-status-area').textContent = "Buzz Active...";
+            // 手動ジャッジなので「正解発表」ボタンは出さない
+        } else {
+            btnShowAns.classList.remove('hidden');
+            document.getElementById('host-status-area').textContent = APP_TEXT.Studio.MsgThinking;
+        }
     };
 
+    // ★v46: 手動正解処理
+    btnCorrect.onclick = () => {
+        if (!buzzWinnerId) return;
+        const q = studioQuestions[currentQIndex];
+        const points = parseInt(q.points) || 1;
+
+        // 得点加算
+        window.db.ref(`rooms/${roomId}/players/${buzzWinnerId}`).once('value', snap => {
+            const val = snap.val();
+            snap.ref.update({ 
+                periodScore: (val.periodScore||0) + points,
+                lastResult: 'win'
+            });
+        });
+
+        // 画面遷移
+        finishQuestion(roomId);
+    };
+
+    // ★v46: 手動不正解処理
+    btnWrong.onclick = () => {
+        if (!buzzWinnerId) return;
+        const q = studioQuestions[currentQIndex];
+        const loss = parseInt(q.loss) || 0;
+
+        // 減点 & ロック (失格にはしない、その問題のみロック)
+        window.db.ref(`rooms/${roomId}/players/${buzzWinnerId}`).once('value', snap => {
+            const val = snap.val();
+            let newScore = (val.periodScore||0);
+            if(loss > 0) newScore -= loss;
+            
+            snap.ref.update({ 
+                periodScore: newScore,
+                lastResult: 'lose',
+                buzzTime: null // ボタン履歴消す
+                // isLocked: true (今回は簡易実装のため、回答権をnullに戻すだけで対応)
+            });
+        });
+
+        // リセットして再開
+        buzzWinnerId = null;
+        document.getElementById('host-buzz-winner-area').classList.add('hidden');
+        document.getElementById('host-manual-judge-area').classList.add('hidden');
+        
+        window.db.ref(`rooms/${roomId}/status`).update({
+            currentAnswerer: null,
+            isBuzzActive: true // 再開
+        });
+    };
+
+    // 通常モードの正解発表
     btnShowAns.onclick = () => {
+        // ... (従来の自動判定ロジック。変更なし) ...
+        // 長くなるので省略しますが、v43までのロジックをそのまま維持してください。
+        // ただし、最後に finishQuestion(roomId) を呼ぶように共通化すると綺麗です。
+        
+        // 今回は簡易的に、従来のコードをそのまま使いつつ、最後に遷移処理を呼びます。
         const q = studioQuestions[currentQIndex];
         const points = parseInt(q.points) || 1;
         const loss = parseInt(q.loss) || 0;
@@ -255,12 +386,22 @@ function setupStudioButtons(roomId) {
                 window.db.ref(`rooms/${roomId}/players/${slowestId}`).update({ isAlive: false, lastResult: 'lose' });
             }
         });
+
+        finishQuestion(roomId);
+    };
+
+    // 共通終了処理
+    function finishQuestion(roomId) {
+        window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer', isBuzzActive: false });
         
-        window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
         btnShowAns.classList.add('hidden');
+        document.getElementById('host-manual-judge-area').classList.add('hidden'); // ジャッジ消す
+        document.getElementById('host-buzz-winner-area').classList.add('hidden'); // 勝者消す
+        
         btnNext.classList.remove('hidden');
         document.getElementById('host-status-area').textContent = APP_TEXT.Studio.MsgAnswerCheck;
 
+        // 次へボタンの分岐処理 (v43と同じ)
         if (currentQIndex >= studioQuestions.length - 1) {
             if (currentPeriodIndex < periodPlaylist.length - 1) {
                 const nextPeriod = periodPlaylist[currentPeriodIndex + 1];
@@ -289,7 +430,7 @@ function setupStudioButtons(roomId) {
             btnNext.className = "btn-info btn-block";
             btnNext.dataset.action = "nextQ";
         }
-    };
+    }
 
     btnNext.onclick = (e) => {
         const action = e.target.dataset.action;
@@ -320,8 +461,11 @@ function setupStudioButtons(roomId) {
         }
 
         currentQIndex++;
+        
+        // 次の問題へ
+        buzzWinnerId = null;
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
-            snap.forEach(p => p.ref.update({ lastAnswer: null, lastTime: 99999, lastResult: null }));
+            snap.forEach(p => p.ref.update({ lastAnswer: null, lastTime: 99999, lastResult: null, buzzTime: null }));
         });
         updateKanpe();
         btnStart.classList.remove('hidden');
@@ -349,7 +493,6 @@ function setupStudioButtons(roomId) {
         window.showView(window.views.hostControl);
     };
     
-    // 戻るときにデータリセット
     btnClose.onclick = () => {
         periodPlaylist = [];
         currentRoomId = null;
@@ -361,6 +504,11 @@ function setupStudioButtons(roomId) {
 
 function updateKanpe() {
     const kanpeArea = document.getElementById('host-kanpe-area');
+    if(studioQuestions.length === 0) {
+        kanpeArea.classList.add('hidden');
+        return;
+    }
+
     if(studioQuestions.length > currentQIndex) {
         const q = studioQuestions[currentQIndex];
         kanpeArea.classList.remove('hidden');
