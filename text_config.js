@@ -1,11 +1,11 @@
 /* =========================================================
- * text_config.js (v47: Detailed Buzz Settings)
+ * text_config.js (v48: Cleanup)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v47",
+    Version: "Cloud Edition v48",
     
     // メインメニュー
     Main: {
@@ -97,7 +97,7 @@ const APP_TEXT = {
         ModeNormal: "一斉回答 (全員送信可)",
         ModeBuzz: "早押し (早い者勝ち)",
         
-        // ★v47追加: 早押し詳細設定
+        // 早押し詳細設定
         LabelBuzzOrder: "▼ 押下順位ルール",
         BuzzOrderFirst: "先着1名のみ (First Only)",
         BuzzOrderHold: "順位保持 (誤答で次点へ)",
@@ -125,10 +125,9 @@ const APP_TEXT = {
         LabelElimCount: "遅い順に",
         LabelElimCountSuffix: "名が脱落",
         LabelTime: "制限時間",
-        LabelScore: "スコア",
-        LabelLoss: "不正解時の失点 (Penalty)",
-        LossNone: "なし (0点)",
-        LossReset: "0点にリセット",
+        
+        // ★削除: LabelScore, LabelLoss など不要な項目
+        
         HeadingCustomScore: "問題別配点・失点設定",
         LabelBulkPt: "得点一括:",
         LabelBulkLoss: "失点一括:",
