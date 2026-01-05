@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style_common.css?v=47">
-<link rel="stylesheet" href="style_host.css?v=47">
-<link rel="stylesheet" href="style_player.css?v=47">
-<link rel="stylesheet" href="style_viewer.css?v=47">
+<link rel="stylesheet" href="style_common.css?v=48">
+<link rel="stylesheet" href="style_host.css?v=48">
+<link rel="stylesheet" href="style_player.css?v=48">
+<link rel="stylesheet" href="style_viewer.css?v=48">
 </head>
 <body>
 
@@ -191,8 +191,8 @@
                     <span style="font-size:0.8em;" data-text="Config.LabelElimCountSuffix">out</span>
                 </div>
             </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
-                <div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="flex:1;">
                     <label style="font-size:0.7em; color:#666;" data-text="Config.LabelTime">Time</label>
                     <select id="config-time-limit" class="config-select">
                         <option value="0">0 (No Limit)</option>
@@ -202,21 +202,11 @@
                         <option value="60">60s</option>
                     </select>
                 </div>
-                <div>
-                    <label style="font-size:0.7em; color:#666;" data-text="Config.LabelScore">Score</label>
-                    <div style="display:flex; gap:5px;">
-                        <select id="config-score-unit" class="config-select" style="flex:1;">
-                            <option value="point">Point</option>
-                            <option value="currency">Yen</option>
-                        </select>
-                        <button id="config-custom-score-btn" style="flex:0 0 40px; background:#666; padding:0; font-size:1.2em;">📝</button>
-                    </div>
+                <div style="margin-top:10px;">
+                    <button id="config-custom-score-btn" style="background:#666; padding:8px 12px; font-size:1.2em;">📝</button>
                 </div>
             </div>
-            <div style="margin-top:5px;">
-                <label style="font-size:0.7em; color:#666;" data-text="Config.LabelLoss">Loss</label>
-                <select id="config-loss-point" class="config-select"></select>
-            </div>
+            
             <div id="config-custom-points-area" class="hidden" style="margin-top:10px; padding:10px; background:#fff; border:2px solid #aaa; border-radius:5px;">
                 <h5 style="margin:0 0 10px 0; border-bottom:1px solid #ddd; padding-bottom:5px;" data-text="Config.HeadingCustomScore">Custom Score</h5>
                 <div style="display:flex; justify-content:flex-end; align-items:center; gap:5px; margin-bottom:10px; background:#f9f9f9; padding:5px; font-size:0.8em;">
@@ -381,13 +371,13 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=47"></script>
-<script src="host_core.js?v=47"></script>
-<script src="host_creator.js?v=47"></script>
-<script src="host_config.js?v=47"></script>
-<script src="host_studio.js?v=47"></script>
-<script src="player.js?v=47"></script>
-<script src="viewer.js?v=47"></script>
+<script src="text_config.js?v=48"></script>
+<script src="host_core.js?v=48"></script>
+<script src="host_creator.js?v=48"></script>
+<script src="host_config.js?v=48"></script>
+<script src="host_studio.js?v=48"></script>
+<script src="player.js?v=48"></script>
+<script src="viewer.js?v=48"></script>
 
 </body>
 </html>
