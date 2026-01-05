@@ -1,13 +1,11 @@
 /* =========================================================
- * host_studio.js (v31: Program Delete Support)
+ * host_studio.js (v32: Studio UI Adjustments)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
 
 function startRoom() {
-    if(periodPlaylist.length === 0) {
-        if(!confirm(APP_TEXT.Studio.MsgNoPeriod)) return;
-    }
+    // ★修正：ポップアップ削除（いきなりスタジオへ）
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     currentPeriodIndex = 0; 
     
@@ -45,10 +43,8 @@ function enterHostMode(roomId) {
 
 function loadProgramsInStudio() {
     const select = document.getElementById('studio-program-select');
-    const loadBtn = document.getElementById('studio-load-program-btn');
-    const delBtn = document.getElementById('studio-delete-program-btn');
-    
-    if(!select || !loadBtn) return;
+    const btn = document.getElementById('studio-load-program-btn');
+    if(!select || !btn) return;
 
     select.innerHTML = `<option value="">${APP_TEXT.Config.SelectLoading}</option>`;
     
@@ -59,8 +55,6 @@ function loadProgramsInStudio() {
             Object.keys(data).forEach(key => {
                 const item = data[key];
                 const opt = document.createElement('option');
-                // IDも一緒に保存しておく (削除用)
-                item.id = key;
                 opt.value = JSON.stringify(item);
                 opt.textContent = item.title;
                 select.appendChild(opt);
@@ -68,7 +62,7 @@ function loadProgramsInStudio() {
         }
     });
 
-    loadBtn.onclick = () => {
+    btn.onclick = () => {
         const val = select.value;
         if(!val) return;
         const prog = JSON.parse(val);
@@ -80,26 +74,7 @@ function loadProgramsInStudio() {
             alert(APP_TEXT.Studio.MsgLoaded);
         }
     };
-
-    // ★追加：削除処理
-    if(delBtn) {
-        delBtn.onclick = () => {
-            const val = select.value;
-            if(!val) return;
-            const prog = JSON.parse(val);
-            
-            if(confirm(APP_TEXT.Studio.MsgConfirmDeleteProg)) {
-                // Firebaseから削除
-                window.db.ref(`saved_programs/${currentShowId}/${prog.id}`).remove()
-                .then(() => {
-                    alert("Deleted.");
-                    // リスト再読み込み
-                    loadProgramsInStudio();
-                })
-                .catch(err => alert("Error: " + err.message));
-            }
-        };
-    }
+    // ★修正：削除ボタンの処理は削除
 }
 
 function renderStudioTimeline() {
