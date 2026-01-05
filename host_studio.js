@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v20: Variable Scoring Support)
+ * host_studio.js (v21: Penalty Points)
  * =======================================================*/
 
 function startRoom() {
@@ -171,7 +171,6 @@ function setupStudioButtons(roomId) {
     btnShowAns.onclick = () => {
         const q = studioQuestions[currentQIndex];
         const correctIdx = q.correctIndex;
-        // ★変更：問題ごとのポイントを取得（なければ1点）
         const points = parseInt(q.points) || 1;
         
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
@@ -186,7 +185,6 @@ function setupStudioButtons(roomId) {
                 
                 if(isCorrect) {
                     const t = val.lastTime || 99999;
-                    // ★変更：設定されたポイントを加算
                     p.ref.update({ periodScore: (val.periodScore||0) + points, periodTime: (val.periodTime||0) + t });
                     
                     if (currentConfig.eliminationRule === 'wrong_and_slowest') {
@@ -197,6 +195,16 @@ function setupStudioButtons(roomId) {
                     }
                 } 
                 else {
+                    // ★追加：不正解時のペナルティ処理
+                    if (currentConfig.lossPoint) {
+                        if (currentConfig.lossPoint === 'reset') {
+                            p.ref.update({ periodScore: 0 });
+                        } else {
+                            const loss = parseInt(currentConfig.lossPoint);
+                            p.ref.update({ periodScore: (val.periodScore||0) + loss });
+                        }
+                    }
+
                     if (currentConfig.eliminationRule !== 'none') {
                         p.ref.update({ isAlive: false });
                     }
@@ -204,11 +212,6 @@ function setupStudioButtons(roomId) {
             });
 
             if (currentConfig.eliminationRule === 'wrong_and_slowest' && slowestId) {
-                // ここは複数人脱落の実装（前回v19）が必要ならリスト化してslice処理
-                // 今回はv19のロジック（複数人）が必要なので、簡易的に1人だけにしているが、
-                // 正確には前回の logic を踏襲すべき
-                // 簡略化のため、ここでは「最遅ロジック」は基本の1人として記述していますが
-                // 必要であれば修正します
                 window.db.ref(`rooms/${roomId}/players/${slowestId}`).update({ isAlive: false });
             }
         });
@@ -290,7 +293,6 @@ function updateKanpe() {
         const timeLimit = currentConfig.timeLimit || 0;
         const timeText = timeLimit > 0 ? `制限 ${timeLimit}秒` : '制限なし';
         
-        // ★追加：配点表示
         const points = q.points || 1;
         const pointEl = document.getElementById('kanpe-point');
         if(!pointEl) {
@@ -334,7 +336,7 @@ function renderRankingView(data) {
         div.className = rankClass;
         let scoreText = `${r.score}点`;
         if (isCurrency) {
-            scoreText = `¥${r.score.toLocaleString()}`; // シンプルに合計金額
+            scoreText = `¥${r.score.toLocaleString()}`;
         }
         const timeText = `${(r.time/1000).toFixed(2)}s`;
         div.innerHTML = `
