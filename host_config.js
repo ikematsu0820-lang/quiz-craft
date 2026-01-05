@@ -1,20 +1,16 @@
 /* =========================================================
- * host_config.js (v22: Fix Add Button & Bulk Points)
+ * host_config.js (v24: Points, Penalty & Save Fix)
  * =======================================================*/
 
-// 選択中のセットの問題を一時保持
 let selectedSetQuestions = [];
 
 function enterConfigMode() {
     window.showView(window.views.config);
-    // updateBuilderUI は削除したUI用だったので不要ですが、
-    // 脱落条件の表示制御のために残すか、整理します
     updateBuilderUI();
 
     const select = document.getElementById('config-set-select');
     select.innerHTML = '<option value="">読み込み中...</option>';
     
-    // UI初期化
     document.getElementById('config-custom-points-area').classList.add('hidden');
     selectedSetQuestions = [];
 
@@ -53,15 +49,20 @@ function enterConfigMode() {
         customScoreBtn.onclick = toggleCustomScoreArea;
     }
 
-    // ★一括反映ボタンの処理
-    const bulkBtn = document.getElementById('config-bulk-point-btn');
-    if(bulkBtn) {
-        bulkBtn.onclick = () => {
+    // 一括反映（得点）
+    const bulkPtBtn = document.getElementById('config-bulk-point-btn');
+    if(bulkPtBtn) {
+        bulkPtBtn.onclick = () => {
             const val = document.getElementById('config-bulk-point-input').value;
-            // 全ての入力欄に値をセット
-            document.querySelectorAll('.q-point-input').forEach(input => {
-                input.value = val;
-            });
+            document.querySelectorAll('.q-point-input').forEach(input => input.value = val);
+        };
+    }
+    // ★追加：一括反映（失点）
+    const bulkLossBtn = document.getElementById('config-bulk-loss-btn');
+    if(bulkLossBtn) {
+        bulkLossBtn.onclick = () => {
+            const val = document.getElementById('config-bulk-loss-input').value;
+            document.querySelectorAll('.q-loss-input').forEach(input => input.value = val);
         };
     }
 
@@ -98,14 +99,17 @@ function toggleCustomScoreArea() {
             div.style.paddingBottom = '5px';
             
             const pts = q.points || 1;
+            const loss = q.loss || 0; // デフォルト失点は0
 
             div.innerHTML = `
                 <div style="flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
                     <span style="font-weight:bold; color:#666;">Q${i+1}.</span> ${q.q}
                 </div>
                 <div style="display:flex; align-items:center; gap:5px;">
-                    <input type="number" class="q-point-input" data-index="${i}" value="${pts}" min="1" style="width:50px; text-align:center; padding:5px; border:1px solid #aaa; border-radius:4px;">
-                    <span style="font-size:0.8em;">点</span>
+                    <span style="font-size:0.7em; color:#0055ff;">得</span>
+                    <input type="number" class="q-point-input" data-index="${i}" value="${pts}" min="1" style="width:40px; text-align:center; padding:5px; border:1px solid #0055ff; border-radius:4px;">
+                    <span style="font-size:0.7em; color:#d00;">失</span>
+                    <input type="number" class="q-loss-input" data-index="${i}" value="${loss}" min="0" style="width:40px; text-align:center; padding:5px; border:1px solid #d00; border-radius:4px;">
                 </div>
             `;
             list.appendChild(div);
@@ -123,9 +127,10 @@ function addPeriodToPlaylist() {
     
     const data = JSON.parse(json);
     
-    // 個別配点の読み取り
+    // 配点・失点の読み取り
     const questionsWithPoints = JSON.parse(JSON.stringify(data.q)); 
     const pointInputs = document.querySelectorAll('.q-point-input');
+    const lossInputs = document.querySelectorAll('.q-loss-input'); // ★
     const isCustomPoints = !document.getElementById('config-custom-points-area').classList.contains('hidden');
     
     if (isCustomPoints && pointInputs.length > 0) {
@@ -136,22 +141,29 @@ function addPeriodToPlaylist() {
                 questionsWithPoints[idx].points = pts;
             }
         });
+        // ★失点も読み取る
+        lossInputs.forEach(input => {
+            const idx = parseInt(input.getAttribute('data-index'));
+            const lss = parseInt(input.value) || 0;
+            if (questionsWithPoints[idx]) {
+                questionsWithPoints[idx].loss = lss;
+            }
+        });
     } else {
-        // デフォルト1点
-        questionsWithPoints.forEach(q => q.points = (q.points || 1));
+        questionsWithPoints.forEach(q => {
+            q.points = (q.points || 1);
+            q.loss = (q.loss || 0); // デフォルト失点は0
+        });
     }
 
-    // ★ここを修正！
-    // 以前はここで document.getElementById('config-initial-status') を探してエラーになっていました。
-    // 参加者設定はリストに追加した後で変更する仕様なので、デフォルト値を入れます。
-    let initialStatus = 'revive'; 
+    let initialStatus = 'revive';
     let passCount = 5;
-
     let elimCount = 1;
     if (document.getElementById('config-elimination-rule').value === 'wrong_and_slowest') {
         elimCount = parseInt(document.getElementById('config-elimination-count').value) || 1;
     }
 
+    // グローバル失点設定（デフォルト用として一応残すが、問題ごと設定を優先）
     let lossPoint = document.getElementById('config-loss-point').value;
     if (lossPoint !== 'reset') lossPoint = parseInt(lossPoint);
 
@@ -187,7 +199,6 @@ function renderConfigPreview() {
     }
     
     periodPlaylist.forEach((item, index) => {
-        // 2つ目以降の接続設定パネル
         if (index > 0) {
             const arrowDiv = document.createElement('div');
             arrowDiv.className = 'playlist-arrow-container';
@@ -229,7 +240,7 @@ function renderConfigPreview() {
             <div style="flex:1;">
                 <div style="font-weight:bold; font-size:1.1em;">${index+1}. ${item.title}</div>
                 <div style="font-size:0.8em; color:#666;">
-                    ${ruleText} / ${item.config.timeLimit}秒 / 失点:${item.config.lossPoint}
+                    ${ruleText} / ${item.config.timeLimit}秒
                 </div>
             </div>
             <button class="delete-btn" onclick="removeFromPlaylist(${index})">削除</button>
@@ -263,6 +274,7 @@ window.removeFromPlaylist = function(index) {
     updateBuilderUI();
 };
 
+// ★重要修正：保存時のエラー回避 (JSONクリーンアップ)
 function saveProgramToCloud() {
     if(periodPlaylist.length === 0) {
         alert("構成リストが空です");
@@ -275,9 +287,12 @@ function saveProgramToCloud() {
         return;
     }
 
+    // undefined を消すために一度文字列化して戻す
+    const cleanPlaylist = JSON.parse(JSON.stringify(periodPlaylist));
+
     const saveObj = {
         title: title,
-        playlist: periodPlaylist, 
+        playlist: cleanPlaylist, 
         createdAt: firebase.database.ServerValue.TIMESTAMP
     };
 
