@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v48: Cleanup Logic)
+ * host_config.js (v49: Multi-Mode Configuration)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -20,23 +20,13 @@ function enterConfigMode() {
     `;
     elimRuleSelect.onchange = updateBuilderUI;
 
-    // ★削除: lossSelectの生成ロジック
-
+    // ★v49: モード選択ロジック（3パターン分岐）
     const modeSelect = document.getElementById('config-mode-select');
     if (modeSelect) {
         modeSelect.addEventListener('change', (e) => {
-            const buzzDetails = document.getElementById('config-buzz-details');
-            if (e.target.value === 'buzz') {
-                buzzDetails.classList.remove('hidden');
-            } else {
-                buzzDetails.classList.add('hidden');
-            }
+            updateModeDetails(e.target.value);
         });
-        if (modeSelect.value === 'buzz') {
-            document.getElementById('config-buzz-details').classList.remove('hidden');
-        } else {
-            document.getElementById('config-buzz-details').classList.add('hidden');
-        }
+        updateModeDetails(modeSelect.value); // 初期表示
     }
 
     select.innerHTML = `<option value="">${APP_TEXT.Config.SelectLoading}</option>`;
@@ -92,7 +82,19 @@ function enterConfigMode() {
     renderConfigPreview();
 }
 
-// ... (loadSavedProgramsInConfig, updateBuilderUI, toggleCustomScoreArea は変更なし) ...
+function updateModeDetails(mode) {
+    document.querySelectorAll('.mode-details').forEach(el => el.classList.add('hidden'));
+    
+    if (mode === 'normal') {
+        document.getElementById('config-normal-details').classList.remove('hidden');
+    } else if (mode === 'buzz') {
+        document.getElementById('config-buzz-details').classList.remove('hidden');
+    } else if (mode === 'turn') {
+        document.getElementById('config-turn-details').classList.remove('hidden');
+    }
+}
+
+// ... (loadSavedProgramsInConfig, updateBuilderUI, toggleCustomScoreArea は v48 と同じ) ...
 function loadSavedProgramsInConfig() {
     const listEl = document.getElementById('config-saved-programs-list');
     if(!listEl) return;
@@ -247,11 +249,6 @@ function addPeriodToPlaylist() {
         elimCount = parseInt(document.getElementById('config-elimination-count').value) || 1;
     }
 
-    // ★削除: lossPoint, scoreUnit の取得ロジック
-    // デフォルト値を設定
-    let lossPoint = 0; 
-    let scoreUnit = 'point';
-
     const mode = document.getElementById('config-mode-select').value;
 
     const newConfig = {
@@ -260,14 +257,18 @@ function addPeriodToPlaylist() {
         intermediateRanking: intermediateRanking,
         eliminationRule: document.getElementById('config-elimination-rule').value,
         eliminationCount: elimCount,
-        lossPoint: lossPoint, // デフォルト0
-        scoreUnit: scoreUnit, // デフォルトpoint
+        lossPoint: 0,
+        scoreUnit: 'point',
         theme: 'light',
         timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0,
         mode: mode,
-        buzzOrder: document.getElementById('config-buzz-order').value,
-        buzzPenalty: document.getElementById('config-buzz-penalty').value,
-        buzzTime: parseInt(document.getElementById('config-buzz-timer').value) || 0
+        
+        // ★v49: 詳細設定の保存
+        normalLimit: document.getElementById('config-normal-limit').value,
+        buzzWrongAction: document.getElementById('config-buzz-wrong-action').value,
+        buzzTime: parseInt(document.getElementById('config-buzz-timer').value) || 0,
+        turnOrder: document.getElementById('config-turn-order').value,
+        turnPass: document.getElementById('config-turn-pass').value
     };
     
     periodPlaylist.push({
@@ -335,9 +336,9 @@ function renderConfigPreview() {
         if(item.config.eliminationRule === 'wrong_only') ruleText = "WrongOut";
         if(item.config.eliminationRule === 'wrong_and_slowest') ruleText = `Slow${item.config.eliminationCount}Out`;
         
-        let modeLabel = (item.config.mode === 'buzz') ? 'Buzz' : 'Normal';
+        // ★v49: モード表示
+        let modeLabel = item.config.mode.toUpperCase(); 
 
-        // ★修正: Lossの表示を削除（一括設定がないため）
         div.innerHTML = `
             <div style="flex:1;">
                 <div style="font-weight:bold; font-size:1.1em;">${index+1}. ${item.title}</div>
@@ -350,6 +351,7 @@ function renderConfigPreview() {
         container.appendChild(div);
     });
 
+    // ... (イベントリスナー類は変更なし) ...
     document.querySelectorAll('.inter-status-select').forEach(sel => {
         sel.addEventListener('change', (e) => {
             const idx = e.target.getAttribute('data-index');
