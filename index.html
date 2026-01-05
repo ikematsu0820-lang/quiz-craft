@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style_common.css?v=53">
-<link rel="stylesheet" href="style_host.css?v=53">
-<link rel="stylesheet" href="style_player.css?v=53">
-<link rel="stylesheet" href="style_viewer.css?v=53">
+<link rel="stylesheet" href="style_common.css?v=54">
+<link rel="stylesheet" href="style_host.css?v=54">
+<link rel="stylesheet" href="style_player.css?v=54">
+<link rel="stylesheet" href="style_viewer.css?v=54">
 </head>
 <body>
 
@@ -76,6 +76,16 @@
         <h4 data-text="Creator.HeadingSettings" style="margin-top:0; border-bottom:1px solid #ccc; padding-bottom:5px;">Set Settings</h4>
         <label style="font-weight:bold;" data-text="Creator.LabelSetName">Set Name</label>
         <input type="text" id="quiz-set-title" class="btn-block" placeholder="" style="margin-bottom:15px;">
+        
+        <div style="background:#e0f7fa; padding:10px; border-radius:5px; margin-bottom:15px; border:1px solid #00acc1;">
+            <label style="font-weight:bold; font-size:0.9em;" data-text="Creator.LabelSpecialMode">Special Mode</label>
+            <select id="creator-special-mode" class="btn-block" style="background:#fff; margin-top:5px;">
+                <option value="none" data-text="Creator.SpecialModeNone">None</option>
+                <option value="time_attack" data-text="Creator.SpecialModeTimeAttack">Time Attack</option>
+                <option value="panel_attack" data-text="Creator.SpecialModePanel">Panel Attack</option>
+            </select>
+        </div>
+
         <h5 data-text="Creator.ListHeading" style="margin:0 0 5px 0;">List</h5>
         <div id="q-list" style="background:white; padding:5px; border:1px solid #ddd; min-height:50px; margin-bottom:15px; max-height:300px; overflow-y:auto;"></div>
         
@@ -154,10 +164,13 @@
                 <option value="buzz" data-text="Config.ModeBuzz">Buzz-in</option>
                 <option value="turn" data-text="Config.ModeTurn">Turn-based</option>
                 <option value="time_attack" data-text="Config.ModeTimeAttack" style="color:red;">Time Shock</option>
-                <option value="panel_attack" data-text="Config.ModePanel" style="color:blue;">Panel Attack</option> <option value="bomb" data-text="Config.ModeBomb" style="color:purple;">Bomb / Treasure</option> </select>
+                <option value="panel_attack" data-text="Config.ModePanel" style="color:blue;">Panel Attack</option>
+                <option value="bomb" data-text="Config.ModeBomb" style="color:purple;">Bomb / Treasure</option>
+            </select>
+            <p id="config-mode-locked-msg" class="hidden" style="color:#d00; font-size:0.8em; margin-top:5px; font-weight:bold;" data-text="Config.MsgLockedMode">Locked</p>
         </div>
 
-        <div id="config-normal-details" class="mode-details" style="background:#e6f7ff; border:1px dashed #0055ff; padding:10px; border-radius:5px; margin-bottom:15px;">
+        <div id="config-normal-details" class="mode-details">
             <label class="config-label" data-text="Config.LabelNormalLimit">Attempts</label>
             <select id="config-normal-limit" class="btn-block config-select">
                 <option value="one" data-text="Config.NormalLimitOne">One Shot</option>
@@ -172,7 +185,7 @@
             </div>
         </div>
 
-        <div id="config-buzz-details" class="mode-details hidden" style="background:#ffeef5; border:1px dashed #ff69b4; padding:10px; border-radius:5px; margin-bottom:15px;">
+        <div id="config-buzz-details" class="mode-details hidden">
             <div style="margin-bottom:10px;">
                 <label class="config-label" data-text="Config.LabelBuzzWrongAction">Wrong Answer Action</label>
                 <select id="config-buzz-wrong-action" class="btn-block config-select">
@@ -199,7 +212,7 @@
             </div>
         </div>
 
-        <div id="config-turn-details" class="mode-details hidden" style="background:#e6fffa; border:1px dashed #00aa00; padding:10px; border-radius:5px; margin-bottom:15px;">
+        <div id="config-turn-details" class="mode-details hidden">
             <div style="margin-bottom:10px;">
                 <label class="config-label" data-text="Config.LabelTurnOrder">Order</label>
                 <select id="config-turn-order" class="btn-block config-select">
@@ -251,39 +264,41 @@
             </div>
         </div>
 
-        <div style="margin-bottom:15px;">
-            <label class="config-label" data-text="Config.LabelRule">Rule</label>
-            <label style="font-size:0.8em; color:#666;" data-text="Config.LabelElim">Elimination</label>
-            <select id="config-elimination-rule" class="btn-block config-select" style="margin-bottom:8px;"></select>
-            <div id="config-elimination-count-area" class="hidden" style="margin-bottom:8px; padding:8px; background:#fff; border:1px solid #ddd; border-radius:4px;">
+        <div id="config-rule-section">
+            <div style="margin-bottom:15px;">
+                <label class="config-label" data-text="Config.LabelRule">Rule</label>
+                <label style="font-size:0.8em; color:#666;" data-text="Config.LabelElim">Elimination</label>
+                <select id="config-elimination-rule" class="btn-block config-select" style="margin-bottom:8px;"></select>
+                <div id="config-elimination-count-area" class="hidden" style="margin-bottom:8px; padding:8px; background:#fff; border:1px solid #ddd; border-radius:4px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:0.8em; font-weight:bold; color:#d00;" data-text="Config.LabelElimCount">Slowest</span>
+                        <input type="number" id="config-elimination-count" value="1" min="1" style="width:60px; text-align:center; padding:5px;">
+                        <span style="font-size:0.8em;" data-text="Config.LabelElimCountSuffix">out</span>
+                    </div>
+                </div>
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-size:0.8em; font-weight:bold; color:#d00;" data-text="Config.LabelElimCount">Slowest</span>
-                    <input type="number" id="config-elimination-count" value="1" min="1" style="width:60px; text-align:center; padding:5px;">
-                    <span style="font-size:0.8em;" data-text="Config.LabelElimCountSuffix">out</span>
+                    <div style="flex:1;">
+                        <label style="font-size:0.7em; color:#666;" data-text="Config.LabelTime">Time</label>
+                        <select id="config-time-limit" class="config-select">
+                            <option value="0">0 (No Limit)</option>
+                            <option value="10">10s</option>
+                            <option value="20">20s</option>
+                            <option value="30">30s</option>
+                            <option value="60">60s</option>
+                        </select>
+                    </div>
+                    <div style="margin-top:10px;">
+                        <button id="config-custom-score-btn" style="background:#666; padding:8px 12px; font-size:1.2em;">📝</button>
+                    </div>
                 </div>
-            </div>
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div style="flex:1;">
-                    <label style="font-size:0.7em; color:#666;" data-text="Config.LabelTime">Time</label>
-                    <select id="config-time-limit" class="config-select">
-                        <option value="0">0 (No Limit)</option>
-                        <option value="10">10s</option>
-                        <option value="20">20s</option>
-                        <option value="30">30s</option>
-                        <option value="60">60s</option>
-                    </select>
+                <div id="config-custom-points-area" class="hidden" style="margin-top:10px; padding:10px; background:#fff; border:2px solid #aaa; border-radius:5px;">
+                    <h5 style="margin:0 0 10px 0; border-bottom:1px solid #ddd; padding-bottom:5px;" data-text="Config.HeadingCustomScore">Custom Score</h5>
+                    <div style="display:flex; justify-content:flex-end; align-items:center; gap:5px; margin-bottom:10px; background:#f9f9f9; padding:5px; font-size:0.8em;">
+                        <div><span style="color:#0055ff; font-weight:bold;" data-text="Config.LabelBulkPt">Pt:</span><input type="number" id="config-bulk-point-input" value="1" min="1" style="width:40px; text-align:center;"><button id="config-bulk-point-btn" style="padding:2px 6px;" data-text="Config.BtnReflect">Set</button></div>
+                        <div><span style="color:#d00; font-weight:bold;" data-text="Config.LabelBulkLoss">Loss:</span><input type="number" id="config-bulk-loss-input" value="0" min="0" style="width:40px; text-align:center;"><button id="config-bulk-loss-btn" style="padding:2px 6px;" data-text="Config.BtnReflect">Set</button></div>
+                    </div>
+                    <div id="config-questions-list" style="font-size:0.9em; max-height:200px; overflow-y:auto;"></div>
                 </div>
-                <div style="margin-top:10px;">
-                    <button id="config-custom-score-btn" style="background:#666; padding:8px 12px; font-size:1.2em;">📝</button>
-                </div>
-            </div>
-            <div id="config-custom-points-area" class="hidden" style="margin-top:10px; padding:10px; background:#fff; border:2px solid #aaa; border-radius:5px;">
-                <h5 style="margin:0 0 10px 0; border-bottom:1px solid #ddd; padding-bottom:5px;" data-text="Config.HeadingCustomScore">Custom Score</h5>
-                <div style="display:flex; justify-content:flex-end; align-items:center; gap:5px; margin-bottom:10px; background:#f9f9f9; padding:5px; font-size:0.8em;">
-                    <div><span style="color:#0055ff; font-weight:bold;" data-text="Config.LabelBulkPt">Pt:</span><input type="number" id="config-bulk-point-input" value="1" min="1" style="width:40px; text-align:center;"><button id="config-bulk-point-btn" style="padding:2px 6px;" data-text="Config.BtnReflect">Set</button></div>
-                    <div><span style="color:#d00; font-weight:bold;" data-text="Config.LabelBulkLoss">Loss:</span><input type="number" id="config-bulk-loss-input" value="0" min="0" style="width:40px; text-align:center;"><button id="config-bulk-loss-btn" style="padding:2px 6px;" data-text="Config.BtnReflect">Set</button></div>
-                </div>
-                <div id="config-questions-list" style="font-size:0.9em; max-height:200px; overflow-y:auto;"></div>
             </div>
         </div>
         <button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:12px; border:none; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.2);" data-text="Config.BtnAddList">Add List</button>
@@ -343,6 +358,10 @@
     <div id="host-bomb-control-area" class="hidden" style="margin-bottom:15px; background:#f3e5f5; padding:10px; border:1px solid #9c27b0;">
         <h5 style="margin:0 0 5px 0;" data-text="Studio.LabelBombControl">Card Control</h5>
         <div id="host-bomb-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:2px;"></div>
+    </div>
+    <div id="host-multi-control-area" class="hidden" style="margin-bottom:15px; background:#fffbe6; padding:10px; border:1px solid #e6b800;">
+        <h5 style="margin:0 0 5px 0;" data-text="Studio.LabelMultiControl">Multi Answer Control</h5>
+        <div id="host-multi-grid" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:5px;"></div>
     </div>
 
     <div id="studio-timeline-area">
@@ -454,7 +473,10 @@
     <div id="viewer-content">
         <div id="viewer-status"></div>
         <div id="viewer-main-text"></div>
-        <div id="viewer-panel-grid" class="hidden"></div> <div id="viewer-bomb-grid" class="hidden"></div> <div id="viewer-sub-text"></div>
+        <div id="viewer-panel-grid" class="hidden"></div>
+        <div id="viewer-bomb-grid" class="hidden"></div>
+        <div id="viewer-multi-grid" class="hidden"></div>
+        <div id="viewer-sub-text"></div>
         <div id="viewer-ranking-area"></div>
     </div>
 </div>
@@ -462,13 +484,13 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=53"></script>
-<script src="host_core.js?v=53"></script>
-<script src="host_creator.js?v=53"></script>
-<script src="host_config.js?v=53"></script>
-<script src="host_studio.js?v=53"></script>
-<script src="player.js?v=53"></script>
-<script src="viewer.js?v=53"></script>
+<script src="text_config.js?v=54"></script>
+<script src="host_core.js?v=54"></script>
+<script src="host_creator.js?v=54"></script>
+<script src="host_config.js?v=54"></script>
+<script src="host_studio.js?v=54"></script>
+<script src="player.js?v=54"></script>
+<script src="viewer.js?v=54"></script>
 
 </body>
 </html>
