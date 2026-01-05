@@ -1,5 +1,5 @@
 /* =========================================================
- * viewer.js (v34: Monitor View Logic)
+ * viewer.js (v35: New Monitor View Logic)
  * =======================================================*/
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -35,7 +35,7 @@ function startViewerListener(roomId) {
         
         if (st.step === 'standby') {
             statusEl.textContent = APP_TEXT.Viewer.Waiting;
-            mainText.textContent = "次の問題を待っています";
+            mainText.textContent = "待機中...";
             subText.textContent = "";
         }
         else if (st.step === 'question') {
@@ -46,8 +46,8 @@ function startViewerListener(roomId) {
                 mainText.textContent = q.q;
                 
                 if(q.type === 'choice') {
-                    // 選択肢を表示しても良いが、シンプルに問題文だけでもOK
-                    subText.textContent = q.c.join(' / ');
+                    // 選択肢を表示 (大画面用に改行など入れる)
+                    subText.textContent = q.c.join('  /  ');
                 } else {
                     subText.textContent = "";
                 }
@@ -68,7 +68,8 @@ function startViewerListener(roomId) {
                     ansStr = q.c[cIdx];
                 }
                 
-                subText.innerHTML = `<span style="color:#d00;">正解: ${ansStr}</span>`;
+                // 大画面用に装飾
+                subText.innerHTML = `<span style="color:#d00; background:white; padding:5px 20px; border-radius:10px;">正解: ${ansStr}</span>`;
             });
         }
         else if (st.step === 'ranking') {
@@ -95,13 +96,17 @@ function renderViewerRanking(roomId, container) {
         
         // 上位10名を表示
         const top10 = list.slice(0, 10);
-        let html = '<table style="width:100%; font-size:1.2em; border-collapse:collapse;">';
+        
+        // 大画面用テーブル（vw単位で調整）
+        let html = '<table style="width:100%; font-size:3vw; border-collapse:collapse; color:white;">';
         top10.forEach((p, i) => {
             const color = i === 0 ? 'gold' : (i === 1 ? 'silver' : (i === 2 ? '#cd7f32' : 'white'));
+            const rankSize = i < 3 ? '1.2em' : '1em';
+            
             html += `<tr style="border-bottom:1px solid #555;">
-                <td style="color:${color}; font-weight:bold; width:50px;">${i+1}</td>
-                <td style="text-align:left;">${p.name}</td>
-                <td style="text-align:right;">${p.score} pt</td>
+                <td style="color:${color}; font-weight:bold; width:15%; text-align:center; font-size:${rankSize};">${i+1}</td>
+                <td style="text-align:left; padding-left:20px;">${p.name}</td>
+                <td style="text-align:right; font-family:monospace;">${p.score} pt</td>
             </tr>`;
         });
         html += '</table>';
