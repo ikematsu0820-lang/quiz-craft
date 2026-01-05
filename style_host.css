@@ -1,5 +1,5 @@
 /* =========================================================
- * style_host.css (v40: Host/Admin Styles)
+ * style_host.css (v41: Host Styles)
  * =======================================================*/
 
 /* 問題作成画面フォーム */
@@ -32,6 +32,37 @@
 .choice-text-input:focus, .sort-text-input:focus {
     background: #f0f8ff;
     border-bottom: 1px solid #0055ff;
+}
+
+/* ★v41追加: 下部セット設定エリア */
+.creator-set-settings {
+    border: 2px solid #333;
+    background: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* ★v41追加: 文字配置ボタン */
+.btn-align {
+    flex: 1;
+    background: #fff;
+    border: 1px solid #ccc;
+    color: #333;
+    padding: 8px;
+    font-size: 0.9em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-align:hover {
+    background: #eee;
+}
+.btn-align.active {
+    background: #333;
+    color: white;
+    border-color: #333;
+    font-weight: bold;
 }
 
 /* セット設定画面 */
