@@ -1,5 +1,5 @@
 /* =========================================================
- * host_creator.js (v41: Global Set Config & Layout)
+ * host_creator.js (v44: Design Config & Image Compression)
  * =======================================================*/
 
 window.initCreatorMode = function() {
@@ -8,7 +8,6 @@ window.initCreatorMode = function() {
     document.getElementById('quiz-set-title').value = '';
     document.getElementById('save-to-cloud-btn').textContent = APP_TEXT.Creator.BtnSave;
     
-    // UI初期化
     resetGlobalSettings(); 
     
     const typeSelect = document.getElementById('creator-q-type');
@@ -32,11 +31,24 @@ window.loadSetForEditing = function(key, item) {
     document.getElementById('quiz-set-title').value = item.title;
     document.getElementById('save-to-cloud-btn').textContent = APP_TEXT.Creator.BtnUpdate;
     
-    // 保存された設定を復元（もしあれば、最初の問題から取得して反映）
     if(createdQuestions.length > 0) {
         const firstQ = createdQuestions[0];
         if(firstQ.layout) document.getElementById('creator-set-layout').value = firstQ.layout;
         if(firstQ.align) updateAlignUI(firstQ.align);
+        
+        // ★v44: デザイン設定の復元
+        if(firstQ.design) {
+            document.getElementById('design-text-color').value = firstQ.design.textColor || "#ffffff";
+            document.getElementById('design-frame-color').value = firstQ.design.frameColor || "#2c5066";
+            document.getElementById('design-bg-color').value = firstQ.design.bgColor || "#222222";
+            if(firstQ.design.bgImage) {
+                document.getElementById('design-bg-image-data').value = firstQ.design.bgImage;
+                document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgImageLoaded;
+            } else {
+                document.getElementById('design-bg-image-data').value = "";
+                document.getElementById('design-bg-image-status').textContent = "";
+            }
+        }
     } else {
         resetGlobalSettings();
     }
@@ -64,18 +76,68 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 文字配置ボタンのイベント
     document.querySelectorAll('.btn-align').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const align = e.target.getAttribute('data-align');
             updateAlignUI(align);
         });
     });
+
+    // ★v44: 画像アップロードボタンの処理
+    const imgBtn = document.getElementById('design-bg-image-btn');
+    const imgInput = document.getElementById('design-bg-image-file');
+    if(imgBtn && imgInput) {
+        imgBtn.addEventListener('click', () => imgInput.click());
+        imgInput.addEventListener('change', handleImageUpload);
+    }
 });
+
+// ★v44: 画像圧縮・Base64変換ロジック
+function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 最大幅 1280px にリサイズ
+            const MAX_WIDTH = 1280;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // 圧縮してBase64取得 (JPEG, 品質0.7)
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            
+            document.getElementById('design-bg-image-data').value = dataUrl;
+            document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgImageLoaded;
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}
 
 function resetGlobalSettings() {
     document.getElementById('creator-set-layout').value = 'standard';
     updateAlignUI('center');
+    // デザインリセット
+    document.getElementById('design-text-color').value = "#ffffff";
+    document.getElementById('design-frame-color').value = "#2c5066";
+    document.getElementById('design-bg-color').value = "#222222";
+    document.getElementById('design-bg-image-data').value = "";
+    document.getElementById('design-bg-image-status').textContent = "";
 }
 
 function updateAlignUI(align) {
@@ -93,8 +155,6 @@ function renderCreatorForm(type) {
     const container = document.getElementById('creator-form-container');
     if(!container) return; 
     container.innerHTML = ''; 
-
-    // ★修正: レイアウト選択は削除（下部に移動したため）
 
     if (type === 'choice') {
         const settingsDiv = document.createElement('div');
@@ -226,8 +286,6 @@ function addQuestion() {
 
     const type = document.getElementById('creator-q-type').value;
     
-    // レイアウト設定はここでは取得せず、保存時に一括適用するが、
-    // 表示用に一時的なデフォルト値を持たせておく
     let newQ = { q: qText, type: type, points: 1, loss: 0 };
 
     if (type === 'choice') {
@@ -298,13 +356,23 @@ function saveToCloud() {
     if(createdQuestions.length === 0) { alert('No questions'); return; }
     const title = document.getElementById('quiz-set-title').value.trim() || "Untitled";
     
-    // ★重要: ここで全体設定を取得し、全問題に適用する
+    // ★v44: デザイン設定を含めて全問題に適用
     const layout = document.getElementById('creator-set-layout').value;
     const align = document.getElementById('creator-set-align').value;
+    const textColor = document.getElementById('design-text-color').value;
+    const frameColor = document.getElementById('design-frame-color').value;
+    const bgColor = document.getElementById('design-bg-color').value;
+    const bgImage = document.getElementById('design-bg-image-data').value;
 
     createdQuestions.forEach(q => {
         q.layout = layout;
         q.align = align;
+        q.design = {
+            textColor: textColor,
+            frameColor: frameColor,
+            bgColor: bgColor,
+            bgImage: bgImage
+        };
     });
 
     const defaultConf = { eliminationRule: 'none', scoreUnit: 'point', theme: 'light' };
