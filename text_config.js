@@ -1,17 +1,16 @@
 /* =========================================================
- * text_config.js (v33: Viewer Support)
+ * text_config.js (v34: Viewer on Dashboard)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v33",
+    Version: "Cloud Edition v34",
     
     // メインメニュー
     Main: {
         HostBtn: "司会者 (Host)",
-        PlayerBtn: "回答者 (Player)",
-        ViewerBtn: "モニター (Monitor)" // ★追加
+        PlayerBtn: "回答者 (Player)"
     },
 
     // ホストログイン
@@ -30,6 +29,7 @@ const APP_TEXT = {
         BtnCreate: "セット作成",
         BtnConfig: "セット設定",
         BtnStudio: "スタジオ",
+        BtnViewer: "モニター (Viewer)", // ★追加
         SetListTitle: "保存済みセット (素材)",
         DeleteConfirm: "削除しますか？"
     },
@@ -131,7 +131,6 @@ const APP_TEXT = {
         BtnRanking: "中間順位",
         BtnClose: "スタジオを閉じて戻る",
         BtnBackRanking: "スタジオに戻る",
-        MsgNoPeriod: "再生するピリオドがありません",
         MsgConfirmLoad: "プログラムを読み込んでセットしますか？\n（現在の進行内容はリセットされます）",
         MsgLoaded: "セットしました。再生ボタンで開始してください。",
         MsgThinking: "Thinking Time...",
@@ -164,7 +163,7 @@ const APP_TEXT = {
         RankBoardTitle: "上位リーダーボード"
     },
 
-    // ★追加: モニター (Viewer)
+    // モニター
     Viewer: {
         Title: "モニター接続",
         BtnConnect: "接続する",
