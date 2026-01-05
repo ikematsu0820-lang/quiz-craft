@@ -1,5 +1,5 @@
 /* =========================================================
- * host_creator.js (v38: Removed Partial Credit)
+ * host_creator.js (v39: Layout Select & 10 Options Limit)
  * =======================================================*/
 
 window.initCreatorMode = function() {
@@ -58,11 +58,27 @@ function renderCreatorForm(type) {
     if(!container) return; 
     container.innerHTML = ''; 
 
+    // ★追加: モニターレイアウト選択
+    const layoutDiv = document.createElement('div');
+    layoutDiv.style.marginBottom = '15px';
+    layoutDiv.style.padding = '10px';
+    layoutDiv.style.background = '#e6f7ff';
+    layoutDiv.style.borderRadius = '5px';
+    
+    layoutDiv.innerHTML = `
+        <label style="font-size:0.8em; font-weight:bold; display:block; margin-bottom:5px;">${APP_TEXT.Creator.LabelLayout}</label>
+        <select id="creator-q-layout" class="btn-block" style="background:#fff;">
+            <option value="standard">${APP_TEXT.Creator.LayoutStandard}</option>
+            <option value="split_list">${APP_TEXT.Creator.LayoutSplitList}</option>
+            <option value="split_grid">${APP_TEXT.Creator.LayoutSplitGrid}</option>
+        </select>
+    `;
+    container.appendChild(layoutDiv);
+
     if (type === 'choice') {
         const settingsDiv = document.createElement('div');
         settingsDiv.style.marginBottom = '10px';
         settingsDiv.style.fontSize = '0.9em';
-        // ★修正: 部分点エリアを削除
         settingsDiv.innerHTML = `
             <label style="margin-right:10px;"><input type="checkbox" id="opt-multi-select"> ${APP_TEXT.Creator.OptMulti}</label>
         `;
@@ -109,6 +125,8 @@ function renderCreatorForm(type) {
         container.appendChild(addBtn);
 
     } else if (type === 'text') {
+        // 自由入力にはレイアウト選択は不要かもしれないが、一旦そのまま残すか隠す
+        // layoutDiv.style.display = 'none'; // 隠す場合
         const desc = document.createElement('p');
         desc.style.fontSize = '0.8em';
         desc.style.color = '#666';
@@ -125,6 +143,12 @@ function renderCreatorForm(type) {
 }
 
 function addChoiceInput(parent, index) {
+    // ★追加: 10個制限
+    if (parent.children.length >= 10) {
+        alert(APP_TEXT.Creator.AlertMaxChoice);
+        return;
+    }
+
     const wrapper = document.createElement('div');
     wrapper.className = 'choice-row';
     const chk = document.createElement('input');
@@ -149,6 +173,12 @@ function addChoiceInput(parent, index) {
 }
 
 function addSortInput(parent) {
+    // ★追加: 10個制限
+    if (parent.children.length >= 10) {
+        alert(APP_TEXT.Creator.AlertMaxChoice);
+        return;
+    }
+
     const wrapper = document.createElement('div');
     wrapper.style.display = 'flex';
     wrapper.style.alignItems = 'center';
@@ -178,7 +208,10 @@ function addQuestion() {
     if(!qText) { alert(APP_TEXT.Creator.AlertNoQ); return; }
 
     const type = document.getElementById('creator-q-type').value;
-    let newQ = { q: qText, type: type, points: 1, loss: 0 };
+    // ★追加: レイアウト設定の取得
+    const layout = document.getElementById('creator-q-layout') ? document.getElementById('creator-q-layout').value : 'standard';
+    
+    let newQ = { q: qText, type: type, layout: layout, points: 1, loss: 0 };
 
     if (type === 'choice') {
         const rows = document.querySelectorAll('.choice-row');
@@ -198,7 +231,7 @@ function addQuestion() {
         newQ.correct = correct;
         newQ.correctIndex = correct[0];
         newQ.multi = document.getElementById('opt-multi-select').checked;
-        newQ.partial = false; // ★修正: 部分点は常に無効
+        newQ.partial = false;
 
     } else if (type === 'sort') {
         const inputs = document.querySelectorAll('.sort-text-input');
