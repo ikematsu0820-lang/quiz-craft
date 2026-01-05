@@ -1,5 +1,5 @@
 /* =========================================================
- * style_host.css (v50: Creator List Styles)
+ * style_host.css (v54: Complete)
  * =======================================================*/
 
 /* 問題作成画面フォーム */
@@ -34,7 +34,7 @@
     border-bottom: 1px solid #0055ff;
 }
 
-/* ★v50追加: リストアイテムの操作ボタン */
+/* リストアイテム */
 .q-list-item {
     background: #fff;
     border: 1px solid #ddd;
@@ -70,7 +70,7 @@
 .btn-move { background: #ddd; color: #333; }
 .btn-del { background: #ffcccc; color: #d00; }
 
-/* 下部セット設定エリア */
+/* 下部設定エリア */
 .creator-set-settings {
     border: 2px solid #333;
     background: #fff;
@@ -90,9 +90,7 @@
     cursor: pointer;
     transition: all 0.2s;
 }
-.btn-align:hover {
-    background: #eee;
-}
+.btn-align:hover { background: #eee; }
 .btn-align.active {
     background: #333;
     color: white;
@@ -100,7 +98,7 @@
     font-weight: bold;
 }
 
-/* セット設定画面 */
+/* 設定画面 */
 .config-label {
     display: block;
     font-size: 0.8em;
@@ -150,7 +148,7 @@
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* タイムラインカード */
+/* タイムライン */
 .timeline-card {
     background: #fff;
     border: 1px solid #ccc;
@@ -220,7 +218,7 @@
     border-radius: 4px;
 }
 
-/* ホスト用ランキングリスト */
+/* ランキング */
 .ranking-container {
     max-height: 400px;
     overflow-y: auto;
@@ -247,3 +245,23 @@
 .rank-3 { background: linear-gradient(to right, #cd7f32, #fff5ee); border: 2px solid #a0522d; color: #5a2d0c; }
 .rank-badge { display: inline-block; width: 30px; text-align: center; margin-right: 10px; font-family: 'Arial Black', sans-serif; }
 .rank-score { font-family: monospace; font-size: 0.9em; color: #555; text-align: right; }
+
+/* 多答クイズボタン */
+.multi-ans-btn {
+    background: #fff;
+    border: 2px solid #0055ff;
+    color: #0055ff;
+    font-weight: bold;
+    border-radius: 5px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 1em;
+}
+.multi-ans-btn.opened {
+    background: #28a745;
+    color: white;
+    border-color: #28a745;
+    transform: scale(0.95);
+    opacity: 0.8;
+}
