@@ -3,14 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>All Star Quiz Cloud</title>
-<link rel="stylesheet" href="style.css?v=28">
+<title>Quiz Studio</title>
+<link rel="stylesheet" href="style.css?v=29">
 </head>
 <body>
 
 <div id="main-view" class="view">
-    <h1 class="app-title">ALL STAR QUIZ</h1>
-    <p style="text-align:center; color:#666;">Cloud Edition v28</p>
+    <div style="text-align:center; margin-bottom:20px;">
+        <img src="logo.png" alt="Quiz Studio" class="app-logo">
+    </div>
+    <p style="text-align:center; color:#666;">Cloud Edition v29</p>
     <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
         <button id="main-host-btn" class="btn-primary">司会者 (Host)</button>
         <button id="main-player-btn" class="btn-success">回答者 (Player)</button>
@@ -18,6 +20,9 @@
 </div>
 
 <div id="host-login-view" class="view hidden">
+    <div style="text-align:center; margin-bottom:20px;">
+        <img src="logo.png" alt="Quiz Studio" class="app-logo-small">
+    </div>
     <h2>番組IDを入力</h2>
     <hr>
     <div style="text-align:center;">
@@ -39,7 +44,7 @@
         <button id="dash-config-btn" class="btn-primary" style="height:80px; font-weight:bold; font-size:0.9em; background-color:#2c3e50;">セット設定</button>
         <button id="dash-studio-btn" class="btn-danger" style="height:80px; font-weight:bold; font-size:0.9em;">スタジオ</button>
     </div>
-    <h4 style="border-bottom:2px solid #ddd; padding-bottom:5px;">保存済みセット</h4>
+    <h4 style="border-bottom:2px solid #ddd; padding-bottom:5px;">保存済みセット (素材)</h4>
     <div id="dash-set-list" style="max-height:300px; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:5px;"></div>
 </div>
 
@@ -78,12 +83,15 @@
         <button id="config-header-back-btn" style="background:#999; padding:5px 10px; font-size:0.8em;">戻る</button>
     </div>
     <hr>
+    
     <div style="background:#f0f8ff; padding:15px; border:2px solid #87ceeb; border-radius:8px; margin-bottom:20px;">
         <h3 style="margin:0 0 10px 0; color:#0055ff; font-size:1.1em; text-align:center;">ピリオド（セット）を構成に追加</h3>
+        
         <div style="margin-bottom:15px;">
             <label class="config-label">1. セットを選択</label>
             <select id="config-set-select" class="btn-block config-select"><option value="">読み込み中...</option></select>
         </div>
+
         <div style="margin-bottom:15px;">
             <label class="config-label">2. ルール設定</label>
             <label style="font-size:0.8em; color:#666;">▼ 脱落条件</label>
@@ -144,9 +152,17 @@
         </div>
         <button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:12px; border:none; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.2);">リストに追加</button>
     </div>
+
     <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
         <h4 style="color:#333; margin:0 0 10px 0;">現在の番組構成リスト</h4>
         <div id="config-playlist-preview" style="background:#eee; padding:10px; border-radius:5px; min-height:50px;"><p style="text-align:center; color:#999; font-size:0.8em;">まだ追加されていません</p></div>
+        
+        <div style="margin:10px 0; text-align:right;">
+            <label style="font-weight:bold; color:#0055ff; cursor:pointer; background:#e6f0ff; padding:5px 10px; border-radius:4px;">
+                <input type="checkbox" id="config-final-ranking-chk" checked> 最後に最終結果発表を行う
+            </label>
+        </div>
+
         <div style="display:flex; gap:5px; margin-bottom:15px; margin-top:15px;">
             <input type="text" id="config-program-title" placeholder="構成に名前をつけて保存" style="flex:1;">
             <button id="config-save-program-btn" class="btn-info" style="flex:0 0 80px;">保存</button>
@@ -164,6 +180,15 @@
             <div>生存: <span id="host-alive-count" style="color:#00ff00; font-weight:bold;">0</span></div>
         </div>
     </div>
+
+    <div id="studio-program-loader" style="background:#e6f0ff; padding:10px; border-radius:5px; margin-bottom:15px; border:2px solid #0055ff;">
+        <h4 style="margin:0 0 5px 0; color:#0055ff; font-size:1em;">📂 プログラム読込</h4>
+        <select id="studio-program-select" style="width:100%; margin-bottom:5px;">
+            <option value="">保存済みプログラムを選択...</option>
+        </select>
+        <button id="studio-load-program-btn" class="btn-primary" style="width:100%; font-size:0.9em; padding:8px;">読み込んでセット</button>
+    </div>
+
     <div id="host-kanpe-area" class="kanpe-card hidden">
         <div style="background:#333; color:#fff; display:inline-block; padding:2px 8px; font-size:0.8em; border-radius:3px; margin-bottom:5px;">司会者用カンペ</div>
         <div id="kanpe-question" style="font-weight:bold; font-size:1.1em; margin-bottom:5px;"></div>
@@ -171,16 +196,19 @@
         <div id="kanpe-time-limit" style="font-size:0.8em; color:#666; margin-top:5px;"></div>
         <div id="kanpe-point" style="font-size:0.8em; color:#0055ff; font-weight:bold;"></div>
     </div>
+    
     <div id="host-status-area" style="text-align:center; margin-bottom:15px; font-weight:bold; color:#666;">準備中...</div>
+
     <div id="studio-timeline-area">
         <h4 style="color:#333; margin:0 0 10px 0; text-align:center;">番組構成リスト</h4>
         <div id="studio-period-timeline" style="display:flex; flex-direction:column; gap:10px; min-height:50px; margin-bottom:20px;">
-            <p style="text-align:center; color:#999; font-size:0.9em;">セット設定画面でリストを作成してください</p>
+            <p style="text-align:center; color:#999; font-size:0.9em;">プログラムを読み込んでください</p>
         </div>
         <div id="studio-footer-controls" style="border-top:1px solid #ddd; padding-top:20px; text-align:center;">
             <button id="studio-master-play-btn" class="btn-success btn-block" style="padding:15px; font-size:1.2em; box-shadow: 0 4px 0 #218838;">再生 ▶</button>
         </div>
     </div>
+
     <div id="control-panel" class="hidden" style="margin-top:20px; border-top:2px solid #333; padding-top:15px;">
         <h3 id="current-period-title" style="text-align:center; margin:0 0 10px 0; background:#eee; padding:5px;"></h3>
         <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;">問題 START！</button>
@@ -193,7 +221,7 @@
 </div>
 
 <div id="ranking-view" class="view hidden" style="text-align:center;">
-    <h2 style="font-family: 'Arial Black', sans-serif; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">PERIOD RANKING</h2>
+    <h2 style="font-family: 'Arial Black', sans-serif; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">RANKING</h2>
     <div id="ranking-list" class="ranking-container"></div>
     <button id="ranking-back-btn" class="btn-primary btn-block" style="margin-top:20px;">スタジオに戻る</button>
 </div>
@@ -232,11 +260,20 @@
     <div id="player-wait-msg" class="hidden" style="text-align:center; padding:20px; font-weight:bold;">
         ANSWERED!<br>祈ってお待ちください...
     </div>
+    
     <div id="player-result-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1000;">
         <div id="result-icon" style="font-size:5em; margin-bottom:10px;"></div>
         <div id="result-text" style="font-size:2em; font-weight:bold;"></div>
         <div id="result-detail" style="color:#666; margin-top:10px;"></div>
     </div>
+
+    <div id="player-ranking-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,50,0.95); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1100;">
+        <h2 style="color:gold; font-family:'Arial Black'; margin-bottom:20px;">RANKING</h2>
+        <div style="font-size:1.5em;">あなたは...</div>
+        <div id="player-my-rank" style="font-size:4em; font-weight:bold; color:gold; margin:10px 0;">---</div>
+        <div id="player-my-score" style="font-size:1.2em;">---</div>
+    </div>
+
     <div id="player-dead-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:999;">
         <h1 style="color:gray; font-size:3em;">GAME OVER</h1>
         <p>脱落...</p>
@@ -246,11 +283,11 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="host_core.js?v=28"></script>
-<script src="host_creator.js?v=28"></script>
-<script src="host_config.js?v=28"></script>
-<script src="host_studio.js?v=28"></script>
-<script src="player.js?v=28"></script>
+<script src="host_core.js?v=29"></script>
+<script src="host_creator.js?v=29"></script>
+<script src="host_config.js?v=29"></script>
+<script src="host_studio.js?v=29"></script>
+<script src="player.js?v=29"></script>
 
 </body>
 </html>
