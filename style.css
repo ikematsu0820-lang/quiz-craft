@@ -1,5 +1,5 @@
 /* =========================================================
- * style.css (v29: Quiz Studio - Full Edition)
+ * style.css (v33: Quiz Studio - Full Edition)
  * =======================================================*/
 
 /* 1. 基本設定 (Base) */
@@ -26,7 +26,7 @@ body {
     transition: background 0.5s, border 0.5s;
 }
 
-/* ★v29: ロゴ画像のスタイル */
+/* ロゴ画像のスタイル */
 .app-logo {
     max-width: 80%;
     height: auto;
@@ -174,11 +174,11 @@ input[type="text"], input[type="number"], select {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* タイムラインカード（番組構成リスト） */
+/* タイムラインカード */
 .timeline-card {
     background: #fff;
     border: 1px solid #ccc;
-    border-left: 6px solid #ccc; /* 未選択はグレー */
+    border-left: 6px solid #ccc; 
     padding: 15px;
     border-radius: 4px;
     display: flex;
@@ -190,9 +190,9 @@ input[type="text"], input[type="number"], select {
 }
 
 .timeline-card.active {
-    background: #e6f0ff; /* 薄い青背景 */
+    background: #e6f0ff; 
     border-color: #0055ff;
-    border-left-color: #0055ff; /* 青い帯 */
+    border-left-color: #0055ff; 
     opacity: 1; 
     transform: scale(1.02); 
     box-shadow: 0 4px 8px rgba(0,85,255,0.2);
@@ -275,7 +275,7 @@ input[type="text"], input[type="number"], select {
     animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* ★v29: ランキング発表オーバーレイ */
+/* ランキング発表オーバーレイ */
 #player-ranking-overlay {
     transition: opacity 0.3s;
     text-align: center;
@@ -314,7 +314,19 @@ input[type="text"], input[type="number"], select {
 .rank-badge { display: inline-block; width: 30px; text-align: center; margin-right: 10px; font-family: 'Arial Black', sans-serif; }
 .rank-score { font-family: monospace; font-size: 0.9em; color: #555; text-align: right; }
 
-/* 6. テーマ設定 (Dark Theme) */
+/* 6. モニター画面 (Viewer UI) ★v33追加 */
+#viewer-main-view {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    background-color: #000;
+}
+
+#viewer-content {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+/* 7. テーマ設定 (Dark Theme - Optional) */
 body.dark-theme { background-color: #000022; color: #e0e0e0; }
 body.dark-theme .view { background-color: #0d0d33; border: 1px solid #555; color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
 body.dark-theme .app-title { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
