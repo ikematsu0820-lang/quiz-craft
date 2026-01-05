@@ -1,8 +1,7 @@
 /* =========================================================
- * host_core.js (v30: Text Injection)
+ * host_core.js (v33: Viewer Nav & Creator Fix)
  * =======================================================*/
 
-// --- グローバル変数 ---
 let currentShowId = null;
 let currentRoomId = null;
 let createdQuestions = [];
@@ -27,26 +26,22 @@ window.showView = function(targetView) {
     if(targetView) targetView.classList.remove('hidden');
 };
 
-// ★テキスト反映関数
 window.applyTextConfig = function() {
     if(typeof APP_TEXT === 'undefined') return;
-    
-    // data-text属性を持つ要素を全て書き換える
     document.querySelectorAll('[data-text]').forEach(el => {
         const keys = el.getAttribute('data-text').split('.');
         let val = APP_TEXT;
-        keys.forEach(k => { val = val[k]; });
+        keys.forEach(k => { if(val) val = val[k]; });
         if(val) el.textContent = val;
     });
-
-    // プレースホルダー書き換え
     const phMap = {
         'show-id-input': APP_TEXT.Login.Placeholder,
         'quiz-set-title': APP_TEXT.Creator.PlaceholderSetName,
         'question-text': APP_TEXT.Creator.PlaceholderQ,
         'config-program-title': APP_TEXT.Config.PlaceholderProgName,
         'room-code-input': APP_TEXT.Player.PlaceholderCode,
-        'player-name-input': APP_TEXT.Player.PlaceholderName
+        'player-name-input': APP_TEXT.Player.PlaceholderName,
+        'viewer-room-code': APP_TEXT.Player.PlaceholderCode // Viewer用
     };
     for(let id in phMap) {
         const el = document.getElementById(id);
@@ -55,7 +50,6 @@ window.applyTextConfig = function() {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // テキスト適用
     window.applyTextConfig();
 
     window.views = {
@@ -67,15 +61,20 @@ document.addEventListener('DOMContentLoaded', () => {
         hostControl: document.getElementById('host-control-view'),
         ranking: document.getElementById('ranking-view'),
         respondent: document.getElementById('respondent-view'),
-        playerGame: document.getElementById('player-game-view')
+        playerGame: document.getElementById('player-game-view'),
+        viewerLogin: document.getElementById('viewer-login-view'), // ★追加
+        viewerMain: document.getElementById('viewer-main-view') // ★追加
     };
 
-    // イベントリスナー (省略せず記述)
     const hostBtn = document.getElementById('main-host-btn');
     if(hostBtn) hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
 
     const playerBtn = document.getElementById('main-player-btn');
     if(playerBtn) playerBtn.addEventListener('click', () => window.showView(window.views.respondent));
+
+    // ★追加: モニターボタン
+    const viewerBtn = document.getElementById('main-viewer-btn');
+    if(viewerBtn) viewerBtn.addEventListener('click', () => window.showView(window.views.viewerLogin));
 
     const loginBtn = document.getElementById('host-login-submit-btn');
     if(loginBtn) {
@@ -92,8 +91,11 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => window.showView(window.views.main));
     });
 
+    // ★修正: 不具合対策（関数を直接参照せず、クリック時にwindowから探す）
     const createBtn = document.getElementById('dash-create-btn');
-    if(createBtn) createBtn.addEventListener('click', initCreatorMode);
+    if(createBtn) createBtn.addEventListener('click', () => {
+        if(window.initCreatorMode) window.initCreatorMode();
+    });
 
     const configBtn = document.getElementById('dash-config-btn');
     if(configBtn) {
