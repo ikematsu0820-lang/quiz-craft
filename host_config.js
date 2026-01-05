@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v21: Bulk Points & Fix)
+ * host_config.js (v22: Fix Add Button & Bulk Points)
  * =======================================================*/
 
 // 選択中のセットの問題を一時保持
@@ -7,6 +7,8 @@ let selectedSetQuestions = [];
 
 function enterConfigMode() {
     window.showView(window.views.config);
+    // updateBuilderUI は削除したUI用だったので不要ですが、
+    // 脱落条件の表示制御のために残すか、整理します
     updateBuilderUI();
 
     const select = document.getElementById('config-set-select');
@@ -51,11 +53,12 @@ function enterConfigMode() {
         customScoreBtn.onclick = toggleCustomScoreArea;
     }
 
-    // ★追加：一括反映ボタン
+    // ★一括反映ボタンの処理
     const bulkBtn = document.getElementById('config-bulk-point-btn');
     if(bulkBtn) {
         bulkBtn.onclick = () => {
             const val = document.getElementById('config-bulk-point-input').value;
+            // 全ての入力欄に値をセット
             document.querySelectorAll('.q-point-input').forEach(input => {
                 input.value = val;
             });
@@ -94,7 +97,6 @@ function toggleCustomScoreArea() {
             div.style.borderBottom = '1px solid #eee';
             div.style.paddingBottom = '5px';
             
-            // 既存のポイントがあれば反映、なければ1
             const pts = q.points || 1;
 
             div.innerHTML = `
@@ -121,6 +123,7 @@ function addPeriodToPlaylist() {
     
     const data = JSON.parse(json);
     
+    // 個別配点の読み取り
     const questionsWithPoints = JSON.parse(JSON.stringify(data.q)); 
     const pointInputs = document.querySelectorAll('.q-point-input');
     const isCustomPoints = !document.getElementById('config-custom-points-area').classList.contains('hidden');
@@ -134,14 +137,14 @@ function addPeriodToPlaylist() {
             }
         });
     } else {
+        // デフォルト1点
         questionsWithPoints.forEach(q => q.points = (q.points || 1));
     }
 
-    // ★修正：ピリオド追加不具合の解消
-    // 参加者設定は「ここにはない」ので、デフォルト値を使うか、
-    // もし既存のリストがあれば、その末尾の設定を引き継ぐなどのロジックにする？
-    // 今回は「デフォルトはRevive、変更はリスト追加後にやる」という仕様で統一
-    let initialStatus = 'revive';
+    // ★ここを修正！
+    // 以前はここで document.getElementById('config-initial-status') を探してエラーになっていました。
+    // 参加者設定はリストに追加した後で変更する仕様なので、デフォルト値を入れます。
+    let initialStatus = 'revive'; 
     let passCount = 5;
 
     let elimCount = 1;
@@ -149,9 +152,7 @@ function addPeriodToPlaylist() {
         elimCount = parseInt(document.getElementById('config-elimination-count').value) || 1;
     }
 
-    // 失点設定を取得
     let lossPoint = document.getElementById('config-loss-point').value;
-    // 数値なら変換、'reset'ならそのまま
     if (lossPoint !== 'reset') lossPoint = parseInt(lossPoint);
 
     const newConfig = {
@@ -159,7 +160,7 @@ function addPeriodToPlaylist() {
         passCount: passCount,
         eliminationRule: document.getElementById('config-elimination-rule').value,
         eliminationCount: elimCount,
-        lossPoint: lossPoint, // ★保存
+        lossPoint: lossPoint,
         scoreUnit: document.getElementById('config-score-unit').value,
         theme: 'light',
         timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0
@@ -186,6 +187,7 @@ function renderConfigPreview() {
     }
     
     periodPlaylist.forEach((item, index) => {
+        // 2つ目以降の接続設定パネル
         if (index > 0) {
             const arrowDiv = document.createElement('div');
             arrowDiv.className = 'playlist-arrow-container';
