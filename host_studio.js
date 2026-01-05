@@ -659,4 +659,79 @@ function nextTaQuestion(roomId) {
         currentAnswerer: buzzWinnerId 
     });
 
-    document.getElementById('host-status-area').textContent = `Q${current
+    document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} (5s)`;
+
+    taTimer = setTimeout(() => {
+        nextTaQuestion(roomId);
+    }, 5000);
+}
+
+function updateKanpe() {
+    const kanpeArea = document.getElementById('host-kanpe-area');
+    if(studioQuestions.length === 0) {
+        kanpeArea.classList.add('hidden');
+        return;
+    }
+    if(studioQuestions.length > currentQIndex) {
+        const q = studioQuestions[currentQIndex];
+        kanpeArea.classList.remove('hidden');
+        
+        let questionHtml = `Q${currentQIndex+1}. ${q.q}`;
+        if (q.type === 'choice' || q.type === 'sort') {
+            questionHtml += '<div style="margin-top:10px; font-weight:normal; font-size:0.9em; color:#333; background:rgba(255,255,255,0.5); padding:5px; border-radius:4px;">';
+            q.c.forEach((choice, i) => {
+                const prefix = (q.type === 'choice') ? String.fromCharCode(65 + i) : (i + 1);
+                questionHtml += `<div><span style="font-weight:bold; color:#0055ff;">${prefix}.</span> ${choice}</div>`;
+            });
+            questionHtml += '</div>';
+        }
+        document.getElementById('kanpe-question').innerHTML = questionHtml; 
+        
+        let ansText = "";
+        if (q.type === 'sort') ansText = `正解順: ${q.c.join(' → ')}`;
+        else if (q.type === 'text') ansText = `正解: ${q.correct.join(' / ')}`;
+        else {
+            const cIdx = (q.correctIndex !== undefined) ? q.correctIndex : q.correct[0];
+            const charLabel = String.fromCharCode(65 + cIdx); 
+            ansText = `正解: ${charLabel}. ${q.c[cIdx]}`;
+        }
+        document.getElementById('kanpe-answer').textContent = ansText;
+        
+        const timeLimit = currentConfig.timeLimit || 0;
+        const points = q.points || 1;
+        const loss = q.loss || 0;
+        document.getElementById('kanpe-point').textContent = `Pt:${points} / Loss:-${loss}`;
+        document.getElementById('kanpe-time-limit').textContent = timeLimit ? `${timeLimit}s` : "No Limit";
+    } else {
+        kanpeArea.classList.add('hidden');
+    }
+}
+
+function renderRankingView(data) {
+    const list = document.getElementById('ranking-list');
+    list.innerHTML = '';
+    if (data.length === 0) { list.innerHTML = '<p style="padding:20px;">No players</p>'; return; }
+    
+    data.forEach((r, i) => {
+        const rank = i + 1;
+        const div = document.createElement('div');
+        let rankClass = 'rank-row';
+        if (rank === 1) rankClass += ' rank-1';
+        else if (rank === 2) rankClass += ' rank-2';
+        else if (rank === 3) rankClass += ' rank-3';
+        if (!r.isAlive && currentConfig.eliminationRule !== 'none') {
+            div.style.opacity = "0.6"; div.style.background = "#eee";
+        }
+        div.className = rankClass;
+        let scoreText = `${r.score}`; 
+        
+        div.innerHTML = `
+            <div style="display:flex; align-items:center;">
+                <span class="rank-badge">${rank}</span>
+                <span>${r.name}</span>
+            </div>
+            <div class="rank-score">${scoreText}</div>
+        `;
+        list.appendChild(div);
+    });
+}
