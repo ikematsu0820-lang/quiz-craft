@@ -1,8 +1,10 @@
 /* =========================================================
- * style.css (v35: Quiz Studio - Full Edition)
+ * style.css (v39: Quiz Studio - Full Edition)
  * =======================================================*/
 
-/* 1. 基本設定 (Base) */
+/* ---------------------------------------------------
+ * 1. 基本設定 (Base)
+ * --------------------------------------------------- */
 body {
     font-family: "Helvetica Neue", Arial, sans-serif;
     max-width: 600px;
@@ -25,7 +27,7 @@ body {
     transition: background 0.5s, border 0.5s;
 }
 
-/* ヘッダー周り (v35追加) */
+/* ヘッダー周り */
 .view-header {
     display: flex;
     justify-content: space-between;
@@ -70,7 +72,9 @@ body {
 h1, h2, h3, h4 { text-align: center; margin-top: 0; }
 hr { border: 0; border-top: 1px solid #ddd; margin: 15px 0; }
 
-/* 2. フォーム & ボタン (Forms & Buttons) */
+/* ---------------------------------------------------
+ * 2. フォーム & ボタン (Forms & Buttons)
+ * --------------------------------------------------- */
 button {
     cursor: pointer;
     font-size: 16px;
@@ -115,7 +119,9 @@ input[type="text"], input[type="number"], select {
     font-size: 16px;
 }
 
-/* 3. ホスト用デザイン (Host UI) */
+/* ---------------------------------------------------
+ * 3. ホスト用デザイン (Host UI)
+ * --------------------------------------------------- */
 
 /* 問題作成画面フォーム */
 .choice-row {
@@ -269,7 +275,9 @@ input[type="text"], input[type="number"], select {
     border-radius: 4px;
 }
 
-/* 4. 回答者画面 (Player UI) */
+/* ---------------------------------------------------
+ * 4. 回答者画面 (Player UI)
+ * --------------------------------------------------- */
 .answer-btn {
     font-size: 1.5em;
     font-weight: bold;
@@ -339,11 +347,12 @@ input[type="text"], input[type="number"], select {
 .rank-badge { display: inline-block; width: 30px; text-align: center; margin-right: 10px; font-family: 'Arial Black', sans-serif; }
 .rank-score { font-family: monospace; font-size: 0.9em; color: #555; text-align: right; }
 
-/* 6. モニター画面 (Viewer UI) */
-/* ★v35変更: 全画面対応＆横長レイアウト */
+/* ---------------------------------------------------
+ * 6. モニター画面 (Viewer UI) - ★v39 レイアウト
+ * --------------------------------------------------- */
 #viewer-main-view {
     font-family: "Helvetica Neue", Arial, sans-serif;
-    background-color: #000;
+    background-color: #222; /* 画面全体の背景色（黒） */
     width: 100vw;
     height: 100vh;
     position: fixed;
@@ -352,19 +361,172 @@ input[type="text"], input[type="number"], select {
     padding: 0;
     margin: 0;
     z-index: 9999;
-    display: flex; /* flexboxで中央寄せ */
-    flex-direction: column;
+    display: flex;
     justify-content: center;
     align-items: center;
 }
 
 #viewer-content {
-    width: 90%;
-    max-width: 1200px; /* PCモニター向け */
-    text-align: center;
+    width: 95%;
+    height: 90%;
+    display: flex;
+    flex-direction: column;
 }
 
-/* 7. テーマ設定 (Dark Theme - Optional) */
+/* ステータス表示 (QUESTION / RANKING) */
+#viewer-status {
+    height: 10%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4vh;
+    color: gold;
+    font-weight: bold;
+    letter-spacing: 0.2em;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+/* --- レイアウトコンテナ (共通) --- */
+.viewer-layout-container {
+    flex: 1; /* 残りの高さを埋める */
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+}
+
+/* === パターンA: 標準 (Standard) - 上:問題 / 下:選択肢 === */
+.layout-standard {
+    flex-direction: column;
+}
+.layout-standard .q-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #2c5066; /* 濃い青緑 */
+    border: 4px solid #fff;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    margin-bottom: 20px;
+    padding: 20px;
+    font-size: 5vh; /* 大きめ */
+    font-weight: bold;
+    color: white;
+    text-align: center;
+}
+.layout-standard .c-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 15px; /* 選択肢間の隙間 */
+}
+.layout-standard .choice-item {
+    background: #365c75;
+    border: 2px solid #fff;
+    color: white;
+    padding: 1.5vh 2vw;
+    font-size: 3.5vh;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* === パターンB: 左右分割リスト (Split List) - 右:問題[縦] / 左:選択肢[リスト] === */
+.layout-split-list {
+    flex-direction: row-reverse; /* 右に問題、左に選択肢 */
+    gap: 20px;
+}
+.layout-split-list .q-area {
+    width: 25%; /* 問題幅 */
+    background: #2c5066;
+    border: 4px solid #fff;
+    color: white;
+    font-size: 5vh;
+    font-weight: bold;
+    
+    /* 縦書き設定 */
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+}
+.layout-split-list .c-area {
+    width: 75%; /* 選択肢幅 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 15px;
+}
+.layout-split-list .choice-item {
+    background: #365c75;
+    border: 2px solid #fff;
+    color: white;
+    padding: 2vh 2vw;
+    font-size: 4vh;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* === パターンC: 左右分割グリッド (Split Grid) - 右:問題[縦] / 左:選択肢[グリッド] === */
+.layout-split-grid {
+    flex-direction: row-reverse;
+    gap: 20px;
+}
+.layout-split-grid .q-area {
+    width: 25%;
+    background: #2c5066;
+    border: 4px solid #fff;
+    color: white;
+    font-size: 5vh;
+    font-weight: bold;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+}
+.layout-split-grid .c-area {
+    width: 75%;
+    display: grid;
+    /* 2列固定 */
+    grid-template-columns: 1fr 1fr;
+    /* 行数は自動 */
+    grid-auto-rows: minmax(100px, 1fr);
+    gap: 15px;
+    align-content: center;
+}
+.layout-split-grid .choice-item {
+    background: #365c75;
+    border: 2px solid #fff;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4vh;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* 選択肢番号の装飾（A. や 1.） */
+.choice-prefix {
+    color: gold;
+    font-weight: bold;
+    margin-right: 15px;
+    font-family: 'Arial Black', sans-serif;
+}
+
+/* ---------------------------------------------------
+ * 7. テーマ設定 (Dark Theme - Optional)
+ * --------------------------------------------------- */
 body.dark-theme { background-color: #000022; color: #e0e0e0; }
 body.dark-theme .view { background-color: #0d0d33; border: 1px solid #555; color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
 body.dark-theme .app-title { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
