@@ -1,5 +1,5 @@
 /* =========================================================
- * host_creator.js (v57: Free Types Update)
+ * host_creator.js (v57: Full & Complete)
  * =======================================================*/
 
 let editingQuestionIndex = null;
@@ -65,7 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
     typeSelect.innerHTML = `
         <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
         <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
-        <option value="free_oral">${APP_TEXT.Creator.TypeFreeOral}</option> <option value="free_written">${APP_TEXT.Creator.TypeFreeWritten}</option> <option value="multi">${APP_TEXT.Creator.TypeMulti}</option>
+        <option value="free_oral">${APP_TEXT.Creator.TypeFreeOral}</option>
+        <option value="free_written">${APP_TEXT.Creator.TypeFreeWritten}</option>
+        <option value="multi">${APP_TEXT.Creator.TypeMulti}</option>
     `;
     typeSelect.addEventListener('change', (e) => {
         if (createdQuestions.length === 0) {
@@ -172,7 +174,6 @@ function resetForm() {
     document.getElementById('update-question-area').classList.add('hidden');
     document.getElementById('question-text').value = '';
     
-    // 現在のタイプに合わせてフォーム再描画
     const type = document.getElementById('creator-q-type').value;
     renderCreatorForm(type);
 }
@@ -250,7 +251,7 @@ function renderCreatorForm(type, data = null) {
         addBtn.onclick = () => addSortInput(sortDiv);
         container.appendChild(addBtn);
 
-    } else if (type === 'free_oral' || type === 'free_written') { // ★v57: 統合
+    } else if (type === 'free_written' || type === 'free_oral') {
         const optDiv = document.createElement('div');
         optDiv.style.marginBottom = '10px';
         optDiv.innerHTML = `<p style="font-size:0.8em; color:#666; margin:5px 0;">${APP_TEXT.Creator.DescText}</p>`;
@@ -408,9 +409,8 @@ function getQuestionDataFromForm() {
         newQ.correct = options.map((_, i) => i);
         newQ.initialOrder = document.getElementById('sort-initial-order').value;
 
-    } else if (type === 'free_written' || type === 'free_oral') { // ★v57
+    } else if (type === 'free_written' || type === 'free_oral') {
         const ansText = document.getElementById('creator-text-answer').value.trim();
-        // 記述式は答え必須、口頭は任意
         if (type === 'free_written' && !ansText) { alert(APP_TEXT.Creator.AlertNoTextAns); return null; }
         const answers = ansText ? ansText.split(',').map(s => s.trim()).filter(s => s) : [];
         newQ.correct = answers; 
@@ -497,8 +497,8 @@ function renderQuestionList() {
         
         let typeIcon = '🔳';
         if(q.type === 'sort') typeIcon = '🔢';
-        if(q.type === 'free_oral') typeIcon = '🗣'; // ★v57
-        if(q.type === 'free_written') typeIcon = '✍️'; // ★v57
+        if(q.type === 'free_oral') typeIcon = '🗣';
+        if(q.type === 'free_written') typeIcon = '✍️';
         if(q.type === 'multi') typeIcon = '📚';
         
         div.innerHTML = `
