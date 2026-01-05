@@ -1,8 +1,8 @@
 /* =========================================================
- * host_core.js (v57: Dashboard Type Display)
+ * host_core.js (v57: Bootloader)
  * =======================================================*/
 
-// --- グローバル変数 ---
+// グローバル変数
 let currentShowId = null;
 let currentRoomId = null;
 let createdQuestions = [];
@@ -10,19 +10,20 @@ let editingSetId = null;
 let periodPlaylist = [];
 let currentPeriodIndex = -1;
 let studioQuestions = [];
-let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light', timeLimit: 0, passCount: 0 };
+let currentConfig = {};
 let currentQIndex = 0;
 
+// 画面管理
 window.views = {};
 
 window.showView = function(targetView) {
+    // 全てのビューを隠す
     Object.values(window.views).forEach(v => {
         if(v) v.classList.add('hidden');
     });
+    // ターゲットだけ表示
     if(targetView) {
         targetView.classList.remove('hidden');
-    } else {
-        console.error("移動先の画面が見つかりません");
     }
 };
 
@@ -51,9 +52,12 @@ window.applyTextConfig = function() {
     }
 };
 
+// 起動時処理
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. テキスト適用
     window.applyTextConfig();
 
+    // 2. ビューの登録
     window.views = {
         main: document.getElementById('main-view'),
         hostLogin: document.getElementById('host-login-view'),
@@ -68,6 +72,14 @@ document.addEventListener('DOMContentLoaded', () => {
         viewerMain: document.getElementById('viewer-main-view') 
     };
 
+    // 3. 初期表示 (メインメニュー以外を隠す)
+    // style_common.cssで .view {display:block} になっているので、
+    // ここで明示的に main 以外を hidden にする
+    Object.values(window.views).forEach(v => {
+        if(v && v.id !== 'main-view') v.classList.add('hidden');
+    });
+
+    // 4. イベントリスナー登録
     const hostBtn = document.getElementById('main-host-btn');
     if(hostBtn) hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
 
@@ -85,26 +97,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 戻るボタン共通
     document.querySelectorAll('.back-to-main').forEach(btn => {
-        if (btn.closest('#viewer-login-view')) {
+        if (btn.closest('#viewer-login-view') || btn.closest('#host-dashboard-view')) {
+            // ログアウト等の扱い
+            btn.addEventListener('click', () => window.showView(window.views.main));
+        } else if (btn.classList.contains('header-back-btn')) {
+            // ダッシュボードに戻る系
             btn.addEventListener('click', () => enterDashboard());
         } else {
             btn.addEventListener('click', () => window.showView(window.views.main));
         }
     });
 
+    // 各機能への遷移
     const createBtn = document.getElementById('dash-create-btn');
     if(createBtn) createBtn.addEventListener('click', () => {
-        if(typeof window.initCreatorMode === 'function') {
-            window.initCreatorMode();
-        }
+        if(typeof window.initCreatorMode === 'function') window.initCreatorMode();
     });
 
     const configBtn = document.getElementById('dash-config-btn');
     if(configBtn) {
         configBtn.addEventListener('click', () => {
             periodPlaylist = [];
-            enterConfigMode(); 
+            if(typeof enterConfigMode === 'function') enterConfigMode();
         });
     }
 
@@ -114,12 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashViewerBtn = document.getElementById('dash-viewer-btn');
     if(dashViewerBtn) dashViewerBtn.addEventListener('click', () => window.showView(window.views.viewerLogin));
 
-    const configHeaderBackBtn = document.getElementById('config-header-back-btn');
-    if(configHeaderBackBtn) configHeaderBackBtn.addEventListener('click', () => enterDashboard());
-
-    const creatorBackBtn = document.getElementById('creator-back-btn');
-    if(creatorBackBtn) creatorBackBtn.addEventListener('click', () => enterDashboard());
-
+    // 保存・追加ボタン等のリスナー
     const addQBtn = document.getElementById('add-question-btn');
     if(addQBtn) addQBtn.addEventListener('click', addQuestion);
     
@@ -158,8 +169,8 @@ function loadSavedSets() {
             const div = document.createElement('div');
             div.className = 'set-item';
             
-            // ★v57: 問題形式を表示
-            let typeLabel = "Unknown";
+            // 問題形式の表示ラベル
+            let typeLabel = "Mix";
             if (item.questions && item.questions.length > 0) {
                 const type = item.questions[0].type;
                 if (type === 'choice') typeLabel = APP_TEXT.Creator.TypeChoice;
@@ -183,10 +194,9 @@ function loadSavedSets() {
 
             const editBtn = document.createElement('button');
             editBtn.textContent = "Edit";
+            editBtn.className = 'btn-mini';
             editBtn.style.backgroundColor = '#2c3e50';
             editBtn.style.color = 'white';
-            editBtn.style.fontSize = '0.8em';
-            editBtn.style.padding = '4px 8px';
             editBtn.onclick = () => loadSetForEditing(key, item);
 
             const delBtn = document.createElement('button');
