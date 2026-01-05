@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v20: Per-Question Point Setting)
+ * host_config.js (v21: Bulk Points & Fix)
  * =======================================================*/
 
 // 選択中のセットの問題を一時保持
@@ -23,7 +23,6 @@ function enterConfigMode() {
             Object.keys(data).forEach(key => {
                 const item = data[key];
                 const opt = document.createElement('option');
-                // valueにはJSON全体を入れる
                 opt.value = JSON.stringify({ q: item.questions, c: item.config || {}, t: item.title });
                 opt.textContent = item.title;
                 select.appendChild(opt);
@@ -33,27 +32,34 @@ function enterConfigMode() {
         }
     });
     
-    // イベントリスナー設定
     const elimRuleSelect = document.getElementById('config-elimination-rule');
     if(elimRuleSelect) elimRuleSelect.onchange = updateBuilderUI;
 
-    // セット選択時の処理
     select.onchange = () => {
         const val = select.value;
         if(val) {
             const data = JSON.parse(val);
             selectedSetQuestions = data.q || [];
-            // セットを変えたら配点エリアはいったん隠す（リセット）
             document.getElementById('config-custom-points-area').classList.add('hidden');
         } else {
             selectedSetQuestions = [];
         }
     };
 
-    // ★追加：個別配点ボタン
     const customScoreBtn = document.getElementById('config-custom-score-btn');
     if(customScoreBtn) {
         customScoreBtn.onclick = toggleCustomScoreArea;
+    }
+
+    // ★追加：一括反映ボタン
+    const bulkBtn = document.getElementById('config-bulk-point-btn');
+    if(bulkBtn) {
+        bulkBtn.onclick = () => {
+            const val = document.getElementById('config-bulk-point-input').value;
+            document.querySelectorAll('.q-point-input').forEach(input => {
+                input.value = val;
+            });
+        };
     }
 
     renderConfigPreview();
@@ -69,7 +75,6 @@ function updateBuilderUI() {
     }
 }
 
-// ★追加：配点設定エリアの表示・生成
 function toggleCustomScoreArea() {
     const area = document.getElementById('config-custom-points-area');
     const list = document.getElementById('config-questions-list');
@@ -80,7 +85,6 @@ function toggleCustomScoreArea() {
     }
 
     if (area.classList.contains('hidden')) {
-        // 表示する際にリスト生成
         list.innerHTML = '';
         selectedSetQuestions.forEach((q, i) => {
             const div = document.createElement('div');
@@ -90,12 +94,15 @@ function toggleCustomScoreArea() {
             div.style.borderBottom = '1px solid #eee';
             div.style.paddingBottom = '5px';
             
+            // 既存のポイントがあれば反映、なければ1
+            const pts = q.points || 1;
+
             div.innerHTML = `
                 <div style="flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
                     <span style="font-weight:bold; color:#666;">Q${i+1}.</span> ${q.q}
                 </div>
                 <div style="display:flex; align-items:center; gap:5px;">
-                    <input type="number" class="q-point-input" data-index="${i}" value="1" min="1" style="width:50px; text-align:center; padding:5px; border:1px solid #aaa; border-radius:4px;">
+                    <input type="number" class="q-point-input" data-index="${i}" value="${pts}" min="1" style="width:50px; text-align:center; padding:5px; border:1px solid #aaa; border-radius:4px;">
                     <span style="font-size:0.8em;">点</span>
                 </div>
             `;
@@ -114,11 +121,8 @@ function addPeriodToPlaylist() {
     
     const data = JSON.parse(json);
     
-    // ★ここが重要：個別配点を読み取って問題データにマージする
-    const questionsWithPoints = JSON.parse(JSON.stringify(data.q)); // 深いコピー
+    const questionsWithPoints = JSON.parse(JSON.stringify(data.q)); 
     const pointInputs = document.querySelectorAll('.q-point-input');
-    
-    // 配点エリアが開いている場合のみ適用（閉じていればデフォルト1点）
     const isCustomPoints = !document.getElementById('config-custom-points-area').classList.contains('hidden');
     
     if (isCustomPoints && pointInputs.length > 0) {
@@ -130,29 +134,32 @@ function addPeriodToPlaylist() {
             }
         });
     } else {
-        // デフォルト1点
-        questionsWithPoints.forEach(q => q.points = 1);
+        questionsWithPoints.forEach(q => q.points = (q.points || 1));
     }
 
+    // ★修正：ピリオド追加不具合の解消
+    // 参加者設定は「ここにはない」ので、デフォルト値を使うか、
+    // もし既存のリストがあれば、その末尾の設定を引き継ぐなどのロジックにする？
+    // 今回は「デフォルトはRevive、変更はリスト追加後にやる」という仕様で統一
     let initialStatus = 'revive';
     let passCount = 5;
-    if (periodPlaylist.length > 0) {
-        initialStatus = document.getElementById('config-initial-status').value;
-        if(initialStatus === 'ranking') {
-            passCount = parseInt(document.getElementById('config-pass-count').value) || 5;
-        }
-    }
 
     let elimCount = 1;
     if (document.getElementById('config-elimination-rule').value === 'wrong_and_slowest') {
         elimCount = parseInt(document.getElementById('config-elimination-count').value) || 1;
     }
 
+    // 失点設定を取得
+    let lossPoint = document.getElementById('config-loss-point').value;
+    // 数値なら変換、'reset'ならそのまま
+    if (lossPoint !== 'reset') lossPoint = parseInt(lossPoint);
+
     const newConfig = {
         initialStatus: initialStatus,
         passCount: passCount,
         eliminationRule: document.getElementById('config-elimination-rule').value,
         eliminationCount: elimCount,
+        lossPoint: lossPoint, // ★保存
         scoreUnit: document.getElementById('config-score-unit').value,
         theme: 'light',
         timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0
@@ -160,11 +167,10 @@ function addPeriodToPlaylist() {
     
     periodPlaylist.push({
         title: data.t,
-        questions: questionsWithPoints, // ★配点付きの問題リスト
+        questions: questionsWithPoints,
         config: newConfig
     });
     
-    // リセット
     renderConfigPreview();
     updateBuilderUI();
     document.getElementById('config-custom-points-area').classList.add('hidden');
@@ -221,7 +227,7 @@ function renderConfigPreview() {
             <div style="flex:1;">
                 <div style="font-weight:bold; font-size:1.1em;">${index+1}. ${item.title}</div>
                 <div style="font-size:0.8em; color:#666;">
-                    ${ruleText} / ${item.config.timeLimit}秒
+                    ${ruleText} / ${item.config.timeLimit}秒 / 失点:${item.config.lossPoint}
                 </div>
             </div>
             <button class="delete-btn" onclick="removeFromPlaylist(${index})">削除</button>
