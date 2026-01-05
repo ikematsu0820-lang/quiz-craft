@@ -1,5 +1,5 @@
 /* =========================================================
- * style_common.css (v40: Common Styles)
+ * style_common.css (v50: Toast Notification Added)
  * =======================================================*/
 
 /* 基本設定 */
@@ -117,3 +117,30 @@ input[type="text"], input[type="number"], select {
 body.dark-theme { background-color: #000022; color: #e0e0e0; }
 body.dark-theme .view { background-color: #0d0d33; border: 1px solid #555; color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
 body.dark-theme .app-title { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
+
+/* ★v50追加: トースト通知 */
+#toast-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    text-align: center;
+}
+
+.toast-msg {
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    margin-top: 10px;
+    font-size: 0.9em;
+    animation: fadeInOut 3s forwards;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(10px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-10px); }
+}
