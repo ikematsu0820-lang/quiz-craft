@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style_common.css?v=54">
-<link rel="stylesheet" href="style_host.css?v=54">
-<link rel="stylesheet" href="style_player.css?v=54">
-<link rel="stylesheet" href="style_viewer.css?v=54">
+<link rel="stylesheet" href="style_common.css?v=55">
+<link rel="stylesheet" href="style_host.css?v=55">
+<link rel="stylesheet" href="style_player.css?v=55">
+<link rel="stylesheet" href="style_viewer.css?v=55">
 </head>
 <body>
 
@@ -152,156 +152,14 @@
     <hr>
     <div style="background:#f0f8ff; padding:15px; border:2px solid #87ceeb; border-radius:8px; margin-bottom:20px;">
         <h3 style="margin:0 0 10px 0; color:#0055ff; font-size:1.1em; text-align:center;" data-text="Config.HeadingAdd">Add Period</h3>
-        <div style="margin-bottom:15px;">
-            <label class="config-label" data-text="Config.LabelSet">Set</label>
-            <select id="config-set-select" class="btn-block config-select"></select>
-        </div>
         
         <div style="margin-bottom:15px;">
-            <label class="config-label" data-text="Config.LabelMode">Mode</label>
-            <select id="config-mode-select" class="btn-block config-select" style="background:#fff0f5; border-color:#ff69b4; font-weight:bold;">
-                <option value="normal" data-text="Config.ModeNormal">Simultaneous</option>
-                <option value="buzz" data-text="Config.ModeBuzz">Buzz-in</option>
-                <option value="turn" data-text="Config.ModeTurn">Turn-based</option>
-                <option value="time_attack" data-text="Config.ModeTimeAttack" style="color:red;">Time Shock</option>
-                <option value="panel_attack" data-text="Config.ModePanel" style="color:blue;">Panel Attack</option>
-                <option value="bomb" data-text="Config.ModeBomb" style="color:purple;">Bomb / Treasure</option>
-            </select>
-            <p id="config-mode-locked-msg" class="hidden" style="color:#d00; font-size:0.8em; margin-top:5px; font-weight:bold;" data-text="Config.MsgLockedMode">Locked</p>
+            <label class="config-label-large" data-text="Config.LabelSet">Set</label>
+            <select id="config-set-select" class="btn-block config-select" style="font-size:1.1em;"></select>
         </div>
+        
+        <div id="config-builder-ui"></div>
 
-        <div id="config-normal-details" class="mode-details">
-            <label class="config-label" data-text="Config.LabelNormalLimit">Attempts</label>
-            <select id="config-normal-limit" class="btn-block config-select">
-                <option value="one" data-text="Config.NormalLimitOne">One Shot</option>
-                <option value="unlimited" data-text="Config.NormalLimitUnlimited">Unlimited</option>
-            </select>
-            <div style="margin-top:10px;">
-                <label class="config-label" data-text="Config.LabelShuffle">Shuffle Choices</label>
-                <select id="config-shuffle-choices" class="btn-block config-select">
-                    <option value="off" data-text="Config.ShuffleOff">OFF</option>
-                    <option value="on" data-text="Config.ShuffleOn">ON</option>
-                </select>
-            </div>
-        </div>
-
-        <div id="config-buzz-details" class="mode-details hidden">
-            <div style="margin-bottom:10px;">
-                <label class="config-label" data-text="Config.LabelBuzzWrongAction">Wrong Answer Action</label>
-                <select id="config-buzz-wrong-action" class="btn-block config-select">
-                    <option value="next" data-text="Config.BuzzWrongNext">Next Person</option>
-                    <option value="reset" data-text="Config.BuzzWrongReset">Reset All</option>
-                    <option value="end" data-text="Config.BuzzWrongEnd">End Question</option>
-                </select>
-            </div>
-            <div>
-                <label class="config-label" data-text="Config.LabelBuzzTime">Answer Time Limit</label>
-                <select id="config-buzz-timer" class="btn-block config-select">
-                    <option value="0" data-text="Config.BuzzTimeNone">Unlimited</option>
-                    <option value="3" data-text="Config.BuzzTime3">3s</option>
-                    <option value="5" data-text="Config.BuzzTime5">5s</option>
-                    <option value="10" data-text="Config.BuzzTime10">10s</option>
-                </select>
-            </div>
-            <div style="margin-top:10px;">
-                <label class="config-label" data-text="Config.LabelShuffle">Shuffle Choices</label>
-                <select id="config-buzz-shuffle" class="btn-block config-select">
-                    <option value="off" data-text="Config.ShuffleOff">OFF</option>
-                    <option value="on" data-text="Config.ShuffleOn">ON</option>
-                </select>
-            </div>
-        </div>
-
-        <div id="config-turn-details" class="mode-details hidden">
-            <div style="margin-bottom:10px;">
-                <label class="config-label" data-text="Config.LabelTurnOrder">Order</label>
-                <select id="config-turn-order" class="btn-block config-select">
-                    <option value="fixed" data-text="Config.TurnOrderFixed">Fixed</option>
-                    <option value="random" data-text="Config.TurnOrderRandom">Random</option>
-                    <option value="rank" data-text="Config.TurnOrderRank">Ranking</option>
-                </select>
-            </div>
-            <div>
-                <label class="config-label" data-text="Config.LabelTurnPass">Pass</label>
-                <select id="config-turn-pass" class="btn-block config-select">
-                    <option value="ok" data-text="Config.TurnPassOk">OK</option>
-                    <option value="ng" data-text="Config.TurnPassNg">NG</option>
-                </select>
-            </div>
-            <div style="margin-top:10px;">
-                <label class="config-label" data-text="Config.LabelShuffle">Shuffle Choices</label>
-                <select id="config-turn-shuffle" class="btn-block config-select">
-                    <option value="off" data-text="Config.ShuffleOff">OFF</option>
-                    <option value="on" data-text="Config.ShuffleOn">ON</option>
-                </select>
-            </div>
-        </div>
-
-        <div id="config-time-attack-details" class="mode-details hidden" style="background:#fff5e6; border:1px dashed #ff9800; padding:10px; border-radius:5px; margin-bottom:15px;">
-            <p style="font-size:0.8em; margin:0; color:#d32f2f; font-weight:bold;">
-                ※ Time Shock Mode:<br>
-                5 seconds per question.<br>
-                Auto-advance enabled.<br>
-                Host manually judges (O/X).
-            </p>
-        </div>
-
-        <div id="config-bomb-details" class="mode-details hidden" style="background:#f3e5f5; border:1px dashed #9c27b0; padding:10px; border-radius:5px; margin-bottom:15px;">
-            <div style="margin-bottom:10px;">
-                <label class="config-label" data-text="Config.LabelBombCount">Card Count</label>
-                <select id="config-bomb-count" class="btn-block config-select">
-                    <option value="10">10 Cards</option>
-                    <option value="15">15 Cards</option>
-                    <option value="20">20 Cards</option>
-                </select>
-            </div>
-            <div>
-                <label class="config-label" data-text="Config.LabelBombTarget">Target Type</label>
-                <select id="config-bomb-target" class="btn-block config-select">
-                    <option value="bomb1">1 Bomb (Others Safe)</option>
-                    <option value="treasure1">1 Treasure (Others Out)</option>
-                </select>
-            </div>
-        </div>
-
-        <div id="config-rule-section">
-            <div style="margin-bottom:15px;">
-                <label class="config-label" data-text="Config.LabelRule">Rule</label>
-                <label style="font-size:0.8em; color:#666;" data-text="Config.LabelElim">Elimination</label>
-                <select id="config-elimination-rule" class="btn-block config-select" style="margin-bottom:8px;"></select>
-                <div id="config-elimination-count-area" class="hidden" style="margin-bottom:8px; padding:8px; background:#fff; border:1px solid #ddd; border-radius:4px;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="font-size:0.8em; font-weight:bold; color:#d00;" data-text="Config.LabelElimCount">Slowest</span>
-                        <input type="number" id="config-elimination-count" value="1" min="1" style="width:60px; text-align:center; padding:5px;">
-                        <span style="font-size:0.8em;" data-text="Config.LabelElimCountSuffix">out</span>
-                    </div>
-                </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <div style="flex:1;">
-                        <label style="font-size:0.7em; color:#666;" data-text="Config.LabelTime">Time</label>
-                        <select id="config-time-limit" class="config-select">
-                            <option value="0">0 (No Limit)</option>
-                            <option value="10">10s</option>
-                            <option value="20">20s</option>
-                            <option value="30">30s</option>
-                            <option value="60">60s</option>
-                        </select>
-                    </div>
-                    <div style="margin-top:10px;">
-                        <button id="config-custom-score-btn" style="background:#666; padding:8px 12px; font-size:1.2em;">📝</button>
-                    </div>
-                </div>
-                <div id="config-custom-points-area" class="hidden" style="margin-top:10px; padding:10px; background:#fff; border:2px solid #aaa; border-radius:5px;">
-                    <h5 style="margin:0 0 10px 0; border-bottom:1px solid #ddd; padding-bottom:5px;" data-text="Config.HeadingCustomScore">Custom Score</h5>
-                    <div style="display:flex; justify-content:flex-end; align-items:center; gap:5px; margin-bottom:10px; background:#f9f9f9; padding:5px; font-size:0.8em;">
-                        <div><span style="color:#0055ff; font-weight:bold;" data-text="Config.LabelBulkPt">Pt:</span><input type="number" id="config-bulk-point-input" value="1" min="1" style="width:40px; text-align:center;"><button id="config-bulk-point-btn" style="padding:2px 6px;" data-text="Config.BtnReflect">Set</button></div>
-                        <div><span style="color:#d00; font-weight:bold;" data-text="Config.LabelBulkLoss">Loss:</span><input type="number" id="config-bulk-loss-input" value="0" min="0" style="width:40px; text-align:center;"><button id="config-bulk-loss-btn" style="padding:2px 6px;" data-text="Config.BtnReflect">Set</button></div>
-                    </div>
-                    <div id="config-questions-list" style="font-size:0.9em; max-height:200px; overflow-y:auto;"></div>
-                </div>
-            </div>
-        </div>
-        <button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:12px; border:none; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.2);" data-text="Config.BtnAddList">Add List</button>
     </div>
     
     <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
@@ -313,15 +171,15 @@
             </label>
         </div>
         <div style="display:flex; gap:5px; margin-bottom:15px; margin-top:15px;">
-            <input type="text" id="config-program-title" placeholder="" style="flex:1;">
-            <button id="config-save-program-btn" class="btn-info" style="flex:0 0 80px;" data-text="Config.BtnSaveProg">Save</button>
+            <input type="text" id="config-program-title" placeholder="構成名を入力" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:4px;">
+            <button id="config-save-program-btn" class="btn-info" style="flex:0 0 80px; font-weight:bold;" data-text="Config.BtnSaveProg">Save</button>
         </div>
     </div>
     <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
         <h4 style="color:#333; margin:0 0 10px 0;" data-text="Config.HeadingSavedProg">Saved Programs</h4>
-        <div id="config-saved-programs-list" style="max-height:200px; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:5px;"></div>
+        <div id="config-saved-programs-list" style="max-height:200px; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:5px; border:1px solid #eee;"></div>
     </div>
-    <button id="config-go-studio-btn" class="btn-danger btn-block" style="padding:15px; font-weight:bold;" data-text="Config.BtnGoStudio">Go Studio</button>
+    <button id="config-go-studio-btn" class="btn-danger btn-block" style="padding:15px; font-weight:bold; font-size:1.2em;" data-text="Config.BtnGoStudio">Go Studio</button>
 </div>
 
 <div id="host-control-view" class="view hidden">
@@ -484,13 +342,13 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=54"></script>
-<script src="host_core.js?v=54"></script>
-<script src="host_creator.js?v=54"></script>
-<script src="host_config.js?v=54"></script>
-<script src="host_studio.js?v=54"></script>
-<script src="player.js?v=54"></script>
-<script src="viewer.js?v=54"></script>
+<script src="text_config.js?v=55"></script>
+<script src="host_core.js?v=55"></script>
+<script src="host_creator.js?v=55"></script>
+<script src="host_config.js?v=55"></script>
+<script src="host_studio.js?v=55"></script>
+<script src="player.js?v=55"></script>
+<script src="viewer.js?v=55"></script>
 
 </body>
 </html>
