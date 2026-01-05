@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style_common.css?v=40">
-<link rel="stylesheet" href="style_host.css?v=40">
-<link rel="stylesheet" href="style_player.css?v=40">
-<link rel="stylesheet" href="style_viewer.css?v=40">
+<link rel="stylesheet" href="style_common.css?v=41">
+<link rel="stylesheet" href="style_host.css?v=41">
+<link rel="stylesheet" href="style_player.css?v=41">
+<link rel="stylesheet" href="style_viewer.css?v=41">
 </head>
 <body>
 
@@ -58,11 +58,8 @@
         <button id="creator-back-btn" class="header-back-btn" data-text="Creator.BackBtn">Back</button>
     </div>
     <hr>
-    <div style="margin-bottom:15px;">
-        <label style="font-weight:bold;" data-text="Creator.LabelSetName">Set Name</label>
-        <input type="text" id="quiz-set-title" class="btn-block" placeholder="" style="margin-bottom:10px;">
-    </div>
-    <div style="background:#fff0f5; padding:15px; border-radius:8px; border:2px solid #ff69b4;">
+
+    <div style="background:#fff0f5; padding:15px; border-radius:8px; border:2px solid #ff69b4; margin-bottom:20px;">
         <h3 style="margin-top:0; color:#c71585;" data-text="Creator.HeadingNewQ">New Question</h3>
         <label style="font-size:0.8em; font-weight:bold; color:#666;" data-text="Creator.LabelType">Type</label>
         <select id="creator-q-type" class="btn-block" style="margin-bottom:10px; background:#fff;"></select>
@@ -70,10 +67,34 @@
         <div id="creator-form-container" style="margin-bottom:10px;"></div>
         <button id="add-question-btn" class="btn-primary btn-block" style="margin-top:10px;" data-text="Creator.BtnAdd">Add</button>
     </div>
-    <div style="margin-top:20px;">
-        <h4 data-text="Creator.ListHeading">List</h4>
-        <ul id="q-list" style="background:white; padding:10px; border:1px solid #ddd; min-height:50px; list-style:none;"></ul>
-        <button id="save-to-cloud-btn" class="btn-success btn-block" style="padding:15px; font-weight:bold; margin-top:15px;" data-text="Creator.BtnSave">Save</button>
+
+    <div class="creator-set-settings">
+        <h4 data-text="Creator.HeadingSettings" style="margin-top:0; border-bottom:1px solid #ccc; padding-bottom:5px;">Set Settings</h4>
+        
+        <label style="font-weight:bold;" data-text="Creator.LabelSetName">Set Name</label>
+        <input type="text" id="quiz-set-title" class="btn-block" placeholder="" style="margin-bottom:15px;">
+
+        <h5 data-text="Creator.ListHeading" style="margin:0 0 5px 0;">List</h5>
+        <ul id="q-list" style="background:white; padding:10px; border:1px solid #ddd; min-height:50px; list-style:none; margin-bottom:15px;"></ul>
+
+        <div style="background:#e6f7ff; padding:10px; border-radius:5px; margin-bottom:15px;">
+            <label style="font-size:0.8em; font-weight:bold; display:block; margin-bottom:5px;" data-text="Creator.LabelLayout">Layout</label>
+            <select id="creator-set-layout" class="btn-block" style="background:#fff; margin-bottom:10px;">
+                <option value="standard" data-text="Creator.LayoutStandard">Standard</option>
+                <option value="split_list" data-text="Creator.LayoutSplitList">Split List</option>
+                <option value="split_grid" data-text="Creator.LayoutSplitGrid">Split Grid</option>
+            </select>
+
+            <label style="font-size:0.8em; font-weight:bold; display:block; margin-bottom:5px;" data-text="Creator.LabelAlign">Alignment</label>
+            <div style="display:flex; gap:5px;">
+                <button type="button" class="btn-align" data-align="left" data-text="Creator.AlignLeft">Left</button>
+                <button type="button" class="btn-align active" data-align="center" data-text="Creator.AlignCenter">Center</button>
+                <button type="button" class="btn-align" data-align="right" data-text="Creator.AlignRight">Right</button>
+            </div>
+            <input type="hidden" id="creator-set-align" value="center">
+        </div>
+
+        <button id="save-to-cloud-btn" class="btn-success btn-block" style="padding:15px; font-weight:bold;" data-text="Creator.BtnSave">Save</button>
     </div>
 </div>
 
@@ -137,7 +158,6 @@
         </div>
         <button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:12px; border:none; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.2);" data-text="Config.BtnAddList">Add List</button>
     </div>
-
     <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
         <h4 style="color:#333; margin:0 0 10px 0;" data-text="Config.HeadingList">Playlist</h4>
         <div id="config-playlist-preview" style="background:#eee; padding:10px; border-radius:5px; min-height:50px;"><p style="text-align:center; color:#999; font-size:0.8em;">まだ追加されていません</p></div>
@@ -280,13 +300,13 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=40"></script>
-<script src="host_core.js?v=40"></script>
-<script src="host_creator.js?v=40"></script>
-<script src="host_config.js?v=40"></script>
-<script src="host_studio.js?v=40"></script>
-<script src="player.js?v=40"></script>
-<script src="viewer.js?v=40"></script>
+<script src="text_config.js?v=41"></script>
+<script src="host_core.js?v=41"></script>
+<script src="host_creator.js?v=41"></script>
+<script src="host_config.js?v=41"></script>
+<script src="host_studio.js?v=41"></script>
+<script src="player.js?v=41"></script>
+<script src="viewer.js?v=41"></script>
 
 </body>
 </html>
