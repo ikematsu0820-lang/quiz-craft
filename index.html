@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style_common.css?v=50">
-<link rel="stylesheet" href="style_host.css?v=50">
-<link rel="stylesheet" href="style_player.css?v=50">
-<link rel="stylesheet" href="style_viewer.css?v=51">
+<link rel="stylesheet" href="style_common.css?v=53">
+<link rel="stylesheet" href="style_host.css?v=53">
+<link rel="stylesheet" href="style_player.css?v=53">
+<link rel="stylesheet" href="style_viewer.css?v=53">
 </head>
 <body>
 
@@ -154,7 +154,7 @@
                 <option value="buzz" data-text="Config.ModeBuzz">Buzz-in</option>
                 <option value="turn" data-text="Config.ModeTurn">Turn-based</option>
                 <option value="time_attack" data-text="Config.ModeTimeAttack" style="color:red;">Time Shock</option>
-            </select>
+                <option value="panel_attack" data-text="Config.ModePanel" style="color:blue;">Panel Attack</option> <option value="bomb" data-text="Config.ModeBomb" style="color:purple;">Bomb / Treasure</option> </select>
         </div>
 
         <div id="config-normal-details" class="mode-details" style="background:#e6f7ff; border:1px dashed #0055ff; padding:10px; border-radius:5px; margin-bottom:15px;">
@@ -231,6 +231,24 @@
                 Auto-advance enabled.<br>
                 Host manually judges (O/X).
             </p>
+        </div>
+
+        <div id="config-bomb-details" class="mode-details hidden" style="background:#f3e5f5; border:1px dashed #9c27b0; padding:10px; border-radius:5px; margin-bottom:15px;">
+            <div style="margin-bottom:10px;">
+                <label class="config-label" data-text="Config.LabelBombCount">Card Count</label>
+                <select id="config-bomb-count" class="btn-block config-select">
+                    <option value="10">10 Cards</option>
+                    <option value="15">15 Cards</option>
+                    <option value="20">20 Cards</option>
+                </select>
+            </div>
+            <div>
+                <label class="config-label" data-text="Config.LabelBombTarget">Target Type</label>
+                <select id="config-bomb-target" class="btn-block config-select">
+                    <option value="bomb1">1 Bomb (Others Safe)</option>
+                    <option value="treasure1">1 Treasure (Others Out)</option>
+                </select>
+            </div>
         </div>
 
         <div style="margin-bottom:15px;">
@@ -317,6 +335,16 @@
         <div id="kanpe-point" style="font-size:0.8em; color:#0055ff; font-weight:bold;"></div>
     </div>
     <div id="host-status-area" style="text-align:center; margin-bottom:15px; font-weight:bold; color:#666;" data-text="Studio.StatusReady">Ready...</div>
+    
+    <div id="host-panel-control-area" class="hidden" style="margin-bottom:15px; background:#e6f0ff; padding:10px; border:1px solid #0055ff;">
+        <h5 style="margin:0 0 5px 0;" data-text="Studio.LabelPanelControl">Panel Control</h5>
+        <div id="host-panel-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:2px;"></div>
+    </div>
+    <div id="host-bomb-control-area" class="hidden" style="margin-bottom:15px; background:#f3e5f5; padding:10px; border:1px solid #9c27b0;">
+        <h5 style="margin:0 0 5px 0;" data-text="Studio.LabelBombControl">Card Control</h5>
+        <div id="host-bomb-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:2px;"></div>
+    </div>
+
     <div id="studio-timeline-area">
         <h4 style="color:#333; margin:0 0 10px 0; text-align:center;" data-text="Studio.HeadingList">List</h4>
         <div id="studio-period-timeline" style="display:flex; flex-direction:column; gap:10px; min-height:50px; margin-bottom:20px;"></div>
@@ -324,10 +352,10 @@
             <button id="studio-master-play-btn" class="btn-success btn-block" style="padding:15px; font-size:1.2em; box-shadow: 0 4px 0 #218838;" data-text="Studio.BtnMasterPlay">Play</button>
         </div>
     </div>
+    
     <div id="control-panel" class="hidden" style="margin-top:20px; border-top:2px solid #333; padding-top:15px;">
         <h3 id="current-period-title" style="text-align:center; margin:0 0 10px 0; background:#eee; padding:5px;"></h3>
         <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;" data-text="Studio.BtnStart">START</button>
-        
         <button id="host-start-ta-btn" class="btn-danger btn-block hidden" style="padding:20px; font-size:1.5em; border:4px solid white; box-shadow:0 0 10px red;" data-text="Studio.BtnStartTA">START 5s Loop</button>
 
         <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;" data-text="Studio.BtnAnswer">Answer</button>
@@ -386,7 +414,6 @@
     <div id="player-oral-done-area" class="hidden" style="text-align:center; margin-top:20px;">
         <button id="player-oral-done-btn" class="btn-primary btn-block" style="padding:20px; font-size:1.2em;" data-text="Player.BtnAnswered">Answered</button>
     </div>
-
     <div id="player-wait-msg" class="hidden" style="text-align:center; padding:20px; font-weight:bold;" data-text="Player.MsgAnswered">Answered...</div>
     <div id="player-result-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1000;">
         <div id="result-icon" style="font-size:5em; margin-bottom:10px;"></div>
@@ -427,7 +454,7 @@
     <div id="viewer-content">
         <div id="viewer-status"></div>
         <div id="viewer-main-text"></div>
-        <div id="viewer-sub-text"></div>
+        <div id="viewer-panel-grid" class="hidden"></div> <div id="viewer-bomb-grid" class="hidden"></div> <div id="viewer-sub-text"></div>
         <div id="viewer-ranking-area"></div>
     </div>
 </div>
@@ -435,13 +462,13 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=52"></script>
-<script src="host_core.js?v=52"></script>
-<script src="host_creator.js?v=52"></script>
-<script src="host_config.js?v=52"></script>
-<script src="host_studio.js?v=52"></script>
-<script src="player.js?v=52"></script>
-<script src="viewer.js?v=52"></script>
+<script src="text_config.js?v=53"></script>
+<script src="host_core.js?v=53"></script>
+<script src="host_creator.js?v=53"></script>
+<script src="host_config.js?v=53"></script>
+<script src="host_studio.js?v=53"></script>
+<script src="player.js?v=53"></script>
+<script src="viewer.js?v=53"></script>
 
 </body>
 </html>
