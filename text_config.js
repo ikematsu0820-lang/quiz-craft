@@ -1,11 +1,11 @@
 /* =========================================================
- * text_config.js (v45: Granular Design Settings)
+ * text_config.js (v46: Buzz-in & Manual Judge)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v45",
+    Version: "Cloud Edition v46",
     
     // メインメニュー
     Main: {
@@ -54,7 +54,6 @@ const APP_TEXT = {
         BtnAddChoice: "＋ 選択肢を追加",
         BtnAddSort: "＋ 項目を追加",
         
-        // セット設定エリア
         HeadingSettings: "セット設定 (全体共通)",
         LabelLayout: "モニターレイアウト",
         LayoutStandard: "標準 (上:問題 / 下:選択肢)",
@@ -65,16 +64,13 @@ const APP_TEXT = {
         AlignCenter: "中央揃え",
         AlignRight: "右揃え",
         
-        // ★v45変更: 詳細デザイン設定
-        LabelDesign: "デザイン設定 (色・背景)",
+        LabelDesign: "デザイン設定",
         GroupMain: "全体背景 (Main)",
         GroupQ: "問題文エリア (Question)",
         GroupC: "選択肢エリア (Choices)",
-        
         LabelColorText: "文字",
         LabelColorBg: "背景",
         LabelColorBorder: "枠線",
-        
         BtnSelectImage: "画像を選択",
         BtnClearImage: "画像解除",
         MsgImageLoaded: "画像セット中",
@@ -96,6 +92,12 @@ const APP_TEXT = {
         SelectDefault: "-- セットを選択 --",
         SelectLoading: "読み込み中...",
         SelectEmpty: "セットがありません",
+        
+        // ★v46追加: モード選択
+        LabelMode: "回答モード",
+        ModeNormal: "一斉回答 (全員送信可)",
+        ModeBuzz: "早押し (早い者勝ち)",
+        
         LabelRule: "ルール設定",
         LabelElim: "▼ 脱落条件",
         RuleNone: "脱落なし",
@@ -158,6 +160,14 @@ const APP_TEXT = {
         BtnRanking: "中間順位",
         BtnClose: "スタジオを閉じて戻る",
         BtnBackRanking: "スタジオに戻る",
+        
+        // ★v46追加: ジャッジ用
+        BtnCorrect: "⭕️ 正解 (Correct)",
+        BtnWrong: "❌ 不正解 (Wrong)",
+        BtnResetBuzz: "早押しリセット",
+        MsgBuzzWin: "回答権獲得: ",
+        MsgBuzzWait: "回答権なし...",
+        
         MsgConfirmLoad: "プログラムを読み込んでセットしますか？\n（現在の進行内容はリセットされます）",
         MsgLoaded: "セットしました。再生ボタンで開始してください。",
         MsgThinking: "Thinking Time...",
@@ -187,7 +197,12 @@ const APP_TEXT = {
         RankYou: "あなたは...",
         RankUnit: "位",
         ScoreUnit: "点",
-        RankBoardTitle: "上位リーダーボード"
+        RankBoardTitle: "上位リーダーボード",
+        
+        // ★v46追加
+        BtnBuzz: "PUSH!",
+        MsgBuzzLocked: "LOCKED",
+        MsgBuzzWin: "回答権獲得！<br>口頭で回答してください"
     },
 
     // モニター
