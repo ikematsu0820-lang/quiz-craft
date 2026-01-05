@@ -1,14 +1,14 @@
 /* =========================================================
- * host_creator.js (v30: Text Config Support)
+ * host_creator.js (v33: Global Scope Fix)
  * =======================================================*/
 
-function initCreatorMode() {
+// ★修正: windowに紐付けて確実に呼び出せるようにする
+window.initCreatorMode = function() {
     editingSetId = null;
     createdQuestions = [];
     document.getElementById('quiz-set-title').value = '';
     document.getElementById('save-to-cloud-btn').textContent = APP_TEXT.Creator.BtnSave;
     
-    // プルダウン生成
     const typeSelect = document.getElementById('creator-q-type');
     if(typeSelect) {
         typeSelect.innerHTML = `
@@ -22,9 +22,9 @@ function initCreatorMode() {
     
     renderQuestionList();
     window.showView(window.views.creator);
-}
+};
 
-function loadSetForEditing(key, item) {
+window.loadSetForEditing = function(key, item) {
     editingSetId = key;
     createdQuestions = item.questions || [];
     document.getElementById('quiz-set-title').value = item.title;
@@ -32,7 +32,6 @@ function loadSetForEditing(key, item) {
     
     const typeSelect = document.getElementById('creator-q-type');
     if(typeSelect) {
-        // 再生成
         typeSelect.innerHTML = `
             <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
             <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
@@ -44,8 +43,9 @@ function loadSetForEditing(key, item) {
 
     renderQuestionList();
     window.showView(window.views.creator);
-}
+};
 
+// ... (以下、renderCreatorForm等は前回と同じなので省略可ですが、安全のため全文掲載) ...
 document.addEventListener('DOMContentLoaded', () => {
     const typeSelect = document.getElementById('creator-q-type');
     if(typeSelect) {
@@ -253,7 +253,6 @@ function renderQuestionList() {
         li.appendChild(delSpan);
         list.appendChild(li);
     });
-    document.getElementById('q-count').textContent = createdQuestions.length;
 }
 
 function saveToCloud() {
