@@ -1,5 +1,5 @@
 /* =========================================================
- * viewer.js (v53: Panel & Bomb Render)
+ * viewer.js (v54: Multi-Answer Render)
  * =======================================================*/
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -25,6 +25,7 @@ function startViewerListener(roomId) {
     const mainView = document.getElementById('viewer-main-view');
     const panelGrid = document.getElementById('viewer-panel-grid');
     const bombGrid = document.getElementById('viewer-bomb-grid');
+    const multiGrid = document.getElementById('viewer-multi-grid'); 
     let timerInterval = null;
 
     let currentMode = 'normal';
@@ -43,8 +44,10 @@ function startViewerListener(roomId) {
 
         contentDiv.appendChild(panelGrid);
         contentDiv.appendChild(bombGrid);
+        contentDiv.appendChild(multiGrid);
         panelGrid.classList.add('hidden');
         bombGrid.classList.add('hidden');
+        multiGrid.classList.add('hidden');
         contentDiv.innerHTML = ""; 
         contentDiv.appendChild(statusEl);
 
@@ -57,12 +60,10 @@ function startViewerListener(roomId) {
         }
         rankArea.style.display = 'none';
 
-        // ★v53: パネルアタック描画
         if (st.step === 'panel') {
             contentDiv.appendChild(panelGrid);
             panelGrid.classList.remove('hidden');
             panelGrid.innerHTML = '';
-            
             const panels = st.panels || Array(25).fill(0);
             panels.forEach((val, i) => {
                 const cell = document.createElement('div');
@@ -77,25 +78,18 @@ function startViewerListener(roomId) {
             return;
         }
 
-        // ★v53: ドボン描画
         if (st.step === 'bomb') {
             contentDiv.appendChild(bombGrid);
             bombGrid.classList.remove('hidden');
             bombGrid.innerHTML = '';
-            
             const cards = st.cards || [];
             cards.forEach((c, i) => {
                 const item = document.createElement('div');
                 item.className = 'card-item';
                 if(c.open) item.classList.add('flipped');
-                
                 const content = c.type === 1 ? '💥' : 'SAFE';
                 const contentClass = c.type === 1 ? 'card-out' : 'card-safe';
-                
-                item.innerHTML = `
-                    <div class="card-number">${i+1}</div>
-                    <div class="card-content ${contentClass}">${content}</div>
-                `;
+                item.innerHTML = `<div class="card-number">${i+1}</div><div class="card-content ${contentClass}">${content}</div>`;
                 bombGrid.appendChild(item);
             });
             return;
@@ -135,17 +129,40 @@ function startViewerListener(roomId) {
                 const q = qSnap.val();
                 if(q.design) {
                     mainView.style.setProperty('--main-bg-color', q.design.mainBgColor);
-                    if(q.design.bgImage) {
-                        mainView.style.setProperty('--bg-image', `url(${q.design.bgImage})`);
-                    } else {
-                        mainView.style.setProperty('--bg-image', 'none');
-                    }
+                    if(q.design.bgImage) mainView.style.setProperty('--bg-image', `url(${q.design.bgImage})`);
+                    else mainView.style.setProperty('--bg-image', 'none');
                     mainView.style.setProperty('--q-text-color', q.design.qTextColor);
                     mainView.style.setProperty('--q-bg-color', q.design.qBgColor);
                     mainView.style.setProperty('--q-border-color', q.design.qBorderColor);
                     mainView.style.setProperty('--c-text-color', q.design.cTextColor);
                     mainView.style.setProperty('--c-bg-color', q.design.cBgColor);
                     mainView.style.setProperty('--c-border-color', q.design.cBorderColor);
+                }
+
+                if (q.type === 'multi') {
+                    contentDiv.appendChild(multiGrid);
+                    multiGrid.classList.remove('hidden');
+                    multiGrid.innerHTML = '';
+                    
+                    const states = st.multiState || Array(q.c.length).fill(false);
+                    q.c.forEach((ans, i) => {
+                        const item = document.createElement('div');
+                        item.className = 'card-item multi';
+                        if(states[i]) item.classList.add('flipped');
+                        
+                        item.innerHTML = `
+                            <div class="card-number">?</div>
+                            <div class="card-content" style="color:#333;">${ans}</div>
+                        `;
+                        multiGrid.appendChild(item);
+                    });
+                    
+                    const qArea = document.createElement('div');
+                    qArea.className = 'q-area text-center';
+                    qArea.textContent = q.q;
+                    contentDiv.insertBefore(qArea, multiGrid);
+                    
+                    return;
                 }
 
                 const layoutClass = 'layout-' + (q.layout || 'standard').replace('_', '-'); 
@@ -205,12 +222,10 @@ function renderViewerRanking(roomId, container) {
         list.sort((a,b) => (b.score - a.score) || (a.time - b.time));
         
         const top10 = list.slice(0, 10);
-        
         let html = '<table style="width:100%; font-size:3vw; border-collapse:collapse; color:white; margin-top:20px;">';
         top10.forEach((p, i) => {
             const color = i === 0 ? 'gold' : (i === 1 ? 'silver' : (i === 2 ? '#cd7f32' : 'white'));
             const rankSize = i < 3 ? '1.2em' : '1em';
-            
             html += `<tr style="border-bottom:1px solid #555;">
                 <td style="color:${color}; font-weight:bold; width:15%; text-align:center; font-size:${rankSize};">${i+1}</td>
                 <td style="text-align:left; padding-left:20px;">${p.name}</td>
