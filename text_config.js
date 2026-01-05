@@ -1,11 +1,11 @@
 /* =========================================================
- * text_config.js (v46: Buzz-in & Manual Judge)
+ * text_config.js (v47: Detailed Buzz Settings)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v46",
+    Version: "Cloud Edition v47",
     
     // メインメニュー
     Main: {
@@ -93,11 +93,30 @@ const APP_TEXT = {
         SelectLoading: "読み込み中...",
         SelectEmpty: "セットがありません",
         
-        // ★v46追加: モード選択
         LabelMode: "回答モード",
         ModeNormal: "一斉回答 (全員送信可)",
         ModeBuzz: "早押し (早い者勝ち)",
         
+        // ★v47追加: 早押し詳細設定
+        LabelBuzzOrder: "▼ 押下順位ルール",
+        BuzzOrderFirst: "先着1名のみ (First Only)",
+        BuzzOrderHold: "順位保持 (誤答で次点へ)",
+        BuzzOrderReset: "順位リセット (全員再押し)",
+        
+        LabelBuzzPenalty: "▼ お手つきペナルティ",
+        BuzzPenaltyNone: "なし",
+        BuzzPenaltyTime3: "3秒ロック",
+        BuzzPenaltyTime5: "5秒ロック",
+        BuzzPenaltyTime10: "10秒ロック",
+        BuzzPenaltyQ: "その問題失格",
+        BuzzPenaltyPeriod: "そのピリオド失格",
+        
+        LabelBuzzTime: "▼ 回答権取得後の制限時間",
+        BuzzTimeNone: "無制限",
+        BuzzTime3: "3秒",
+        BuzzTime5: "5秒",
+        BuzzTime10: "10秒",
+
         LabelRule: "ルール設定",
         LabelElim: "▼ 脱落条件",
         RuleNone: "脱落なし",
@@ -160,14 +179,11 @@ const APP_TEXT = {
         BtnRanking: "中間順位",
         BtnClose: "スタジオを閉じて戻る",
         BtnBackRanking: "スタジオに戻る",
-        
-        // ★v46追加: ジャッジ用
         BtnCorrect: "⭕️ 正解 (Correct)",
         BtnWrong: "❌ 不正解 (Wrong)",
         BtnResetBuzz: "早押しリセット",
         MsgBuzzWin: "回答権獲得: ",
         MsgBuzzWait: "回答権なし...",
-        
         MsgConfirmLoad: "プログラムを読み込んでセットしますか？\n（現在の進行内容はリセットされます）",
         MsgLoaded: "セットしました。再生ボタンで開始してください。",
         MsgThinking: "Thinking Time...",
@@ -198,8 +214,6 @@ const APP_TEXT = {
         RankUnit: "位",
         ScoreUnit: "点",
         RankBoardTitle: "上位リーダーボード",
-        
-        // ★v46追加
         BtnBuzz: "PUSH!",
         MsgBuzzLocked: "LOCKED",
         MsgBuzzWin: "回答権獲得！<br>口頭で回答してください"
