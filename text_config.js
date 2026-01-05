@@ -1,11 +1,11 @@
 /* =========================================================
- * text_config.js (v44: Design Customization)
+ * text_config.js (v45: Granular Design Settings)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v44",
+    Version: "Cloud Edition v45",
     
     // メインメニュー
     Main: {
@@ -26,7 +26,7 @@ const APP_TEXT = {
     // ダッシュボード
     Dashboard: {
         Logout: "ログアウト",
-        BtnCreate: "問題作成",
+        BtnCreate: "セット作成",
         BtnConfig: "セット設定",
         BtnStudio: "スタジオ",
         BtnViewer: "モニター",
@@ -34,12 +34,12 @@ const APP_TEXT = {
         DeleteConfirm: "削除しますか？"
     },
 
-    // 問題作成
+    // セット作成
     Creator: {
         Title: "問題作成",
         BackBtn: "ダッシュボード",
         LabelSetName: "セット名",
-        PlaceholderSetName: "例: なぞなぞ",
+        PlaceholderSetName: "例: 第1ステージ",
         HeadingNewQ: "新規問題追加",
         LabelType: "問題形式",
         TypeChoice: "選択式",
@@ -65,14 +65,20 @@ const APP_TEXT = {
         AlignCenter: "中央揃え",
         AlignRight: "右揃え",
         
-        // ★v44追加: デザイン設定
-        LabelDesign: "デザイン設定",
-        LabelTextColor: "文字色",
-        LabelFrameColor: "枠・ボタン色",
-        LabelBgColor: "背景色",
-        LabelBgImage: "背景画像 (自動圧縮)",
+        // ★v45変更: 詳細デザイン設定
+        LabelDesign: "デザイン設定 (色・背景)",
+        GroupMain: "全体背景 (Main)",
+        GroupQ: "問題文エリア (Question)",
+        GroupC: "選択肢エリア (Choices)",
+        
+        LabelColorText: "文字",
+        LabelColorBg: "背景",
+        LabelColorBorder: "枠線",
+        
         BtnSelectImage: "画像を選択",
-        MsgImageLoaded: "画像セット完了",
+        BtnClearImage: "画像解除",
+        MsgImageLoaded: "画像セット中",
+        MsgNoImage: "画像なし (単色背景)",
 
         AlertNoQ: "問題文を入力してください",
         AlertLessChoice: "選択肢は2つ以上必要です",
