@@ -1,11 +1,11 @@
 /* =========================================================
- * text_config.js (v38: Wording Fix & Cleanup)
+ * text_config.js (v39: Layout Options & Limit)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v38",
+    Version: "Cloud Edition v39",
     
     // メインメニュー
     Main: {
@@ -45,17 +45,22 @@ const APP_TEXT = {
         TypeChoice: "選択式",
         TypeSort: "並べ替え",
         TypeText: "自由入力",
+        // ★追加：レイアウト設定
+        LabelLayout: "モニター表示レイアウト",
+        LayoutStandard: "標準 (上:問題 / 下:選択肢)",
+        LayoutSplitList: "左右分割 (右:縦書き問題 / 左:リスト)",
+        LayoutSplitGrid: "左右分割 (右:縦書き問題 / 左:グリッド)",
         PlaceholderQ: "問題文を入力",
         BtnAdd: "リストに追加",
         ListHeading: "作成中のリスト",
         BtnSave: "クラウドに保存して完了",
         BtnUpdate: "更新して完了",
-        OptMulti: "正解を選択", // ★変更
-        // OptPartial: "部分点あり", // ★削除
+        OptMulti: "正解を選択",
         BtnAddChoice: "＋ 選択肢を追加",
         BtnAddSort: "＋ 項目を追加",
         AlertNoQ: "問題文を入力してください",
         AlertLessChoice: "選択肢は2つ以上必要です",
+        AlertMaxChoice: "選択肢は最大10個までです", // ★追加
         AlertNoCorrect: "正解を選んでください",
         AlertNoTextAns: "正解を入力してください"
     },
