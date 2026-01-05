@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style.css?v=35">
+<link rel="stylesheet" href="style_common.css?v=40">
+<link rel="stylesheet" href="style_host.css?v=40">
+<link rel="stylesheet" href="style_player.css?v=40">
+<link rel="stylesheet" href="style_viewer.css?v=40">
 </head>
 <body>
 
@@ -134,6 +137,7 @@
         </div>
         <button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:12px; border:none; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.2);" data-text="Config.BtnAddList">Add List</button>
     </div>
+
     <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
         <h4 style="color:#333; margin:0 0 10px 0;" data-text="Config.HeadingList">Playlist</h4>
         <div id="config-playlist-preview" style="background:#eee; padding:10px; border-radius:5px; min-height:50px;"><p style="text-align:center; color:#999; font-size:0.8em;">まだ追加されていません</p></div>
@@ -195,7 +199,7 @@
 </div>
 
 <div id="ranking-view" class="view hidden" style="text-align:center;">
-    <h2 style="font-family: 'Arial Black'; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">RANKING</h2>
+    <h2 style="font-family: 'Arial Black', sans-serif; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">RANKING</h2>
     <div id="ranking-list" class="ranking-container"></div>
     <button id="ranking-back-btn" class="btn-primary btn-block" style="margin-top:20px;" data-text="Studio.BtnBackRanking">Back</button>
 </div>
@@ -264,25 +268,25 @@
     </div>
 </div>
 
-<div id="viewer-main-view" class="view hidden" style="background:#000; color:#fff; width:100vw; height:100vh; position:fixed; top:0; left:0; padding:0; margin:0; display:flex; justify-content:center; align-items:center; z-index:9999;">
+<div id="viewer-main-view" class="view hidden">
     <div id="viewer-content">
-        <div id="viewer-status" style="font-size:3vw; color:gold; margin-bottom:2vh;"></div>
-        <div id="viewer-main-text" style="font-size:5vw; font-weight:bold; margin-bottom:3vh; line-height:1.2;"></div>
-        <div id="viewer-sub-text" style="font-size:3vw; color:#ccc;"></div>
-        <div id="viewer-ranking-area" style="display:none; width:80%; margin:0 auto; text-align:left;"></div>
+        <div id="viewer-status"></div>
+        <div id="viewer-main-text"></div>
+        <div id="viewer-sub-text"></div>
+        <div id="viewer-ranking-area"></div>
     </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=35"></script>
-<script src="host_core.js?v=35"></script>
-<script src="host_creator.js?v=35"></script>
-<script src="host_config.js?v=35"></script>
-<script src="host_studio.js?v=35"></script>
-<script src="player.js?v=35"></script>
-<script src="viewer.js?v=35"></script>
+<script src="text_config.js?v=40"></script>
+<script src="host_core.js?v=40"></script>
+<script src="host_creator.js?v=40"></script>
+<script src="host_config.js?v=40"></script>
+<script src="host_studio.js?v=40"></script>
+<script src="player.js?v=40"></script>
+<script src="viewer.js?v=40"></script>
 
 </body>
 </html>
