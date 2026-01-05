@@ -1,11 +1,10 @@
 /* =========================================================
- * host_studio.js (v36: Removed Exit Confirmation)
+ * host_studio.js (v36: Kanpe & Choices Update)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
 
 function startRoom() {
-    // ★ポップアップなしで開始
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     currentPeriodIndex = 0; 
     
@@ -337,7 +336,6 @@ function setupStudioButtons(roomId) {
         window.showView(window.views.hostControl);
     };
     
-    // ★変更：確認なしでダッシュボードに戻る
     btnClose.onclick = () => {
         enterDashboard();
     };
@@ -348,15 +346,27 @@ function updateKanpe() {
     if(studioQuestions.length > currentQIndex) {
         const q = studioQuestions[currentQIndex];
         kanpeArea.classList.remove('hidden');
-        document.getElementById('kanpe-question').textContent = `Q${currentQIndex+1}. ${q.q}`;
+        
+        // ★変更: 選択肢の表示ロジック追加
+        let questionHtml = `Q${currentQIndex+1}. ${q.q}`;
+        if (q.type === 'choice' || q.type === 'sort') {
+            questionHtml += '<div style="margin-top:10px; font-weight:normal; font-size:0.9em; color:#333; background:rgba(255,255,255,0.5); padding:5px; border-radius:4px;">';
+            q.c.forEach((choice, i) => {
+                const prefix = (q.type === 'choice') ? String.fromCharCode(65 + i) : (i + 1); // A,B... or 1,2...
+                questionHtml += `<div><span style="font-weight:bold; color:#0055ff;">${prefix}.</span> ${choice}</div>`;
+            });
+            questionHtml += '</div>';
+        }
+        document.getElementById('kanpe-question').innerHTML = questionHtml; // innerHTMLに変更
         
         let ansText = "";
         if (q.type === 'sort') ansText = `正解順: ${q.c.join(' → ')}`;
         else if (q.type === 'text') ansText = `正解: ${q.correct.join(' / ')}`;
         else {
-            const labels = (currentConfig.theme === 'dark') ? ["A","B","C","D"] : ["青","赤","緑","黄"];
+            // 選択式の場合、A/B/C/D 表記へ
             const cIdx = (q.correctIndex !== undefined) ? q.correctIndex : q.correct[0];
-            ansText = `正解: ${labels[cIdx]} (${q.c[cIdx]})`;
+            const charLabel = String.fromCharCode(65 + cIdx); // A, B, C...
+            ansText = `正解: ${charLabel}. ${q.c[cIdx]}`;
         }
         document.getElementById('kanpe-answer').textContent = ansText;
         
