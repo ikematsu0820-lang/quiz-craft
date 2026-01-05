@@ -1,6 +1,9 @@
 /* =========================================================
- * host_config.js (v19: Removed Initial Status from Form)
+ * host_config.js (v20: Per-Question Point Setting)
  * =======================================================*/
+
+// 選択中のセットの問題を一時保持
+let selectedSetQuestions = [];
 
 function enterConfigMode() {
     window.showView(window.views.config);
@@ -9,6 +12,10 @@ function enterConfigMode() {
     const select = document.getElementById('config-set-select');
     select.innerHTML = '<option value="">読み込み中...</option>';
     
+    // UI初期化
+    document.getElementById('config-custom-points-area').classList.add('hidden');
+    selectedSetQuestions = [];
+
     window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
         const data = snap.val();
         select.innerHTML = '<option value="">-- セットを選択 --</option>';
@@ -16,6 +23,7 @@ function enterConfigMode() {
             Object.keys(data).forEach(key => {
                 const item = data[key];
                 const opt = document.createElement('option');
+                // valueにはJSON全体を入れる
                 opt.value = JSON.stringify({ q: item.questions, c: item.config || {}, t: item.title });
                 opt.textContent = item.title;
                 select.appendChild(opt);
@@ -25,24 +33,77 @@ function enterConfigMode() {
         }
     });
     
-    // ★追加：脱落条件プルダウンの監視
+    // イベントリスナー設定
     const elimRuleSelect = document.getElementById('config-elimination-rule');
-    if(elimRuleSelect) {
-        // 重複登録防ぐため一旦外す（簡易的）
-        elimRuleSelect.onchange = updateBuilderUI;
+    if(elimRuleSelect) elimRuleSelect.onchange = updateBuilderUI;
+
+    // セット選択時の処理
+    select.onchange = () => {
+        const val = select.value;
+        if(val) {
+            const data = JSON.parse(val);
+            selectedSetQuestions = data.q || [];
+            // セットを変えたら配点エリアはいったん隠す（リセット）
+            document.getElementById('config-custom-points-area').classList.add('hidden');
+        } else {
+            selectedSetQuestions = [];
+        }
+    };
+
+    // ★追加：個別配点ボタン
+    const customScoreBtn = document.getElementById('config-custom-score-btn');
+    if(customScoreBtn) {
+        customScoreBtn.onclick = toggleCustomScoreArea;
     }
 
     renderConfigPreview();
 }
 
 function updateBuilderUI() {
-    // 脱落条件が「最遅も脱落」の時だけ人数入力を表示
     const rule = document.getElementById('config-elimination-rule').value;
     const countArea = document.getElementById('config-elimination-count-area');
     if (rule === 'wrong_and_slowest') {
         countArea.classList.remove('hidden');
     } else {
         countArea.classList.add('hidden');
+    }
+}
+
+// ★追加：配点設定エリアの表示・生成
+function toggleCustomScoreArea() {
+    const area = document.getElementById('config-custom-points-area');
+    const list = document.getElementById('config-questions-list');
+    
+    if (selectedSetQuestions.length === 0) {
+        alert("先にセットを選択してください");
+        return;
+    }
+
+    if (area.classList.contains('hidden')) {
+        // 表示する際にリスト生成
+        list.innerHTML = '';
+        selectedSetQuestions.forEach((q, i) => {
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.alignItems = 'center';
+            div.style.marginBottom = '5px';
+            div.style.borderBottom = '1px solid #eee';
+            div.style.paddingBottom = '5px';
+            
+            div.innerHTML = `
+                <div style="flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">
+                    <span style="font-weight:bold; color:#666;">Q${i+1}.</span> ${q.q}
+                </div>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <input type="number" class="q-point-input" data-index="${i}" value="1" min="1" style="width:50px; text-align:center; padding:5px; border:1px solid #aaa; border-radius:4px;">
+                    <span style="font-size:0.8em;">点</span>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+        area.classList.remove('hidden');
+    } else {
+        area.classList.add('hidden');
     }
 }
 
@@ -53,11 +114,35 @@ function addPeriodToPlaylist() {
     
     const data = JSON.parse(json);
     
-    // デフォルトは全員復活（リスト追加後に変更可能）
+    // ★ここが重要：個別配点を読み取って問題データにマージする
+    const questionsWithPoints = JSON.parse(JSON.stringify(data.q)); // 深いコピー
+    const pointInputs = document.querySelectorAll('.q-point-input');
+    
+    // 配点エリアが開いている場合のみ適用（閉じていればデフォルト1点）
+    const isCustomPoints = !document.getElementById('config-custom-points-area').classList.contains('hidden');
+    
+    if (isCustomPoints && pointInputs.length > 0) {
+        pointInputs.forEach(input => {
+            const idx = parseInt(input.getAttribute('data-index'));
+            const pts = parseInt(input.value) || 1;
+            if (questionsWithPoints[idx]) {
+                questionsWithPoints[idx].points = pts;
+            }
+        });
+    } else {
+        // デフォルト1点
+        questionsWithPoints.forEach(q => q.points = 1);
+    }
+
     let initialStatus = 'revive';
     let passCount = 5;
+    if (periodPlaylist.length > 0) {
+        initialStatus = document.getElementById('config-initial-status').value;
+        if(initialStatus === 'ranking') {
+            passCount = parseInt(document.getElementById('config-pass-count').value) || 5;
+        }
+    }
 
-    // 脱落人数を取得
     let elimCount = 1;
     if (document.getElementById('config-elimination-rule').value === 'wrong_and_slowest') {
         elimCount = parseInt(document.getElementById('config-elimination-count').value) || 1;
@@ -67,7 +152,7 @@ function addPeriodToPlaylist() {
         initialStatus: initialStatus,
         passCount: passCount,
         eliminationRule: document.getElementById('config-elimination-rule').value,
-        eliminationCount: elimCount, // ★保存
+        eliminationCount: elimCount,
         scoreUnit: document.getElementById('config-score-unit').value,
         theme: 'light',
         timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0
@@ -75,12 +160,14 @@ function addPeriodToPlaylist() {
     
     periodPlaylist.push({
         title: data.t,
-        questions: data.q,
+        questions: questionsWithPoints, // ★配点付きの問題リスト
         config: newConfig
     });
     
+    // リセット
     renderConfigPreview();
-    updateBuilderUI(); 
+    updateBuilderUI();
+    document.getElementById('config-custom-points-area').classList.add('hidden');
 }
 
 function renderConfigPreview() {
@@ -93,7 +180,6 @@ function renderConfigPreview() {
     }
     
     periodPlaylist.forEach((item, index) => {
-        // --- 1. 接続部分 (2つ目以降) ---
         if (index > 0) {
             const arrowDiv = document.createElement('div');
             arrowDiv.className = 'playlist-arrow-container';
@@ -123,17 +209,13 @@ function renderConfigPreview() {
             container.appendChild(settingDiv);
         }
 
-        // --- 2. ピリオドカード ---
         const div = document.createElement('div');
         div.className = 'timeline-card';
         div.style.marginBottom = "0"; 
         
         let ruleText = "脱落なし";
         if(item.config.eliminationRule === 'wrong_only') ruleText = "不正解脱落";
-        if(item.config.eliminationRule === 'wrong_and_slowest') {
-            // ★人数も表示
-            ruleText = `不正解＋遅い${item.config.eliminationCount}人脱落`;
-        }
+        if(item.config.eliminationRule === 'wrong_and_slowest') ruleText = `遅い${item.config.eliminationCount}人脱落`;
 
         div.innerHTML = `
             <div style="flex:1;">
@@ -147,7 +229,6 @@ function renderConfigPreview() {
         container.appendChild(div);
     });
 
-    // イベントリスナー
     document.querySelectorAll('.inter-status-select').forEach(sel => {
         sel.addEventListener('change', (e) => {
             const idx = e.target.getAttribute('data-index');
