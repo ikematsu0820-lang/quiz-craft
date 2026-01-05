@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v51: Time Attack Config)
+ * host_config.js (v53: Panel & Bomb Config)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -83,16 +83,11 @@ function enterConfigMode() {
 function updateModeDetails(mode) {
     document.querySelectorAll('.mode-details').forEach(el => el.classList.add('hidden'));
     
-    if (mode === 'normal') {
-        document.getElementById('config-normal-details').classList.remove('hidden');
-    } else if (mode === 'buzz') {
-        document.getElementById('config-buzz-details').classList.remove('hidden');
-    } else if (mode === 'turn') {
-        document.getElementById('config-turn-details').classList.remove('hidden');
-    } else if (mode === 'time_attack') {
-        // ★v51: タイムショック用説明
-        document.getElementById('config-time-attack-details').classList.remove('hidden');
-    }
+    if (mode === 'normal') document.getElementById('config-normal-details').classList.remove('hidden');
+    else if (mode === 'buzz') document.getElementById('config-buzz-details').classList.remove('hidden');
+    else if (mode === 'turn') document.getElementById('config-turn-details').classList.remove('hidden');
+    else if (mode === 'time_attack') document.getElementById('config-time-attack-details').classList.remove('hidden');
+    else if (mode === 'bomb') document.getElementById('config-bomb-details').classList.remove('hidden');
 }
 
 function loadSavedProgramsInConfig() {
@@ -212,32 +207,43 @@ function toggleCustomScoreArea() {
 function addPeriodToPlaylist() {
     const select = document.getElementById('config-set-select');
     const json = select.value;
-    if(!json) { alert(APP_TEXT.Config.AlertNoSet); return; }
+    // panelやbombはセット選択なしでもOKとする場合はここを調整するが、
+    // 基本は「セットなし」を選択肢に追加するか、ダミーセットを作る運用とする。
+    // 今回は「セットがありません」でなければOKとする。
+    if(!json && document.getElementById('config-mode-select').value !== 'panel_attack' && document.getElementById('config-mode-select').value !== 'bomb') {
+         alert(APP_TEXT.Config.AlertNoSet); return; 
+    }
     
-    const data = JSON.parse(json);
-    const questionsWithPoints = JSON.parse(JSON.stringify(data.q)); 
-    const pointInputs = document.querySelectorAll('.q-point-input');
-    const lossInputs = document.querySelectorAll('.q-loss-input');
+    let questionsWithPoints = [];
+    let title = "New Period";
     
-    const area = document.getElementById('config-custom-points-area');
-    const isCustomPoints = area && !area.classList.contains('hidden');
-    
-    if (isCustomPoints && pointInputs.length > 0) {
-        pointInputs.forEach(input => {
-            const idx = parseInt(input.getAttribute('data-index'));
-            const pts = parseInt(input.value) || 1;
-            if (questionsWithPoints[idx]) questionsWithPoints[idx].points = pts;
-        });
-        lossInputs.forEach(input => {
-            const idx = parseInt(input.getAttribute('data-index'));
-            const lss = parseInt(input.value) || 0;
-            if (questionsWithPoints[idx]) questionsWithPoints[idx].loss = lss;
-        });
-    } else {
-        questionsWithPoints.forEach(q => {
-            q.points = (q.points || 1);
-            q.loss = (q.loss || 0);
-        });
+    if (json) {
+        const data = JSON.parse(json);
+        title = data.t;
+        questionsWithPoints = JSON.parse(JSON.stringify(data.q));
+        
+        const pointInputs = document.querySelectorAll('.q-point-input');
+        const lossInputs = document.querySelectorAll('.q-loss-input');
+        const area = document.getElementById('config-custom-points-area');
+        const isCustomPoints = area && !area.classList.contains('hidden');
+        
+        if (isCustomPoints && pointInputs.length > 0) {
+            pointInputs.forEach(input => {
+                const idx = parseInt(input.getAttribute('data-index'));
+                const pts = parseInt(input.value) || 1;
+                if (questionsWithPoints[idx]) questionsWithPoints[idx].points = pts;
+            });
+            lossInputs.forEach(input => {
+                const idx = parseInt(input.getAttribute('data-index'));
+                const lss = parseInt(input.value) || 0;
+                if (questionsWithPoints[idx]) questionsWithPoints[idx].loss = lss;
+            });
+        } else {
+            questionsWithPoints.forEach(q => {
+                q.points = (q.points || 1);
+                q.loss = (q.loss || 0);
+            });
+        }
     }
 
     let initialStatus = 'revive'; 
@@ -250,6 +256,18 @@ function addPeriodToPlaylist() {
     }
 
     const mode = document.getElementById('config-mode-select').value;
+    
+    // ★v53: ドボン用
+    let bombCount = 10;
+    let bombTarget = 'bomb1';
+    if (mode === 'bomb') {
+        bombCount = parseInt(document.getElementById('config-bomb-count').value);
+        bombTarget = document.getElementById('config-bomb-target').value;
+        title = "Bomb Game";
+    } else if (mode === 'panel_attack') {
+        title = "Panel Attack";
+    }
+
     let shuffle = 'off';
     if (mode === 'normal') shuffle = document.getElementById('config-shuffle-choices').value;
     else if (mode === 'buzz') shuffle = document.getElementById('config-buzz-shuffle').value;
@@ -265,7 +283,7 @@ function addPeriodToPlaylist() {
         scoreUnit: 'point',
         theme: 'light',
         timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0,
-        mode: mode, 
+        mode: mode,
         
         normalLimit: document.getElementById('config-normal-limit').value,
         buzzWrongAction: document.getElementById('config-buzz-wrong-action').value,
@@ -273,17 +291,20 @@ function addPeriodToPlaylist() {
         turnOrder: document.getElementById('config-turn-order').value,
         turnPass: document.getElementById('config-turn-pass').value,
         
-        shuffleChoices: shuffle
+        shuffleChoices: shuffle,
+        bombCount: bombCount,
+        bombTarget: bombTarget
     };
     
     periodPlaylist.push({
-        title: data.t,
+        title: title,
         questions: questionsWithPoints,
         config: newConfig
     });
     
     renderConfigPreview();
     updateBuilderUI();
+    const area = document.getElementById('config-custom-points-area');
     if(area) area.classList.add('hidden');
 }
 
