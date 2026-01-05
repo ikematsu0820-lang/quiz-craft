@@ -1,10 +1,11 @@
 /* =========================================================
- * player.js (v46: Buzz Mode Support)
+ * player.js (v49: Advanced Player Modes)
  * =======================================================*/
 
 let myRoomId = null;
 let myPlayerId = null;
 let myName = "NoName";
+let roomConfig = {}; // ★v49: 設定を保持
 
 document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('join-room-btn');
@@ -38,9 +39,8 @@ function joinRoom() {
 function startPlayerListener(roomId, playerId) {
     const statusRef = window.db.ref(`rooms/${roomId}/status`);
     const myRef = window.db.ref(`rooms/${roomId}/players/${playerId}`);
-    const roomConfigRef = window.db.ref(`rooms/${roomId}/config`); // モード確認用
+    const configRef = window.db.ref(`rooms/${roomId}/config`);
 
-    // 自分の状態監視 (生存/脱落/スコア)
     myRef.on('value', snap => {
         const val = snap.val();
         if(!val) return;
@@ -61,7 +61,6 @@ function startPlayerListener(roomId, playerId) {
             document.getElementById('current-score-value').textContent = val.periodScore;
         }
         
-        // 勝敗結果表示
         if (val.lastResult) {
             showResultOverlay(val.lastResult);
         } else {
@@ -69,16 +68,11 @@ function startPlayerListener(roomId, playerId) {
         }
     });
 
-    // 部屋の設定監視 (モード切り替え)
-    let currentMode = 'normal';
-    roomConfigRef.on('value', snap => {
-        const config = snap.val();
-        if(config && config.mode) {
-            currentMode = config.mode;
-        }
+    // ★v49: 設定監視
+    configRef.on('value', snap => {
+        roomConfig = snap.val() || { mode: 'normal' };
     });
 
-    // 進行状況監視
     statusRef.on('value', snap => {
         const st = snap.val();
         if(!st) return;
@@ -88,16 +82,16 @@ function startPlayerListener(roomId, playerId) {
         document.getElementById('player-quiz-area').classList.add('hidden');
         document.getElementById('player-wait-msg').classList.add('hidden');
         document.getElementById('player-ranking-overlay').classList.add('hidden');
-        document.getElementById('player-buzz-area').classList.add('hidden'); // Buzzエリア隠す
+        document.getElementById('player-buzz-area').classList.add('hidden');
 
-        // ステップ分岐
         if (st.step === 'standby') {
             document.getElementById('player-lobby-msg').innerHTML = `<h3>${APP_TEXT.Player.MsgLobbyHead}</h3><p>${APP_TEXT.Player.MsgLobbyBody}</p>`;
         }
         else if (st.step === 'question') {
-            // ★v46: モード分岐
-            if (currentMode === 'buzz') {
+            if (roomConfig.mode === 'buzz') {
                 handleBuzzMode(roomId, playerId, st);
+            } else if (roomConfig.mode === 'turn') {
+                handleTurnMode(roomId, playerId, st); // ★v49
             } else {
                 handleNormalMode(roomId, playerId, st);
             }
@@ -113,12 +107,10 @@ function startPlayerListener(roomId, playerId) {
     });
 }
 
-// ★v46: 早押しモードの処理
 function handleBuzzMode(roomId, playerId, status) {
     const buzzArea = document.getElementById('player-buzz-area');
     const lobbyMsg = document.getElementById('player-lobby-msg');
     
-    // まだ誰も回答権を得ていない & 早押し有効
     if (status.isBuzzActive) {
         buzzArea.classList.remove('hidden');
         const btn = document.getElementById('player-buzz-btn');
@@ -127,37 +119,58 @@ function handleBuzzMode(roomId, playerId, status) {
         btn.style.opacity = "1";
         
         btn.onclick = () => {
-            // 押した時間を記録
             const now = firebase.database.ServerValue.TIMESTAMP;
             window.db.ref(`rooms/${roomId}/players/${playerId}`).update({ buzzTime: now });
-            btn.disabled = true; // 連打防止
+            btn.disabled = true; 
             btn.textContent = "Wait...";
         };
     } 
-    // 誰かが回答権を得た
     else if (status.currentAnswerer) {
         buzzArea.classList.add('hidden');
         if (status.currentAnswerer === playerId) {
-            // 自分だ！
             lobbyMsg.innerHTML = `<h2 style="color:red; font-size:2em;">${APP_TEXT.Player.MsgBuzzWin}</h2>`;
         } else {
-            // 他の人
             lobbyMsg.innerHTML = `<h3>LOCKED</h3><p>Waiting for answer...</p>`;
         }
     }
     else {
-        // まだ開始前など
         lobbyMsg.textContent = "Ready...";
     }
 }
 
-// 通常モードの処理 (v45までと同じ)
+// ★v49: 順番回答の処理
+function handleTurnMode(roomId, playerId, status) {
+    const lobbyMsg = document.getElementById('player-lobby-msg');
+    
+    if (status.currentAnswerer === playerId) {
+        // 自分の番
+        lobbyMsg.innerHTML = `<h3 style="color:#0055ff;">${APP_TEXT.Player.MsgTurnYou}</h3>`;
+        // 通常の回答フォームを表示
+        window.db.ref(`rooms/${roomId}/questions/${status.qIndex}`).once('value', qSnap => {
+            const q = qSnap.val();
+            renderPlayerQuestion(q, roomId, playerId);
+        });
+    } else {
+        // 他人の番
+        if (status.currentAnswerer) {
+            // 名前を取得して表示したいが、簡易的に
+            lobbyMsg.innerHTML = `<p>Waiting for turn...</p>`;
+        } else {
+            lobbyMsg.textContent = "Wait...";
+        }
+    }
+}
+
+// ★v49: 一斉回答の処理（回数制限対応）
 function handleNormalMode(roomId, playerId, status) {
     window.db.ref(`rooms/${roomId}/players/${playerId}/lastAnswer`).once('value', ansSnap => {
-        if(ansSnap.val() != null) {
+        const hasAnswered = (ansSnap.val() != null);
+        const limitOne = (roomConfig.normalLimit === 'one');
+
+        if(hasAnswered && limitOne) {
             document.getElementById('player-wait-msg').classList.remove('hidden');
         } else {
-            // 問題表示
+            // 未回答、または何度でも修正可の場合
             window.db.ref(`rooms/${roomId}/questions/${status.qIndex}`).once('value', qSnap => {
                 const q = qSnap.val();
                 renderPlayerQuestion(q, roomId, playerId);
@@ -182,7 +195,6 @@ function renderPlayerQuestion(q, roomId, playerId) {
             btn.setAttribute('data-index', i);
             btn.textContent = choice;
             
-            // 色分け
             if(i===0) btn.classList.add('btn-blue');
             else if(i===1) btn.classList.add('btn-red');
             else if(i===2) btn.classList.add('btn-green');
@@ -198,8 +210,6 @@ function renderPlayerQuestion(q, roomId, playerId) {
             btn.className = 'btn-sort';
             btn.textContent = choice;
             btn.dataset.index = i;
-            // 簡易的なクリック順序選択の実装は省略（今回は早押しメインのため）
-            // 必要ならSortableJSなどを導入
             ul.appendChild(btn);
         });
         inputCont.innerHTML = "<p>Sort not supported in simple mode</p>"; 
@@ -220,20 +230,27 @@ function renderPlayerQuestion(q, roomId, playerId) {
 
 function submitAnswer(roomId, playerId, answer) {
     const now = firebase.database.ServerValue.TIMESTAMP;
-    // 回答にかかった時間を計算するために開始時間を取得したいが、簡易的にサーバー時間のみ記録
-    // 本来は status.startTime との差分をとる
     
     window.db.ref(`rooms/${roomId}/status/startTime`).once('value', snap => {
         const start = snap.val() || now;
-        const duration = 0; // 簡易
+        const duration = 0; 
         
         window.db.ref(`rooms/${roomId}/players/${playerId}`).update({
             lastAnswer: answer,
-            lastTime: duration // 本来は (now - start)
+            lastTime: duration 
         });
         
-        document.getElementById('player-quiz-area').classList.add('hidden');
-        document.getElementById('player-wait-msg').classList.remove('hidden');
+        // 順番回答なら送信後に即座に隠す
+        if(roomConfig.mode === 'turn') {
+             document.getElementById('player-quiz-area').classList.add('hidden');
+             document.getElementById('player-lobby-msg').innerHTML = "<p>Answered.</p>";
+        } else if (roomConfig.normalLimit === 'one') {
+             document.getElementById('player-quiz-area').classList.add('hidden');
+             document.getElementById('player-wait-msg').classList.remove('hidden');
+        } else {
+             // 何度でも修正可なら、メッセージだけ出す（フォームは消さない）
+             // ただしUX的には「送信しました」などのトーストが出ると良いが、今回は簡易的に
+        }
     });
 }
 
@@ -292,7 +309,6 @@ function renderPlayerRanking(roomId, playerId) {
             }
         });
         
-        // 5位以下の場合の自分探し
         if (myRank === '-') {
             const idx = ranking.findIndex(r => r.key === playerId);
             if (idx >= 0) {
