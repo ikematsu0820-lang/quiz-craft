@@ -1,5 +1,5 @@
 /* =========================================================
- * host_creator.js (v39: Layout Select & 10 Options Limit)
+ * host_creator.js (v41: Global Set Config & Layout)
  * =======================================================*/
 
 window.initCreatorMode = function() {
@@ -7,6 +7,9 @@ window.initCreatorMode = function() {
     createdQuestions = [];
     document.getElementById('quiz-set-title').value = '';
     document.getElementById('save-to-cloud-btn').textContent = APP_TEXT.Creator.BtnSave;
+    
+    // UI初期化
+    resetGlobalSettings(); 
     
     const typeSelect = document.getElementById('creator-q-type');
     if(typeSelect) {
@@ -29,6 +32,15 @@ window.loadSetForEditing = function(key, item) {
     document.getElementById('quiz-set-title').value = item.title;
     document.getElementById('save-to-cloud-btn').textContent = APP_TEXT.Creator.BtnUpdate;
     
+    // 保存された設定を復元（もしあれば、最初の問題から取得して反映）
+    if(createdQuestions.length > 0) {
+        const firstQ = createdQuestions[0];
+        if(firstQ.layout) document.getElementById('creator-set-layout').value = firstQ.layout;
+        if(firstQ.align) updateAlignUI(firstQ.align);
+    } else {
+        resetGlobalSettings();
+    }
+
     const typeSelect = document.getElementById('creator-q-type');
     if(typeSelect) {
         typeSelect.innerHTML = `
@@ -51,29 +63,38 @@ document.addEventListener('DOMContentLoaded', () => {
             renderCreatorForm(e.target.value);
         });
     }
+
+    // 文字配置ボタンのイベント
+    document.querySelectorAll('.btn-align').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const align = e.target.getAttribute('data-align');
+            updateAlignUI(align);
+        });
+    });
 });
+
+function resetGlobalSettings() {
+    document.getElementById('creator-set-layout').value = 'standard';
+    updateAlignUI('center');
+}
+
+function updateAlignUI(align) {
+    document.getElementById('creator-set-align').value = align;
+    document.querySelectorAll('.btn-align').forEach(btn => {
+        if(btn.getAttribute('data-align') === align) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+}
 
 function renderCreatorForm(type) {
     const container = document.getElementById('creator-form-container');
     if(!container) return; 
     container.innerHTML = ''; 
 
-    // ★追加: モニターレイアウト選択
-    const layoutDiv = document.createElement('div');
-    layoutDiv.style.marginBottom = '15px';
-    layoutDiv.style.padding = '10px';
-    layoutDiv.style.background = '#e6f7ff';
-    layoutDiv.style.borderRadius = '5px';
-    
-    layoutDiv.innerHTML = `
-        <label style="font-size:0.8em; font-weight:bold; display:block; margin-bottom:5px;">${APP_TEXT.Creator.LabelLayout}</label>
-        <select id="creator-q-layout" class="btn-block" style="background:#fff;">
-            <option value="standard">${APP_TEXT.Creator.LayoutStandard}</option>
-            <option value="split_list">${APP_TEXT.Creator.LayoutSplitList}</option>
-            <option value="split_grid">${APP_TEXT.Creator.LayoutSplitGrid}</option>
-        </select>
-    `;
-    container.appendChild(layoutDiv);
+    // ★修正: レイアウト選択は削除（下部に移動したため）
 
     if (type === 'choice') {
         const settingsDiv = document.createElement('div');
@@ -125,8 +146,6 @@ function renderCreatorForm(type) {
         container.appendChild(addBtn);
 
     } else if (type === 'text') {
-        // 自由入力にはレイアウト選択は不要かもしれないが、一旦そのまま残すか隠す
-        // layoutDiv.style.display = 'none'; // 隠す場合
         const desc = document.createElement('p');
         desc.style.fontSize = '0.8em';
         desc.style.color = '#666';
@@ -143,7 +162,6 @@ function renderCreatorForm(type) {
 }
 
 function addChoiceInput(parent, index) {
-    // ★追加: 10個制限
     if (parent.children.length >= 10) {
         alert(APP_TEXT.Creator.AlertMaxChoice);
         return;
@@ -173,7 +191,6 @@ function addChoiceInput(parent, index) {
 }
 
 function addSortInput(parent) {
-    // ★追加: 10個制限
     if (parent.children.length >= 10) {
         alert(APP_TEXT.Creator.AlertMaxChoice);
         return;
@@ -208,10 +225,10 @@ function addQuestion() {
     if(!qText) { alert(APP_TEXT.Creator.AlertNoQ); return; }
 
     const type = document.getElementById('creator-q-type').value;
-    // ★追加: レイアウト設定の取得
-    const layout = document.getElementById('creator-q-layout') ? document.getElementById('creator-q-layout').value : 'standard';
     
-    let newQ = { q: qText, type: type, layout: layout, points: 1, loss: 0 };
+    // レイアウト設定はここでは取得せず、保存時に一括適用するが、
+    // 表示用に一時的なデフォルト値を持たせておく
+    let newQ = { q: qText, type: type, points: 1, loss: 0 };
 
     if (type === 'choice') {
         const rows = document.querySelectorAll('.choice-row');
@@ -280,6 +297,16 @@ function renderQuestionList() {
 function saveToCloud() {
     if(createdQuestions.length === 0) { alert('No questions'); return; }
     const title = document.getElementById('quiz-set-title').value.trim() || "Untitled";
+    
+    // ★重要: ここで全体設定を取得し、全問題に適用する
+    const layout = document.getElementById('creator-set-layout').value;
+    const align = document.getElementById('creator-set-align').value;
+
+    createdQuestions.forEach(q => {
+        q.layout = layout;
+        q.align = align;
+    });
+
     const defaultConf = { eliminationRule: 'none', scoreUnit: 'point', theme: 'light' };
     const saveData = {
         title: title,
