@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v21: Penalty Points)
+ * host_studio.js (v24: Per-Question Penalty)
  * =======================================================*/
 
 function startRoom() {
@@ -172,6 +172,8 @@ function setupStudioButtons(roomId) {
         const q = studioQuestions[currentQIndex];
         const correctIdx = q.correctIndex;
         const points = parseInt(q.points) || 1;
+        // ★失点を取得
+        const loss = parseInt(q.loss) || 0;
         
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
             let slowestId = null;
@@ -195,13 +197,14 @@ function setupStudioButtons(roomId) {
                     }
                 } 
                 else {
-                    // ★追加：不正解時のペナルティ処理
-                    if (currentConfig.lossPoint) {
+                    // ★優先度: 問題ごとの失点設定 > 全体失点設定
+                    if (loss > 0) {
+                        p.ref.update({ periodScore: (val.periodScore||0) - loss });
+                    } else if (currentConfig.lossPoint) {
                         if (currentConfig.lossPoint === 'reset') {
                             p.ref.update({ periodScore: 0 });
                         } else {
-                            const loss = parseInt(currentConfig.lossPoint);
-                            p.ref.update({ periodScore: (val.periodScore||0) + loss });
+                            p.ref.update({ periodScore: (val.periodScore||0) + parseInt(currentConfig.lossPoint) });
                         }
                     }
 
@@ -294,13 +297,16 @@ function updateKanpe() {
         const timeText = timeLimit > 0 ? `制限 ${timeLimit}秒` : '制限なし';
         
         const points = q.points || 1;
+        // ★失点も表示
+        const loss = q.loss || 0;
+        
         const pointEl = document.getElementById('kanpe-point');
         if(!pointEl) {
              const div = document.createElement('div');
              div.id = 'kanpe-point';
              kanpeArea.appendChild(div);
         }
-        document.getElementById('kanpe-point').textContent = `配点: ${points}`;
+        document.getElementById('kanpe-point').textContent = `配点:${points} / 失点:-${loss}`;
 
         const limitEl = document.getElementById('kanpe-time-limit');
         if(!limitEl) {
