@@ -1,8 +1,8 @@
 /* =========================================================
- * host_core.js (v27: Fix Player Button)
+ * host_core.js (v28: View Navigation Fix)
  * =======================================================*/
 
-// --- グローバル変数 (全ファイルで共有) ---
+// --- グローバル変数 ---
 let currentShowId = null;
 let currentRoomId = null;
 
@@ -23,36 +23,41 @@ const RANKING_MONEY_TREE = [
     1500000, 2500000, 5000000, 7500000, 10000000
 ];
 
-// --- 画面定義 & 遷移関数 (ここで定義して確実に使えるようにする) ---
+// 画面管理用オブジェクト
 window.views = {};
-window.showView = function(targetView) {
-    // 初回アクセス時にDOM要素を取得
-    if (Object.keys(window.views).length === 0) {
-        window.views = {
-            main: document.getElementById('main-view'),
-            hostLogin: document.getElementById('host-login-view'),
-            dashboard: document.getElementById('host-dashboard-view'),
-            creator: document.getElementById('creator-view'),
-            config: document.getElementById('config-view'),
-            hostControl: document.getElementById('host-control-view'),
-            ranking: document.getElementById('ranking-view'),
-            respondent: document.getElementById('respondent-view'),
-            playerGame: document.getElementById('player-game-view')
-        };
-    }
 
+// 画面遷移関数
+window.showView = function(targetView) {
+    // 全てのビューを隠す
     Object.values(window.views).forEach(v => {
         if(v) v.classList.add('hidden');
     });
-    if(targetView) targetView.classList.remove('hidden');
+    // 指定されたビューだけ表示
+    if(targetView) {
+        targetView.classList.remove('hidden');
+    } else {
+        console.error("移動先の画面が見つかりません");
+    }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    // ★修正：DOM読み込み完了時に確実にビューを取得する
+    window.views = {
+        main: document.getElementById('main-view'),
+        hostLogin: document.getElementById('host-login-view'),
+        dashboard: document.getElementById('host-dashboard-view'),
+        creator: document.getElementById('creator-view'),
+        config: document.getElementById('config-view'),
+        hostControl: document.getElementById('host-control-view'),
+        ranking: document.getElementById('ranking-view'),
+        respondent: document.getElementById('respondent-view'),
+        playerGame: document.getElementById('player-game-view')
+    };
+
     // 1. メインメニュー
     const hostBtn = document.getElementById('main-host-btn');
     if(hostBtn) hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
 
-    // ★追加：回答者ボタンのイベント (これが抜けていました！)
     const playerBtn = document.getElementById('main-player-btn');
     if(playerBtn) playerBtn.addEventListener('click', () => window.showView(window.views.respondent));
 
