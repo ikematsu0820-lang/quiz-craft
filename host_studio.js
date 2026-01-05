@@ -1,6 +1,5 @@
 /* =========================================================
- * host_studio.js
- * 役割：スタジオ画面の進行管理、Firebase同期、ランキング処理
+ * host_studio.js (v14: Single Master Play Button)
  * =======================================================*/
 
 function startRoom() {
@@ -8,7 +7,7 @@ function startRoom() {
         if(!confirm("プレイリストが空です。スタジオへ移動しますか？")) return;
     }
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    currentPeriodIndex = -1; 
+    currentPeriodIndex = 0; // 最初は0番目をセット
     
     window.db.ref(`rooms/${currentRoomId}`).set({
         questions: [],
@@ -24,6 +23,11 @@ function enterHostMode(roomId) {
     window.showView(window.views.hostControl);
     document.getElementById('host-room-id').textContent = roomId;
     document.getElementById('studio-show-id').textContent = currentShowId;
+    
+    // UI初期化：リストを表示、コントロールパネルを隠す
+    document.getElementById('studio-timeline-area').classList.remove('hidden');
+    document.getElementById('control-panel').classList.add('hidden');
+    
     renderStudioTimeline();
 
     window.db.ref(`rooms/${roomId}/players`).on('value', snap => {
@@ -43,13 +47,19 @@ function renderStudioTimeline() {
     
     if(periodPlaylist.length === 0) {
         container.innerHTML = '<p style="text-align:center; color:#999; font-size:0.9em;">セット設定画面でリストを作成してください</p>';
+        // プレイリストがないなら再生ボタンも隠す
+        document.getElementById('studio-footer-controls').classList.add('hidden');
         return;
     }
+    document.getElementById('studio-footer-controls').classList.remove('hidden');
 
     periodPlaylist.forEach((item, index) => {
         const div = document.createElement('div');
         div.className = 'timeline-card';
-        if (index === currentPeriodIndex) div.classList.add('active');
+        // 現在のピリオドをハイライト
+        if (index === currentPeriodIndex) {
+            div.classList.add('active');
+        }
         
         let statusText = "START";
         if (index > 0) {
@@ -60,15 +70,23 @@ function renderStudioTimeline() {
         
         div.innerHTML = `
             <div>
-                <h5>第${index + 1}ピリオド: ${item.title}</h5>
-                <div class="info">
+                <h5 style="margin:0;">第${index + 1}ピリオド: ${item.title}</h5>
+                <div class="info" style="margin-top:5px;">
                     ${statusText} / 全${item.questions.length}問 / 制限${item.config.timeLimit}秒
                 </div>
             </div>
-            <button class="play-btn" onclick="playPeriod(${index})">再生 ▶</button>
         `;
         container.appendChild(div);
     });
+}
+
+// ★マスター再生ボタンから呼ばれる
+function playCurrentPeriod() {
+    if(!periodPlaylist[currentPeriodIndex]) {
+        alert("再生するピリオドがありません");
+        return;
+    }
+    playPeriod(currentPeriodIndex);
 }
 
 window.playPeriod = function(index) {
@@ -80,13 +98,15 @@ window.playPeriod = function(index) {
     currentConfig = item.config;
     currentQIndex = 0;
     
-    renderStudioTimeline();
+    // リストエリアを隠して、コントロールパネルを表示
+    document.getElementById('studio-timeline-area').classList.add('hidden');
+    document.getElementById('control-panel').classList.remove('hidden');
     
     window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
     window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0 });
     
-    // 参加者状態更新（復活・継続・ランキング選抜）
+    // 参加者状態更新
     window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
         let players = [];
         snap.forEach(p => {
@@ -122,7 +142,6 @@ window.playPeriod = function(index) {
         });
     });
 
-    document.getElementById('control-panel').classList.remove('hidden');
     document.getElementById('current-period-title').textContent = `Now Playing: 第${index+1}ピリオド (${item.title})`;
     
     document.getElementById('host-start-btn').classList.remove('hidden');
@@ -134,6 +153,7 @@ window.playPeriod = function(index) {
 };
 
 function setupStudioButtons(roomId) {
+    const btnMasterPlay = document.getElementById('studio-master-play-btn');
     const btnStart = document.getElementById('host-start-btn');
     const btnShowAns = document.getElementById('host-show-answer-btn');
     const btnNext = document.getElementById('host-next-btn');
@@ -141,6 +161,9 @@ function setupStudioButtons(roomId) {
     const btnClose = document.getElementById('host-close-studio-btn');
     const rankingBackBtn = document.getElementById('ranking-back-btn');
     
+    // ★マスター再生ボタン
+    if(btnMasterPlay) btnMasterPlay.onclick = playCurrentPeriod;
+
     btnStart.onclick = () => {
         const now = firebase.database.ServerValue.TIMESTAMP;
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', qIndex: currentQIndex, startTime: now });
@@ -175,7 +198,7 @@ function setupStudioButtons(roomId) {
                     }
                 } 
                 else {
-                    if(currentConfig.eliminationRule !== 'none') {
+                    if (currentConfig.eliminationRule !== 'none') {
                         p.ref.update({ isAlive: false });
                     }
                 }
@@ -193,7 +216,7 @@ function setupStudioButtons(roomId) {
 
         if (currentQIndex >= studioQuestions.length - 1) {
             if (currentPeriodIndex < periodPlaylist.length - 1) {
-                btnNext.textContent = "次のピリオドへ進む";
+                btnNext.textContent = "このピリオドを終了して次へ";
                 btnNext.classList.remove('btn-info');
                 btnNext.classList.add('btn-warning');
             } else {
@@ -209,10 +232,16 @@ function setupStudioButtons(roomId) {
     };
 
     btnNext.onclick = () => {
+        // ピリオド終了時の処理
         if (currentQIndex >= studioQuestions.length - 1) {
             if (currentPeriodIndex < periodPlaylist.length - 1) {
-                if(confirm("このピリオドは終了です。次のピリオドへ進みますか？")) {
-                    playPeriod(currentPeriodIndex + 1);
+                if(confirm("このピリオドを終了し、番組リストに戻りますか？")) {
+                    // 次のピリオドへインデックスを進める
+                    currentPeriodIndex++;
+                    // リスト画面に戻る（ハイライトが次に移る）
+                    document.getElementById('control-panel').classList.add('hidden');
+                    document.getElementById('studio-timeline-area').classList.remove('hidden');
+                    renderStudioTimeline();
                 }
             } else {
                 alert("全てのピリオドが終了しました！お疲れ様でした！");
@@ -221,6 +250,7 @@ function setupStudioButtons(roomId) {
             return;
         }
 
+        // 通常の問題進行
         currentQIndex++;
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
             snap.forEach(p => p.ref.update({ lastAnswer: -1, lastTime: 99999 }));
