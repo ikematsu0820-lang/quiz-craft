@@ -1,5 +1,5 @@
 /* =========================================================
- * style.css (v34: Quiz Studio - Full Edition)
+ * style.css (v35: Quiz Studio - Full Edition)
  * =======================================================*/
 
 /* 1. 基本設定 (Base) */
@@ -23,6 +23,24 @@ body {
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     margin-bottom: 20px;
     transition: background 0.5s, border 0.5s;
+}
+
+/* ヘッダー周り (v35追加) */
+.view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.header-back-btn {
+    background-color: #555;
+    color: white;
+    font-size: 0.8em;
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
 }
 
 /* ロゴ画像のスタイル */
@@ -322,14 +340,27 @@ input[type="text"], input[type="number"], select {
 .rank-score { font-family: monospace; font-size: 0.9em; color: #555; text-align: right; }
 
 /* 6. モニター画面 (Viewer UI) */
+/* ★v35変更: 全画面対応＆横長レイアウト */
 #viewer-main-view {
     font-family: "Helvetica Neue", Arial, sans-serif;
     background-color: #000;
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding: 0;
+    margin: 0;
+    z-index: 9999;
+    display: flex; /* flexboxで中央寄せ */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 #viewer-content {
-    max-width: 800px;
-    margin: 0 auto;
+    width: 90%;
+    max-width: 1200px; /* PCモニター向け */
     text-align: center;
 }
 
