@@ -1,11 +1,11 @@
 /* =========================================================
- * player.js (v49: Advanced Player Modes)
+ * player.js (v50: Shuffle & Oral & Sort)
  * =======================================================*/
 
 let myRoomId = null;
 let myPlayerId = null;
 let myName = "NoName";
-let roomConfig = {}; // ★v49: 設定を保持
+let roomConfig = {};
 
 document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('join-room-btn');
@@ -68,7 +68,6 @@ function startPlayerListener(roomId, playerId) {
         }
     });
 
-    // ★v49: 設定監視
     configRef.on('value', snap => {
         roomConfig = snap.val() || { mode: 'normal' };
     });
@@ -83,6 +82,7 @@ function startPlayerListener(roomId, playerId) {
         document.getElementById('player-wait-msg').classList.add('hidden');
         document.getElementById('player-ranking-overlay').classList.add('hidden');
         document.getElementById('player-buzz-area').classList.add('hidden');
+        document.getElementById('player-oral-done-area').classList.add('hidden'); // ★v50
 
         if (st.step === 'standby') {
             document.getElementById('player-lobby-msg').innerHTML = `<h3>${APP_TEXT.Player.MsgLobbyHead}</h3><p>${APP_TEXT.Player.MsgLobbyBody}</p>`;
@@ -91,7 +91,7 @@ function startPlayerListener(roomId, playerId) {
             if (roomConfig.mode === 'buzz') {
                 handleBuzzMode(roomId, playerId, st);
             } else if (roomConfig.mode === 'turn') {
-                handleTurnMode(roomId, playerId, st); // ★v49
+                handleTurnMode(roomId, playerId, st);
             } else {
                 handleNormalMode(roomId, playerId, st);
             }
@@ -128,7 +128,15 @@ function handleBuzzMode(roomId, playerId, status) {
     else if (status.currentAnswerer) {
         buzzArea.classList.add('hidden');
         if (status.currentAnswerer === playerId) {
-            lobbyMsg.innerHTML = `<h2 style="color:red; font-size:2em;">${APP_TEXT.Player.MsgBuzzWin}</h2>`;
+            // 自分だ！
+            // ★v50: 問題文を表示してあげる（口頭でも内容は確認したい）
+            window.db.ref(`rooms/${roomId}/questions/${status.qIndex}`).once('value', qSnap => {
+                const q = qSnap.val();
+                renderPlayerQuestion(q, roomId, playerId); // 通常フォームを表示
+                // ただし早押しで口頭回答が前提なら、フォーム操作はさせずに「回答中」だけ出す手もあるが、
+                // 記述で答える可能性もあるのでフォームは出す。
+                // もし口頭モードならフォームは出ない（renderPlayerQuestion内で制御）
+            });
         } else {
             lobbyMsg.innerHTML = `<h3>LOCKED</h3><p>Waiting for answer...</p>`;
         }
@@ -138,22 +146,17 @@ function handleBuzzMode(roomId, playerId, status) {
     }
 }
 
-// ★v49: 順番回答の処理
 function handleTurnMode(roomId, playerId, status) {
     const lobbyMsg = document.getElementById('player-lobby-msg');
     
     if (status.currentAnswerer === playerId) {
-        // 自分の番
         lobbyMsg.innerHTML = `<h3 style="color:#0055ff;">${APP_TEXT.Player.MsgTurnYou}</h3>`;
-        // 通常の回答フォームを表示
         window.db.ref(`rooms/${roomId}/questions/${status.qIndex}`).once('value', qSnap => {
             const q = qSnap.val();
             renderPlayerQuestion(q, roomId, playerId);
         });
     } else {
-        // 他人の番
         if (status.currentAnswerer) {
-            // 名前を取得して表示したいが、簡易的に
             lobbyMsg.innerHTML = `<p>Waiting for turn...</p>`;
         } else {
             lobbyMsg.textContent = "Wait...";
@@ -161,7 +164,6 @@ function handleTurnMode(roomId, playerId, status) {
     }
 }
 
-// ★v49: 一斉回答の処理（回数制限対応）
 function handleNormalMode(roomId, playerId, status) {
     window.db.ref(`rooms/${roomId}/players/${playerId}/lastAnswer`).once('value', ansSnap => {
         const hasAnswered = (ansSnap.val() != null);
@@ -170,7 +172,6 @@ function handleNormalMode(roomId, playerId, status) {
         if(hasAnswered && limitOne) {
             document.getElementById('player-wait-msg').classList.remove('hidden');
         } else {
-            // 未回答、または何度でも修正可の場合
             window.db.ref(`rooms/${roomId}/questions/${status.qIndex}`).once('value', qSnap => {
                 const q = qSnap.val();
                 renderPlayerQuestion(q, roomId, playerId);
@@ -183,48 +184,84 @@ function renderPlayerQuestion(q, roomId, playerId) {
     const area = document.getElementById('player-quiz-area');
     const qText = document.getElementById('question-text-disp');
     const inputCont = document.getElementById('player-input-container');
+    const oralArea = document.getElementById('player-oral-done-area');
     
     area.classList.remove('hidden');
+    oralArea.classList.add('hidden'); // デフォルト隠す
+    
     qText.textContent = q.q;
     inputCont.innerHTML = '';
 
     if (q.type === 'choice') {
-        q.c.forEach((choice, i) => {
+        let choices = q.c.map((text, i) => ({ text: text, originalIndex: i }));
+        
+        // ★v50: シャッフル処理
+        if (roomConfig.shuffleChoices === 'on') {
+            for (let i = choices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [choices[i], choices[j]] = [choices[j], choices[i]];
+            }
+        }
+
+        choices.forEach((item, i) => {
             const btn = document.createElement('button');
             btn.className = 'btn-block answer-btn';
-            btn.setAttribute('data-index', i);
-            btn.textContent = choice;
+            btn.textContent = item.text;
             
+            // 色は表示順で固定する（場所が変わっても色は場所依存）
             if(i===0) btn.classList.add('btn-blue');
             else if(i===1) btn.classList.add('btn-red');
             else if(i===2) btn.classList.add('btn-green');
             else btn.classList.add('btn-yellow');
 
-            btn.onclick = () => submitAnswer(roomId, playerId, i);
+            btn.onclick = () => submitAnswer(roomId, playerId, item.originalIndex); // 元のインデックスを送る
             inputCont.appendChild(btn);
         });
+
     } else if (q.type === 'sort') {
+        let choices = q.c.map((text, i) => ({ text: text, originalIndex: i }));
+        
+        // ★v50: 並べ替え初期配置（ランダム or 固定）
+        if (!q.initialOrder || q.initialOrder === 'random') {
+            for (let i = choices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [choices[i], choices[j]] = [choices[j], choices[i]];
+            }
+        }
+        
         const ul = document.createElement('div');
-        q.c.forEach((choice, i) => {
+        choices.forEach((item) => {
             const btn = document.createElement('div');
             btn.className = 'btn-sort';
-            btn.textContent = choice;
-            btn.dataset.index = i;
+            btn.textContent = item.text;
+            btn.dataset.index = item.originalIndex; // 今回はUI実装省略のためdatasetに入れるのみ
             ul.appendChild(btn);
         });
-        inputCont.innerHTML = "<p>Sort not supported in simple mode</p>"; 
+        inputCont.innerHTML = "<p style='font-size:0.8em;'>Sort not supported on simple web view yet.</p>"; 
+        // 実際にはSortableJS等が必要だが、今回は省略
+
     } else if (q.type === 'text') {
-        const inp = document.createElement('input');
-        inp.type = 'text';
-        inp.placeholder = 'Answer...';
-        inp.style.fontSize = '1.2em';
-        inp.style.marginBottom = '10px';
-        const sub = document.createElement('button');
-        sub.className = 'btn-primary btn-block';
-        sub.textContent = 'Submit';
-        sub.onclick = () => submitAnswer(roomId, playerId, inp.value);
-        inputCont.appendChild(inp);
-        inputCont.appendChild(sub);
+        // ★v50: 口頭モード分岐
+        if (q.mode === 'oral') {
+            area.classList.add('hidden'); // 通常エリアは隠す
+            oralArea.classList.remove('hidden'); // 口頭用ボタン表示
+            
+            document.getElementById('player-oral-done-btn').onclick = () => {
+                submitAnswer(roomId, playerId, "[Oral]");
+            };
+        } else {
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.placeholder = 'Answer...';
+            inp.style.fontSize = '1.2em';
+            inp.style.marginBottom = '10px';
+            const sub = document.createElement('button');
+            sub.className = 'btn-primary btn-block';
+            sub.textContent = 'Submit';
+            sub.onclick = () => submitAnswer(roomId, playerId, inp.value);
+            inputCont.appendChild(inp);
+            inputCont.appendChild(sub);
+        }
     }
 }
 
@@ -240,16 +277,18 @@ function submitAnswer(roomId, playerId, answer) {
             lastTime: duration 
         });
         
-        // 順番回答なら送信後に即座に隠す
+        // 完了後の画面遷移
         if(roomConfig.mode === 'turn') {
              document.getElementById('player-quiz-area').classList.add('hidden');
+             document.getElementById('player-oral-done-area').classList.add('hidden');
              document.getElementById('player-lobby-msg').innerHTML = "<p>Answered.</p>";
         } else if (roomConfig.normalLimit === 'one') {
              document.getElementById('player-quiz-area').classList.add('hidden');
+             document.getElementById('player-oral-done-area').classList.add('hidden');
              document.getElementById('player-wait-msg').classList.remove('hidden');
         } else {
-             // 何度でも修正可なら、メッセージだけ出す（フォームは消さない）
-             // ただしUX的には「送信しました」などのトーストが出ると良いが、今回は簡易的に
+             // 何度でも修正可の場合、通知だけ
+             // 今回はトースト未実装なので簡易的にボタン色変えるなどで対応すべきだが省略
         }
     });
 }
