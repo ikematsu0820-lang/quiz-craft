@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v15: Smooth Auto Advance)
+ * host_studio.js (v19: N-Slowest Elimination)
  * =======================================================*/
 
 function startRoom() {
@@ -65,11 +65,16 @@ function renderStudioTimeline() {
             else statusText = '復活';
         }
         
+        // 詳細テキスト
+        let ruleText = "脱落なし";
+        if(item.config.eliminationRule === 'wrong_only') ruleText = "不正解脱落";
+        if(item.config.eliminationRule === 'wrong_and_slowest') ruleText = `遅い${item.config.eliminationCount}人脱落`;
+
         div.innerHTML = `
             <div>
                 <h5 style="margin:0;">第${index + 1}ピリオド: ${item.title}</h5>
                 <div class="info" style="margin-top:5px;">
-                    ${statusText} / 全${item.questions.length}問 / 制限${item.config.timeLimit}秒
+                    ${statusText} / 全${item.questions.length}問 / ${ruleText} / ${item.config.timeLimit}s
                 </div>
             </div>
         `;
@@ -142,7 +147,6 @@ window.playPeriod = function(index) {
     document.getElementById('host-show-answer-btn').classList.add('hidden');
     document.getElementById('host-next-btn').classList.add('hidden');
     
-    // ★アラートを削除してスムーズに開始
     updateKanpe();
 };
 
@@ -170,9 +174,9 @@ function setupStudioButtons(roomId) {
         const correctIdx = q.correctIndex;
         
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
-            let slowestId = null;
-            let maxTime = -1;
+            let correctPlayers = []; // 正解者リスト（ID, Time）
 
+            // 1. スコア加算 & 正解者収集 & 不正解者脱落
             snap.forEach(p => {
                 const val = p.val();
                 if(!val.isAlive) return;
@@ -183,11 +187,9 @@ function setupStudioButtons(roomId) {
                     const t = val.lastTime || 99999;
                     p.ref.update({ periodScore: (val.periodScore||0)+1, periodTime: (val.periodTime||0)+t });
                     
+                    // 正解者は候補リストへ
                     if (currentConfig.eliminationRule === 'wrong_and_slowest') {
-                        if (t > maxTime) {
-                            maxTime = t;
-                            slowestId = p.key;
-                        }
+                        correctPlayers.push({ id: p.key, time: t });
                     }
                 } 
                 else {
@@ -197,8 +199,20 @@ function setupStudioButtons(roomId) {
                 }
             });
 
-            if (currentConfig.eliminationRule === 'wrong_and_slowest' && slowestId) {
-                window.db.ref(`rooms/${roomId}/players/${slowestId}`).update({ isAlive: false });
+            // 2. 最遅プレイヤーの脱落処理
+            if (currentConfig.eliminationRule === 'wrong_and_slowest' && correctPlayers.length > 0) {
+                // タイム降順（遅い順）にソート
+                correctPlayers.sort((a,b) => b.time - a.time);
+                
+                // 設定された人数（デフォルト1）だけ取得
+                const elimCount = currentConfig.eliminationCount || 1;
+                // 正解者全員を落とすわけにはいかないので、最大でも(正解者数-1)人までとする安全策を入れる？
+                // 今回は仕様通り「N人落とす」を優先（正解者が少なければ全滅もあり得るシビアなルール）
+                const targets = correctPlayers.slice(0, elimCount);
+                
+                targets.forEach(t => {
+                    window.db.ref(`rooms/${roomId}/players/${t.id}`).update({ isAlive: false });
+                });
             }
         });
         
@@ -225,10 +239,8 @@ function setupStudioButtons(roomId) {
     };
 
     btnNext.onclick = () => {
-        // ★修正ポイント：自動で次へ進む
         if (currentQIndex >= studioQuestions.length - 1) {
             if (currentPeriodIndex < periodPlaylist.length - 1) {
-                // 確認なしで次へ
                 playPeriod(currentPeriodIndex + 1);
             } else {
                 alert("全てのピリオドが終了しました！お疲れ様でした！");
