@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style.css?v=30">
+<link rel="stylesheet" href="style.css?v=31">
 </head>
 <body>
 
@@ -138,12 +138,14 @@
     </div>
     <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
         <h4 style="color:#333; margin:0 0 10px 0;" data-text="Config.HeadingList">Playlist</h4>
-        <div id="config-playlist-preview" style="background:#eee; padding:10px; border-radius:5px; min-height:50px;"></div>
+        <div id="config-playlist-preview" style="background:#eee; padding:10px; border-radius:5px; min-height:50px;"><p style="text-align:center; color:#999; font-size:0.8em;">まだ追加されていません</p></div>
+        
         <div style="margin:10px 0; text-align:right;">
             <label style="font-weight:bold; color:#0055ff; cursor:pointer; background:#e6f0ff; padding:5px 10px; border-radius:4px;">
                 <input type="checkbox" id="config-final-ranking-chk" checked> <span data-text="Config.LabelFinalRank">Final Ranking</span>
             </label>
         </div>
+
         <div style="display:flex; gap:5px; margin-bottom:15px; margin-top:15px;">
             <input type="text" id="config-program-title" placeholder="" style="flex:1;">
             <button id="config-save-program-btn" class="btn-info" style="flex:0 0 80px;" data-text="Config.BtnSaveProg">Save</button>
@@ -161,11 +163,16 @@
             <div><span data-text="Studio.LabelAlive">Alive</span>: <span id="host-alive-count" style="color:#00ff00; font-weight:bold;">0</span></div>
         </div>
     </div>
+
     <div id="studio-program-loader" style="background:#e6f0ff; padding:10px; border-radius:5px; margin-bottom:15px; border:2px solid #0055ff;">
         <h4 style="margin:0 0 5px 0; color:#0055ff; font-size:1em;" data-text="Studio.HeadingLoad">Load</h4>
         <select id="studio-program-select" style="width:100%; margin-bottom:5px;"></select>
-        <button id="studio-load-program-btn" class="btn-primary" style="width:100%; font-size:0.9em; padding:8px;" data-text="Studio.BtnLoad">Set</button>
+        <div style="display:flex; gap:5px;">
+            <button id="studio-load-program-btn" class="btn-primary" style="flex:1; font-size:0.9em; padding:8px;" data-text="Studio.BtnLoad">Set</button>
+            <button id="studio-delete-program-btn" class="btn-danger" style="flex:0 0 80px; font-size:0.8em; padding:8px;" data-text="Studio.BtnDeleteProg">Delete</button>
+        </div>
     </div>
+
     <div id="host-kanpe-area" class="kanpe-card hidden">
         <div style="background:#333; color:#fff; display:inline-block; padding:2px 8px; font-size:0.8em; border-radius:3px; margin-bottom:5px;" data-text="Studio.LabelKanpe">Kanpe</div>
         <div id="kanpe-question" style="font-weight:bold; font-size:1.1em; margin-bottom:5px;"></div>
@@ -173,14 +180,19 @@
         <div id="kanpe-time-limit" style="font-size:0.8em; color:#666; margin-top:5px;"></div>
         <div id="kanpe-point" style="font-size:0.8em; color:#0055ff; font-weight:bold;"></div>
     </div>
+    
     <div id="host-status-area" style="text-align:center; margin-bottom:15px; font-weight:bold; color:#666;" data-text="Studio.StatusReady">Ready...</div>
+
     <div id="studio-timeline-area">
         <h4 style="color:#333; margin:0 0 10px 0; text-align:center;" data-text="Studio.HeadingList">List</h4>
-        <div id="studio-period-timeline" style="display:flex; flex-direction:column; gap:10px; min-height:50px; margin-bottom:20px;"></div>
+        <div id="studio-period-timeline" style="display:flex; flex-direction:column; gap:10px; min-height:50px; margin-bottom:20px;">
+            <p style="text-align:center; color:#999; font-size:0.9em;">プログラムを読み込んでください</p>
+        </div>
         <div id="studio-footer-controls" style="border-top:1px solid #ddd; padding-top:20px; text-align:center;">
             <button id="studio-master-play-btn" class="btn-success btn-block" style="padding:15px; font-size:1.2em; box-shadow: 0 4px 0 #218838;" data-text="Studio.BtnMasterPlay">Play</button>
         </div>
     </div>
+
     <div id="control-panel" class="hidden" style="margin-top:20px; border-top:2px solid #333; padding-top:15px;">
         <h3 id="current-period-title" style="text-align:center; margin:0 0 10px 0; background:#eee; padding:5px;"></h3>
         <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;" data-text="Studio.BtnStart">START</button>
@@ -193,7 +205,7 @@
 </div>
 
 <div id="ranking-view" class="view hidden" style="text-align:center;">
-    <h2 style="font-family: 'Arial Black'; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">RANKING</h2>
+    <h2 style="font-family: 'Arial Black', sans-serif; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">RANKING</h2>
     <div id="ranking-list" class="ranking-container"></div>
     <button id="ranking-back-btn" class="btn-primary btn-block" style="margin-top:20px;" data-text="Studio.BtnBackRanking">Back</button>
 </div>
@@ -239,7 +251,6 @@
         <div style="font-size:1.2em;" data-text="Player.RankYou">You are...</div>
         <div id="player-my-rank" style="font-size:4em; font-weight:bold; color:gold; margin:5px 0;">---</div>
         <div id="player-my-score" style="font-size:1.2em; margin-bottom:20px;">---</div>
-        
         <div style="width:80%; max-width:300px; background:rgba(255,255,255,0.1); padding:10px; border-radius:10px;">
             <div style="font-size:0.9em; border-bottom:1px solid #666; margin-bottom:5px; padding-bottom:5px;" data-text="Player.RankBoardTitle">Top Leaders</div>
             <div id="player-leaderboard" style="font-size:0.9em; text-align:left;"></div>
@@ -255,12 +266,12 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=30"></script>
-<script src="host_core.js?v=30"></script>
-<script src="host_creator.js?v=30"></script>
-<script src="host_config.js?v=30"></script>
-<script src="host_studio.js?v=30"></script>
-<script src="player.js?v=30"></script>
+<script src="text_config.js?v=31"></script>
+<script src="host_core.js?v=31"></script>
+<script src="host_creator.js?v=31"></script>
+<script src="host_config.js?v=31"></script>
+<script src="host_studio.js?v=31"></script>
+<script src="player.js?v=31"></script>
 
 </body>
 </html>
