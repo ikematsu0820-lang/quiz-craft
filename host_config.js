@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v16: Program Saving)
+ * host_config.js (v17: Save & Transition Fix)
  * =======================================================*/
 
 function enterConfigMode() {
@@ -122,7 +122,7 @@ window.removeFromPlaylist = function(index) {
     updateBuilderUI();
 };
 
-// ★追加：プログラム（プレイリスト）を保存する
+// ★修正：保存ボタンの処理
 function saveProgramToCloud() {
     if(periodPlaylist.length === 0) {
         alert("構成リストが空です");
@@ -137,14 +137,16 @@ function saveProgramToCloud() {
 
     const saveObj = {
         title: title,
-        playlist: periodPlaylist, // 構成リストをまるごと保存
+        playlist: periodPlaylist, 
         createdAt: firebase.database.ServerValue.TIMESTAMP
     };
 
     window.db.ref(`saved_programs/${currentShowId}`).push(saveObj)
     .then(() => {
-        alert(`プログラム「${title}」を保存しました！`);
+        alert(`プログラム「${title}」を保存しました！\nダッシュボードに戻ります。`);
         titleInput.value = '';
+        periodPlaylist = []; // 保存したらクリアして戻る
+        enterDashboard(); // ダッシュボードへ戻る
     })
     .catch(err => alert("保存エラー: " + err.message));
 }
