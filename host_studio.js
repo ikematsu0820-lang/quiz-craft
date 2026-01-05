@@ -305,4 +305,122 @@ function setupStudioButtons(roomId) {
         }
     };
 
-    btn
+    btnNext.onclick = (e) => {
+        const action = e.target.dataset.action;
+
+        if (action === "ranking" || action === "final") {
+            btnRanking.click(); 
+            if (action === "ranking") {
+                btnNext.textContent = "Continue";
+                btnNext.className = "btn-warning btn-block";
+                btnNext.dataset.action = "next"; 
+            } else {
+                btnNext.textContent = APP_TEXT.Studio.BtnEnd;
+                btnNext.className = "btn-dark btn-block";
+                btnNext.dataset.action = "end";
+            }
+            return;
+        }
+
+        if (action === "next") {
+            playPeriod(currentPeriodIndex + 1);
+            return;
+        }
+        
+        if (action === "end") {
+            alert(APP_TEXT.Studio.MsgAllEnd);
+            btnNext.classList.add('hidden');
+            return;
+        }
+
+        currentQIndex++;
+        window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
+            snap.forEach(p => p.ref.update({ lastAnswer: null, lastTime: 99999, lastResult: null }));
+        });
+        updateKanpe();
+        btnStart.classList.remove('hidden');
+        btnNext.classList.add('hidden');
+        document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} Standby...`;
+    };
+
+    btnRanking.onclick = () => {
+        window.db.ref(`rooms/${roomId}/status`).update({ step: 'ranking' });
+
+        window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
+            let ranking = [];
+            snap.forEach(p => {
+                const v = p.val();
+                ranking.push({ name: v.name, score: v.periodScore, time: v.periodTime, isAlive: v.isAlive });
+            });
+            ranking.sort((a,b) => (b.score - a.score) || (a.time - b.time));
+            renderRankingView(ranking);
+            window.showView(window.views.ranking);
+        });
+    };
+
+    rankingBackBtn.onclick = () => {
+        window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby' });
+        window.showView(window.views.hostControl);
+    };
+    
+    btnClose.onclick = () => {
+        if(confirm(APP_TEXT.Studio.MsgConfirmBack)) enterDashboard();
+    };
+}
+
+function updateKanpe() {
+    const kanpeArea = document.getElementById('host-kanpe-area');
+    if(studioQuestions.length > currentQIndex) {
+        const q = studioQuestions[currentQIndex];
+        kanpeArea.classList.remove('hidden');
+        document.getElementById('kanpe-question').textContent = `Q${currentQIndex+1}. ${q.q}`;
+        
+        let ansText = "";
+        if (q.type === 'sort') ansText = `正解順: ${q.c.join(' → ')}`;
+        else if (q.type === 'text') ansText = `正解: ${q.correct.join(' / ')}`;
+        else {
+            const labels = (currentConfig.theme === 'dark') ? ["A","B","C","D"] : ["青","赤","緑","黄"];
+            const cIdx = (q.correctIndex !== undefined) ? q.correctIndex : q.correct[0];
+            ansText = `正解: ${labels[cIdx]} (${q.c[cIdx]})`;
+        }
+        document.getElementById('kanpe-answer').textContent = ansText;
+        
+        const timeLimit = currentConfig.timeLimit || 0;
+        const points = q.points || 1;
+        const loss = q.loss || 0;
+        document.getElementById('kanpe-point').textContent = `Pt:${points} / Loss:-${loss}`;
+        document.getElementById('kanpe-time-limit').textContent = timeLimit ? `${timeLimit}s` : "No Limit";
+    } else {
+        kanpeArea.classList.add('hidden');
+    }
+}
+
+function renderRankingView(data) {
+    const list = document.getElementById('ranking-list');
+    list.innerHTML = '';
+    if (data.length === 0) { list.innerHTML = '<p style="padding:20px;">No players</p>'; return; }
+    const isCurrency = (currentConfig.scoreUnit === 'currency');
+    data.forEach((r, i) => {
+        const rank = i + 1;
+        const div = document.createElement('div');
+        let rankClass = 'rank-row';
+        if (rank === 1) rankClass += ' rank-1';
+        else if (rank === 2) rankClass += ' rank-2';
+        else if (rank === 3) rankClass += ' rank-3';
+        if (!r.isAlive && currentConfig.eliminationRule !== 'none') {
+            div.style.opacity = "0.6"; div.style.background = "#eee";
+        }
+        div.className = rankClass;
+        let scoreText = `${r.score}`;
+        if (isCurrency) scoreText = `¥${r.score.toLocaleString()}`;
+        
+        div.innerHTML = `
+            <div style="display:flex; align-items:center;">
+                <span class="rank-badge">${rank}</span>
+                <span>${r.name}</span>
+            </div>
+            <div class="rank-score">${scoreText}</div>
+        `;
+        list.appendChild(div);
+    });
+}
