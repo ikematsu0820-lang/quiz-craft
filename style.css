@@ -1,10 +1,9 @@
 /* =========================================================
- * style.css (v25: Creator Form & Reverted Fonts)
+ * style.css (v26: All Star Quiz Cloud - Full Edition)
  * =======================================================*/
 
 /* 1. 基本設定 (Base) */
 body {
-    /* ★変更：元のフォントに戻す */
     font-family: "Helvetica Neue", Arial, sans-serif;
     max-width: 600px;
     margin: 0 auto;
@@ -28,7 +27,6 @@ body {
 
 /* タイトルロゴ */
 .app-title {
-    /* ★変更：Arial Black に戻す */
     font-family: 'Arial Black', sans-serif;
     color: #ff0055;
     text-shadow: 2px 2px 0px #fff, 4px 4px 0px #000;
@@ -76,13 +74,18 @@ input[type="text"], input[type="number"], select {
     font-size: 16px;
 }
 
-/* ★v25追加: クリエイター画面フォーム用スタイル */
+/* 3. ホスト用デザイン (Host UI) */
+
+/* 問題作成画面フォーム */
 .choice-row {
     background: #fff;
     border: 1px solid #ddd;
     padding: 5px;
     border-radius: 4px;
     margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .choice-correct-chk {
@@ -97,6 +100,7 @@ input[type="text"], input[type="number"], select {
     font-size: 1em;
     padding: 5px;
     background: transparent;
+    flex: 1;
 }
 
 .choice-text-input:focus, .sort-text-input:focus {
@@ -104,7 +108,7 @@ input[type="text"], input[type="number"], select {
     border-bottom: 1px solid #0055ff;
 }
 
-/* セット設定画面（Config）用のスタイル */
+/* セット設定画面 */
 .config-label {
     display: block;
     font-size: 0.8em;
@@ -127,15 +131,7 @@ input[type="text"], input[type="number"], select {
     color: #b8860b;
 }
 
-/* 回答者用ボタン */
-.answer-btn {
-    font-size: 1.5em;
-    font-weight: bold;
-    border-radius: 8px;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
-}
-
-/* 3. ホスト用デザイン (Host UI) */
+/* ダッシュボードリスト */
 .set-item {
     background: #fff;
     border: 1px solid #ddd;
@@ -190,7 +186,7 @@ input[type="text"], input[type="number"], select {
 .timeline-card h5 { margin: 0 0 5px 0; font-size: 1.2em; color: #333; }
 .timeline-card .info { font-size: 0.9em; color: #666; }
 
-/* 矢印と設定パネル */
+/* 矢印と設定パネル（ピリオド間設定） */
 .playlist-arrow-container {
     text-align: center;
     margin: -5px 0; 
@@ -232,7 +228,43 @@ input[type="text"], input[type="number"], select {
     border-radius: 4px;
 }
 
-/* 4. ランキング画面 (Ranking) */
+/* 4. 回答者画面 (Player UI) */
+.answer-btn {
+    font-size: 1.5em;
+    font-weight: bold;
+    border-radius: 8px;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+}
+
+/* 並べ替えなどのボタン用 */
+.btn-sort {
+    background: #fff;
+    border: 2px solid #ccc;
+    color: #333;
+    margin-bottom: 5px;
+    width: 100%;
+    text-align: left;
+    padding: 10px;
+}
+
+/* 結果発表オーバーレイ */
+#player-result-overlay {
+    transition: opacity 0.3s;
+    text-align: center;
+}
+
+#result-icon {
+    font-size: 6em;
+    margin-bottom: 20px;
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    0% { transform: scale(0); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* 5. ランキング画面 (Ranking) */
 .ranking-container {
     max-height: 400px;
     overflow-y: auto;
@@ -260,7 +292,7 @@ input[type="text"], input[type="number"], select {
 .rank-badge { display: inline-block; width: 30px; text-align: center; margin-right: 10px; font-family: 'Arial Black', sans-serif; }
 .rank-score { font-family: monospace; font-size: 0.9em; color: #555; text-align: right; }
 
-/* 5. テーマ設定 (Dark Theme) */
+/* 6. テーマ設定 (Dark Theme) */
 body.dark-theme { background-color: #000022; color: #e0e0e0; }
 body.dark-theme .view { background-color: #0d0d33; border: 1px solid #555; color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
 body.dark-theme .app-title { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
