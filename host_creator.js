@@ -1,8 +1,7 @@
 /* =========================================================
- * host_creator.js (v33: Global Scope Fix)
+ * host_creator.js (v38: Removed Partial Credit)
  * =======================================================*/
 
-// ★修正: windowに紐付けて確実に呼び出せるようにする
 window.initCreatorMode = function() {
     editingSetId = null;
     createdQuestions = [];
@@ -45,7 +44,6 @@ window.loadSetForEditing = function(key, item) {
     window.showView(window.views.creator);
 };
 
-// ... (以下、renderCreatorForm等は前回と同じなので省略可ですが、安全のため全文掲載) ...
 document.addEventListener('DOMContentLoaded', () => {
     const typeSelect = document.getElementById('creator-q-type');
     if(typeSelect) {
@@ -64,11 +62,9 @@ function renderCreatorForm(type) {
         const settingsDiv = document.createElement('div');
         settingsDiv.style.marginBottom = '10px';
         settingsDiv.style.fontSize = '0.9em';
+        // ★修正: 部分点エリアを削除
         settingsDiv.innerHTML = `
             <label style="margin-right:10px;"><input type="checkbox" id="opt-multi-select"> ${APP_TEXT.Creator.OptMulti}</label>
-            <span id="opt-partial-area" class="hidden">
-                <label><input type="checkbox" id="opt-partial-credit"> ${APP_TEXT.Creator.OptPartial}</label>
-            </span>
         `;
         container.appendChild(settingsDiv);
 
@@ -87,13 +83,6 @@ function renderCreatorForm(type) {
         addBtn.style.padding = '5px';
         addBtn.onclick = () => addChoiceInput(choicesDiv);
         container.appendChild(addBtn);
-
-        const multiChk = document.getElementById('opt-multi-select');
-        multiChk.onchange = () => {
-            const partial = document.getElementById('opt-partial-area');
-            if(multiChk.checked) partial.classList.remove('hidden');
-            else partial.classList.add('hidden');
-        };
 
     } else if (type === 'sort') {
         const desc = document.createElement('p');
@@ -209,7 +198,7 @@ function addQuestion() {
         newQ.correct = correct;
         newQ.correctIndex = correct[0];
         newQ.multi = document.getElementById('opt-multi-select').checked;
-        newQ.partial = document.getElementById('opt-partial-credit').checked;
+        newQ.partial = false; // ★修正: 部分点は常に無効
 
     } else if (type === 'sort') {
         const inputs = document.querySelectorAll('.sort-text-input');
