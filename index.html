@@ -250,4 +250,105 @@
         </div>
     </div>
     <div id="control-panel" class="hidden" style="margin-top:20px; border-top:2px solid #333; padding-top:15px;">
-        <h3 id="current-period-title" style="text-align:center; margin:0 0 10px 0; background:#eee
+        <h3 id="current-period-title" style="text-align:center; margin:0 0 10px 0; background:#eee; padding:5px;"></h3>
+        <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;" data-text="Studio.BtnStart">START</button>
+        <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;" data-text="Studio.BtnAnswer">Answer</button>
+        <button id="host-next-btn" class="btn-info btn-block hidden" style="padding:15px;" data-text="Studio.BtnNextQ">Next</button>
+        <hr>
+        <button id="host-ranking-btn" class="btn-success btn-block" data-text="Studio.BtnRanking">Ranking</button>
+    </div>
+    <button id="host-close-studio-btn" style="background:#555; margin-top:30px;" class="btn-block" data-text="Studio.BtnClose">Close</button>
+</div>
+
+<div id="ranking-view" class="view hidden" style="text-align:center;">
+    <h2 style="font-family: 'Arial Black', sans-serif; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">RANKING</h2>
+    <div id="ranking-list" class="ranking-container"></div>
+    <button id="ranking-back-btn" class="btn-primary btn-block" style="margin-top:20px;" data-text="Studio.BtnBackRanking">Back</button>
+</div>
+
+<div id="respondent-view" class="view hidden">
+    <div class="view-header">
+        <h2 data-text="Player.TitleEntry" style="margin:0;">Entry</h2>
+        <button class="header-back-btn back-to-main" data-text="Login.BackBtn">Home</button>
+    </div>
+    <hr>
+    <div style="text-align:center; padding:20px 0;">
+        <input type="text" id="room-code-input" placeholder="" maxlength="6"
+               style="font-size:1.5em; width:200px; text-align:center; text-transform:uppercase; margin-bottom:20px;">
+        <input type="text" id="player-name-input" placeholder="" 
+               style="font-size:1.2em; width:200px; text-align:center; margin-bottom:20px; display:block; margin:0 auto 20px auto;">
+        <button id="join-room-btn" class="btn-primary btn-block" data-text="Player.BtnJoin">Join</button>
+    </div>
+</div>
+<div id="player-game-view" class="view hidden">
+    <div id="player-status-bar" style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.9em; padding:5px; background:#eee; border-radius:4px;">
+        <span id="player-name-disp" style="font-weight:bold;" data-text="Player.LabelNameDefault">---</span>
+        <span id="alive-badge" style="background:#00ff00; color:black; padding:2px 6px; border-radius:4px; font-weight:bold;" data-text="Player.BadgeAlive">ALIVE</span>
+    </div>
+    <div id="score-display-area" class="hidden" style="text-align:center; margin-bottom:10px; font-weight:bold; font-size:1.2em; color:#0056b3;">
+        Score: <span id="current-score-value">0</span>
+    </div>
+    <div id="player-lobby-msg" style="text-align:center; padding:40px 0;"></div>
+    <div id="player-quiz-area" class="hidden">
+        <div id="question-text-disp" style="background:#fff; border:2px solid #333; padding:15px; border-radius:8px; font-weight:bold; margin-bottom:15px; min-height:60px;"></div>
+        <div id="player-input-container"></div>
+        <div id="answer-timer-disp" style="text-align:right; font-family:monospace; margin-top:5px; color:#666;"></div>
+    </div>
+    <div id="player-wait-msg" class="hidden" style="text-align:center; padding:20px; font-weight:bold;" data-text="Player.MsgAnswered">Answered...</div>
+    <div id="player-result-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1000;">
+        <div id="result-icon" style="font-size:5em; margin-bottom:10px;"></div>
+        <div id="result-text" style="font-size:2em; font-weight:bold;"></div>
+        <div id="result-detail" style="color:#666; margin-top:10px;"></div>
+    </div>
+    <div id="player-ranking-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,50,0.95); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1100; overflow-y:auto;">
+        <h2 style="color:gold; font-family:'Arial Black'; margin-bottom:10px;" data-text="Player.RankTitle">RANKING</h2>
+        <div style="font-size:1.2em;" data-text="Player.RankYou">You are...</div>
+        <div id="player-my-rank" style="font-size:4em; font-weight:bold; color:gold; margin:5px 0;">---</div>
+        <div id="player-my-score" style="font-size:1.2em; margin-bottom:20px;">---</div>
+        <div style="width:80%; max-width:300px; background:rgba(255,255,255,0.1); padding:10px; border-radius:10px;">
+            <div style="font-size:0.9em; border-bottom:1px solid #666; margin-bottom:5px; padding-bottom:5px;" data-text="Player.RankBoardTitle">Top Leaders</div>
+            <div id="player-leaderboard" style="font-size:0.9em; text-align:left;"></div>
+        </div>
+    </div>
+    <div id="player-dead-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:999;">
+        <h1 style="color:gray; font-size:3em;" data-text="Player.MsgDead">GAME OVER</h1>
+        <p data-text="Player.MsgDeadBody">Dead...</p>
+    </div>
+</div>
+
+<div id="viewer-login-view" class="view hidden">
+    <div class="view-header">
+        <h2 data-text="Viewer.Title" style="margin:0;">Monitor Connect</h2>
+        <button class="header-back-btn back-to-main" data-text="Login.BackBtn">Home</button>
+    </div>
+    <hr>
+    <div style="text-align:center;">
+        <img src="logo.png" alt="Quiz Studio" class="app-logo-small" style="margin-bottom:20px;">
+        <input type="text" id="viewer-room-code" placeholder="" 
+               style="font-size:1.5em; width:200px; text-align:center; text-transform:uppercase; margin-bottom:20px;">
+        <button id="viewer-connect-btn" class="btn-warning btn-block" data-text="Viewer.BtnConnect">Connect</button>
+    </div>
+</div>
+
+<div id="viewer-main-view" class="view hidden">
+    <div id="viewer-content">
+        <div id="viewer-status"></div>
+        <div id="viewer-main-text"></div>
+        <div id="viewer-sub-text"></div>
+        <div id="viewer-ranking-area"></div>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="firebase.js"></script>
+<script src="text_config.js?v=45"></script>
+<script src="host_core.js?v=45"></script>
+<script src="host_creator.js?v=45"></script>
+<script src="host_config.js?v=45"></script>
+<script src="host_studio.js?v=45"></script>
+<script src="player.js?v=45"></script>
+<script src="viewer.js?v=45"></script>
+
+</body>
+</html>
