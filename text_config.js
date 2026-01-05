@@ -26,7 +26,7 @@ const APP_TEXT = {
     // ダッシュボード
     Dashboard: {
         Logout: "ログアウト",
-        BtnCreate: "セット作成",
+        BtnCreate: "問題作成",
         BtnConfig: "セット設定",
         BtnStudio: "スタジオ",
         BtnViewer: "モニター",
@@ -34,12 +34,12 @@ const APP_TEXT = {
         DeleteConfirm: "削除しますか？"
     },
 
-    // セット作成
+    // 問題作成
     Creator: {
         Title: "問題作成",
         BackBtn: "ダッシュボード",
         LabelSetName: "セット名",
-        PlaceholderSetName: "例: 第1ステージ",
+        PlaceholderSetName: "例: なぞなぞ",
         HeadingNewQ: "新規問題追加",
         LabelType: "問題形式",
         TypeChoice: "選択式",
