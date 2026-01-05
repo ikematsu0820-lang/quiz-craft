@@ -1,37 +1,30 @@
 /* =========================================================
- * style_viewer.css (v51: Time Shock Clock)
+ * style_viewer.css (v53: Panel & Bomb Styles)
  * =======================================================*/
 
-/* デフォルトのデザイン変数 */
 :root {
-    /* Main */
     --main-text-color: #ffffff;
     --main-bg-color: #222222;
     --frame-color: #2c5066;
     --bg-image: none;
     
-    /* Question Area */
     --q-text-color: #ffffff;
     --q-bg-color: #2c5066;
     --q-border-color: #ffffff;
 
-    /* Choice Area */
     --c-text-color: #ffffff;
     --c-bg-color: #365c75;
     --c-border-color: #ffffff;
     
-    /* Time Attack */
     --progress: 100%;
 }
 
 #viewer-main-view {
     font-family: "Helvetica Neue", Arial, sans-serif;
-    
     background-color: var(--main-bg-color);
     background-image: var(--bg-image);
     background-size: cover;
     background-position: center;
-    
     width: 100vw;
     height: 100vh;
     position: fixed;
@@ -72,7 +65,7 @@
     padding: 10px;
 }
 
-/* ★v51追加: タイムショック用時計 */
+/* タイムショック用時計 */
 .clock-container {
     position: absolute;
     top: 2vh;
@@ -100,7 +93,73 @@
     font-weight: bold;
 }
 
-/* (以下、既存スタイル) */
+/* ★v53: パネルアタック用グリッド */
+#viewer-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 1vh;
+    width: 80vh;
+    height: 80vh;
+    margin: 0 auto;
+}
+.panel-cell {
+    background: #444;
+    border: 2px solid #666;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 4vh;
+    font-weight: bold;
+    color: rgba(255,255,255,0.3);
+    cursor: pointer;
+    transition: background 0.3s;
+}
+.panel-red { background: #d00 !important; color: white !important; box-shadow: 0 0 10px #d00; }
+.panel-green { background: #008800 !important; color: white !important; box-shadow: 0 0 10px #008800; }
+.panel-white { background: #ffffff !important; color: #333 !important; box-shadow: 0 0 10px #fff; }
+.panel-blue { background: #0055ff !important; color: white !important; box-shadow: 0 0 10px #0055ff; }
+
+/* ★v53: ドボン用カードグリッド */
+#viewer-bomb-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); 
+    gap: 2vh;
+    width: 90%;
+    height: 80%;
+    margin: 0 auto;
+    align-content: center;
+}
+.card-item {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    border: 3px solid #fff;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 5vh;
+    color: white;
+    cursor: pointer;
+    aspect-ratio: 2/3;
+    transition: transform 0.5s;
+    transform-style: preserve-3d;
+}
+.card-item.flipped {
+    transform: rotateY(180deg);
+    background: #fff;
+}
+.card-content {
+    display: none;
+    font-size: 4vh;
+    font-weight: bold;
+}
+.card-item.flipped .card-number { display: none; }
+.card-item.flipped .card-content { display: block; transform: rotateY(180deg); }
+
+.card-safe { color: #00aa00; }
+.card-out { color: #d00; font-size: 6vh; }
+
+/* レイアウト関連 (既存) */
 .text-left { justify-content: flex-start !important; text-align: left !important; }
 .text-center { justify-content: center !important; text-align: center !important; }
 .text-right { justify-content: flex-end !important; text-align: right !important; }
@@ -114,6 +173,7 @@
     padding: 20px;
     font-size: 5vh;
     font-weight: bold;
+    z-index: 10;
 }
 
 .choice-item {
@@ -125,6 +185,7 @@
     display: flex;
     align-items: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    z-index: 10;
 }
 
 .layout-standard { flex-direction: column; }
