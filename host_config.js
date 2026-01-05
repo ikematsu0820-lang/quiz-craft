@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v56-fix: Fix UI Rendering)
+ * host_config.js (v56-fix2: UI Fix)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -7,24 +7,23 @@ let selectedSetQuestions = [];
 function enterConfigMode() {
     window.showView(window.views.config);
     
-    // UI要素の取得
     const setSelect = document.getElementById('config-set-select');
     const container = document.getElementById('config-builder-ui');
     
     // 初期化
     if(setSelect) {
-        setSelect.innerHTML = `<option value="">${APP_TEXT.Config.SelectDefault}</option>`;
-        // イベントリスナーの重複登録を防ぐため、一度削除してから登録
+        setSelect.innerHTML = `<option value="">${APP_TEXT.Config.SelectLoading}</option>`;
+        // リスナー重複防止
         setSelect.removeEventListener('change', onSetSelectChange);
         setSelect.addEventListener('change', onSetSelectChange);
     }
     
-    if(container) container.innerHTML = '';
+    // UIコンテナをクリア（または案内表示）
+    if(container) container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">セットを選択してください</p>';
     
     document.getElementById('config-program-title').value = '';
     document.getElementById('config-final-ranking-chk').checked = true;
 
-    // データロード
     loadSetListInConfig();
     loadSavedProgramsInConfig();
     renderConfigPreview();
@@ -43,7 +42,6 @@ function loadSetListInConfig() {
             Object.keys(data).forEach(key => {
                 const item = data[key];
                 const opt = document.createElement('option');
-                // データに specialMode を含める
                 const firstQ = (item.questions && item.questions.length > 0) ? item.questions[0] : {};
                 const spMode = firstQ.specialMode || 'none';
                 
@@ -57,22 +55,19 @@ function loadSetListInConfig() {
     });
 }
 
-// セット選択時のイベントハンドラ
 function onSetSelectChange() {
     updateBuilderUI();
 }
 
-// ★UI構築メイン関数
 function updateBuilderUI() {
     const container = document.getElementById('config-builder-ui');
     const select = document.getElementById('config-set-select');
     
     if (!container || !select) return;
 
-    container.innerHTML = '';
-
     if (!select.value) {
         selectedSetQuestions = [];
+        container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">セットを選択してください</p>';
         return;
     }
 
@@ -83,7 +78,7 @@ function updateBuilderUI() {
 
     let html = '';
 
-    // 1. 回答モードセクション
+    // 1. 回答モード
     html += `<div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>`;
     html += `
     <div class="config-item-box">
@@ -155,13 +150,7 @@ function updateBuilderUI() {
                 </select>
             </div>
         </div>
-
-        <div id="mode-details-time_attack" class="mode-details hidden" style="margin-top:15px; background:#fff5e6; padding:10px; border-radius:5px;">
-            <p style="font-size:0.9em; margin:0; color:#d32f2f; font-weight:bold;">
-                ※Time Shock: 5 sec/Q (Auto Advance)
-            </p>
-        </div>
-
+        
         <div id="mode-details-bomb" class="mode-details hidden" style="margin-top:15px;">
             <label class="config-label">${APP_TEXT.Config.LabelBombCount}</label>
             <select id="config-bomb-count" class="btn-block config-select" style="margin-bottom:10px;">
@@ -175,17 +164,22 @@ function updateBuilderUI() {
                 <option value="treasure1">1 Treasure (Others Out)</option>
             </select>
         </div>
+        
+        <div id="mode-details-time_attack" class="mode-details hidden" style="margin-top:15px; background:#fff5e6; padding:10px; border-radius:5px;">
+            <p style="font-size:0.9em; margin:0; color:#d32f2f; font-weight:bold;">
+                ※Time Shock: 5 sec/Q (Auto Advance)
+            </p>
+        </div>
     </div>`;
 
-    // 2. ルール設定セクション
-    html += `<div id="config-rule-section">`; 
+    // 2. ルール設定
+    html += `<div id="config-rule-section">`;
     html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
 
-    // 時間・スコア設定 (v56: カスタムエリアをデフォルトで開く)
+    // カスタムスコア (常に表示)
     html += `
     <div class="config-item-box">
         <h5 style="margin:0 0 10px 0;">${APP_TEXT.Config.HeadingCustomScore}</h5>
-        
         <div style="display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:10px; margin-bottom:10px; background:#f9f9f9; padding:5px; font-size:0.8em;">
             <div>
                 <span style="color:#333; font-weight:bold;">${APP_TEXT.Config.LabelBulkTime}</span>
@@ -203,7 +197,6 @@ function updateBuilderUI() {
                 <button id="config-bulk-loss-btn" class="btn-mini" style="background:#d00; color:white;">${APP_TEXT.Config.BtnReflect}</button>
             </div>
         </div>
-
         <div id="config-questions-list" style="font-size:0.9em; max-height:300px; overflow-y:auto; border:1px solid #eee; padding:5px;"></div>
     </div>`;
 
@@ -228,10 +221,9 @@ function updateBuilderUI() {
     // 追加ボタン
     html += `<button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:15px; border:none; border-radius:8px; box-shadow:0 4px 8px rgba(0,85,255,0.3); font-size:1.1em; margin-top:20px;">${APP_TEXT.Config.BtnAddList}</button>`;
 
-    // --- HTML挿入 ---
     container.innerHTML = html;
 
-    // --- イベントリスナー設定 ---
+    // イベントリスナー
     document.getElementById('config-mode-select').addEventListener('change', (e) => updateModeDetails(e.target.value));
     document.getElementById('config-elimination-rule').addEventListener('change', updateEliminationUI);
     document.getElementById('config-add-playlist-btn').addEventListener('click', addPeriodToPlaylist);
@@ -249,14 +241,10 @@ function updateBuilderUI() {
         document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = val);
     });
 
-    // 初期状態の反映
+    // 初期化
     updateModeDetails(document.getElementById('config-mode-select').value);
     updateEliminationUI();
-    
-    // 問題リスト描画
     renderQuestionsListUI(selectedSetQuestions);
-    
-    // スペシャルモードロック適用
     applySpecialModeLock(spMode);
 }
 
@@ -330,7 +318,6 @@ function unlockConfig() {
     modeSelect.disabled = false;
     lockMsg.classList.add('hidden');
     ruleSec.style.display = 'block';
-    
     updateModeDetails(modeSelect.value);
 }
 
@@ -367,7 +354,6 @@ function addPeriodToPlaylist() {
         title = data.t;
         questionsWithPoints = JSON.parse(JSON.stringify(data.q));
         
-        // カスタム値の反映
         const pointInputs = document.querySelectorAll('.q-point-input');
         const lossInputs = document.querySelectorAll('.q-loss-input');
         const timeInputs = document.querySelectorAll('.q-time-input');
@@ -375,18 +361,15 @@ function addPeriodToPlaylist() {
         if (pointInputs.length > 0) {
             pointInputs.forEach(input => {
                 const idx = parseInt(input.getAttribute('data-index'));
-                const pts = parseInt(input.value) || 1;
-                if (questionsWithPoints[idx]) questionsWithPoints[idx].points = pts;
+                if (questionsWithPoints[idx]) questionsWithPoints[idx].points = parseInt(input.value) || 1;
             });
             lossInputs.forEach(input => {
                 const idx = parseInt(input.getAttribute('data-index'));
-                const lss = parseInt(input.value) || 0;
-                if (questionsWithPoints[idx]) questionsWithPoints[idx].loss = lss;
+                if (questionsWithPoints[idx]) questionsWithPoints[idx].loss = parseInt(input.value) || 0;
             });
             timeInputs.forEach(input => {
                 const idx = parseInt(input.getAttribute('data-index'));
-                const t = parseInt(input.value) || 0;
-                if (questionsWithPoints[idx]) questionsWithPoints[idx].timeLimit = t;
+                if (questionsWithPoints[idx]) questionsWithPoints[idx].timeLimit = parseInt(input.value) || 0;
             });
         }
     }
@@ -424,11 +407,9 @@ function addPeriodToPlaylist() {
         lossPoint: 0,
         scoreUnit: 'point',
         theme: 'light',
-        
-        // 全体制限時間は廃止（各問題のtimeLimitを使用）
-        timeLimit: 0, 
-        
+        timeLimit: 0, // 個別設定優先
         mode: mode,
+        
         normalLimit: document.getElementById('config-normal-limit').value,
         buzzWrongAction: document.getElementById('config-buzz-wrong-action').value,
         buzzTime: parseInt(document.getElementById('config-buzz-timer').value) || 0,
@@ -447,7 +428,8 @@ function addPeriodToPlaylist() {
     });
     
     renderConfigPreview();
-    updateBuilderUI(); // UIリセット
+    // UIを初期状態に戻す（連続追加のため）
+    updateBuilderUI();
 }
 
 function renderConfigPreview() {
@@ -550,7 +532,6 @@ function renderConfigPreview() {
 window.removeFromPlaylist = function(index) {
     periodPlaylist.splice(index, 1);
     renderConfigPreview();
-    updateBuilderUI();
 };
 
 function loadSavedProgramsInConfig() {
