@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v18: Inter-Period Settings UI)
+ * host_config.js (v19: Removed Initial Status from Form)
  * =======================================================*/
 
 function enterConfigMode() {
@@ -24,23 +24,25 @@ function enterConfigMode() {
             select.innerHTML = '<option value="">セットがありません</option>';
         }
     });
+    
+    // ★追加：脱落条件プルダウンの監視
+    const elimRuleSelect = document.getElementById('config-elimination-rule');
+    if(elimRuleSelect) {
+        // 重複登録防ぐため一旦外す（簡易的）
+        elimRuleSelect.onchange = updateBuilderUI;
+    }
+
     renderConfigPreview();
 }
 
 function updateBuilderUI() {
-    const settingArea = document.getElementById('participation-setting-area');
-    // リストが空の時だけ表示を隠す（初回は自動設定なので）
-    if (periodPlaylist.length === 0) {
-        settingArea.classList.add('hidden');
+    // 脱落条件が「最遅も脱落」の時だけ人数入力を表示
+    const rule = document.getElementById('config-elimination-rule').value;
+    const countArea = document.getElementById('config-elimination-count-area');
+    if (rule === 'wrong_and_slowest') {
+        countArea.classList.remove('hidden');
     } else {
-        settingArea.classList.remove('hidden');
-        const val = document.getElementById('config-initial-status').value;
-        const passArea = document.getElementById('config-pass-count-area');
-        if (val === 'ranking') {
-            passArea.classList.remove('hidden');
-        } else {
-            passArea.classList.add('hidden');
-        }
+        countArea.classList.add('hidden');
     }
 }
 
@@ -51,21 +53,21 @@ function addPeriodToPlaylist() {
     
     const data = JSON.parse(json);
     
+    // デフォルトは全員復活（リスト追加後に変更可能）
     let initialStatus = 'revive';
     let passCount = 5;
 
-    // 2つ目以降は、画面上の選択値をデフォルトとして採用
-    if (periodPlaylist.length > 0) {
-        initialStatus = document.getElementById('config-initial-status').value;
-        if(initialStatus === 'ranking') {
-            passCount = parseInt(document.getElementById('config-pass-count').value) || 5;
-        }
+    // 脱落人数を取得
+    let elimCount = 1;
+    if (document.getElementById('config-elimination-rule').value === 'wrong_and_slowest') {
+        elimCount = parseInt(document.getElementById('config-elimination-count').value) || 1;
     }
 
     const newConfig = {
         initialStatus: initialStatus,
         passCount: passCount,
         eliminationRule: document.getElementById('config-elimination-rule').value,
+        eliminationCount: elimCount, // ★保存
         scoreUnit: document.getElementById('config-score-unit').value,
         theme: 'light',
         timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0
@@ -81,7 +83,6 @@ function addPeriodToPlaylist() {
     updateBuilderUI(); 
 }
 
-// ★UI変更：ピリオド間に設定パネルを挟む
 function renderConfigPreview() {
     const container = document.getElementById('config-playlist-preview');
     container.innerHTML = '';
@@ -92,19 +93,15 @@ function renderConfigPreview() {
     }
     
     periodPlaylist.forEach((item, index) => {
-        // --- 1. 接続部分 (2つ目以降に表示) ---
+        // --- 1. 接続部分 (2つ目以降) ---
         if (index > 0) {
-            // 矢印
             const arrowDiv = document.createElement('div');
             arrowDiv.className = 'playlist-arrow-container';
             arrowDiv.innerHTML = '<div class="playlist-arrow"></div>';
             container.appendChild(arrowDiv);
 
-            // 設定パネル（黄色い枠）
             const settingDiv = document.createElement('div');
             settingDiv.className = 'playlist-inter-setting';
-            
-            // HTML生成：プルダウンと数値入力（ランキング時のみ表示）
             const isRanking = (item.config.initialStatus === 'ranking');
             
             settingDiv.innerHTML = `
@@ -128,12 +125,15 @@ function renderConfigPreview() {
 
         // --- 2. ピリオドカード ---
         const div = document.createElement('div');
-        div.className = 'timeline-card'; // 既存のスタイルを流用
-        div.style.marginBottom = "0"; // 隙間調整
+        div.className = 'timeline-card';
+        div.style.marginBottom = "0"; 
         
         let ruleText = "脱落なし";
         if(item.config.eliminationRule === 'wrong_only') ruleText = "不正解脱落";
-        if(item.config.eliminationRule === 'wrong_and_slowest') ruleText = "最遅も脱落";
+        if(item.config.eliminationRule === 'wrong_and_slowest') {
+            // ★人数も表示
+            ruleText = `不正解＋遅い${item.config.eliminationCount}人脱落`;
+        }
 
         div.innerHTML = `
             <div style="flex:1;">
@@ -147,15 +147,12 @@ function renderConfigPreview() {
         container.appendChild(div);
     });
 
-    // イベントリスナー登録（プルダウン変更時にデータを更新）
+    // イベントリスナー
     document.querySelectorAll('.inter-status-select').forEach(sel => {
         sel.addEventListener('change', (e) => {
             const idx = e.target.getAttribute('data-index');
             const val = e.target.value;
-            // データ更新
             periodPlaylist[idx].config.initialStatus = val;
-            
-            // UI表示切替（ランキング入力欄）
             const passArea = e.target.nextElementSibling;
             if (val === 'ranking') passArea.classList.remove('hidden');
             else passArea.classList.add('hidden');
