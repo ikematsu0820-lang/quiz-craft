@@ -4,12 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style_common.css?v=49">
-<link rel="stylesheet" href="style_host.css?v=49">
-<link rel="stylesheet" href="style_player.css?v=49">
-<link rel="stylesheet" href="style_viewer.css?v=49">
+<link rel="stylesheet" href="style_common.css?v=50">
+<link rel="stylesheet" href="style_host.css?v=50">
+<link rel="stylesheet" href="style_player.css?v=50">
+<link rel="stylesheet" href="style_viewer.css?v=50">
 </head>
 <body>
+
+<div id="toast-container"></div>
 
 <div id="main-view" class="view">
     <div style="text-align:center; margin-bottom:20px;">
@@ -59,19 +61,26 @@
     </div>
     <hr>
     <div style="background:#fff0f5; padding:15px; border-radius:8px; border:2px solid #ff69b4; margin-bottom:20px;">
-        <h3 style="margin-top:0; color:#c71585;" data-text="Creator.HeadingNewQ">New Question</h3>
+        <h3 id="creator-form-title" style="margin-top:0; color:#c71585;" data-text="Creator.HeadingNewQ">New Question</h3>
         <label style="font-size:0.8em; font-weight:bold; color:#666;" data-text="Creator.LabelType">Type</label>
         <select id="creator-q-type" class="btn-block" style="margin-bottom:10px; background:#fff;"></select>
         <input type="text" id="question-text" class="btn-block" placeholder="" style="margin-bottom:10px;">
         <div id="creator-form-container" style="margin-bottom:10px;"></div>
+        
         <button id="add-question-btn" class="btn-primary btn-block" style="margin-top:10px;" data-text="Creator.BtnAdd">Add</button>
+        <div id="update-question-area" class="hidden" style="display:flex; gap:10px; margin-top:10px;">
+            <button id="update-question-btn" class="btn-success" style="flex:1;" data-text="Creator.BtnUpdateQ">Update</button>
+            <button id="cancel-update-btn" class="btn-dark" style="flex:1;" data-text="Creator.BtnCancel">Cancel</button>
+        </div>
     </div>
     <div class="creator-set-settings">
         <h4 data-text="Creator.HeadingSettings" style="margin-top:0; border-bottom:1px solid #ccc; padding-bottom:5px;">Set Settings</h4>
         <label style="font-weight:bold;" data-text="Creator.LabelSetName">Set Name</label>
         <input type="text" id="quiz-set-title" class="btn-block" placeholder="" style="margin-bottom:15px;">
+        
         <h5 data-text="Creator.ListHeading" style="margin:0 0 5px 0;">List</h5>
-        <ul id="q-list" style="background:white; padding:10px; border:1px solid #ddd; min-height:50px; list-style:none; margin-bottom:15px;"></ul>
+        <div id="q-list" style="background:white; padding:5px; border:1px solid #ddd; min-height:50px; margin-bottom:15px; max-height:300px; overflow-y:auto;"></div>
+        
         <div style="background:#e6f7ff; padding:10px; border-radius:5px; margin-bottom:15px;">
             <label style="font-size:0.8em; font-weight:bold; display:block; margin-bottom:5px;" data-text="Creator.LabelLayout">Layout</label>
             <select id="creator-set-layout" class="btn-block" style="background:#fff; margin-bottom:10px;">
@@ -87,6 +96,7 @@
             </div>
             <input type="hidden" id="creator-set-align" value="center">
         </div>
+
         <div style="background:#fffbe6; padding:10px; border-radius:5px; margin-bottom:15px; border:1px solid #e6b800;">
             <label style="font-size:0.9em; font-weight:bold; display:block; margin-bottom:10px;" data-text="Creator.LabelDesign">Design</label>
             <div class="design-group" style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed #ccc;">
@@ -154,6 +164,13 @@
                 <option value="one" data-text="Config.NormalLimitOne">One Shot</option>
                 <option value="unlimited" data-text="Config.NormalLimitUnlimited">Unlimited</option>
             </select>
+            <div style="margin-top:10px;">
+                <label class="config-label" data-text="Config.LabelShuffle">Shuffle Choices</label>
+                <select id="config-shuffle-choices" class="btn-block config-select">
+                    <option value="off" data-text="Config.ShuffleOff">OFF</option>
+                    <option value="on" data-text="Config.ShuffleOn">ON</option>
+                </select>
+            </div>
         </div>
 
         <div id="config-buzz-details" class="mode-details hidden" style="background:#ffeef5; border:1px dashed #ff69b4; padding:10px; border-radius:5px; margin-bottom:15px;">
@@ -174,6 +191,13 @@
                     <option value="10" data-text="Config.BuzzTime10">10s</option>
                 </select>
             </div>
+            <div style="margin-top:10px;">
+                <label class="config-label" data-text="Config.LabelShuffle">Shuffle Choices</label>
+                <select id="config-buzz-shuffle" class="btn-block config-select">
+                    <option value="off" data-text="Config.ShuffleOff">OFF</option>
+                    <option value="on" data-text="Config.ShuffleOn">ON</option>
+                </select>
+            </div>
         </div>
 
         <div id="config-turn-details" class="mode-details hidden" style="background:#e6fffa; border:1px dashed #00aa00; padding:10px; border-radius:5px; margin-bottom:15px;">
@@ -190,6 +214,13 @@
                 <select id="config-turn-pass" class="btn-block config-select">
                     <option value="ok" data-text="Config.TurnPassOk">OK</option>
                     <option value="ng" data-text="Config.TurnPassNg">NG</option>
+                </select>
+            </div>
+            <div style="margin-top:10px;">
+                <label class="config-label" data-text="Config.LabelShuffle">Shuffle Choices</label>
+                <select id="config-turn-shuffle" class="btn-block config-select">
+                    <option value="off" data-text="Config.ShuffleOff">OFF</option>
+                    <option value="on" data-text="Config.ShuffleOn">ON</option>
                 </select>
             </div>
         </div>
@@ -252,82 +283,6 @@
     <button id="config-go-studio-btn" class="btn-danger btn-block" style="padding:15px; font-weight:bold;" data-text="Config.BtnGoStudio">Go Studio</button>
 </div>
 
-<div id="host-control-view" class="view hidden">
-    <div style="background:#111; color:white; padding:10px; border-radius:8px; text-align:center; margin-bottom:10px; border:4px solid gold;">
-        <div style="font-size:0.8em; color:gold;"><span data-text="Studio.OnAir">ON AIR</span> / <span id="studio-show-id">---</span></div>
-        <div id="host-room-id" style="font-size:2em; font-weight:bold; letter-spacing:3px;">---</div>
-        <div style="display:flex; justify-content:space-around; margin-top:5px; font-size:0.9em;">
-            <div><span data-text="Studio.LabelPlayer">Player</span>: <span id="host-player-count">0</span></div>
-            <div><span data-text="Studio.LabelAlive">Alive</span>: <span id="host-alive-count" style="color:#00ff00; font-weight:bold;">0</span></div>
-        </div>
-    </div>
-    
-    <div id="studio-program-loader" style="background:#e6f0ff; padding:10px; border-radius:5px; margin-bottom:15px; border:2px solid #0055ff;">
-        <h4 style="margin:0 0 5px 0; color:#0055ff; font-size:1em;" data-text="Studio.HeadingLoad">Load</h4>
-        <select id="studio-program-select" style="width:100%; margin-bottom:5px;"></select>
-        <button id="studio-load-program-btn" class="btn-primary" style="width:100%; font-size:0.9em; padding:8px;" data-text="Studio.BtnLoad">Set</button>
-    </div>
-    
-    <div id="host-buzz-winner-area" class="hidden" style="background:#ffeb3b; padding:15px; border-radius:8px; margin-bottom:15px; border:3px solid #ff9800; text-align:center;">
-        <div style="font-size:0.8em; color:#333;" data-text="Studio.MsgBuzzWin">WINNER</div>
-        <div id="host-buzz-winner-name" style="font-size:2em; font-weight:bold; color:#d00;">---</div>
-    </div>
-
-    <div id="host-kanpe-area" class="kanpe-card hidden">
-        <div style="background:#333; color:#fff; display:inline-block; padding:2px 8px; font-size:0.8em; border-radius:3px; margin-bottom:5px;" data-text="Studio.LabelKanpe">Kanpe</div>
-        <div id="kanpe-question" style="font-weight:bold; font-size:1.1em; margin-bottom:5px;"></div>
-        <div id="kanpe-answer" style="color:#d00; font-weight:bold;"></div>
-        <div id="kanpe-time-limit" style="font-size:0.8em; color:#666; margin-top:5px;"></div>
-        <div id="kanpe-point" style="font-size:0.8em; color:#0055ff; font-weight:bold;"></div>
-    </div>
-    <div id="host-status-area" style="text-align:center; margin-bottom:15px; font-weight:bold; color:#666;" data-text="Studio.StatusReady">Ready...</div>
-    
-    <div id="studio-timeline-area">
-        <h4 style="color:#333; margin:0 0 10px 0; text-align:center;" data-text="Studio.HeadingList">List</h4>
-        <div id="studio-period-timeline" style="display:flex; flex-direction:column; gap:10px; min-height:50px; margin-bottom:20px;"></div>
-        <div id="studio-footer-controls" style="border-top:1px solid #ddd; padding-top:20px; text-align:center;">
-            <button id="studio-master-play-btn" class="btn-success btn-block" style="padding:15px; font-size:1.2em; box-shadow: 0 4px 0 #218838;" data-text="Studio.BtnMasterPlay">Play</button>
-        </div>
-    </div>
-    
-    <div id="control-panel" class="hidden" style="margin-top:20px; border-top:2px solid #333; padding-top:15px;">
-        <h3 id="current-period-title" style="text-align:center; margin:0 0 10px 0; background:#eee; padding:5px;"></h3>
-        <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;" data-text="Studio.BtnStart">START</button>
-        <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;" data-text="Studio.BtnAnswer">Answer</button>
-        
-        <div id="host-manual-judge-area" class="hidden" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
-            <button id="host-judge-correct-btn" class="btn-success" style="padding:20px; font-size:1.2em;" data-text="Studio.BtnCorrect">Correct</button>
-            <button id="host-judge-wrong-btn" class="btn-danger" style="padding:20px; font-size:1.2em;" data-text="Studio.BtnWrong">Wrong</button>
-            <button id="host-judge-pass-btn" class="btn-warning hidden" style="padding:20px; font-size:1.2em;" data-text="Studio.BtnPass">Pass</button>
-        </div>
-
-        <button id="host-next-btn" class="btn-info btn-block hidden" style="padding:15px;" data-text="Studio.BtnNextQ">Next</button>
-        <hr>
-        <button id="host-ranking-btn" class="btn-success btn-block" data-text="Studio.BtnRanking">Ranking</button>
-    </div>
-    <button id="host-close-studio-btn" style="background:#555; margin-top:30px;" class="btn-block" data-text="Studio.BtnClose">Close</button>
-</div>
-
-<div id="ranking-view" class="view hidden" style="text-align:center;">
-    <h2 style="font-family: 'Arial Black', sans-serif; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">RANKING</h2>
-    <div id="ranking-list" class="ranking-container"></div>
-    <button id="ranking-back-btn" class="btn-primary btn-block" style="margin-top:20px;" data-text="Studio.BtnBackRanking">Back</button>
-</div>
-
-<div id="respondent-view" class="view hidden">
-    <div class="view-header">
-        <h2 data-text="Player.TitleEntry" style="margin:0;">Entry</h2>
-        <button class="header-back-btn back-to-main" data-text="Login.BackBtn">Home</button>
-    </div>
-    <hr>
-    <div style="text-align:center; padding:20px 0;">
-        <input type="text" id="room-code-input" placeholder="" maxlength="6"
-               style="font-size:1.5em; width:200px; text-align:center; text-transform:uppercase; margin-bottom:20px;">
-        <input type="text" id="player-name-input" placeholder="" 
-               style="font-size:1.2em; width:200px; text-align:center; margin-bottom:20px; display:block; margin:0 auto 20px auto;">
-        <button id="join-room-btn" class="btn-primary btn-block" data-text="Player.BtnJoin">Join</button>
-    </div>
-</div>
 <div id="player-game-view" class="view hidden">
     <div id="player-status-bar" style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.9em; padding:5px; background:#eee; border-radius:4px;">
         <span id="player-name-disp" style="font-weight:bold;" data-text="Player.LabelNameDefault">---</span>
@@ -345,6 +300,10 @@
         <div id="player-input-container"></div>
         <div id="answer-timer-disp" style="text-align:right; font-family:monospace; margin-top:5px; color:#666;"></div>
     </div>
+    <div id="player-oral-done-area" class="hidden" style="text-align:center; margin-top:20px;">
+        <button id="player-oral-done-btn" class="btn-primary btn-block" style="padding:20px; font-size:1.2em;" data-text="Player.BtnAnswered">Answered</button>
+    </div>
+
     <div id="player-wait-msg" class="hidden" style="text-align:center; padding:20px; font-weight:bold;" data-text="Player.MsgAnswered">Answered...</div>
     <div id="player-result-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1000;">
         <div id="result-icon" style="font-size:5em; margin-bottom:10px;"></div>
@@ -393,13 +352,13 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=49"></script>
-<script src="host_core.js?v=49"></script>
-<script src="host_creator.js?v=49"></script>
-<script src="host_config.js?v=49"></script>
-<script src="host_studio.js?v=49"></script>
-<script src="player.js?v=49"></script>
-<script src="viewer.js?v=49"></script>
+<script src="text_config.js?v=50"></script>
+<script src="host_core.js?v=50"></script>
+<script src="host_creator.js?v=50"></script>
+<script src="host_config.js?v=50"></script>
+<script src="host_studio.js?v=50"></script>
+<script src="player.js?v=50"></script>
+<script src="viewer.js?v=50"></script>
 
 </body>
 </html>
