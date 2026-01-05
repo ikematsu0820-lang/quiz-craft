@@ -1,18 +1,17 @@
 /* =========================================================
- * style.css (v22: TV Variety Show Fonts)
+ * style.css (v24: Reverted Fonts)
  * =======================================================*/
 
 /* 1. 基本設定 (Base) */
 body {
-    /* ★変更：Zen Maru Gothic をベースに */
-    font-family: "Zen Maru Gothic", sans-serif;
+    /* ★変更：元のフォントに戻す */
+    font-family: "Helvetica Neue", Arial, sans-serif;
     max-width: 600px;
     margin: 0 auto;
     padding: 10px;
     background-color: #f0f0f0;
     color: #333;
     transition: background 0.5s, color 0.5s;
-    font-weight: 700; /* 全体的に太めに */
 }
 
 .hidden { display: none !important; }
@@ -29,13 +28,12 @@ body {
 
 /* タイトルロゴ */
 .app-title {
-    /* ★変更：Dela Gothic One でインパクトを出す */
-    font-family: 'Dela Gothic One', cursive;
+    /* ★変更：Arial Black に戻す */
+    font-family: 'Arial Black', sans-serif;
     color: #ff0055;
     text-shadow: 2px 2px 0px #fff, 4px 4px 0px #000;
     text-align: center;
     margin-top: 0;
-    font-size: 2.5em; /* 少し大きく */
 }
 
 h1, h2, h3, h4 { text-align: center; margin-top: 0; }
@@ -49,9 +47,7 @@ button {
     border: none;
     transition: transform 0.1s;
     color: white;
-    /* ★変更：ボタンも Dela Gothic One */
-    font-family: 'Dela Gothic One', cursive;
-    letter-spacing: 1px;
+    font-weight: bold;
 }
 button:active { transform: scale(0.98); }
 
@@ -78,8 +74,6 @@ input[type="text"], input[type="number"], select {
     width: 100%;
     box-sizing: border-box;
     font-size: 16px;
-    font-family: "Zen Maru Gothic", sans-serif; /* 入力欄は読みやすく */
-    font-weight: bold;
 }
 
 /* セット設定画面（Config）用のスタイル */
@@ -98,6 +92,7 @@ input[type="text"], input[type="number"], select {
     width: 100%;
     margin-bottom: 5px;
 }
+/* 参加者設定のプルダウンを目立たせる */
 .highlight-select {
     background-color: #fffbe6;
     border: 1px solid #e6b800;
@@ -111,8 +106,6 @@ input[type="text"], input[type="number"], select {
     font-weight: bold;
     border-radius: 8px;
     box-shadow: 0 4px 0 rgba(0,0,0,0.2);
-    /* ★変更：回答ボタンも Dela Gothic One */
-    font-family: 'Dela Gothic One', cursive;
 }
 
 /* 3. ホスト用デザイン (Host UI) */
@@ -130,7 +123,6 @@ input[type="text"], input[type="number"], select {
     background: #ffcccc; color: #d00;
     font-size: 0.8em; padding: 4px 8px;
     margin-left: 10px;
-    font-family: "Zen Maru Gothic", sans-serif;
 }
 
 /* カンペ */
@@ -147,7 +139,7 @@ input[type="text"], input[type="number"], select {
 .timeline-card {
     background: #fff;
     border: 1px solid #ccc;
-    border-left: 6px solid #ccc; 
+    border-left: 6px solid #ccc; /* 未選択はグレー */
     padding: 15px;
     border-radius: 4px;
     display: flex;
@@ -158,10 +150,11 @@ input[type="text"], input[type="number"], select {
     opacity: 0.6; 
 }
 
+/* アクティブ（再生対象）のスタイル */
 .timeline-card.active {
-    background: #e6f0ff; 
+    background: #e6f0ff; /* 薄い青背景 */
     border-color: #0055ff;
-    border-left-color: #0055ff; 
+    border-left-color: #0055ff; /* 青い帯 */
     opacity: 1; 
     transform: scale(1.02); 
     box-shadow: 0 4px 8px rgba(0,85,255,0.2);
@@ -238,41 +231,20 @@ input[type="text"], input[type="number"], select {
 .rank-1 { background: linear-gradient(to right, #ffd700, #fffacd); border: 2px solid #daa520; color: #554400; transform: scale(1.02); }
 .rank-2 { background: linear-gradient(to right, #c0c0c0, #f5f5f5); border: 2px solid #a9a9a9; }
 .rank-3 { background: linear-gradient(to right, #cd7f32, #fff5ee); border: 2px solid #a0522d; color: #5a2d0c; }
-.rank-badge { 
-    display: inline-block; 
-    width: 30px; 
-    text-align: center; 
-    margin-right: 10px; 
-    /* ★変更：数字は Dela Gothic One */
-    font-family: 'Dela Gothic One', cursive; 
-}
-.rank-score { 
-    /* ★変更：スコアも Dela Gothic One */
-    font-family: 'Dela Gothic One', cursive; 
-    font-size: 0.9em; 
-    color: #555; 
-    text-align: right; 
-}
+.rank-badge { display: inline-block; width: 30px; text-align: center; margin-right: 10px; font-family: 'Arial Black', sans-serif; }
+.rank-score { font-family: monospace; font-size: 0.9em; color: #555; text-align: right; }
 
 /* 5. テーマ設定 (Dark Theme) */
 body.dark-theme { background-color: #000022; color: #e0e0e0; }
 body.dark-theme .view { background-color: #0d0d33; border: 1px solid #555; color: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
 body.dark-theme .app-title { color: #ffd700; text-shadow: 0 0 10px #ffd700; }
 body.dark-theme #player-status-bar { background: #222; border: 1px solid #444; }
-body.dark-theme #score-display-area { 
-    color: #ffd700; 
-    border: 1px solid gold; 
-    background: #111; 
-    padding: 5px; 
-    box-shadow: 0 0 5px gold; 
-    font-family: 'Dela Gothic One', cursive; /* 追加 */
-}
+body.dark-theme #score-display-area { color: #ffd700; border: 1px solid gold; background: #111; padding: 5px; box-shadow: 0 0 5px gold; }
 body.dark-theme .answer-btn {
     background: linear-gradient(to bottom, #333, #000);
     border: 2px solid #ffd700; color: #ffd700;
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-    font-family: 'Dela Gothic One', cursive; /* 変更 */
-    text-shadow: 1px 1px 0 #000;
+    font-family: serif; text-shadow: 1px 1px 0 #000;
 }
 body.dark-theme .answer-btn[data-index="0"]::before { content: "A: "; color: white; }
 body.dark-theme .answer-btn[data-index="1"]::before { content: "B: "; color: white; }
