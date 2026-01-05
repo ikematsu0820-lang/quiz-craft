@@ -1,5 +1,5 @@
 /* =========================================================
- * viewer.js (v33: New Monitor View)
+ * viewer.js (v34: Monitor View Logic)
  * =======================================================*/
 
 document.addEventListener('DOMContentLoaded', () => {
