@@ -120,4 +120,176 @@
                         <option value="10">10秒</option>
                         <option value="20">20秒</option>
                         <option value="30">30秒</option>
-                        <option value="60
+                        <option value="60">60秒</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:0.7em; color:#666;">スコア</label>
+                    <div style="display:flex; gap:5px;">
+                        <select id="config-score-unit" class="config-select" style="flex:1;">
+                            <option value="point">ポイント制</option>
+                            <option value="currency">通貨制</option>
+                        </select>
+                        <button id="config-custom-score-btn" style="flex:0 0 40px; background:#666; padding:0; font-size:1.2em;" title="配点を個別に変更">📝</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:5px;">
+                <label style="font-size:0.7em; color:#666;">不正解時の失点 (Penalty)</label>
+                <select id="config-loss-point" class="config-select">
+                    <option value="0">なし (0点)</option>
+                    <option value="-1">-1点</option>
+                    <option value="-5">-5点</option>
+                    <option value="-10">-10点</option>
+                    <option value="-50">-50点</option>
+                    <option value="-100">-100点</option>
+                    <option value="reset">0点にリセット</option>
+                </select>
+            </div>
+
+            <div id="config-custom-points-area" class="hidden" style="margin-top:10px; padding:10px; background:#fff; border:2px solid #aaa; border-radius:5px;">
+                <h5 style="margin:0 0 10px 0; border-bottom:1px solid #ddd; padding-bottom:5px;">問題別配点・失点設定</h5>
+                
+                <div style="display:flex; justify-content:flex-end; align-items:center; gap:5px; margin-bottom:10px; background:#f9f9f9; padding:5px; font-size:0.8em;">
+                    <div>
+                        <span style="color:#0055ff; font-weight:bold;">得点一括:</span>
+                        <input type="number" id="config-bulk-point-input" value="1" min="1" style="width:40px; text-align:center;">
+                        <button id="config-bulk-point-btn" style="padding:2px 6px;">反映</button>
+                    </div>
+                    <div>
+                        <span style="color:#d00; font-weight:bold;">失点一括:</span>
+                        <input type="number" id="config-bulk-loss-input" value="0" min="0" style="width:40px; text-align:center;">
+                        <button id="config-bulk-loss-btn" style="padding:2px 6px;">反映</button>
+                    </div>
+                </div>
+
+                <div id="config-questions-list" style="font-size:0.9em; max-height:200px; overflow-y:auto;"></div>
+            </div>
+        </div>
+        
+        <button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:12px; border:none; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.2);">
+            リストに追加
+        </button>
+    </div>
+
+    <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
+        <h4 style="color:#333; margin:0 0 10px 0;">現在の番組構成リスト</h4>
+        <div id="config-playlist-preview" style="background:#eee; padding:10px; border-radius:5px; min-height:50px;">
+            <p style="text-align:center; color:#999; font-size:0.8em;">まだ追加されていません</p>
+        </div>
+        
+        <div style="display:flex; gap:5px; margin-bottom:15px; margin-top:15px;">
+            <input type="text" id="config-program-title" placeholder="構成に名前をつけて保存" style="flex:1;">
+            <button id="config-save-program-btn" class="btn-info" style="flex:0 0 80px;">保存</button>
+        </div>
+    </div>
+
+    <button id="config-go-studio-btn" class="btn-danger btn-block" style="padding:15px; font-weight:bold;">保存してスタジオへ</button>
+</div>
+
+<div id="host-control-view" class="view hidden">
+    <div style="background:#111; color:white; padding:10px; border-radius:8px; text-align:center; margin-bottom:10px; border:4px solid gold;">
+        <div style="font-size:0.8em; color:gold;">ON AIR / <span id="studio-show-id">---</span></div>
+        <div id="host-room-id" style="font-size:2em; font-weight:bold; letter-spacing:3px;">---</div>
+        <div style="display:flex; justify-content:space-around; margin-top:5px; font-size:0.9em;">
+            <div>参加: <span id="host-player-count">0</span></div>
+            <div>生存: <span id="host-alive-count" style="color:#00ff00; font-weight:bold;">0</span></div>
+        </div>
+    </div>
+
+    <div id="host-kanpe-area" class="kanpe-card hidden">
+        <div style="background:#333; color:#fff; display:inline-block; padding:2px 8px; font-size:0.8em; border-radius:3px; margin-bottom:5px;">司会者用カンペ</div>
+        <div id="kanpe-question" style="font-weight:bold; font-size:1.1em; margin-bottom:5px;"></div>
+        <div id="kanpe-answer" style="color:#d00; font-weight:bold;"></div>
+        <div id="kanpe-time-limit" style="font-size:0.8em; color:#666; margin-top:5px;"></div>
+        <div id="kanpe-point" style="font-size:0.8em; color:#0055ff; font-weight:bold;"></div>
+    </div>
+    
+    <div id="host-status-area" style="text-align:center; margin-bottom:15px; font-weight:bold; color:#666;">準備中...</div>
+
+    <div id="studio-timeline-area">
+        <h4 style="color:#333; margin:0 0 10px 0; text-align:center;">番組構成リスト</h4>
+        <div id="studio-period-timeline" style="display:flex; flex-direction:column; gap:10px; min-height:50px; margin-bottom:20px;">
+            <p style="text-align:center; color:#999; font-size:0.9em;">セット設定画面でリストを作成してください</p>
+        </div>
+        
+        <div id="studio-footer-controls" style="border-top:1px solid #ddd; padding-top:20px; text-align:center;">
+            <button id="studio-master-play-btn" class="btn-success btn-block" style="padding:15px; font-size:1.2em; box-shadow: 0 4px 0 #218838;">
+                再生 ▶
+            </button>
+        </div>
+    </div>
+
+    <div id="control-panel" class="hidden" style="margin-top:20px; border-top:2px solid #333; padding-top:15px;">
+        <h3 id="current-period-title" style="text-align:center; margin:0 0 10px 0; background:#eee; padding:5px;"></h3>
+        <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;">問題 START！</button>
+        <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;">正解発表</button>
+        <button id="host-next-btn" class="btn-info btn-block hidden" style="padding:15px;">次の問題へ</button>
+        <hr>
+        <button id="host-ranking-btn" class="btn-success btn-block">ランキング集計</button>
+    </div>
+
+    <button id="host-close-studio-btn" style="background:#555; margin-top:30px;" class="btn-block">スタジオを閉じて戻る</button>
+</div>
+
+<div id="ranking-view" class="view hidden" style="text-align:center;">
+    <h2 style="font-family: 'Arial Black'; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">PERIOD RANKING</h2>
+    <div id="ranking-list" class="ranking-container"></div>
+    <button id="ranking-back-btn" class="btn-primary btn-block" style="margin-top:20px;">スタジオに戻る</button>
+</div>
+
+<div id="respondent-view" class="view hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>エントリー</h2>
+        <button class="back-to-main">戻る</button>
+    </div>
+    <hr>
+    <div style="text-align:center; padding:20px 0;">
+        <input type="text" id="room-code-input" placeholder="部屋コード (6桁)" maxlength="6"
+               style="font-size:1.5em; width:200px; text-align:center; text-transform:uppercase; margin-bottom:20px;">
+        <input type="text" id="player-name-input" placeholder="名前を入力" 
+               style="font-size:1.2em; width:200px; text-align:center; margin-bottom:20px; display:block; margin:0 auto 20px auto;">
+        <button id="join-room-btn" class="btn-primary btn-block">参加する</button>
+    </div>
+</div>
+<div id="player-game-view" class="view hidden">
+    <div id="player-status-bar" style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.9em; padding:5px; background:#eee; border-radius:4px;">
+        <span id="player-name-disp" style="font-weight:bold;">名無し</span>
+        <span id="alive-badge" style="background:#00ff00; color:black; padding:2px 6px; border-radius:4px; font-weight:bold;">STAND UP</span>
+    </div>
+    <div id="score-display-area" class="hidden" style="text-align:center; margin-bottom:10px; font-weight:bold; font-size:1.2em; color:#0056b3;">
+        Score: <span id="current-score-value">0</span>
+    </div>
+    <div id="player-lobby-msg" style="text-align:center; padding:40px 0;">
+        <h2>Ready?</h2>
+        <p>画面を注視してください</p>
+    </div>
+    <div id="player-quiz-area" class="hidden">
+        <div id="question-text-disp" style="background:#fff; border:2px solid #333; padding:15px; border-radius:8px; font-weight:bold; margin-bottom:15px; min-height:60px;">問題文</div>
+        <div id="player-choices-area" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; height:200px;">
+            <button class="answer-btn btn-blue" data-index="0">1</button>
+            <button class="answer-btn btn-red" data-index="1">2</button>
+            <button class="answer-btn btn-green" data-index="2">3</button>
+            <button class="answer-btn btn-yellow" data-index="3">4</button>
+        </div>
+        <div id="answer-timer-disp" style="text-align:right; font-family:monospace; margin-top:5px; color:#666;"></div>
+    </div>
+    <div id="player-wait-msg" class="hidden" style="text-align:center; padding:20px; font-weight:bold;">ANSWERED!<br>祈ってお待ちください...</div>
+    <div id="player-dead-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:999;">
+        <h1 style="color:gray; font-size:3em;">GAME OVER</h1>
+        <p>脱落...</p>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="firebase.js"></script>
+<script src="host_core.js?v=24"></script>
+<script src="host_creator.js?v=24"></script>
+<script src="host_config.js?v=24"></script>
+<script src="host_studio.js?v=24"></script>
+<script src="player.js?v=24"></script>
+
+</body>
+</html>
