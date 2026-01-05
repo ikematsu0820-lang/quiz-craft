@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v30: Text Config Support)
+ * host_config.js (v32: Saved Programs List in Config)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -81,7 +81,77 @@ function enterConfigMode() {
         };
     }
 
+    // ★追加：保存済みプログラムの読み込み
+    loadSavedProgramsInConfig();
+
     renderConfigPreview();
+}
+
+// ★追加：保存済みプログラム一覧を表示・操作
+function loadSavedProgramsInConfig() {
+    const listEl = document.getElementById('config-saved-programs-list');
+    if(!listEl) return;
+    listEl.innerHTML = `<p style="text-align:center;">${APP_TEXT.Config.SelectLoading}</p>`;
+
+    window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
+        const data = snap.val();
+        listEl.innerHTML = '';
+        if(!data) {
+            listEl.innerHTML = `<p style="text-align:center; color:#999;">${APP_TEXT.Config.SelectEmpty}</p>`;
+            return;
+        }
+        Object.keys(data).forEach(key => {
+            const item = data[key];
+            const div = document.createElement('div');
+            div.className = 'set-item';
+            div.innerHTML = `
+                <div>
+                    <span style="font-weight:bold;">${item.title}</span>
+                    <div style="font-size:0.8em; color:#666;">
+                        ${new Date(item.createdAt).toLocaleDateString()} / ${item.playlist ? item.playlist.length : 0} Periods
+                    </div>
+                </div>
+            `;
+            const btnArea = document.createElement('div');
+            btnArea.style.display = 'flex';
+            btnArea.style.gap = '5px';
+
+            // 読み込みボタン
+            const loadBtn = document.createElement('button');
+            loadBtn.textContent = APP_TEXT.Config.BtnLoadProg;
+            loadBtn.style.backgroundColor = '#0055ff';
+            loadBtn.style.color = 'white';
+            loadBtn.style.fontSize = '0.8em';
+            loadBtn.style.padding = '4px 8px';
+            loadBtn.onclick = () => {
+                if(confirm(APP_TEXT.Config.MsgConfirmLoadProg)) {
+                    periodPlaylist = item.playlist || [];
+                    document.getElementById('config-final-ranking-chk').checked = (item.finalRanking !== false);
+                    document.getElementById('config-program-title').value = item.title;
+                    renderConfigPreview();
+                    alert("Loaded.");
+                }
+            };
+
+            // 削除ボタン
+            const delBtn = document.createElement('button');
+            delBtn.className = 'delete-btn';
+            delBtn.textContent = APP_TEXT.Config.BtnDelProg;
+            delBtn.onclick = () => {
+                if(confirm(APP_TEXT.Config.MsgConfirmDelProg)) {
+                    window.db.ref(`saved_programs/${currentShowId}/${key}`).remove()
+                    .then(() => {
+                        div.remove();
+                    });
+                }
+            };
+
+            btnArea.appendChild(loadBtn);
+            btnArea.appendChild(delBtn);
+            div.appendChild(btnArea);
+            listEl.appendChild(div);
+        });
+    });
 }
 
 function updateBuilderUI() {
@@ -167,7 +237,7 @@ function addPeriodToPlaylist() {
 
     let initialStatus = 'revive'; 
     let passCount = 5;
-    let intermediateRanking = false; // 中間発表フラグ
+    let intermediateRanking = false; 
 
     let elimCount = 1;
     if (document.getElementById('config-elimination-rule').value === 'wrong_and_slowest') {
@@ -328,6 +398,7 @@ function saveProgramToCloud() {
         alert(APP_TEXT.Config.MsgSaved);
         titleInput.value = '';
         periodPlaylist = []; 
+        loadSavedProgramsInConfig(); // リスト更新
         enterDashboard(); 
     })
     .catch(err => alert("Error: " + err.message));
