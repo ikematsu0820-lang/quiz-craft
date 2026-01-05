@@ -1,11 +1,24 @@
 /* =========================================================
- * style_viewer.css (v41: Viewer with Alignment)
+ * style_viewer.css (v44: CSS Variables for Design)
  * =======================================================*/
 
-/* (中略: 基本部分は変更なし) */
+/* デフォルトのデザイン変数 */
+:root {
+    --main-text-color: #ffffff;
+    --main-bg-color: #222222;
+    --frame-color: #2c5066;
+    --bg-image: none;
+}
+
 #viewer-main-view {
     font-family: "Helvetica Neue", Arial, sans-serif;
-    background-color: #222;
+    
+    /* 変数を使用 */
+    background-color: var(--main-bg-color);
+    background-image: var(--bg-image);
+    background-size: cover;
+    background-position: center;
+    
     width: 100vw;
     height: 100vh;
     position: fixed;
@@ -38,7 +51,6 @@
     text-shadow: 0 2px 4px rgba(0,0,0,0.8);
 }
 
-/* レイアウト共通 */
 .viewer-layout-container {
     flex: 1;
     display: flex;
@@ -47,26 +59,44 @@
     padding: 10px;
 }
 
-/* ★v41追加: 文字配置クラス */
 .text-left { justify-content: flex-start !important; text-align: left !important; }
 .text-center { justify-content: center !important; text-align: center !important; }
 .text-right { justify-content: flex-end !important; text-align: right !important; }
 
-/* パターンA: 標準 */
-.layout-standard { flex-direction: column; }
-.layout-standard .q-area {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    /* justify-contentはtext-xxxクラスで上書きされる */
-    background: #2c5066;
+/* 共通：問題エリア */
+.q-area {
+    /* 変数を使用 */
+    background: var(--frame-color); /* 背景色も枠色に合わせる */
+    color: var(--main-text-color);
+    
     border: 4px solid #fff;
     box-shadow: 0 0 15px rgba(0,0,0,0.5);
     margin-bottom: 20px;
     padding: 20px;
     font-size: 5vh;
     font-weight: bold;
-    color: white;
+}
+
+/* 共通：選択肢アイテム */
+.choice-item {
+    /* 変数を使用 */
+    background: rgba(255,255,255,0.1); /* 少し透明に */
+    border: 2px solid var(--main-text-color);
+    color: var(--main-text-color);
+    
+    padding: 1.5vh 2vw;
+    font-size: 3.5vh;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* --- レイアウト別配置 --- */
+.layout-standard { flex-direction: column; }
+.layout-standard .q-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
 }
 .layout-standard .c-area {
     flex: 1;
@@ -75,32 +105,14 @@
     justify-content: center;
     gap: 15px;
 }
-.layout-standard .choice-item {
-    background: #365c75;
-    border: 2px solid #fff;
-    color: white;
-    padding: 1.5vh 2vw;
-    font-size: 3.5vh;
-    display: flex;
-    align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
 
-/* パターンB: 左右リスト */
 .layout-split-list { flex-direction: row-reverse; gap: 20px; }
 .layout-split-list .q-area {
     width: 25%;
-    background: #2c5066;
-    border: 4px solid #fff;
-    color: white;
-    font-size: 5vh;
-    font-weight: bold;
     writing-mode: vertical-rl;
     text-orientation: upright;
     display: flex;
     align-items: center;
-    padding: 20px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.5);
 }
 .layout-split-list .c-area {
     width: 75%;
@@ -109,32 +121,14 @@
     justify-content: center;
     gap: 15px;
 }
-.layout-split-list .choice-item {
-    background: #365c75;
-    border: 2px solid #fff;
-    color: white;
-    padding: 2vh 2vw;
-    font-size: 4vh;
-    display: flex;
-    align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
 
-/* パターンC: 左右グリッド */
 .layout-split-grid { flex-direction: row-reverse; gap: 20px; }
 .layout-split-grid .q-area {
     width: 25%;
-    background: #2c5066;
-    border: 4px solid #fff;
-    color: white;
-    font-size: 5vh;
-    font-weight: bold;
     writing-mode: vertical-rl;
     text-orientation: upright;
     display: flex;
     align-items: center;
-    padding: 20px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.5);
 }
 .layout-split-grid .c-area {
     width: 75%;
@@ -144,20 +138,7 @@
     gap: 15px;
     align-content: center;
 }
-.layout-split-grid .choice-item {
-    background: #365c75;
-    border: 2px solid #fff;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 4vh;
-    padding: 20px;
-    text-align: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
 
-/* 選択肢番号 */
 .choice-prefix {
     color: gold;
     font-weight: bold;
