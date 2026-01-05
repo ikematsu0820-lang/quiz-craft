@@ -1,154 +1,167 @@
 /* =========================================================
- * style_viewer.css (v45: Granular Design Variables)
+ * viewer.js (v45: Granular Design Apply)
  * =======================================================*/
 
-/* デフォルトのデザイン変数 */
-:root {
-    /* Main */
-    --main-bg-color: #222222;
-    --bg-image: none;
-    
-    /* Question Area */
-    --q-text-color: #ffffff;
-    --q-bg-color: #2c5066;
-    --q-border-color: #ffffff;
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('viewer-connect-btn');
+    if(btn) btn.addEventListener('click', viewerConnect);
+});
 
-    /* Choice Area */
-    --c-text-color: #ffffff;
-    --c-bg-color: #365c75;
-    --c-border-color: #ffffff;
-}
+function viewerConnect() {
+    const code = document.getElementById('viewer-room-code').value.trim().toUpperCase();
+    if(!code) { alert("Code Required"); return; }
 
-#viewer-main-view {
-    font-family: "Helvetica Neue", Arial, sans-serif;
-    
-    /* 全体背景 */
-    background-color: var(--main-bg-color);
-    background-image: var(--bg-image);
-    background-size: cover;
-    background-position: center;
-    
-    width: 100vw;
-    height: 100vh;
-    position: fixed;
-    top: 0;
-    left: 0;
-    padding: 0;
-    margin: 0;
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    window.db.ref(`rooms/${code}`).once('value', snap => {
+        if(!snap.exists()) { alert("Room not found"); return; }
+        
+        // 画面切り替え
+        window.showView(window.views.viewerMain);
+        startViewerListener(code);
+    });
 }
 
-#viewer-content {
-    width: 95%;
-    height: 90%;
-    display: flex;
-    flex-direction: column;
+function startViewerListener(roomId) {
+    const contentDiv = document.getElementById('viewer-content');
+    const statusEl = document.getElementById('viewer-status');
+    const rankArea = document.getElementById('viewer-ranking-area');
+    const mainView = document.getElementById('viewer-main-view');
+
+    // ステータス監視
+    window.db.ref(`rooms/${roomId}/status`).on('value', snap => {
+        const st = snap.val();
+        if(!st) return;
+
+        // ランキング時はエリア切り替え
+        if (st.step === 'ranking') {
+            statusEl.textContent = "RANKING";
+            contentDiv.innerHTML = ""; 
+            rankArea.style.display = 'block';
+            contentDiv.appendChild(rankArea); 
+            renderViewerRanking(roomId, rankArea);
+            return;
+        }
+
+        rankArea.style.display = 'none';
+        
+        // コンテンツ再構築
+        contentDiv.innerHTML = ""; 
+        contentDiv.appendChild(statusEl); 
+        
+        if (st.step === 'standby') {
+            statusEl.textContent = APP_TEXT.Viewer.Waiting;
+            const waitDiv = document.createElement('div');
+            waitDiv.textContent = "待機中...";
+            waitDiv.style.fontSize = "5vh";
+            waitDiv.style.marginTop = "20vh";
+            waitDiv.style.color = "var(--q-text-color)"; 
+            contentDiv.appendChild(waitDiv);
+        }
+        else if (st.step === 'question' || st.step === 'answer') {
+            statusEl.textContent = (st.step === 'question') ? "QUESTION" : APP_TEXT.Viewer.AnswerCheck;
+            
+            // 問題データ取得
+            window.db.ref(`rooms/${roomId}/questions/${st.qIndex}`).once('value', qSnap => {
+                const q = qSnap.val();
+                
+                // ★v45: 詳細デザイン適用
+                if(q.design) {
+                    // Main
+                    mainView.style.setProperty('--main-bg-color', q.design.mainBgColor);
+                    if(q.design.bgImage) {
+                        mainView.style.setProperty('--bg-image', `url(${q.design.bgImage})`);
+                    } else {
+                        mainView.style.setProperty('--bg-image', 'none');
+                    }
+                    
+                    // Question Area
+                    mainView.style.setProperty('--q-text-color', q.design.qTextColor);
+                    mainView.style.setProperty('--q-bg-color', q.design.qBgColor);
+                    mainView.style.setProperty('--q-border-color', q.design.qBorderColor);
+                    
+                    // Choice Area
+                    mainView.style.setProperty('--c-text-color', q.design.cTextColor);
+                    mainView.style.setProperty('--c-bg-color', q.design.cBgColor);
+                    mainView.style.setProperty('--c-border-color', q.design.cBorderColor);
+                }
+
+                // レイアウト
+                const layoutClass = 'layout-' + (q.layout || 'standard').replace('_', '-'); 
+                
+                const container = document.createElement('div');
+                container.className = `viewer-layout-container ${layoutClass}`;
+                
+                // 問題文
+                const qArea = document.createElement('div');
+                qArea.className = 'q-area';
+                if(q.align) {
+                    qArea.classList.add('text-' + q.align);
+                } else {
+                    qArea.classList.add('text-center'); 
+                }
+                qArea.textContent = q.q;
+                
+                // 選択肢
+                const cArea = document.createElement('div');
+                cArea.className = 'c-area';
+                
+                if (q.type === 'choice' || q.type === 'sort') {
+                    q.c.forEach((choice, i) => {
+                        const item = document.createElement('div');
+                        item.className = 'choice-item';
+                        const prefix = (q.type === 'choice') ? String.fromCharCode(65 + i) : (i + 1);
+                        
+                        // 正解表示
+                        if (st.step === 'answer') {
+                            let isCorrect = false;
+                            if (q.type === 'choice') {
+                                if (q.correctIndex !== undefined && i === q.correctIndex) isCorrect = true;
+                                else if (q.correct && q.correct.includes(i)) isCorrect = true;
+                            }
+                            if (isCorrect) {
+                                item.style.background = "#d00";
+                                item.style.borderColor = "gold";
+                            } else {
+                                item.style.opacity = "0.5";
+                            }
+                        }
+
+                        item.innerHTML = `<span class="choice-prefix">${prefix}.</span> ${choice}`;
+                        cArea.appendChild(item);
+                    });
+                }
+
+                container.appendChild(qArea);
+                container.appendChild(cArea);
+                contentDiv.appendChild(container);
+            });
+        }
+    });
 }
 
-#viewer-status {
-    height: 10%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 4vh;
-    color: gold;
-    font-weight: bold;
-    letter-spacing: 0.2em;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-}
-
-.viewer-layout-container {
-    flex: 1;
-    display: flex;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 10px;
-}
-
-.text-left { justify-content: flex-start !important; text-align: left !important; }
-.text-center { justify-content: center !important; text-align: center !important; }
-.text-right { justify-content: flex-end !important; text-align: right !important; }
-
-/* ★共通：問題エリア (変数を適用) */
-.q-area {
-    background: var(--q-bg-color);
-    color: var(--q-text-color);
-    border: 4px solid var(--q-border-color);
-    
-    box-shadow: 0 0 15px rgba(0,0,0,0.5);
-    margin-bottom: 20px;
-    padding: 20px;
-    font-size: 5vh;
-    font-weight: bold;
-}
-
-/* ★共通：選択肢アイテム (変数を適用) */
-.choice-item {
-    background: var(--c-bg-color);
-    color: var(--c-text-color);
-    border: 2px solid var(--c-border-color);
-    
-    padding: 1.5vh 2vw;
-    font-size: 3.5vh;
-    display: flex;
-    align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
-
-/* --- レイアウト別配置 --- */
-.layout-standard { flex-direction: column; }
-.layout-standard .q-area {
-    flex: 1;
-    display: flex;
-    align-items: center;
-}
-.layout-standard .c-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 15px;
-}
-
-.layout-split-list { flex-direction: row-reverse; gap: 20px; }
-.layout-split-list .q-area {
-    width: 25%;
-    writing-mode: vertical-rl;
-    text-orientation: upright;
-    display: flex;
-    align-items: center;
-}
-.layout-split-list .c-area {
-    width: 75%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 15px;
-}
-
-.layout-split-grid { flex-direction: row-reverse; gap: 20px; }
-.layout-split-grid .q-area {
-    width: 25%;
-    writing-mode: vertical-rl;
-    text-orientation: upright;
-    display: flex;
-    align-items: center;
-}
-.layout-split-grid .c-area {
-    width: 75%;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-auto-rows: minmax(100px, 1fr);
-    gap: 15px;
-    align-content: center;
-}
-
-.choice-prefix {
-    color: gold;
-    font-weight: bold;
-    margin-right: 15px;
-    font-family: 'Arial Black', sans-serif;
+function renderViewerRanking(roomId, container) {
+    container.innerHTML = "集計中...";
+    window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
+        let list = [];
+        snap.forEach(p => {
+            const v = p.val();
+            list.push({ name: v.name, score: v.periodScore||0, time: v.periodTime||0 });
+        });
+        list.sort((a,b) => (b.score - a.score) || (a.time - b.time));
+        
+        const top10 = list.slice(0, 10);
+        
+        let html = '<table style="width:100%; font-size:3vw; border-collapse:collapse; color:white; margin-top:20px;">';
+        top10.forEach((p, i) => {
+            const color = i === 0 ? 'gold' : (i === 1 ? 'silver' : (i === 2 ? '#cd7f32' : 'white'));
+            const rankSize = i < 3 ? '1.2em' : '1em';
+            
+            html += `<tr style="border-bottom:1px solid #555;">
+                <td style="color:${color}; font-weight:bold; width:15%; text-align:center; font-size:${rankSize};">${i+1}</td>
+                <td style="text-align:left; padding-left:20px;">${p.name}</td>
+                <td style="text-align:right; font-family:monospace;">${p.score} pt</td>
+            </tr>`;
+        });
+        html += '</table>';
+        container.innerHTML = html;
+    });
 }
