@@ -1,5 +1,5 @@
 /* =========================================================
- * viewer.js (v41: Viewer with Alignment Logic)
+ * viewer.js (v44: Dynamic Design Support)
  * =======================================================*/
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -24,6 +24,7 @@ function startViewerListener(roomId) {
     const contentDiv = document.getElementById('viewer-content');
     const statusEl = document.getElementById('viewer-status');
     const rankArea = document.getElementById('viewer-ranking-area');
+    const mainView = document.getElementById('viewer-main-view');
 
     // ステータス監視
     window.db.ref(`rooms/${roomId}/status`).on('value', snap => {
@@ -33,19 +34,18 @@ function startViewerListener(roomId) {
         // ランキング時はエリア切り替え
         if (st.step === 'ranking') {
             statusEl.textContent = "RANKING";
-            contentDiv.innerHTML = ""; // クリア
+            contentDiv.innerHTML = ""; 
             rankArea.style.display = 'block';
-            contentDiv.appendChild(rankArea); // ランキングエリアを表示
+            contentDiv.appendChild(rankArea); 
             renderViewerRanking(roomId, rankArea);
             return;
         }
 
-        // 通常問題進行時
         rankArea.style.display = 'none';
         
-        // 毎回コンテンツを再構築してレイアウト変更に対応
+        // コンテンツ再構築
         contentDiv.innerHTML = ""; 
-        contentDiv.appendChild(statusEl); // ステータスは常に上
+        contentDiv.appendChild(statusEl); 
         
         if (st.step === 'standby') {
             statusEl.textContent = APP_TEXT.Viewer.Waiting;
@@ -53,6 +53,7 @@ function startViewerListener(roomId) {
             waitDiv.textContent = "待機中...";
             waitDiv.style.fontSize = "5vh";
             waitDiv.style.marginTop = "20vh";
+            waitDiv.style.color = "var(--main-text-color)"; // ★変数使用
             contentDiv.appendChild(waitDiv);
         }
         else if (st.step === 'question' || st.step === 'answer') {
@@ -62,26 +63,35 @@ function startViewerListener(roomId) {
             window.db.ref(`rooms/${roomId}/questions/${st.qIndex}`).once('value', qSnap => {
                 const q = qSnap.val();
                 
-                // レイアウトクラス決定
+                // ★v44: デザイン適用
+                if(q.design) {
+                    mainView.style.setProperty('--main-text-color', q.design.textColor);
+                    mainView.style.setProperty('--main-bg-color', q.design.bgColor);
+                    mainView.style.setProperty('--frame-color', q.design.frameColor);
+                    if(q.design.bgImage) {
+                        mainView.style.setProperty('--bg-image', `url(${q.design.bgImage})`);
+                    } else {
+                        mainView.style.setProperty('--bg-image', 'none');
+                    }
+                }
+
+                // レイアウト
                 const layoutClass = 'layout-' + (q.layout || 'standard').replace('_', '-'); 
                 
                 const container = document.createElement('div');
                 container.className = `viewer-layout-container ${layoutClass}`;
                 
-                // 問題文エリア
+                // 問題文
                 const qArea = document.createElement('div');
                 qArea.className = 'q-area';
-                
-                // ★追加: 文字配置クラス適用
                 if(q.align) {
                     qArea.classList.add('text-' + q.align);
                 } else {
-                    qArea.classList.add('text-center'); // デフォルト
+                    qArea.classList.add('text-center'); 
                 }
-
                 qArea.textContent = q.q;
                 
-                // 選択肢エリア
+                // 選択肢
                 const cArea = document.createElement('div');
                 cArea.className = 'c-area';
                 
@@ -91,7 +101,7 @@ function startViewerListener(roomId) {
                         item.className = 'choice-item';
                         const prefix = (q.type === 'choice') ? String.fromCharCode(65 + i) : (i + 1);
                         
-                        // 正解表示時のハイライト
+                        // 正解表示
                         if (st.step === 'answer') {
                             let isCorrect = false;
                             if (q.type === 'choice') {
@@ -99,7 +109,7 @@ function startViewerListener(roomId) {
                                 else if (q.correct && q.correct.includes(i)) isCorrect = true;
                             }
                             if (isCorrect) {
-                                item.style.background = "#d00"; // 正解色
+                                item.style.background = "#d00"; // 正解は赤固定で見やすく
                                 item.style.borderColor = "gold";
                             } else {
                                 item.style.opacity = "0.5";
