@@ -1,321 +1,76 @@
 /* =========================================================
- * style_host.css (v55: Refined UI)
+ * style_host.css (v56: Fixed Type & Custom Time UI)
  * =======================================================*/
 
-/* --- 問題作成画面フォーム --- */
-.choice-row {
-    background: #fff;
-    border: 1px solid #ddd;
-    padding: 5px;
-    border-radius: 4px;
-    margin-bottom: 5px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
+.choice-row { background: #fff; border: 1px solid #ddd; padding: 5px; border-radius: 4px; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+.choice-correct-chk { width: 20px; height: 20px; cursor: pointer; }
+.choice-text-input, .sort-text-input { border: none; outline: none; font-size: 1em; padding: 5px; background: transparent; flex: 1; }
+.choice-text-input:focus, .sort-text-input:focus { background: #f0f8ff; border-bottom: 1px solid #0055ff; }
 
-.choice-correct-chk {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-}
-
-.choice-text-input, .sort-text-input {
-    border: none;
-    outline: none;
-    font-size: 1em;
-    padding: 5px;
-    background: transparent;
-    flex: 1;
-}
-
-.choice-text-input:focus, .sort-text-input:focus {
-    background: #f0f8ff;
-    border-bottom: 1px solid #0055ff;
-}
-
-/* --- リストアイテム --- */
-.q-list-item {
-    background: #fff;
-    border: 1px solid #ddd;
-    padding: 10px;
-    margin-bottom: 5px;
-    border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.q-list-content {
-    flex: 1;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    margin-right: 10px;
-}
-
-.q-list-actions {
-    display: flex;
-    gap: 5px;
-}
-
-.btn-mini {
-    padding: 2px 8px;
-    font-size: 0.8em;
-    border-radius: 3px;
-    border: none;
-    cursor: pointer;
-}
+.q-list-item { background: #fff; border: 1px solid #ddd; padding: 10px; margin-bottom: 5px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+.q-list-content { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-right: 10px; }
+.q-list-actions { display: flex; gap: 5px; }
+.btn-mini { padding: 2px 8px; font-size: 0.8em; border-radius: 3px; border: none; cursor: pointer; }
 .btn-edit { background: #2c3e50; color: white; }
 .btn-move { background: #ddd; color: #333; }
 .btn-del { background: #ffcccc; color: #d00; }
 
-/* --- 下部設定エリア (Creator) --- */
-.creator-set-settings {
-    border: 2px solid #333;
-    background: #fff;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.btn-align {
-    flex: 1;
-    background: #fff;
-    border: 1px solid #ccc;
-    color: #333;
-    padding: 8px;
-    font-size: 0.9em;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
+.creator-set-settings { border: 2px solid #333; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+.btn-align { flex: 1; background: #fff; border: 1px solid #ccc; color: #333; padding: 8px; font-size: 0.9em; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
 .btn-align:hover { background: #eee; }
-.btn-align.active {
-    background: #333;
-    color: white;
-    border-color: #333;
-    font-weight: bold;
-}
+.btn-align.active { background: #333; color: white; border-color: #333; font-weight: bold; }
 
-/* --- 設定画面 (Config) 共通 --- */
-.config-label {
-    display: block;
-    font-size: 0.8em;
-    font-weight: bold;
-    color: #666;
-    margin-bottom: 5px;
-}
-.config-select {
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    font-size: 0.9em;
-    width: 100%;
-    margin-bottom: 5px;
-}
-.highlight-select {
-    background-color: #fffbe6;
-    border: 1px solid #e6b800;
-    font-weight: bold;
-    color: #b8860b;
-}
+.config-label { display: block; font-size: 0.8em; font-weight: bold; color: #666; margin-bottom: 5px; }
+.config-select { padding: 8px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.9em; width: 100%; margin-bottom: 5px; }
+.highlight-select { background-color: #fffbe6; border: 1px solid #e6b800; font-weight: bold; color: #b8860b; }
+.set-item { background: #fff; border: 1px solid #ddd; padding: 10px; margin-bottom: 5px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+.delete-btn { background: #ffcccc; color: #d00; font-size: 0.8em; padding: 4px 8px; margin-left: 10px; }
 
-/* --- ダッシュボードリスト --- */
-.set-item {
-    background: #fff;
-    border: 1px solid #ddd;
-    padding: 10px;
-    margin-bottom: 5px;
-    border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.delete-btn {
-    background: #ffcccc; color: #d00;
-    font-size: 0.8em; padding: 4px 8px;
-    margin-left: 10px;
-}
-
-/* --- カンペ・タイムライン --- */
-.kanpe-card {
-    background: #ffffe0;
-    border: 2px solid #f0e68c;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-.timeline-card {
-    background: #fff;
-    border: 1px solid #ccc;
-    border-left: 6px solid #ccc; 
-    padding: 15px;
-    border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    transition: all 0.3s;
-    opacity: 0.6; 
-}
-.timeline-card.active {
-    background: #e6f0ff; 
-    border-color: #0055ff;
-    border-left-color: #0055ff; 
-    opacity: 1; 
-    transform: scale(1.02); 
-    box-shadow: 0 4px 8px rgba(0,85,255,0.2);
-    font-weight: bold;
-}
+.kanpe-card { background: #ffffe0; border: 2px solid #f0e68c; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.timeline-card { background: #fff; border: 1px solid #ccc; border-left: 6px solid #ccc; padding: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); transition: all 0.3s; opacity: 0.6; }
+.timeline-card.active { background: #e6f0ff; border-color: #0055ff; border-left-color: #0055ff; opacity: 1; transform: scale(1.02); box-shadow: 0 4px 8px rgba(0,85,255,0.2); font-weight: bold; }
 .timeline-card h5 { margin: 0 0 5px 0; font-size: 1.2em; color: #333; }
 .timeline-card .info { font-size: 0.9em; color: #666; }
 
-/* --- ピリオド間設定 --- */
-.playlist-arrow-container {
-    text-align: center;
-    margin: -5px 0; 
-    position: relative;
-    z-index: 1;
-}
-.playlist-arrow {
-    width: 0; 
-    height: 0; 
-    border-left: 15px solid transparent;
-    border-right: 15px solid transparent;
-    border-top: 15px solid #2c3e50; 
-    margin: 0 auto;
-}
-.playlist-inter-setting {
-    background: #fffbe6; 
-    border: 2px solid #e6b800; 
-    border-radius: 6px;
-    padding: 10px;
-    margin: 5px 20px 15px 20px; 
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    position: relative;
-}
-.inter-status-select {
-    padding: 6px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-weight: bold;
-    color: #333;
-    flex: 1;
-    width: 100%;
-}
-.inter-pass-input {
-    border: 1px solid #aaa;
-    border-radius: 4px;
-}
+.playlist-arrow-container { text-align: center; margin: -5px 0; position: relative; z-index: 1; }
+.playlist-arrow { width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 15px solid #2c3e50; margin: 0 auto; }
+.playlist-inter-setting { background: #fffbe6; border: 2px solid #e6b800; border-radius: 6px; padding: 10px; margin: 5px 20px 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; }
+.inter-status-select { padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; color: #333; flex: 1; width: 100%; }
+.inter-pass-input { border: 1px solid #aaa; border-radius: 4px; }
 
-/* --- ランキング --- */
-.ranking-container {
-    max-height: 400px;
-    overflow-y: auto;
-    background: #f9f9f9;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    padding: 10px;
-}
-.rank-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: white;
-    margin-bottom: 8px;
-    padding: 10px 15px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    font-weight: bold;
-    font-size: 1.1em;
-    color: #333;
-}
+.ranking-container { max-height: 400px; overflow-y: auto; background: #f9f9f9; border: 2px solid #ddd; border-radius: 8px; padding: 10px; }
+.rank-row { display: flex; justify-content: space-between; align-items: center; background: white; margin-bottom: 8px; padding: 10px 15px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-weight: bold; font-size: 1.1em; color: #333; }
 .rank-1 { background: linear-gradient(to right, #ffd700, #fffacd); border: 2px solid #daa520; color: #554400; transform: scale(1.02); }
 .rank-2 { background: linear-gradient(to right, #c0c0c0, #f5f5f5); border: 2px solid #a9a9a9; }
 .rank-3 { background: linear-gradient(to right, #cd7f32, #fff5ee); border: 2px solid #a0522d; color: #5a2d0c; }
 .rank-badge { display: inline-block; width: 30px; text-align: center; margin-right: 10px; font-family: 'Arial Black', sans-serif; }
 .rank-score { font-family: monospace; font-size: 0.9em; color: #555; text-align: right; }
 
-/* --- 多答クイズボタン --- */
-.multi-ans-btn {
-    background: #fff;
-    border: 2px solid #0055ff;
-    color: #0055ff;
-    font-weight: bold;
-    border-radius: 5px;
-    padding: 10px;
-    cursor: pointer;
-    transition: all 0.3s;
-    font-size: 1em;
-}
-.multi-ans-btn.opened {
-    background: #28a745;
-    color: white;
-    border-color: #28a745;
-    transform: scale(0.95);
-    opacity: 0.8;
-}
+.multi-ans-btn { background: #fff; border: 2px solid #0055ff; color: #0055ff; font-weight: bold; border-radius: 5px; padding: 10px; cursor: pointer; transition: all 0.3s; font-size: 1em; }
+.multi-ans-btn.opened { background: #28a745; color: white; border-color: #28a745; transform: scale(0.95); opacity: 0.8; }
 
-/* ★v55: Config画面の新スタイル（右側ボックスデザイン） */
-.config-section-title {
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: #333;
-    border-left: 4px solid #0055ff;
-    padding-left: 10px;
-    margin-top: 20px;
-}
-.config-section-title:first-child {
-    margin-top: 0;
-}
+.config-section-title { font-weight: bold; margin-bottom: 10px; color: #333; border-left: 4px solid #0055ff; padding-left: 10px; margin-top: 20px; }
+.config-section-title:first-child { margin-top: 0; }
+.config-item-box { background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.config-label-large { font-weight: bold; font-size: 1.1em; margin-bottom: 10px; display: block; color: #555; }
+.config-flex-row { display: flex; align-items: center; gap: 15px; }
+.config-flex-item { flex: 1; }
 
-.config-item-box {
-    background: #fff;
-    border: 1px solid #ddd;
+.custom-score-btn { background: #f0f0f0; border: 1px solid #ccc; border-radius: 4px; padding: 5px; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; }
+.custom-score-btn:hover { background: #e0e0e0; }
+.custom-score-btn img { display: block; width: 24px; height: 24px; }
+
+/* ★v56: Creatorの上部固定タイプ選択エリア */
+.creator-top-area {
+    background: #e6f7ff;
     padding: 15px;
     border-radius: 8px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border: 2px solid #0055ff;
+    margin-bottom: 20px;
 }
-
-.config-label-large {
+.creator-locked-msg {
+    color: #d00;
+    font-size: 0.9em;
+    margin-top: 5px;
     font-weight: bold;
-    font-size: 1.1em;
-    margin-bottom: 10px;
-    display: block;
-    color: #555;
-}
-
-.config-flex-row {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.config-flex-item {
-    flex: 1;
-}
-
-.custom-score-btn {
-    background: #f0f0f0;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 5px;
-    cursor: pointer;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-}
-.custom-score-btn:hover {
-    background: #e0e0e0;
-}
-.custom-score-btn img {
-    display: block;
-    width: 24px;
-    height: 24px;
 }
