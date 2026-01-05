@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style_common.css?v=48">
-<link rel="stylesheet" href="style_host.css?v=48">
-<link rel="stylesheet" href="style_player.css?v=48">
-<link rel="stylesheet" href="style_viewer.css?v=48">
+<link rel="stylesheet" href="style_common.css?v=49">
+<link rel="stylesheet" href="style_host.css?v=49">
+<link rel="stylesheet" href="style_player.css?v=49">
+<link rel="stylesheet" href="style_viewer.css?v=49">
 </head>
 <body>
 
@@ -72,7 +72,6 @@
         <input type="text" id="quiz-set-title" class="btn-block" placeholder="" style="margin-bottom:15px;">
         <h5 data-text="Creator.ListHeading" style="margin:0 0 5px 0;">List</h5>
         <ul id="q-list" style="background:white; padding:10px; border:1px solid #ddd; min-height:50px; list-style:none; margin-bottom:15px;"></ul>
-        
         <div style="background:#e6f7ff; padding:10px; border-radius:5px; margin-bottom:15px;">
             <label style="font-size:0.8em; font-weight:bold; display:block; margin-bottom:5px;" data-text="Creator.LabelLayout">Layout</label>
             <select id="creator-set-layout" class="btn-block" style="background:#fff; margin-bottom:10px;">
@@ -88,7 +87,6 @@
             </div>
             <input type="hidden" id="creator-set-align" value="center">
         </div>
-
         <div style="background:#fffbe6; padding:10px; border-radius:5px; margin-bottom:15px; border:1px solid #e6b800;">
             <label style="font-size:0.9em; font-weight:bold; display:block; margin-bottom:10px;" data-text="Creator.LabelDesign">Design</label>
             <div class="design-group" style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed #ccc;">
@@ -146,27 +144,25 @@
             <select id="config-mode-select" class="btn-block config-select" style="background:#fff0f5; border-color:#ff69b4; font-weight:bold;">
                 <option value="normal" data-text="Config.ModeNormal">Simultaneous</option>
                 <option value="buzz" data-text="Config.ModeBuzz">Buzz-in</option>
+                <option value="turn" data-text="Config.ModeTurn">Turn-based</option>
             </select>
         </div>
 
-        <div id="config-buzz-details" class="hidden" style="background:#ffeef5; border:1px dashed #ff69b4; padding:10px; border-radius:5px; margin-bottom:15px;">
+        <div id="config-normal-details" class="mode-details" style="background:#e6f7ff; border:1px dashed #0055ff; padding:10px; border-radius:5px; margin-bottom:15px;">
+            <label class="config-label" data-text="Config.LabelNormalLimit">Attempts</label>
+            <select id="config-normal-limit" class="btn-block config-select">
+                <option value="one" data-text="Config.NormalLimitOne">One Shot</option>
+                <option value="unlimited" data-text="Config.NormalLimitUnlimited">Unlimited</option>
+            </select>
+        </div>
+
+        <div id="config-buzz-details" class="mode-details hidden" style="background:#ffeef5; border:1px dashed #ff69b4; padding:10px; border-radius:5px; margin-bottom:15px;">
             <div style="margin-bottom:10px;">
-                <label class="config-label" data-text="Config.LabelBuzzOrder">Buzz Order Rule</label>
-                <select id="config-buzz-order" class="btn-block config-select">
-                    <option value="first_only" data-text="Config.BuzzOrderFirst">First Only</option>
-                    <option value="hold" data-text="Config.BuzzOrderHold">Ranking Hold</option>
-                    <option value="reset" data-text="Config.BuzzOrderReset">Reset</option>
-                </select>
-            </div>
-            <div style="margin-bottom:10px;">
-                <label class="config-label" data-text="Config.LabelBuzzPenalty">False Start Penalty</label>
-                <select id="config-buzz-penalty" class="btn-block config-select">
-                    <option value="none" data-text="Config.BuzzPenaltyNone">None</option>
-                    <option value="lock_3" data-text="Config.BuzzPenaltyTime3">Lock 3s</option>
-                    <option value="lock_5" data-text="Config.BuzzPenaltyTime5">Lock 5s</option>
-                    <option value="lock_10" data-text="Config.BuzzPenaltyTime10">Lock 10s</option>
-                    <option value="lock_q" data-text="Config.BuzzPenaltyQ">Question Lock</option>
-                    <option value="lock_period" data-text="Config.BuzzPenaltyPeriod">Period Lock</option>
+                <label class="config-label" data-text="Config.LabelBuzzWrongAction">Wrong Answer Action</label>
+                <select id="config-buzz-wrong-action" class="btn-block config-select">
+                    <option value="next" data-text="Config.BuzzWrongNext">Next Person</option>
+                    <option value="reset" data-text="Config.BuzzWrongReset">Reset All</option>
+                    <option value="end" data-text="Config.BuzzWrongEnd">End Question</option>
                 </select>
             </div>
             <div>
@@ -176,6 +172,24 @@
                     <option value="3" data-text="Config.BuzzTime3">3s</option>
                     <option value="5" data-text="Config.BuzzTime5">5s</option>
                     <option value="10" data-text="Config.BuzzTime10">10s</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="config-turn-details" class="mode-details hidden" style="background:#e6fffa; border:1px dashed #00aa00; padding:10px; border-radius:5px; margin-bottom:15px;">
+            <div style="margin-bottom:10px;">
+                <label class="config-label" data-text="Config.LabelTurnOrder">Order</label>
+                <select id="config-turn-order" class="btn-block config-select">
+                    <option value="fixed" data-text="Config.TurnOrderFixed">Fixed</option>
+                    <option value="random" data-text="Config.TurnOrderRandom">Random</option>
+                    <option value="rank" data-text="Config.TurnOrderRank">Ranking</option>
+                </select>
+            </div>
+            <div>
+                <label class="config-label" data-text="Config.LabelTurnPass">Pass</label>
+                <select id="config-turn-pass" class="btn-block config-select">
+                    <option value="ok" data-text="Config.TurnPassOk">OK</option>
+                    <option value="ng" data-text="Config.TurnPassNg">NG</option>
                 </select>
             </div>
         </div>
@@ -206,7 +220,6 @@
                     <button id="config-custom-score-btn" style="background:#666; padding:8px 12px; font-size:1.2em;">📝</button>
                 </div>
             </div>
-            
             <div id="config-custom-points-area" class="hidden" style="margin-top:10px; padding:10px; background:#fff; border:2px solid #aaa; border-radius:5px;">
                 <h5 style="margin:0 0 10px 0; border-bottom:1px solid #ddd; padding-bottom:5px;" data-text="Config.HeadingCustomScore">Custom Score</h5>
                 <div style="display:flex; justify-content:flex-end; align-items:center; gap:5px; margin-bottom:10px; background:#f9f9f9; padding:5px; font-size:0.8em;">
@@ -218,6 +231,7 @@
         </div>
         <button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:12px; border:none; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.2);" data-text="Config.BtnAddList">Add List</button>
     </div>
+    
     <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
         <h4 style="color:#333; margin:0 0 10px 0;" data-text="Config.HeadingList">Playlist</h4>
         <div id="config-playlist-preview" style="background:#eee; padding:10px; border-radius:5px; min-height:50px;"><p style="text-align:center; color:#999; font-size:0.8em;">まだ追加されていません</p></div>
@@ -247,15 +261,18 @@
             <div><span data-text="Studio.LabelAlive">Alive</span>: <span id="host-alive-count" style="color:#00ff00; font-weight:bold;">0</span></div>
         </div>
     </div>
+    
     <div id="studio-program-loader" style="background:#e6f0ff; padding:10px; border-radius:5px; margin-bottom:15px; border:2px solid #0055ff;">
         <h4 style="margin:0 0 5px 0; color:#0055ff; font-size:1em;" data-text="Studio.HeadingLoad">Load</h4>
         <select id="studio-program-select" style="width:100%; margin-bottom:5px;"></select>
         <button id="studio-load-program-btn" class="btn-primary" style="width:100%; font-size:0.9em; padding:8px;" data-text="Studio.BtnLoad">Set</button>
     </div>
+    
     <div id="host-buzz-winner-area" class="hidden" style="background:#ffeb3b; padding:15px; border-radius:8px; margin-bottom:15px; border:3px solid #ff9800; text-align:center;">
         <div style="font-size:0.8em; color:#333;" data-text="Studio.MsgBuzzWin">WINNER</div>
         <div id="host-buzz-winner-name" style="font-size:2em; font-weight:bold; color:#d00;">---</div>
     </div>
+
     <div id="host-kanpe-area" class="kanpe-card hidden">
         <div style="background:#333; color:#fff; display:inline-block; padding:2px 8px; font-size:0.8em; border-radius:3px; margin-bottom:5px;" data-text="Studio.LabelKanpe">Kanpe</div>
         <div id="kanpe-question" style="font-weight:bold; font-size:1.1em; margin-bottom:5px;"></div>
@@ -264,6 +281,7 @@
         <div id="kanpe-point" style="font-size:0.8em; color:#0055ff; font-weight:bold;"></div>
     </div>
     <div id="host-status-area" style="text-align:center; margin-bottom:15px; font-weight:bold; color:#666;" data-text="Studio.StatusReady">Ready...</div>
+    
     <div id="studio-timeline-area">
         <h4 style="color:#333; margin:0 0 10px 0; text-align:center;" data-text="Studio.HeadingList">List</h4>
         <div id="studio-period-timeline" style="display:flex; flex-direction:column; gap:10px; min-height:50px; margin-bottom:20px;"></div>
@@ -271,14 +289,18 @@
             <button id="studio-master-play-btn" class="btn-success btn-block" style="padding:15px; font-size:1.2em; box-shadow: 0 4px 0 #218838;" data-text="Studio.BtnMasterPlay">Play</button>
         </div>
     </div>
+    
     <div id="control-panel" class="hidden" style="margin-top:20px; border-top:2px solid #333; padding-top:15px;">
         <h3 id="current-period-title" style="text-align:center; margin:0 0 10px 0; background:#eee; padding:5px;"></h3>
         <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;" data-text="Studio.BtnStart">START</button>
         <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;" data-text="Studio.BtnAnswer">Answer</button>
-        <div id="host-manual-judge-area" class="hidden" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+        
+        <div id="host-manual-judge-area" class="hidden" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
             <button id="host-judge-correct-btn" class="btn-success" style="padding:20px; font-size:1.2em;" data-text="Studio.BtnCorrect">Correct</button>
             <button id="host-judge-wrong-btn" class="btn-danger" style="padding:20px; font-size:1.2em;" data-text="Studio.BtnWrong">Wrong</button>
+            <button id="host-judge-pass-btn" class="btn-warning hidden" style="padding:20px; font-size:1.2em;" data-text="Studio.BtnPass">Pass</button>
         </div>
+
         <button id="host-next-btn" class="btn-info btn-block hidden" style="padding:15px;" data-text="Studio.BtnNextQ">Next</button>
         <hr>
         <button id="host-ranking-btn" class="btn-success btn-block" data-text="Studio.BtnRanking">Ranking</button>
@@ -371,13 +393,13 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=48"></script>
-<script src="host_core.js?v=48"></script>
-<script src="host_creator.js?v=48"></script>
-<script src="host_config.js?v=48"></script>
-<script src="host_studio.js?v=48"></script>
-<script src="player.js?v=48"></script>
-<script src="viewer.js?v=48"></script>
+<script src="text_config.js?v=49"></script>
+<script src="host_core.js?v=49"></script>
+<script src="host_creator.js?v=49"></script>
+<script src="host_config.js?v=49"></script>
+<script src="host_studio.js?v=49"></script>
+<script src="player.js?v=49"></script>
+<script src="viewer.js?v=49"></script>
 
 </body>
 </html>
