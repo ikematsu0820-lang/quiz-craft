@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v32: Saved Programs List in Config)
+ * host_config.js (v46: Mode Selection)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -81,13 +81,10 @@ function enterConfigMode() {
         };
     }
 
-    // ★追加：保存済みプログラムの読み込み
     loadSavedProgramsInConfig();
-
     renderConfigPreview();
 }
 
-// ★追加：保存済みプログラム一覧を表示・操作
 function loadSavedProgramsInConfig() {
     const listEl = document.getElementById('config-saved-programs-list');
     if(!listEl) return;
@@ -116,7 +113,6 @@ function loadSavedProgramsInConfig() {
             btnArea.style.display = 'flex';
             btnArea.style.gap = '5px';
 
-            // 読み込みボタン
             const loadBtn = document.createElement('button');
             loadBtn.textContent = APP_TEXT.Config.BtnLoadProg;
             loadBtn.style.backgroundColor = '#0055ff';
@@ -133,7 +129,6 @@ function loadSavedProgramsInConfig() {
                 }
             };
 
-            // 削除ボタン
             const delBtn = document.createElement('button');
             delBtn.className = 'delete-btn';
             delBtn.textContent = APP_TEXT.Config.BtnDelProg;
@@ -247,6 +242,9 @@ function addPeriodToPlaylist() {
     let lossPoint = document.getElementById('config-loss-point').value;
     if (lossPoint !== 'reset') lossPoint = parseInt(lossPoint);
 
+    // ★v46: モード設定取得
+    const mode = document.getElementById('config-mode-select').value;
+
     const newConfig = {
         initialStatus: initialStatus,
         passCount: passCount,
@@ -256,7 +254,8 @@ function addPeriodToPlaylist() {
         lossPoint: lossPoint,
         scoreUnit: document.getElementById('config-score-unit').value,
         theme: 'light',
-        timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0
+        timeLimit: parseInt(document.getElementById('config-time-limit').value) || 0,
+        mode: mode // ★追加
     };
     
     periodPlaylist.push({
@@ -323,12 +322,15 @@ function renderConfigPreview() {
         let ruleText = "None";
         if(item.config.eliminationRule === 'wrong_only') ruleText = "WrongOut";
         if(item.config.eliminationRule === 'wrong_and_slowest') ruleText = `Slow${item.config.eliminationCount}Out`;
+        
+        // ★v46: モード表示
+        let modeLabel = (item.config.mode === 'buzz') ? 'Buzz' : 'Normal';
 
         div.innerHTML = `
             <div style="flex:1;">
                 <div style="font-weight:bold; font-size:1.1em;">${index+1}. ${item.title}</div>
                 <div style="font-size:0.8em; color:#666;">
-                    ${ruleText} / ${item.config.timeLimit}s / Loss:${item.config.lossPoint}
+                    [${modeLabel}] ${ruleText} / ${item.config.timeLimit}s / Loss:${item.config.lossPoint}
                 </div>
             </div>
             <button class="delete-btn" onclick="removeFromPlaylist(${index})">Del</button>
