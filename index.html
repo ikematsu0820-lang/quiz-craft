@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>All Star Quiz Cloud</title>
-<link rel="stylesheet" href="style.css?v=26">
+<link rel="stylesheet" href="style.css?v=27">
 </head>
 <body>
 
 <div id="main-view" class="view">
     <h1 class="app-title">ALL STAR QUIZ</h1>
-    <p style="text-align:center; color:#666;">Cloud Edition v26</p>
+    <p style="text-align:center; color:#666;">Cloud Edition v27</p>
     <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
         <button id="main-host-btn" class="btn-primary">司会者 (Host)</button>
         <button id="main-player-btn" class="btn-success">回答者 (Player)</button>
@@ -220,28 +220,23 @@
     <div id="score-display-area" class="hidden" style="text-align:center; margin-bottom:10px; font-weight:bold; font-size:1.2em; color:#0056b3;">
         Score: <span id="current-score-value">0</span>
     </div>
-    
     <div id="player-lobby-msg" style="text-align:center; padding:40px 0;">
         <h2>Ready?</h2>
         <p>画面を注視してください</p>
     </div>
-
     <div id="player-quiz-area" class="hidden">
         <div id="question-text-disp" style="background:#fff; border:2px solid #333; padding:15px; border-radius:8px; font-weight:bold; margin-bottom:15px; min-height:60px;">問題文</div>
         <div id="player-input-container"></div>
         <div id="answer-timer-disp" style="text-align:right; font-family:monospace; margin-top:5px; color:#666;"></div>
     </div>
-
     <div id="player-wait-msg" class="hidden" style="text-align:center; padding:20px; font-weight:bold;">
         ANSWERED!<br>祈ってお待ちください...
     </div>
-
     <div id="player-result-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1000;">
         <div id="result-icon" style="font-size:5em; margin-bottom:10px;"></div>
         <div id="result-text" style="font-size:2em; font-weight:bold;"></div>
         <div id="result-detail" style="color:#666; margin-top:10px;"></div>
     </div>
-
     <div id="player-dead-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:999;">
         <h1 style="color:gray; font-size:3em;">GAME OVER</h1>
         <p>脱落...</p>
@@ -251,11 +246,11 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="host_core.js?v=26"></script>
-<script src="host_creator.js?v=26"></script>
-<script src="host_config.js?v=26"></script>
-<script src="host_studio.js?v=26"></script>
-<script src="player.js?v=26"></script>
+<script src="host_core.js?v=27"></script>
+<script src="host_creator.js?v=27"></script>
+<script src="host_config.js?v=27"></script>
+<script src="host_studio.js?v=27"></script>
+<script src="player.js?v=27"></script>
 
 </body>
 </html>
