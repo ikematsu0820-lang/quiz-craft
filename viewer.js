@@ -1,5 +1,5 @@
 /* =========================================================
- * viewer.js (v45: Granular Design Apply)
+ * viewer.js (v51: Time Attack Clock)
  * =======================================================*/
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,8 +13,6 @@ function viewerConnect() {
 
     window.db.ref(`rooms/${code}`).once('value', snap => {
         if(!snap.exists()) { alert("Room not found"); return; }
-        
-        // 画面切り替え
         window.showView(window.views.viewerMain);
         startViewerListener(code);
     });
@@ -25,13 +23,24 @@ function startViewerListener(roomId) {
     const statusEl = document.getElementById('viewer-status');
     const rankArea = document.getElementById('viewer-ranking-area');
     const mainView = document.getElementById('viewer-main-view');
+    let timerInterval = null;
 
-    // ステータス監視
+    let currentMode = 'normal';
+    window.db.ref(`rooms/${roomId}/config`).on('value', snap => {
+        const c = snap.val();
+        if(c) currentMode = c.mode;
+    });
+
     window.db.ref(`rooms/${roomId}/status`).on('value', snap => {
         const st = snap.val();
         if(!st) return;
 
-        // ランキング時はエリア切り替え
+        // タイマークリア
+        if(timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+        const oldClock = document.querySelector('.clock-container');
+        if(oldClock) oldClock.remove();
+
+        // ランキング
         if (st.step === 'ranking') {
             statusEl.textContent = "RANKING";
             contentDiv.innerHTML = ""; 
@@ -42,8 +51,6 @@ function startViewerListener(roomId) {
         }
 
         rankArea.style.display = 'none';
-        
-        // コンテンツ再構築
         contentDiv.innerHTML = ""; 
         contentDiv.appendChild(statusEl); 
         
@@ -57,50 +64,63 @@ function startViewerListener(roomId) {
             contentDiv.appendChild(waitDiv);
         }
         else if (st.step === 'question' || st.step === 'answer') {
-            statusEl.textContent = (st.step === 'question') ? "QUESTION" : APP_TEXT.Viewer.AnswerCheck;
             
-            // 問題データ取得
+            // ★v51: タイムショック演出
+            if (currentMode === 'time_attack') {
+                statusEl.textContent = "TIME SHOCK";
+                
+                // 時計生成
+                const clock = document.createElement('div');
+                clock.className = 'clock-container';
+                clock.innerHTML = '<div class="clock-inner">5</div>';
+                document.body.appendChild(clock);
+                
+                // 簡易5秒カウント
+                let left = 5.0;
+                const inner = clock.querySelector('.clock-inner');
+                
+                timerInterval = setInterval(() => {
+                    left -= 0.1;
+                    if(left <= 0) left = 0;
+                    inner.textContent = Math.ceil(left);
+                    
+                    const percent = ((5 - left) / 5) * 100;
+                    clock.style.setProperty('--progress', `${percent}%`);
+                    
+                    if(left <= 0) clearInterval(timerInterval);
+                }, 100);
+            } else {
+                statusEl.textContent = (st.step === 'question') ? "QUESTION" : APP_TEXT.Viewer.AnswerCheck;
+            }
+            
             window.db.ref(`rooms/${roomId}/questions/${st.qIndex}`).once('value', qSnap => {
                 const q = qSnap.val();
                 
-                // ★v45: 詳細デザイン適用
                 if(q.design) {
-                    // Main
                     mainView.style.setProperty('--main-bg-color', q.design.mainBgColor);
                     if(q.design.bgImage) {
                         mainView.style.setProperty('--bg-image', `url(${q.design.bgImage})`);
                     } else {
                         mainView.style.setProperty('--bg-image', 'none');
                     }
-                    
-                    // Question Area
                     mainView.style.setProperty('--q-text-color', q.design.qTextColor);
                     mainView.style.setProperty('--q-bg-color', q.design.qBgColor);
                     mainView.style.setProperty('--q-border-color', q.design.qBorderColor);
-                    
-                    // Choice Area
                     mainView.style.setProperty('--c-text-color', q.design.cTextColor);
                     mainView.style.setProperty('--c-bg-color', q.design.cBgColor);
                     mainView.style.setProperty('--c-border-color', q.design.cBorderColor);
                 }
 
-                // レイアウト
                 const layoutClass = 'layout-' + (q.layout || 'standard').replace('_', '-'); 
-                
                 const container = document.createElement('div');
                 container.className = `viewer-layout-container ${layoutClass}`;
                 
-                // 問題文
                 const qArea = document.createElement('div');
                 qArea.className = 'q-area';
-                if(q.align) {
-                    qArea.classList.add('text-' + q.align);
-                } else {
-                    qArea.classList.add('text-center'); 
-                }
+                if(q.align) qArea.classList.add('text-' + q.align);
+                else qArea.classList.add('text-center'); 
                 qArea.textContent = q.q;
                 
-                // 選択肢
                 const cArea = document.createElement('div');
                 cArea.className = 'c-area';
                 
@@ -110,7 +130,6 @@ function startViewerListener(roomId) {
                         item.className = 'choice-item';
                         const prefix = (q.type === 'choice') ? String.fromCharCode(65 + i) : (i + 1);
                         
-                        // 正解表示
                         if (st.step === 'answer') {
                             let isCorrect = false;
                             if (q.type === 'choice') {
