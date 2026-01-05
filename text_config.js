@@ -1,16 +1,17 @@
 /* =========================================================
- * text_config.js (v32: Config Program List)
+ * text_config.js (v33: Viewer Support)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v32",
+    Version: "Cloud Edition v33",
     
     // メインメニュー
     Main: {
         HostBtn: "司会者 (Host)",
-        PlayerBtn: "回答者 (Player)"
+        PlayerBtn: "回答者 (Player)",
+        ViewerBtn: "モニター (Monitor)" // ★追加
     },
 
     // ホストログイン
@@ -59,7 +60,7 @@ const APP_TEXT = {
         AlertNoTextAns: "正解を入力してください"
     },
 
-    // セット設定 (Config)
+    // セット設定
     Config: {
         Title: "セット設定",
         BackBtn: "戻る",
@@ -90,7 +91,6 @@ const APP_TEXT = {
         PlaceholderProgName: "構成に名前をつけて保存",
         BtnSaveProg: "保存",
         BtnGoStudio: "保存してスタジオへ",
-        // ピリオド間
         InterHeading: "ピリオド間設定",
         StatusRevive: "全員復活してスタート",
         StatusContinue: "生存者のみで継続",
@@ -98,20 +98,18 @@ const APP_TEXT = {
         LabelTop: "上位",
         LabelName: "名",
         CheckInterRank: "この前に中間発表を行う",
-        // 保存済みプログラムリスト（★追加）
         HeadingSavedProg: "保存済みプログラムリスト",
         BtnLoadProg: "読込",
         BtnDelProg: "削除",
         MsgConfirmLoadProg: "このプログラムを読み込みますか？\n（現在の編集内容は破棄されます）",
         MsgConfirmDelProg: "本当にこのプログラムを削除しますか？",
-        // アラート
         AlertNoSet: "セットを選んでください",
         AlertEmptyList: "構成リストが空です",
         AlertNoTitle: "プログラム名を入力してください",
         MsgSaved: "プログラムを保存しました！"
     },
 
-    // スタジオ (Studio)
+    // スタジオ
     Studio: {
         OnAir: "ON AIR",
         LabelPlayer: "参加",
@@ -122,7 +120,6 @@ const APP_TEXT = {
         HeadingLoad: "📂 プログラム読込",
         SelectProgDefault: "保存済みプログラムを選択...",
         BtnLoad: "読み込んでセット",
-        // BtnDeleteProg は削除しました
         BtnMasterPlay: "再生 ▶",
         BtnStart: "問題 START！",
         BtnAnswer: "正解発表",
@@ -134,7 +131,7 @@ const APP_TEXT = {
         BtnRanking: "中間順位",
         BtnClose: "スタジオを閉じて戻る",
         BtnBackRanking: "スタジオに戻る",
-        // MsgNoPeriod は削除しました（ポップアップ廃止のため）
+        MsgNoPeriod: "再生するピリオドがありません",
         MsgConfirmLoad: "プログラムを読み込んでセットしますか？\n（現在の進行内容はリセットされます）",
         MsgLoaded: "セットしました。再生ボタンで開始してください。",
         MsgThinking: "Thinking Time...",
@@ -165,5 +162,13 @@ const APP_TEXT = {
         RankUnit: "位",
         ScoreUnit: "点",
         RankBoardTitle: "上位リーダーボード"
+    },
+
+    // ★追加: モニター (Viewer)
+    Viewer: {
+        Title: "モニター接続",
+        BtnConnect: "接続する",
+        Waiting: "WAITING...",
+        AnswerCheck: "ANSWER CHECK"
     }
 };
