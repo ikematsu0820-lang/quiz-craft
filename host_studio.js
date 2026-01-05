@@ -1,20 +1,19 @@
 /* =========================================================
- * host_studio.js (v42: State Reset Fix)
+ * host_studio.js (v43: Return to Program Select)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
 
 function startRoom() {
-    // ★追加: スタジオ入場時に前回のデータを完全にリセット
+    // 完全にリセット
     studioQuestions = [];
+    periodPlaylist = []; // プレイリストも空にする
     currentQIndex = 0;
     currentPeriodIndex = 0;
-    currentConfig = { theme: 'light', scoreUnit: 'point' }; // 設定も初期化
+    currentConfig = { theme: 'light', scoreUnit: 'point' };
 
-    // 部屋ID生成
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     
-    // Firebase初期化
     window.db.ref(`rooms/${currentRoomId}`).set({
         questions: [],
         status: { step: 'standby', qIndex: 0 },
@@ -30,16 +29,16 @@ function enterHostMode(roomId) {
     document.getElementById('host-room-id').textContent = roomId;
     document.getElementById('studio-show-id').textContent = currentShowId;
     
-    document.getElementById('studio-timeline-area').classList.remove('hidden');
+    // ★修正: 最初はタイムラインを隠し、ローダーを表示
+    document.getElementById('studio-timeline-area').classList.add('hidden');
+    document.getElementById('studio-program-loader').classList.remove('hidden');
     document.getElementById('control-panel').classList.add('hidden');
     
     loadProgramsInStudio();
-    renderStudioTimeline();
+    // renderStudioTimeline(); // ここでは呼ばない（ロード後に呼ぶ）
     
-    // ★追加: カンペエリアも初期化（非表示にする）
-    updateKanpe();
+    updateKanpe(); // カンペリセット
 
-    // プレイヤー数監視
     window.db.ref(`rooms/${roomId}/players`).on('value', snap => {
         const players = snap.val() || {};
         const total = Object.keys(players).length;
@@ -80,6 +79,11 @@ function loadProgramsInStudio() {
             periodPlaylist = prog.playlist || [];
             currentProgramConfig.finalRanking = (prog.finalRanking !== false);
             currentPeriodIndex = 0;
+            
+            // ★追加: ロード完了時に画面を切り替え
+            document.getElementById('studio-program-loader').classList.add('hidden');
+            document.getElementById('studio-timeline-area').classList.remove('hidden');
+            
             renderStudioTimeline();
             alert(APP_TEXT.Studio.MsgLoaded);
         }
@@ -90,11 +94,9 @@ function renderStudioTimeline() {
     const container = document.getElementById('studio-period-timeline');
     container.innerHTML = '';
     
-    if(periodPlaylist.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#999; font-size:0.9em;">Please load program</p>';
-        document.getElementById('studio-footer-controls').classList.add('hidden');
-        return;
-    }
+    // プレイリストが空なら何もしない（画面切り替えは loadProgramsInStudio で制御済み）
+    if(periodPlaylist.length === 0) return;
+
     document.getElementById('studio-footer-controls').classList.remove('hidden');
 
     periodPlaylist.forEach((item, index) => {
@@ -145,7 +147,7 @@ window.playPeriod = function(index) {
     
     document.getElementById('studio-timeline-area').classList.add('hidden');
     document.getElementById('control-panel').classList.remove('hidden');
-    document.getElementById('studio-program-loader').classList.add('hidden'); 
+    // document.getElementById('studio-program-loader').classList.add('hidden'); // 既に隠れているはず
     
     window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
@@ -347,7 +349,7 @@ function setupStudioButtons(roomId) {
         window.showView(window.views.hostControl);
     };
     
-    // ★追加: 戻るときにデータリセット
+    // 戻るときにデータリセット
     btnClose.onclick = () => {
         periodPlaylist = [];
         currentRoomId = null;
