@@ -1,5 +1,5 @@
 /* =========================================================
- * style_player.css (v40: Player Mobile Styles)
+ * style_player.css (v46: Buzz Button Added)
  * =======================================================*/
 
 /* 回答ボタン */
@@ -18,6 +18,29 @@
     width: 100%;
     text-align: left;
     padding: 10px;
+}
+
+/* ★v46追加: 早押しボタン */
+.buzz-btn {
+    width: 250px;
+    height: 250px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ff6b6b, #d32f2f);
+    color: white;
+    font-size: 3em;
+    font-weight: bold;
+    border: 8px solid #b71c1c;
+    box-shadow: 0 10px 0 #7f0000, 0 15px 20px rgba(0,0,0,0.4);
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+    outline: none;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+}
+
+.buzz-btn:active {
+    transform: translateY(8px);
+    box-shadow: 0 2px 0 #7f0000, 0 5px 10px rgba(0,0,0,0.4);
+    background: radial-gradient(circle at 30% 30%, #d32f2f, #b71c1c);
 }
 
 /* オーバーレイアニメーション */
