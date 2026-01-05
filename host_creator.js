@@ -1,16 +1,21 @@
 /* =========================================================
- * host_creator.js (v25: Multi-Type Questions)
+ * host_creator.js (v30: Text Config Support)
  * =======================================================*/
 
 function initCreatorMode() {
     editingSetId = null;
     createdQuestions = [];
     document.getElementById('quiz-set-title').value = '';
-    document.getElementById('save-to-cloud-btn').textContent = 'クラウドに保存して完了';
+    document.getElementById('save-to-cloud-btn').textContent = APP_TEXT.Creator.BtnSave;
     
-    // UI初期化
+    // プルダウン生成
     const typeSelect = document.getElementById('creator-q-type');
     if(typeSelect) {
+        typeSelect.innerHTML = `
+            <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
+            <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
+            <option value="text">${APP_TEXT.Creator.TypeText}</option>
+        `;
         typeSelect.value = 'choice';
         renderCreatorForm('choice');
     }
@@ -23,11 +28,16 @@ function loadSetForEditing(key, item) {
     editingSetId = key;
     createdQuestions = item.questions || [];
     document.getElementById('quiz-set-title').value = item.title;
-    document.getElementById('save-to-cloud-btn').textContent = '更新して完了';
+    document.getElementById('save-to-cloud-btn').textContent = APP_TEXT.Creator.BtnUpdate;
     
-    // デフォルトはchoiceに戻す
     const typeSelect = document.getElementById('creator-q-type');
     if(typeSelect) {
+        // 再生成
+        typeSelect.innerHTML = `
+            <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
+            <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
+            <option value="text">${APP_TEXT.Creator.TypeText}</option>
+        `;
         typeSelect.value = 'choice';
         renderCreatorForm('choice'); 
     }
@@ -36,7 +46,6 @@ function loadSetForEditing(key, item) {
     window.showView(window.views.creator);
 }
 
-// 形式切り替えリスナー
 document.addEventListener('DOMContentLoaded', () => {
     const typeSelect = document.getElementById('creator-q-type');
     if(typeSelect) {
@@ -46,21 +55,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// フォームの描画（タイプ別）
 function renderCreatorForm(type) {
     const container = document.getElementById('creator-form-container');
-    if(!container) return; // エラー回避
+    if(!container) return; 
     container.innerHTML = ''; 
 
     if (type === 'choice') {
-        // --- 選択式 ---
         const settingsDiv = document.createElement('div');
         settingsDiv.style.marginBottom = '10px';
         settingsDiv.style.fontSize = '0.9em';
         settingsDiv.innerHTML = `
-            <label style="margin-right:10px;"><input type="checkbox" id="opt-multi-select"> 複数回答可</label>
+            <label style="margin-right:10px;"><input type="checkbox" id="opt-multi-select"> ${APP_TEXT.Creator.OptMulti}</label>
             <span id="opt-partial-area" class="hidden">
-                <label><input type="checkbox" id="opt-partial-credit"> 部分点あり</label>
+                <label><input type="checkbox" id="opt-partial-credit"> ${APP_TEXT.Creator.OptPartial}</label>
             </span>
         `;
         container.appendChild(settingsDiv);
@@ -71,11 +78,10 @@ function renderCreatorForm(type) {
         choicesDiv.style.gap = '5px';
         container.appendChild(choicesDiv);
 
-        // デフォルト4択
         for(let i=0; i<4; i++) addChoiceInput(choicesDiv, i);
 
         const addBtn = document.createElement('button');
-        addBtn.textContent = '＋ 選択肢を追加';
+        addBtn.textContent = APP_TEXT.Creator.BtnAddChoice;
         addBtn.className = 'btn-info';
         addBtn.style.marginTop = '10px';
         addBtn.style.padding = '5px';
@@ -90,11 +96,10 @@ function renderCreatorForm(type) {
         };
 
     } else if (type === 'sort') {
-        // --- 並べ替え ---
         const desc = document.createElement('p');
         desc.style.fontSize = '0.8em';
         desc.style.color = '#666';
-        desc.textContent = '※正解の順序で上から入力してください（出題時はシャッフルされます）';
+        desc.textContent = '※Correct Order (Top to Bottom)';
         container.appendChild(desc);
 
         const sortDiv = document.createElement('div');
@@ -107,7 +112,7 @@ function renderCreatorForm(type) {
         for(let i=0; i<4; i++) addSortInput(sortDiv, i);
 
         const addBtn = document.createElement('button');
-        addBtn.textContent = '＋ 項目を追加';
+        addBtn.textContent = APP_TEXT.Creator.BtnAddSort;
         addBtn.className = 'btn-info';
         addBtn.style.marginTop = '10px';
         addBtn.style.padding = '5px';
@@ -115,18 +120,17 @@ function renderCreatorForm(type) {
         container.appendChild(addBtn);
 
     } else if (type === 'text') {
-        // --- 自由入力 ---
         const desc = document.createElement('p');
         desc.style.fontSize = '0.8em';
         desc.style.color = '#666';
-        desc.textContent = '※正解となるキーワードを入力してください（複数ある場合はカンマ区切り）';
+        desc.textContent = '※Correct Keywords (comma separated)';
         container.appendChild(desc);
 
         const input = document.createElement('input');
         input.type = 'text';
         input.id = 'creator-text-answer';
         input.className = 'btn-block';
-        input.placeholder = '例: 徳川家康, 家康, 家康くん';
+        input.placeholder = 'e.g. Apple, Ringot, APPL';
         container.appendChild(input);
     }
 }
@@ -134,20 +138,14 @@ function renderCreatorForm(type) {
 function addChoiceInput(parent, index) {
     const wrapper = document.createElement('div');
     wrapper.className = 'choice-row';
-    wrapper.style.display = 'flex';
-    wrapper.style.alignItems = 'center';
-    wrapper.style.gap = '5px';
-
     const chk = document.createElement('input');
     chk.type = 'checkbox';
     chk.className = 'choice-correct-chk';
-    
     const inp = document.createElement('input');
     inp.type = 'text';
     inp.className = 'choice-text-input';
-    inp.placeholder = '選択肢';
+    inp.placeholder = 'Choice';
     inp.style.flex = '1';
-
     const del = document.createElement('button');
     del.textContent = '×';
     del.style.background = '#ccc';
@@ -155,7 +153,6 @@ function addChoiceInput(parent, index) {
     del.style.width = '30px';
     del.style.padding = '5px';
     del.onclick = () => parent.removeChild(wrapper);
-
     wrapper.appendChild(chk);
     wrapper.appendChild(inp);
     wrapper.appendChild(del);
@@ -167,16 +164,13 @@ function addSortInput(parent) {
     wrapper.style.display = 'flex';
     wrapper.style.alignItems = 'center';
     wrapper.style.gap = '5px';
-
     const num = document.createElement('span');
     num.textContent = '🔹'; 
-
     const inp = document.createElement('input');
     inp.type = 'text';
     inp.className = 'sort-text-input';
-    inp.placeholder = '項目';
+    inp.placeholder = 'Item';
     inp.style.flex = '1';
-
     const del = document.createElement('button');
     del.textContent = '×';
     del.style.background = '#ccc';
@@ -184,7 +178,6 @@ function addSortInput(parent) {
     del.style.width = '30px';
     del.style.padding = '5px';
     del.onclick = () => parent.removeChild(wrapper);
-
     wrapper.appendChild(num);
     wrapper.appendChild(inp);
     wrapper.appendChild(del);
@@ -193,7 +186,7 @@ function addSortInput(parent) {
 
 function addQuestion() {
     const qText = document.getElementById('question-text').value.trim();
-    if(!qText) { alert('問題文を入力してください'); return; }
+    if(!qText) { alert(APP_TEXT.Creator.AlertNoQ); return; }
 
     const type = document.getElementById('creator-q-type').value;
     let newQ = { q: qText, type: type, points: 1, loss: 0 };
@@ -210,40 +203,34 @@ function addQuestion() {
                 if(isChk) correct.push(options.length - 1);
             }
         });
-
-        if (options.length < 2) { alert('選択肢は2つ以上必要です'); return; }
-        if (correct.length === 0) { alert('正解を選んでください'); return; }
-
+        if (options.length < 2) { alert(APP_TEXT.Creator.AlertLessChoice); return; }
+        if (correct.length === 0) { alert(APP_TEXT.Creator.AlertNoCorrect); return; }
         newQ.c = options; 
         newQ.correct = correct;
-        newQ.correctIndex = correct[0]; // 互換用
+        newQ.correctIndex = correct[0];
         newQ.multi = document.getElementById('opt-multi-select').checked;
         newQ.partial = document.getElementById('opt-partial-credit').checked;
 
     } else if (type === 'sort') {
         const inputs = document.querySelectorAll('.sort-text-input');
         const options = [];
-        inputs.forEach(inp => {
-            if(inp.value.trim()) options.push(inp.value.trim());
-        });
-        if(options.length < 2) { alert('項目は2つ以上必要です'); return; }
-        
+        inputs.forEach(inp => { if(inp.value.trim()) options.push(inp.value.trim()); });
+        if(options.length < 2) { alert(APP_TEXT.Creator.AlertLessChoice); return; }
         newQ.c = options; 
-        newQ.correct = options.map((_, i) => i); // [0, 1, 2...]
+        newQ.correct = options.map((_, i) => i);
 
     } else if (type === 'text') {
         const ansText = document.getElementById('creator-text-answer').value.trim();
-        if(!ansText) { alert('正解を入力してください'); return; }
+        if(!ansText) { alert(APP_TEXT.Creator.AlertNoTextAns); return; }
         const answers = ansText.split(',').map(s => s.trim()).filter(s => s);
         newQ.correct = answers; 
     }
 
     createdQuestions.push(newQ);
     renderQuestionList();
-    
     document.getElementById('question-text').value = '';
     document.getElementById('question-text').focus();
-    renderCreatorForm(type); // フォームリセット
+    renderCreatorForm(type);
 }
 
 function renderQuestionList() {
@@ -254,15 +241,11 @@ function renderQuestionList() {
         let typeIcon = '🔳';
         if(q.type === 'sort') typeIcon = '🔢';
         if(q.type === 'text') typeIcon = '✍️';
-        
         li.innerHTML = `${typeIcon} <b>Q${index + 1}.</b> ${q.q}`;
-        
         const delSpan = document.createElement('span');
-        delSpan.textContent = ' [削除]';
+        delSpan.textContent = ' [x]';
         delSpan.style.color = 'red';
         delSpan.style.cursor = 'pointer';
-        delSpan.style.marginLeft = '10px';
-        delSpan.style.fontSize = '0.8em';
         delSpan.onclick = () => {
             createdQuestions.splice(index, 1);
             renderQuestionList();
@@ -274,28 +257,20 @@ function renderQuestionList() {
 }
 
 function saveToCloud() {
-    if(createdQuestions.length === 0) { alert('問題がありません'); return; }
-    const title = document.getElementById('quiz-set-title').value.trim() || "無題のセット";
+    if(createdQuestions.length === 0) { alert('No questions'); return; }
+    const title = document.getElementById('quiz-set-title').value.trim() || "Untitled";
     const defaultConf = { eliminationRule: 'none', scoreUnit: 'point', theme: 'light' };
-    
     const saveData = {
         title: title,
         config: defaultConf,
         questions: createdQuestions,
         createdAt: firebase.database.ServerValue.TIMESTAMP
     };
-    
     if (editingSetId) {
         window.db.ref(`saved_sets/${currentShowId}/${editingSetId}`).update(saveData)
-        .then(() => {
-            alert(`「${title}」を更新しました！`);
-            enterDashboard();
-        });
+        .then(() => { alert(`Updated!`); enterDashboard(); });
     } else {
         window.db.ref(`saved_sets/${currentShowId}`).push(saveData)
-        .then(() => {
-            alert(`「${title}」を新規保存しました！`);
-            enterDashboard();
-        });
+        .then(() => { alert(`Saved!`); enterDashboard(); });
     }
 }
