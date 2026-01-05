@@ -1,5 +1,5 @@
 /* =========================================================
- * viewer.js (v51: Time Attack Clock)
+ * viewer.js (v53: Panel & Bomb Render)
  * =======================================================*/
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,6 +23,8 @@ function startViewerListener(roomId) {
     const statusEl = document.getElementById('viewer-status');
     const rankArea = document.getElementById('viewer-ranking-area');
     const mainView = document.getElementById('viewer-main-view');
+    const panelGrid = document.getElementById('viewer-panel-grid');
+    const bombGrid = document.getElementById('viewer-bomb-grid');
     let timerInterval = null;
 
     let currentMode = 'normal';
@@ -35,24 +37,69 @@ function startViewerListener(roomId) {
         const st = snap.val();
         if(!st) return;
 
-        // タイマークリア
         if(timerInterval) { clearInterval(timerInterval); timerInterval = null; }
         const oldClock = document.querySelector('.clock-container');
         if(oldClock) oldClock.remove();
 
-        // ランキング
+        contentDiv.appendChild(panelGrid);
+        contentDiv.appendChild(bombGrid);
+        panelGrid.classList.add('hidden');
+        bombGrid.classList.add('hidden');
+        contentDiv.innerHTML = ""; 
+        contentDiv.appendChild(statusEl);
+
         if (st.step === 'ranking') {
             statusEl.textContent = "RANKING";
-            contentDiv.innerHTML = ""; 
             rankArea.style.display = 'block';
             contentDiv.appendChild(rankArea); 
             renderViewerRanking(roomId, rankArea);
             return;
         }
-
         rankArea.style.display = 'none';
-        contentDiv.innerHTML = ""; 
-        contentDiv.appendChild(statusEl); 
+
+        // ★v53: パネルアタック描画
+        if (st.step === 'panel') {
+            contentDiv.appendChild(panelGrid);
+            panelGrid.classList.remove('hidden');
+            panelGrid.innerHTML = '';
+            
+            const panels = st.panels || Array(25).fill(0);
+            panels.forEach((val, i) => {
+                const cell = document.createElement('div');
+                cell.className = 'panel-cell';
+                cell.textContent = i+1;
+                if(val === 1) cell.classList.add('panel-red');
+                if(val === 2) cell.classList.add('panel-green');
+                if(val === 3) cell.classList.add('panel-white');
+                if(val === 4) cell.classList.add('panel-blue');
+                panelGrid.appendChild(cell);
+            });
+            return;
+        }
+
+        // ★v53: ドボン描画
+        if (st.step === 'bomb') {
+            contentDiv.appendChild(bombGrid);
+            bombGrid.classList.remove('hidden');
+            bombGrid.innerHTML = '';
+            
+            const cards = st.cards || [];
+            cards.forEach((c, i) => {
+                const item = document.createElement('div');
+                item.className = 'card-item';
+                if(c.open) item.classList.add('flipped');
+                
+                const content = c.type === 1 ? '💥' : 'SAFE';
+                const contentClass = c.type === 1 ? 'card-out' : 'card-safe';
+                
+                item.innerHTML = `
+                    <div class="card-number">${i+1}</div>
+                    <div class="card-content ${contentClass}">${content}</div>
+                `;
+                bombGrid.appendChild(item);
+            });
+            return;
+        }
         
         if (st.step === 'standby') {
             statusEl.textContent = APP_TEXT.Viewer.Waiting;
@@ -64,29 +111,20 @@ function startViewerListener(roomId) {
             contentDiv.appendChild(waitDiv);
         }
         else if (st.step === 'question' || st.step === 'answer') {
-            
-            // ★v51: タイムショック演出
             if (currentMode === 'time_attack') {
                 statusEl.textContent = "TIME SHOCK";
-                
-                // 時計生成
                 const clock = document.createElement('div');
                 clock.className = 'clock-container';
                 clock.innerHTML = '<div class="clock-inner">5</div>';
                 document.body.appendChild(clock);
-                
-                // 簡易5秒カウント
                 let left = 5.0;
                 const inner = clock.querySelector('.clock-inner');
-                
                 timerInterval = setInterval(() => {
                     left -= 0.1;
                     if(left <= 0) left = 0;
                     inner.textContent = Math.ceil(left);
-                    
                     const percent = ((5 - left) / 5) * 100;
                     clock.style.setProperty('--progress', `${percent}%`);
-                    
                     if(left <= 0) clearInterval(timerInterval);
                 }, 100);
             } else {
@@ -95,7 +133,6 @@ function startViewerListener(roomId) {
             
             window.db.ref(`rooms/${roomId}/questions/${st.qIndex}`).once('value', qSnap => {
                 const q = qSnap.val();
-                
                 if(q.design) {
                     mainView.style.setProperty('--main-bg-color', q.design.mainBgColor);
                     if(q.design.bgImage) {
