@@ -1,11 +1,11 @@
 /* =========================================================
- * host_studio.js (v32: Studio UI Adjustments)
+ * host_studio.js (v36: Removed Exit Confirmation)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
 
 function startRoom() {
-    // ★修正：ポップアップ削除（いきなりスタジオへ）
+    // ★ポップアップなしで開始
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
     currentPeriodIndex = 0; 
     
@@ -74,7 +74,6 @@ function loadProgramsInStudio() {
             alert(APP_TEXT.Studio.MsgLoaded);
         }
     };
-    // ★修正：削除ボタンの処理は削除
 }
 
 function renderStudioTimeline() {
@@ -338,8 +337,9 @@ function setupStudioButtons(roomId) {
         window.showView(window.views.hostControl);
     };
     
+    // ★変更：確認なしでダッシュボードに戻る
     btnClose.onclick = () => {
-        if(confirm(APP_TEXT.Studio.MsgConfirmBack)) enterDashboard();
+        enterDashboard();
     };
 }
 
