@@ -1,8 +1,8 @@
 /* =========================================================
- * style_host.css (v54: Complete)
+ * style_host.css (v55: Refined UI)
  * =======================================================*/
 
-/* 問題作成画面フォーム */
+/* --- 問題作成画面フォーム --- */
 .choice-row {
     background: #fff;
     border: 1px solid #ddd;
@@ -34,7 +34,7 @@
     border-bottom: 1px solid #0055ff;
 }
 
-/* リストアイテム */
+/* --- リストアイテム --- */
 .q-list-item {
     background: #fff;
     border: 1px solid #ddd;
@@ -70,7 +70,7 @@
 .btn-move { background: #ddd; color: #333; }
 .btn-del { background: #ffcccc; color: #d00; }
 
-/* 下部設定エリア */
+/* --- 下部設定エリア (Creator) --- */
 .creator-set-settings {
     border: 2px solid #333;
     background: #fff;
@@ -98,7 +98,7 @@
     font-weight: bold;
 }
 
-/* 設定画面 */
+/* --- 設定画面 (Config) 共通 --- */
 .config-label {
     display: block;
     font-size: 0.8em;
@@ -121,7 +121,7 @@
     color: #b8860b;
 }
 
-/* ダッシュボードリスト */
+/* --- ダッシュボードリスト --- */
 .set-item {
     background: #fff;
     border: 1px solid #ddd;
@@ -138,7 +138,7 @@
     margin-left: 10px;
 }
 
-/* カンペ */
+/* --- カンペ・タイムライン --- */
 .kanpe-card {
     background: #ffffe0;
     border: 2px solid #f0e68c;
@@ -147,8 +147,6 @@
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
-
-/* タイムライン */
 .timeline-card {
     background: #fff;
     border: 1px solid #ccc;
@@ -162,7 +160,6 @@
     transition: all 0.3s;
     opacity: 0.6; 
 }
-
 .timeline-card.active {
     background: #e6f0ff; 
     border-color: #0055ff;
@@ -172,18 +169,16 @@
     box-shadow: 0 4px 8px rgba(0,85,255,0.2);
     font-weight: bold;
 }
-
 .timeline-card h5 { margin: 0 0 5px 0; font-size: 1.2em; color: #333; }
 .timeline-card .info { font-size: 0.9em; color: #666; }
 
-/* ピリオド間設定 */
+/* --- ピリオド間設定 --- */
 .playlist-arrow-container {
     text-align: center;
     margin: -5px 0; 
     position: relative;
     z-index: 1;
 }
-
 .playlist-arrow {
     width: 0; 
     height: 0; 
@@ -192,7 +187,6 @@
     border-top: 15px solid #2c3e50; 
     margin: 0 auto;
 }
-
 .playlist-inter-setting {
     background: #fffbe6; 
     border: 2px solid #e6b800; 
@@ -202,7 +196,6 @@
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     position: relative;
 }
-
 .inter-status-select {
     padding: 6px;
     border: 1px solid #ccc;
@@ -212,13 +205,12 @@
     flex: 1;
     width: 100%;
 }
-
 .inter-pass-input {
     border: 1px solid #aaa;
     border-radius: 4px;
 }
 
-/* ランキング */
+/* --- ランキング --- */
 .ranking-container {
     max-height: 400px;
     overflow-y: auto;
@@ -246,7 +238,7 @@
 .rank-badge { display: inline-block; width: 30px; text-align: center; margin-right: 10px; font-family: 'Arial Black', sans-serif; }
 .rank-score { font-family: monospace; font-size: 0.9em; color: #555; text-align: right; }
 
-/* 多答クイズボタン */
+/* --- 多答クイズボタン --- */
 .multi-ans-btn {
     background: #fff;
     border: 2px solid #0055ff;
@@ -264,4 +256,66 @@
     border-color: #28a745;
     transform: scale(0.95);
     opacity: 0.8;
+}
+
+/* ★v55: Config画面の新スタイル（右側ボックスデザイン） */
+.config-section-title {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+    border-left: 4px solid #0055ff;
+    padding-left: 10px;
+    margin-top: 20px;
+}
+.config-section-title:first-child {
+    margin-top: 0;
+}
+
+.config-item-box {
+    background: #fff;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.config-label-large {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    display: block;
+    color: #555;
+}
+
+.config-flex-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.config-flex-item {
+    flex: 1;
+}
+
+.custom-score-btn {
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+}
+.custom-score-btn:hover {
+    background: #e0e0e0;
+}
+.custom-score-btn img {
+    display: block;
+    width: 24px;
+    height: 24px;
 }
