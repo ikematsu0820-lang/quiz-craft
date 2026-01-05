@@ -1,7 +1,8 @@
 /* =========================================================
- * host_core.js (v35: Navigation & Creator Button Fix)
+ * host_core.js (v37: Monitor Back Button Fix)
  * =======================================================*/
 
+// --- グローバル変数 ---
 let currentShowId = null;
 let currentRoomId = null;
 let createdQuestions = [];
@@ -18,22 +19,36 @@ const RANKING_MONEY_TREE = [
     1500000, 2500000, 5000000, 7500000, 10000000
 ];
 
+// 画面管理用オブジェクト
 window.views = {};
+
+// 画面遷移関数
 window.showView = function(targetView) {
+    // 全てのビューを隠す
     Object.values(window.views).forEach(v => {
         if(v) v.classList.add('hidden');
     });
-    if(targetView) targetView.classList.remove('hidden');
+    // 指定されたビューだけ表示
+    if(targetView) {
+        targetView.classList.remove('hidden');
+    } else {
+        console.error("移動先の画面が見つかりません");
+    }
 };
 
+// テキスト反映関数
 window.applyTextConfig = function() {
     if(typeof APP_TEXT === 'undefined') return;
+    
+    // data-text属性を持つ要素を全て書き換える
     document.querySelectorAll('[data-text]').forEach(el => {
         const keys = el.getAttribute('data-text').split('.');
         let val = APP_TEXT;
         keys.forEach(k => { if(val) val = val[k]; });
         if(val) el.textContent = val;
     });
+
+    // プレースホルダー書き換え
     const phMap = {
         'show-id-input': APP_TEXT.Login.Placeholder,
         'quiz-set-title': APP_TEXT.Creator.PlaceholderSetName,
@@ -50,8 +65,10 @@ window.applyTextConfig = function() {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    // テキスト適用
     window.applyTextConfig();
 
+    // 画面要素の取得
     window.views = {
         main: document.getElementById('main-view'),
         hostLogin: document.getElementById('host-login-view'),
@@ -66,15 +83,14 @@ document.addEventListener('DOMContentLoaded', () => {
         viewerMain: document.getElementById('viewer-main-view') 
     };
 
+    // 1. メインメニュー
     const hostBtn = document.getElementById('main-host-btn');
     if(hostBtn) hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
 
     const playerBtn = document.getElementById('main-player-btn');
     if(playerBtn) playerBtn.addEventListener('click', () => window.showView(window.views.respondent));
 
-    const viewerBtn = document.getElementById('main-viewer-btn');
-    // メインメニューのモニターボタンは削除されたため、ここでの処理は不要だが残っても無害
-
+    // 2. ホストログイン
     const loginBtn = document.getElementById('host-login-submit-btn');
     if(loginBtn) {
         loginBtn.addEventListener('click', () => {
@@ -86,13 +102,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ★修正: 戻るボタンは全てメインメニューへ
+    // 3. 戻るボタン類 (共通だが挙動を分岐)
+    // ★v37修正: モニター画面内の「ホーム」ボタンはダッシュボードへ戻る
     document.querySelectorAll('.back-to-main').forEach(btn => {
-        btn.addEventListener('click', () => window.showView(window.views.main));
+        // ボタンがモニターログイン画面内にあるか判定
+        if (btn.closest('#viewer-login-view')) {
+            // ダッシュボードへ
+            btn.addEventListener('click', () => enterDashboard());
+        } else {
+            // メインメニューへ
+            btn.addEventListener('click', () => window.showView(window.views.main));
+        }
     });
 
+    // 4. ダッシュボード機能
     const createBtn = document.getElementById('dash-create-btn');
     if(createBtn) createBtn.addEventListener('click', () => {
+        // host_creator.jsの関数を呼び出し
         if(typeof window.initCreatorMode === 'function') {
             window.initCreatorMode();
         } else {
@@ -115,12 +141,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashViewerBtn = document.getElementById('dash-viewer-btn');
     if(dashViewerBtn) dashViewerBtn.addEventListener('click', () => window.showView(window.views.viewerLogin));
 
+    // 5. 各画面の戻るボタン（ダッシュボードへ戻るもの）
     const configHeaderBackBtn = document.getElementById('config-header-back-btn');
     if(configHeaderBackBtn) configHeaderBackBtn.addEventListener('click', () => enterDashboard());
 
     const creatorBackBtn = document.getElementById('creator-back-btn');
     if(creatorBackBtn) creatorBackBtn.addEventListener('click', () => enterDashboard());
 
+    // 6. 機能ボタン
     const addQBtn = document.getElementById('add-question-btn');
     if(addQBtn) addQBtn.addEventListener('click', addQuestion);
     
@@ -140,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(initStatusSelect) initStatusSelect.addEventListener('change', updateBuilderUI);
 });
 
+// --- ダッシュボード機能 ---
 function enterDashboard() {
     window.showView(window.views.dashboard);
     document.getElementById('dashboard-show-id').textContent = currentShowId;
