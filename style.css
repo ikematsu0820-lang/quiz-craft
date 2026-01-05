@@ -1,5 +1,5 @@
 /* =========================================================
- * style.css (v12: All Star Quiz Cloud)
+ * style.css (v14: Single Master Play Button Support)
  * =======================================================*/
 
 /* 1. 基本設定 (Base) */
@@ -74,7 +74,7 @@ input[type="text"], input[type="number"], select {
     font-size: 16px;
 }
 
-/* ★セット設定画面（Config）用のスタイル */
+/* セット設定画面（Config）用のスタイル */
 .config-label {
     display: block;
     font-size: 0.8em;
@@ -90,7 +90,6 @@ input[type="text"], input[type="number"], select {
     width: 100%;
     margin-bottom: 5px;
 }
-/* 参加者設定のプルダウンを目立たせる */
 .highlight-select {
     background-color: #fffbe6;
     border: 1px solid #e6b800;
@@ -133,32 +132,34 @@ input[type="text"], input[type="number"], select {
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* タイムラインカード */
+/* タイムラインカード（リスト表示用・v14対応） */
 .timeline-card {
     background: #fff;
     border: 1px solid #ccc;
-    border-left: 6px solid #aaa;
-    padding: 12px;
+    border-left: 6px solid #ccc; /* 未選択はグレー */
+    padding: 15px;
     border-radius: 4px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: all 0.3s;
+    opacity: 0.6; /* 未選択は少し薄くして「待機中」感を出す */
 }
-.timeline-card.active {
-    background: #e6f0ff;
-    border-color: #0044cc;
-    border-left-color: #0055ff;
-}
-.timeline-card h5 { margin: 0 0 5px 0; font-size: 1.1em; color: #333; }
-.timeline-card .info { font-size: 0.8em; color: #666; }
 
-/* 再生ボタン */
-.play-btn {
-    background: #28a745; color: white; border: none;
-    padding: 8px 15px; border-radius: 4px; font-size: 0.9em;
+/* アクティブ（再生対象）のスタイル */
+.timeline-card.active {
+    background: #e6f0ff; /* 薄い青背景 */
+    border-color: #0055ff;
+    border-left-color: #0055ff; /* 青い帯 */
+    opacity: 1; /* くっきり表示 */
+    transform: scale(1.02); /* 少し大きく強調 */
+    box-shadow: 0 4px 8px rgba(0,85,255,0.2);
+    font-weight: bold;
 }
-.play-btn:hover { background: #218838; }
+
+.timeline-card h5 { margin: 0 0 5px 0; font-size: 1.2em; color: #333; }
+.timeline-card .info { font-size: 0.9em; color: #666; }
 
 /* 4. ランキング画面 (Ranking) */
 .ranking-container {
