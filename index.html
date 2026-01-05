@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style.css?v=32">
+<link rel="stylesheet" href="style.css?v=33">
 </head>
 <body>
 
@@ -16,6 +16,7 @@
     <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
         <button id="main-host-btn" class="btn-primary" data-text="Main.HostBtn">Host</button>
         <button id="main-player-btn" class="btn-success" data-text="Main.PlayerBtn">Player</button>
+        <button id="main-viewer-btn" class="btn-warning" data-text="Main.ViewerBtn">Monitor</button>
     </div>
 </div>
 
@@ -61,8 +62,7 @@
     <div style="background:#fff0f5; padding:15px; border-radius:8px; border:2px solid #ff69b4;">
         <h3 style="margin-top:0; color:#c71585;" data-text="Creator.HeadingNewQ">New Question</h3>
         <label style="font-size:0.8em; font-weight:bold; color:#666;" data-text="Creator.LabelType">Type</label>
-        <select id="creator-q-type" class="btn-block" style="margin-bottom:10px; background:#fff;">
-            </select>
+        <select id="creator-q-type" class="btn-block" style="margin-bottom:10px; background:#fff;"></select>
         <input type="text" id="question-text" class="btn-block" placeholder="" style="margin-bottom:10px;">
         <div id="creator-form-container" style="margin-bottom:10px;"></div>
         <button id="add-question-btn" class="btn-primary btn-block" style="margin-top:10px;" data-text="Creator.BtnAdd">Add</button>
@@ -80,7 +80,6 @@
         <button id="config-header-back-btn" style="background:#999; padding:5px 10px; font-size:0.8em;" data-text="Config.BackBtn">Back</button>
     </div>
     <hr>
-    
     <div style="background:#f0f8ff; padding:15px; border:2px solid #87ceeb; border-radius:8px; margin-bottom:20px;">
         <h3 style="margin:0 0 10px 0; color:#0055ff; font-size:1.1em; text-align:center;" data-text="Config.HeadingAdd">Add Period</h3>
         <div style="margin-bottom:15px;">
@@ -90,8 +89,7 @@
         <div style="margin-bottom:15px;">
             <label class="config-label" data-text="Config.LabelRule">Rule</label>
             <label style="font-size:0.8em; color:#666;" data-text="Config.LabelElim">Elimination</label>
-            <select id="config-elimination-rule" class="btn-block config-select" style="margin-bottom:8px;">
-                </select>
+            <select id="config-elimination-rule" class="btn-block config-select" style="margin-bottom:8px;"></select>
             <div id="config-elimination-count-area" class="hidden" style="margin-bottom:8px; padding:8px; background:#fff; border:1px solid #ddd; border-radius:4px;">
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span style="font-size:0.8em; font-weight:bold; color:#d00;" data-text="Config.LabelElimCount">Slowest</span>
@@ -123,8 +121,7 @@
             </div>
             <div style="margin-top:5px;">
                 <label style="font-size:0.7em; color:#666;" data-text="Config.LabelLoss">Loss</label>
-                <select id="config-loss-point" class="config-select">
-                    </select>
+                <select id="config-loss-point" class="config-select"></select>
             </div>
             <div id="config-custom-points-area" class="hidden" style="margin-top:10px; padding:10px; background:#fff; border:2px solid #aaa; border-radius:5px;">
                 <h5 style="margin:0 0 10px 0; border-bottom:1px solid #ddd; padding-bottom:5px;" data-text="Config.HeadingCustomScore">Custom Score</h5>
@@ -137,28 +134,23 @@
         </div>
         <button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:12px; border:none; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.2);" data-text="Config.BtnAddList">Add List</button>
     </div>
-
     <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
         <h4 style="color:#333; margin:0 0 10px 0;" data-text="Config.HeadingList">Playlist</h4>
         <div id="config-playlist-preview" style="background:#eee; padding:10px; border-radius:5px; min-height:50px;"><p style="text-align:center; color:#999; font-size:0.8em;">まだ追加されていません</p></div>
-        
         <div style="margin:10px 0; text-align:right;">
             <label style="font-weight:bold; color:#0055ff; cursor:pointer; background:#e6f0ff; padding:5px 10px; border-radius:4px;">
                 <input type="checkbox" id="config-final-ranking-chk" checked> <span data-text="Config.LabelFinalRank">Final Ranking</span>
             </label>
         </div>
-
         <div style="display:flex; gap:5px; margin-bottom:15px; margin-top:15px;">
             <input type="text" id="config-program-title" placeholder="" style="flex:1;">
             <button id="config-save-program-btn" class="btn-info" style="flex:0 0 80px;" data-text="Config.BtnSaveProg">Save</button>
         </div>
     </div>
-
     <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
         <h4 style="color:#333; margin:0 0 10px 0;" data-text="Config.HeadingSavedProg">Saved Programs</h4>
         <div id="config-saved-programs-list" style="max-height:200px; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:5px;"></div>
     </div>
-
     <button id="config-go-studio-btn" class="btn-danger btn-block" style="padding:15px; font-weight:bold;" data-text="Config.BtnGoStudio">Go Studio</button>
 </div>
 
@@ -171,13 +163,11 @@
             <div><span data-text="Studio.LabelAlive">Alive</span>: <span id="host-alive-count" style="color:#00ff00; font-weight:bold;">0</span></div>
         </div>
     </div>
-
     <div id="studio-program-loader" style="background:#e6f0ff; padding:10px; border-radius:5px; margin-bottom:15px; border:2px solid #0055ff;">
         <h4 style="margin:0 0 5px 0; color:#0055ff; font-size:1em;" data-text="Studio.HeadingLoad">Load</h4>
         <select id="studio-program-select" style="width:100%; margin-bottom:5px;"></select>
         <button id="studio-load-program-btn" class="btn-primary" style="width:100%; font-size:0.9em; padding:8px;" data-text="Studio.BtnLoad">Set</button>
     </div>
-
     <div id="host-kanpe-area" class="kanpe-card hidden">
         <div style="background:#333; color:#fff; display:inline-block; padding:2px 8px; font-size:0.8em; border-radius:3px; margin-bottom:5px;" data-text="Studio.LabelKanpe">Kanpe</div>
         <div id="kanpe-question" style="font-weight:bold; font-size:1.1em; margin-bottom:5px;"></div>
@@ -185,19 +175,14 @@
         <div id="kanpe-time-limit" style="font-size:0.8em; color:#666; margin-top:5px;"></div>
         <div id="kanpe-point" style="font-size:0.8em; color:#0055ff; font-weight:bold;"></div>
     </div>
-    
     <div id="host-status-area" style="text-align:center; margin-bottom:15px; font-weight:bold; color:#666;" data-text="Studio.StatusReady">Ready...</div>
-
     <div id="studio-timeline-area">
         <h4 style="color:#333; margin:0 0 10px 0; text-align:center;" data-text="Studio.HeadingList">List</h4>
-        <div id="studio-period-timeline" style="display:flex; flex-direction:column; gap:10px; min-height:50px; margin-bottom:20px;">
-            <p style="text-align:center; color:#999; font-size:0.9em;">プログラムを読み込んでください</p>
-        </div>
+        <div id="studio-period-timeline" style="display:flex; flex-direction:column; gap:10px; min-height:50px; margin-bottom:20px;"></div>
         <div id="studio-footer-controls" style="border-top:1px solid #ddd; padding-top:20px; text-align:center;">
             <button id="studio-master-play-btn" class="btn-success btn-block" style="padding:15px; font-size:1.2em; box-shadow: 0 4px 0 #218838;" data-text="Studio.BtnMasterPlay">Play</button>
         </div>
     </div>
-
     <div id="control-panel" class="hidden" style="margin-top:20px; border-top:2px solid #333; padding-top:15px;">
         <h3 id="current-period-title" style="text-align:center; margin:0 0 10px 0; background:#eee; padding:5px;"></h3>
         <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;" data-text="Studio.BtnStart">START</button>
@@ -210,7 +195,7 @@
 </div>
 
 <div id="ranking-view" class="view hidden" style="text-align:center;">
-    <h2 style="font-family: 'Arial Black', sans-serif; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">RANKING</h2>
+    <h2 style="font-family: 'Arial Black'; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">RANKING</h2>
     <div id="ranking-list" class="ranking-container"></div>
     <button id="ranking-back-btn" class="btn-primary btn-block" style="margin-top:20px;" data-text="Studio.BtnBackRanking">Back</button>
 </div>
@@ -244,13 +229,11 @@
         <div id="answer-timer-disp" style="text-align:right; font-family:monospace; margin-top:5px; color:#666;"></div>
     </div>
     <div id="player-wait-msg" class="hidden" style="text-align:center; padding:20px; font-weight:bold;" data-text="Player.MsgAnswered">Answered...</div>
-    
     <div id="player-result-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1000;">
         <div id="result-icon" style="font-size:5em; margin-bottom:10px;"></div>
         <div id="result-text" style="font-size:2em; font-weight:bold;"></div>
         <div id="result-detail" style="color:#666; margin-top:10px;"></div>
     </div>
-
     <div id="player-ranking-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,50,0.95); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1100; overflow-y:auto;">
         <h2 style="color:gold; font-family:'Arial Black'; margin-bottom:10px;" data-text="Player.RankTitle">RANKING</h2>
         <div style="font-size:1.2em;" data-text="Player.RankYou">You are...</div>
@@ -261,22 +244,45 @@
             <div id="player-leaderboard" style="font-size:0.9em; text-align:left;"></div>
         </div>
     </div>
-
     <div id="player-dead-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:999;">
         <h1 style="color:gray; font-size:3em;" data-text="Player.MsgDead">GAME OVER</h1>
         <p data-text="Player.MsgDeadBody">Dead...</p>
     </div>
 </div>
 
+<div id="viewer-login-view" class="view hidden">
+    <div style="text-align:center; margin-bottom:20px;">
+        <img src="logo.png" alt="Quiz Studio" class="app-logo-small">
+    </div>
+    <h2 data-text="Viewer.Title">Monitor Connect</h2>
+    <hr>
+    <div style="text-align:center;">
+        <input type="text" id="viewer-room-code" placeholder="Room Code" 
+               style="font-size:1.5em; width:200px; text-align:center; text-transform:uppercase; margin-bottom:20px;">
+        <button id="viewer-connect-btn" class="btn-warning btn-block" data-text="Viewer.BtnConnect">Connect</button>
+        <button class="back-to-main btn-block" style="background:#ccc; color:#333; margin-top:10px;" data-text="Login.BackBtn">Back</button>
+    </div>
+</div>
+
+<div id="viewer-main-view" class="view hidden" style="background:#000; color:#fff; height:90vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+    <div id="viewer-content" style="text-align:center; width:100%;">
+        <div id="viewer-status" style="font-size:2em; color:gold; margin-bottom:20px;"></div>
+        <div id="viewer-main-text" style="font-size:3em; font-weight:bold; margin-bottom:30px; padding:20px;"></div>
+        <div id="viewer-sub-text" style="font-size:1.5em; color:#ccc;"></div>
+        <div id="viewer-ranking-area" style="display:none; width:80%; margin:0 auto; text-align:left;"></div>
+    </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=32"></script>
-<script src="host_core.js?v=32"></script>
-<script src="host_creator.js?v=32"></script>
-<script src="host_config.js?v=32"></script>
-<script src="host_studio.js?v=32"></script>
-<script src="player.js?v=32"></script>
+<script src="text_config.js?v=33"></script>
+<script src="host_core.js?v=33"></script>
+<script src="host_creator.js?v=33"></script>
+<script src="host_config.js?v=33"></script>
+<script src="host_studio.js?v=33"></script>
+<script src="player.js?v=33"></script>
+<script src="viewer.js?v=33"></script>
 
 </body>
 </html>
