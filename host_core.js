@@ -1,5 +1,5 @@
 /* =========================================================
- * host_core.js (v48: Cleanup Unused Logic)
+ * host_core.js (v57: Dashboard Type Display)
  * =======================================================*/
 
 // --- グローバル変数 ---
@@ -13,12 +13,8 @@ let studioQuestions = [];
 let currentConfig = { penalty: 'none', scoreUnit: 'point', theme: 'light', timeLimit: 0, passCount: 0 };
 let currentQIndex = 0;
 
-// ★削除: RANKING_MONEY_TREE は不要になったため削除
-
-// 画面管理用オブジェクト
 window.views = {};
 
-// 画面遷移関数
 window.showView = function(targetView) {
     Object.values(window.views).forEach(v => {
         if(v) v.classList.add('hidden');
@@ -30,7 +26,6 @@ window.showView = function(targetView) {
     }
 };
 
-// テキスト反映関数
 window.applyTextConfig = function() {
     if(typeof APP_TEXT === 'undefined') return;
     
@@ -139,9 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const configGoStudioBtn = document.getElementById('config-go-studio-btn');
     if(configGoStudioBtn) configGoStudioBtn.addEventListener('click', startRoom);
-
-    const initStatusSelect = document.getElementById('config-initial-status');
-    if(initStatusSelect) initStatusSelect.addEventListener('change', updateBuilderUI);
 });
 
 function enterDashboard() {
@@ -165,9 +157,21 @@ function loadSavedSets() {
             const item = data[key];
             const div = document.createElement('div');
             div.className = 'set-item';
+            
+            // ★v57: 問題形式を表示
+            let typeLabel = "Unknown";
+            if (item.questions && item.questions.length > 0) {
+                const type = item.questions[0].type;
+                if (type === 'choice') typeLabel = APP_TEXT.Creator.TypeChoice;
+                else if (type === 'sort') typeLabel = APP_TEXT.Creator.TypeSort;
+                else if (type === 'free_oral') typeLabel = APP_TEXT.Creator.TypeFreeOral;
+                else if (type === 'free_written') typeLabel = APP_TEXT.Creator.TypeFreeWritten;
+                else if (type === 'multi') typeLabel = APP_TEXT.Creator.TypeMulti;
+            }
+
             div.innerHTML = `
                 <div>
-                    <span>${item.title}</span>
+                    <span style="font-weight:bold;">${item.title}</span> <span style="font-size:0.8em; color:#0055ff;">[${typeLabel}]</span>
                     <div style="font-size:0.8em; color:#666;">
                         ${new Date(item.createdAt).toLocaleDateString()} / ${item.questions.length}Q
                     </div>
