@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style_common.css?v=41">
-<link rel="stylesheet" href="style_host.css?v=41">
-<link rel="stylesheet" href="style_player.css?v=41">
-<link rel="stylesheet" href="style_viewer.css?v=41">
+<link rel="stylesheet" href="style_common.css?v=44">
+<link rel="stylesheet" href="style_host.css?v=44">
+<link rel="stylesheet" href="style_player.css?v=44">
+<link rel="stylesheet" href="style_viewer.css?v=44">
 </head>
 <body>
 
@@ -92,6 +92,35 @@
                 <button type="button" class="btn-align" data-align="right" data-text="Creator.AlignRight">Right</button>
             </div>
             <input type="hidden" id="creator-set-align" value="center">
+        </div>
+
+        <div style="background:#fffbe6; padding:10px; border-radius:5px; margin-bottom:15px; border:1px solid #e6b800;">
+            <label style="font-size:0.9em; font-weight:bold; display:block; margin-bottom:10px;" data-text="Creator.LabelDesign">Design</label>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+                <div>
+                    <label style="font-size:0.7em; display:block;" data-text="Creator.LabelTextColor">Text Color</label>
+                    <input type="color" id="design-text-color" value="#ffffff" style="width:100%; height:40px; padding:0;">
+                </div>
+                <div>
+                    <label style="font-size:0.7em; display:block;" data-text="Creator.LabelFrameColor">Frame Color</label>
+                    <input type="color" id="design-frame-color" value="#2c5066" style="width:100%; height:40px; padding:0;">
+                </div>
+                <div>
+                    <label style="font-size:0.7em; display:block;" data-text="Creator.LabelBgColor">Bg Color</label>
+                    <input type="color" id="design-bg-color" value="#222222" style="width:100%; height:40px; padding:0;">
+                </div>
+            </div>
+
+            <div style="border-top:1px solid #ddd; padding-top:10px;">
+                <label style="font-size:0.7em; display:block;" data-text="Creator.LabelBgImage">Bg Image</label>
+                <input type="file" id="design-bg-image-file" accept="image/*" style="display:none;">
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button id="design-bg-image-btn" style="background:#555; color:white; font-size:0.8em; padding:5px 10px;" data-text="Creator.BtnSelectImage">Select</button>
+                    <span id="design-bg-image-status" style="font-size:0.8em; color:#00aa00;"></span>
+                </div>
+                <input type="hidden" id="design-bg-image-data">
+            </div>
         </div>
 
         <button id="save-to-cloud-btn" class="btn-success btn-block" style="padding:15px; font-weight:bold;" data-text="Creator.BtnSave">Save</button>
@@ -300,13 +329,13 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=41"></script>
-<script src="host_core.js?v=41"></script>
-<script src="host_creator.js?v=41"></script>
-<script src="host_config.js?v=41"></script>
-<script src="host_studio.js?v=41"></script>
-<script src="player.js?v=41"></script>
-<script src="viewer.js?v=41"></script>
+<script src="text_config.js?v=44"></script>
+<script src="host_core.js?v=44"></script>
+<script src="host_creator.js?v=44"></script>
+<script src="host_config.js?v=44"></script>
+<script src="host_studio.js?v=44"></script>
+<script src="player.js?v=44"></script>
+<script src="viewer.js?v=44"></script>
 
 </body>
 </html>
