@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>All Star Quiz Cloud</title>
-<link rel="stylesheet" href="style.css?v=12">
+<link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 
 <div id="main-view" class="view">
     <h1 class="app-title">ALL STAR QUIZ</h1>
-    <p style="text-align:center; color:#666;">Cloud Edition v12</p>
+    <p style="text-align:center; color:#666;">Cloud Edition v14</p>
     <div style="display:flex; flex-direction:column; gap:15px; margin-top:30px;">
         <button id="main-host-btn" class="btn-primary">司会者 (Host)</button>
         <button id="main-player-btn" class="btn-success">回答者 (Player)</button>
@@ -92,8 +92,8 @@
             <select id="config-initial-status" class="btn-block config-select highlight-select">
                 <option value="revive">全員復活してスタート</option>
                 <option value="continue">生存者のみで継続</option>
-                <option value="ranking">成績上位者が進出</option> </select>
-            
+                <option value="ranking">成績上位者が進出</option>
+            </select>
             <div id="config-pass-count-area" class="hidden" style="margin-top:5px; padding:10px; background:#fff; border:1px solid #e6b800; border-radius:4px;">
                 <label style="font-size:0.8em; color:#d00; font-weight:bold;">通過人数を指定</label>
                 <div style="display:flex; align-items:center; gap:10px;">
@@ -113,7 +113,6 @@
 
         <div style="margin-bottom:15px;">
             <label class="config-label">3. ルール設定</label>
-            
             <label style="font-size:0.8em; color:#666;">▼ 脱落条件</label>
             <select id="config-elimination-rule" class="btn-block config-select" style="margin-bottom:8px;">
                 <option value="none">脱落なし（ランキング戦）</option>
@@ -176,16 +175,21 @@
     
     <div id="host-status-area" style="text-align:center; margin-bottom:15px; font-weight:bold; color:#666;">準備中...</div>
 
-    <div id="studio-timeline-container" style="border-top:2px solid #ddd; padding-top:15px;">
+    <div id="studio-timeline-area">
         <h4 style="color:#333; margin:0 0 10px 0; text-align:center;">番組構成リスト</h4>
-        <div id="studio-period-timeline" style="display:flex; flex-direction:column; gap:10px; min-height:50px;">
+        <div id="studio-period-timeline" style="display:flex; flex-direction:column; gap:10px; min-height:50px; margin-bottom:20px;">
             <p style="text-align:center; color:#999; font-size:0.9em;">セット設定画面でリストを作成してください</p>
+        </div>
+        
+        <div id="studio-footer-controls" style="border-top:1px solid #ddd; padding-top:20px; text-align:center;">
+            <button id="studio-master-play-btn" class="btn-success btn-block" style="padding:15px; font-size:1.2em; box-shadow: 0 4px 0 #218838;">
+                再生 ▶
+            </button>
         </div>
     </div>
 
     <div id="control-panel" class="hidden" style="margin-top:20px; border-top:2px solid #333; padding-top:15px;">
         <h3 id="current-period-title" style="text-align:center; margin:0 0 10px 0; background:#eee; padding:5px;"></h3>
-        <button id="host-new-period-btn" class="btn-warning btn-block hidden" style="border:2px solid #fff;">全員復活させてスタート</button>
         <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;">問題 START！</button>
         <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;">正解発表</button>
         <button id="host-next-btn" class="btn-info btn-block hidden" style="padding:15px;">次の問題へ</button>
@@ -248,10 +252,11 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="host_core.js?v=13"></script>
-<script src="host_creator.js?v=13"></script>
-<script src="host_config.js?v=13"></script>
-<script src="host_studio.js?v=13"></script>
-<script src="player.js?v=13"></script>
+<script src="host_core.js?v=14"></script>
+<script src="host_creator.js?v=14"></script>
+<script src="host_config.js?v=14"></script>
+<script src="host_studio.js?v=14"></script>
+<script src="player.js?v=14"></script>
+
 </body>
 </html>
