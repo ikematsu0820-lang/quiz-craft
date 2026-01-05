@@ -1,11 +1,11 @@
 /* =========================================================
- * text_config.js (v51: Time Attack Mode)
+ * text_config.js (v53: Panel & Bomb Modes)
  * =======================================================*/
 
 const APP_TEXT = {
     // 共通
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v51",
+    Version: "Cloud Edition v53",
     
     // メインメニュー
     Main: {
@@ -113,7 +113,9 @@ const APP_TEXT = {
         ModeNormal: "一斉回答 (Simultaneous)",
         ModeBuzz: "早押し (Buzz-in)",
         ModeTurn: "順番回答 (Turn-based)",
-        ModeTimeAttack: "タイムショック (Time Attack)", // ★v51追加
+        ModeTimeAttack: "タイムショック (Time Attack)",
+        ModePanel: "パネルアタック (Panel 25)", // ★v53
+        ModeBomb: "ドボン / 宝探し (Bomb/Treasure)", // ★v53
         
         LabelNormalLimit: "▼ 回答回数制限",
         NormalLimitOne: "1回のみ (修正不可)",
@@ -142,6 +144,10 @@ const APP_TEXT = {
         LabelTurnPass: "▼ パス設定",
         TurnPassOk: "パス可 (次へ回す)",
         TurnPassNg: "パス不可",
+        
+        // ★v53: ドボン設定
+        LabelBombCount: "カード枚数",
+        LabelBombTarget: "アタリ/ハズレ枚数",
 
         LabelRule: "ルール設定",
         LabelElim: "▼ 脱落条件",
@@ -215,10 +221,15 @@ const APP_TEXT = {
         MsgAllEnd: "全てのピリオドが終了しました！お疲れ様でした！",
         MsgConfirmBack: "ダッシュボードに戻りますか？",
         
-        // ★v51追加
         MsgTimeAttackReady: "Time Shock Ready...",
         MsgTimeAttackActive: "TIME SHOCK!",
-        BtnStartTA: "カウント開始 (5s Loop)"
+        BtnStartTA: "カウント開始 (5s Loop)",
+        
+        // ★v53
+        LabelPanelControl: "パネル操作 (クリックで色変更)",
+        LabelBombControl: "カード操作 (クリックでオープン)",
+        MsgPanelActive: "Panel Attack Mode",
+        MsgBombActive: "Bomb Game Mode"
     },
 
     // プレイヤー
@@ -249,8 +260,10 @@ const APP_TEXT = {
         MsgTurnYou: "あなたの番です！<br>回答してください",
         MsgTurnWait: "さんの番です...",
         BtnAnswered: "回答しました",
-        // ★v51追加
-        MsgTimeAttack: "Time Shock Mode<br>モニターを見て回答してください"
+        MsgTimeAttack: "Time Shock Mode<br>モニターを見て回答してください",
+        // ★v53
+        MsgPanelWait: "Panel Attack<br>モニターを見てください",
+        MsgBombWait: "Bomb Game<br>モニターを見てください"
     },
 
     // モニター
