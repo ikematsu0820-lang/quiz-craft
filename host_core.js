@@ -1,16 +1,12 @@
 /* =========================================================
- * host_core.js (v28: View Navigation Fix)
+ * host_core.js (v30: Text Injection)
  * =======================================================*/
 
 // --- グローバル変数 ---
 let currentShowId = null;
 let currentRoomId = null;
-
-// 作成モード用
 let createdQuestions = [];
 let editingSetId = null;
-
-// 設定・スタジオ用
 let periodPlaylist = [];
 let currentPeriodIndex = -1;
 let studioQuestions = [];
@@ -23,25 +19,45 @@ const RANKING_MONEY_TREE = [
     1500000, 2500000, 5000000, 7500000, 10000000
 ];
 
-// 画面管理用オブジェクト
 window.views = {};
-
-// 画面遷移関数
 window.showView = function(targetView) {
-    // 全てのビューを隠す
     Object.values(window.views).forEach(v => {
         if(v) v.classList.add('hidden');
     });
-    // 指定されたビューだけ表示
-    if(targetView) {
-        targetView.classList.remove('hidden');
-    } else {
-        console.error("移動先の画面が見つかりません");
+    if(targetView) targetView.classList.remove('hidden');
+};
+
+// ★テキスト反映関数
+window.applyTextConfig = function() {
+    if(typeof APP_TEXT === 'undefined') return;
+    
+    // data-text属性を持つ要素を全て書き換える
+    document.querySelectorAll('[data-text]').forEach(el => {
+        const keys = el.getAttribute('data-text').split('.');
+        let val = APP_TEXT;
+        keys.forEach(k => { val = val[k]; });
+        if(val) el.textContent = val;
+    });
+
+    // プレースホルダー書き換え
+    const phMap = {
+        'show-id-input': APP_TEXT.Login.Placeholder,
+        'quiz-set-title': APP_TEXT.Creator.PlaceholderSetName,
+        'question-text': APP_TEXT.Creator.PlaceholderQ,
+        'config-program-title': APP_TEXT.Config.PlaceholderProgName,
+        'room-code-input': APP_TEXT.Player.PlaceholderCode,
+        'player-name-input': APP_TEXT.Player.PlaceholderName
+    };
+    for(let id in phMap) {
+        const el = document.getElementById(id);
+        if(el) el.placeholder = phMap[id];
     }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ★修正：DOM読み込み完了時に確実にビューを取得する
+    // テキスト適用
+    window.applyTextConfig();
+
     window.views = {
         main: document.getElementById('main-view'),
         hostLogin: document.getElementById('host-login-view'),
@@ -54,39 +70,35 @@ document.addEventListener('DOMContentLoaded', () => {
         playerGame: document.getElementById('player-game-view')
     };
 
-    // 1. メインメニュー
+    // イベントリスナー (省略せず記述)
     const hostBtn = document.getElementById('main-host-btn');
     if(hostBtn) hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
 
     const playerBtn = document.getElementById('main-player-btn');
     if(playerBtn) playerBtn.addEventListener('click', () => window.showView(window.views.respondent));
 
-    // 2. ホストログイン
     const loginBtn = document.getElementById('host-login-submit-btn');
     if(loginBtn) {
         loginBtn.addEventListener('click', () => {
             const input = document.getElementById('show-id-input').value.trim().toUpperCase();
-            if(!input) { alert("番組IDを入力してください"); return; }
-            if(!/^[A-Z0-9_-]+$/.test(input)) { alert("ID文字種エラー"); return; }
+            if(!input) { alert(APP_TEXT.Login.AlertEmpty); return; }
+            if(!/^[A-Z0-9_-]+$/.test(input)) { alert(APP_TEXT.Login.AlertError); return; }
             currentShowId = input;
             enterDashboard();
         });
     }
 
-    // 3. 戻るボタン類 (共通)
-    const backBtns = document.querySelectorAll('.back-to-main');
-    backBtns.forEach(btn => {
+    document.querySelectorAll('.back-to-main').forEach(btn => {
         btn.addEventListener('click', () => window.showView(window.views.main));
     });
 
-    // 4. ダッシュボード
     const createBtn = document.getElementById('dash-create-btn');
     if(createBtn) createBtn.addEventListener('click', initCreatorMode);
 
     const configBtn = document.getElementById('dash-config-btn');
     if(configBtn) {
         configBtn.addEventListener('click', () => {
-            periodPlaylist = []; // 新規ならクリア
+            periodPlaylist = [];
             enterConfigMode(); 
         });
     }
@@ -94,14 +106,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const studioBtn = document.getElementById('dash-studio-btn');
     if(studioBtn) studioBtn.addEventListener('click', startRoom);
 
-    // 5. 各画面の戻るボタン
     const configHeaderBackBtn = document.getElementById('config-header-back-btn');
     if(configHeaderBackBtn) configHeaderBackBtn.addEventListener('click', () => enterDashboard());
 
     const creatorBackBtn = document.getElementById('creator-back-btn');
     if(creatorBackBtn) creatorBackBtn.addEventListener('click', () => enterDashboard());
 
-    // 6. 機能ボタン
     const addQBtn = document.getElementById('add-question-btn');
     if(addQBtn) addQBtn.addEventListener('click', addQuestion);
     
@@ -121,23 +131,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if(initStatusSelect) initStatusSelect.addEventListener('change', updateBuilderUI);
 });
 
-// --- ダッシュボード機能 ---
 function enterDashboard() {
     window.showView(window.views.dashboard);
     document.getElementById('dashboard-show-id').textContent = currentShowId;
     loadSavedSets();
-    loadSavedPrograms();
 }
 
 function loadSavedSets() {
     const listEl = document.getElementById('dash-set-list');
-    listEl.innerHTML = '<p style="text-align:center;">読み込み中...</p>';
+    listEl.innerHTML = `<p style="text-align:center;">${APP_TEXT.Config.SelectLoading}</p>`;
 
     window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
         const data = snap.val();
         listEl.innerHTML = '';
         if(!data) {
-            listEl.innerHTML = '<p style="text-align:center; color:#999;">保存されたセットはありません</p>';
+            listEl.innerHTML = `<p style="text-align:center; color:#999;">${APP_TEXT.Config.SelectEmpty}</p>`;
             return;
         }
         Object.keys(data).forEach(key => {
@@ -148,7 +156,7 @@ function loadSavedSets() {
                 <div>
                     <span>${item.title}</span>
                     <div style="font-size:0.8em; color:#666;">
-                        ${new Date(item.createdAt).toLocaleDateString()} / 全${item.questions.length}問
+                        ${new Date(item.createdAt).toLocaleDateString()} / ${item.questions.length}Q
                     </div>
                 </div>
             `;
@@ -157,7 +165,7 @@ function loadSavedSets() {
             btnArea.style.gap = '5px';
 
             const editBtn = document.createElement('button');
-            editBtn.textContent = '編集';
+            editBtn.textContent = "Edit";
             editBtn.style.backgroundColor = '#2c3e50';
             editBtn.style.color = 'white';
             editBtn.style.fontSize = '0.8em';
@@ -166,9 +174,9 @@ function loadSavedSets() {
 
             const delBtn = document.createElement('button');
             delBtn.className = 'delete-btn';
-            delBtn.textContent = '削除';
+            delBtn.textContent = "Del";
             delBtn.onclick = () => {
-                if(confirm(`削除しますか？`)) {
+                if(confirm(APP_TEXT.Dashboard.DeleteConfirm)) {
                     window.db.ref(`saved_sets/${currentShowId}/${key}`).remove();
                     div.remove();
                 }
@@ -180,57 +188,3 @@ function loadSavedSets() {
         });
     });
 }
-
-function loadSavedPrograms() {
-    const listEl = document.getElementById('dash-program-list');
-    listEl.innerHTML = '<p style="text-align:center;">読み込み中...</p>';
-
-    window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
-        const data = snap.val();
-        listEl.innerHTML = '';
-        if(!data) {
-            listEl.innerHTML = '<p style="text-align:center; color:#999;">保存されたプログラムはありません</p>';
-            return;
-        }
-        Object.keys(data).forEach(key => {
-            const item = data[key];
-            const div = document.createElement('div');
-            div.className = 'set-item';
-            div.style.borderLeft = "5px solid #0055ff";
-
-            const periodCount = item.playlist ? item.playlist.length : 0;
-
-            div.innerHTML = `
-                <div style="cursor:pointer; flex:1;" onclick="loadProgramIntoConfig('${key}')">
-                    <span style="font-weight:bold; color:#0055ff;">${item.title}</span>
-                    <div style="font-size:0.8em; color:#666;">
-                        全${periodCount}ピリオド (クリックで読込)
-                    </div>
-                </div>
-            `;
-            
-            const delBtn = document.createElement('button');
-            delBtn.className = 'delete-btn';
-            delBtn.textContent = '削除';
-            delBtn.onclick = () => {
-                if(confirm(`プログラム「${item.title}」を削除しますか？`)) {
-                    window.db.ref(`saved_programs/${currentShowId}/${key}`).remove();
-                    div.remove();
-                }
-            };
-            div.appendChild(delBtn);
-            listEl.appendChild(div);
-        });
-    });
-}
-
-window.loadProgramIntoConfig = function(key) {
-    window.db.ref(`saved_programs/${currentShowId}/${key}`).once('value', snap => {
-        const prog = snap.val();
-        if(prog && prog.playlist) {
-            periodPlaylist = prog.playlist; 
-            alert(`プログラム「${prog.title}」を読み込みました。\n構成を確認してスタジオへ移動してください。`);
-            enterConfigMode(); 
-        }
-    });
-};
