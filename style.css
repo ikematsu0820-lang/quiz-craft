@@ -1,9 +1,10 @@
 /* =========================================================
- * style.css (v25: Creator Form Update)
+ * style.css (v25: Creator Form & Reverted Fonts)
  * =======================================================*/
 
 /* 1. 基本設定 (Base) */
 body {
+    /* ★変更：元のフォントに戻す */
     font-family: "Helvetica Neue", Arial, sans-serif;
     max-width: 600px;
     margin: 0 auto;
@@ -27,6 +28,7 @@ body {
 
 /* タイトルロゴ */
 .app-title {
+    /* ★変更：Arial Black に戻す */
     font-family: 'Arial Black', sans-serif;
     color: #ff0055;
     text-shadow: 2px 2px 0px #fff, 4px 4px 0px #000;
@@ -74,30 +76,6 @@ input[type="text"], input[type="number"], select {
     font-size: 16px;
 }
 
-/* セット設定画面（Config）用のスタイル */
-.config-label {
-    display: block;
-    font-size: 0.8em;
-    font-weight: bold;
-    color: #666;
-    margin-bottom: 5px;
-}
-.config-select {
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    font-size: 0.9em;
-    width: 100%;
-    margin-bottom: 5px;
-}
-/* 参加者設定のプルダウンを目立たせる */
-.highlight-select {
-    background-color: #fffbe6;
-    border: 1px solid #e6b800;
-    font-weight: bold;
-    color: #b8860b;
-}
-
 /* ★v25追加: クリエイター画面フォーム用スタイル */
 .choice-row {
     background: #fff;
@@ -124,6 +102,29 @@ input[type="text"], input[type="number"], select {
 .choice-text-input:focus, .sort-text-input:focus {
     background: #f0f8ff;
     border-bottom: 1px solid #0055ff;
+}
+
+/* セット設定画面（Config）用のスタイル */
+.config-label {
+    display: block;
+    font-size: 0.8em;
+    font-weight: bold;
+    color: #666;
+    margin-bottom: 5px;
+}
+.config-select {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    font-size: 0.9em;
+    width: 100%;
+    margin-bottom: 5px;
+}
+.highlight-select {
+    background-color: #fffbe6;
+    border: 1px solid #e6b800;
+    font-weight: bold;
+    color: #b8860b;
 }
 
 /* 回答者用ボタン */
@@ -165,7 +166,7 @@ input[type="text"], input[type="number"], select {
 .timeline-card {
     background: #fff;
     border: 1px solid #ccc;
-    border-left: 6px solid #ccc; /* 未選択はグレー */
+    border-left: 6px solid #ccc; 
     padding: 15px;
     border-radius: 4px;
     display: flex;
@@ -176,11 +177,10 @@ input[type="text"], input[type="number"], select {
     opacity: 0.6; 
 }
 
-/* アクティブ（再生対象）のスタイル */
 .timeline-card.active {
-    background: #e6f0ff; /* 薄い青背景 */
+    background: #e6f0ff; 
     border-color: #0055ff;
-    border-left-color: #0055ff; /* 青い帯 */
+    border-left-color: #0055ff; 
     opacity: 1; 
     transform: scale(1.02); 
     box-shadow: 0 4px 8px rgba(0,85,255,0.2);
