@@ -1,21 +1,24 @@
 /* =========================================================
- * host_studio.js (v38: Close Reset Logic)
+ * host_studio.js (v42: State Reset Fix)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
 
 function startRoom() {
-    if(periodPlaylist.length === 0) {
-        // スタジオに入ってからロードする仕様のため、ここでのチェックは緩くてもOK
-        // if(!confirm(APP_TEXT.Studio.MsgNoPeriod)) return;
-    }
+    // ★追加: スタジオ入場時に前回のデータを完全にリセット
+    studioQuestions = [];
+    currentQIndex = 0;
+    currentPeriodIndex = 0;
+    currentConfig = { theme: 'light', scoreUnit: 'point' }; // 設定も初期化
+
+    // 部屋ID生成
     currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    currentPeriodIndex = 0; 
     
+    // Firebase初期化
     window.db.ref(`rooms/${currentRoomId}`).set({
         questions: [],
         status: { step: 'standby', qIndex: 0 },
-        config: { theme: 'light', scoreUnit: 'point' },
+        config: currentConfig,
         players: {}
     }).then(() => {
         enterHostMode(currentRoomId);
@@ -32,7 +35,11 @@ function enterHostMode(roomId) {
     
     loadProgramsInStudio();
     renderStudioTimeline();
+    
+    // ★追加: カンペエリアも初期化（非表示にする）
+    updateKanpe();
 
+    // プレイヤー数監視
     window.db.ref(`rooms/${roomId}/players`).on('value', snap => {
         const players = snap.val() || {};
         const total = Object.keys(players).length;
@@ -340,10 +347,12 @@ function setupStudioButtons(roomId) {
         window.showView(window.views.hostControl);
     };
     
-    // ★修正: リセットしてダッシュボードへ
+    // ★追加: 戻るときにデータリセット
     btnClose.onclick = () => {
         periodPlaylist = [];
         currentRoomId = null;
+        studioQuestions = [];
+        currentQIndex = 0;
         enterDashboard();
     };
 }
