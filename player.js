@@ -1,5 +1,5 @@
 /* =========================================================
- * player.js (v29: Ranking Sync & Display)
+ * player.js (v30: Ranking Sync & Text Config)
  * =======================================================*/
 
 let myRoomId = null;
@@ -9,6 +9,9 @@ let myName = "";
 let timerInterval = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+    // ★テキスト適用
+    if(window.applyTextConfig) window.applyTextConfig();
+
     const joinBtn = document.getElementById('join-room-btn');
     if(joinBtn) joinBtn.addEventListener('click', joinRoom);
     
@@ -23,13 +26,13 @@ document.addEventListener('DOMContentLoaded', () => {
 function joinRoom() {
     const code = document.getElementById('room-code-input').value.trim().toUpperCase();
     const name = document.getElementById('player-name-input').value.trim();
-    if(!code || !name) { alert("入力してください"); return; }
+    if(!code || !name) { alert("Input Required"); return; }
     
     myRoomId = code;
     myName = name;
     
     window.db.ref(`rooms/${code}`).once('value', snap => {
-        if(!snap.exists()) { alert("部屋が見つかりません"); return; }
+        if(!snap.exists()) { alert("Room not found"); return; }
         
         const playerRef = window.db.ref(`rooms/${code}/players`).push();
         myPlayerId = playerRef.key;
@@ -58,11 +61,11 @@ function listenToRoom() {
         if(val) {
             const badge = document.getElementById('alive-badge');
             if(val.isAlive) {
-                badge.textContent = "ALIVE";
+                badge.textContent = APP_TEXT.Player.BadgeAlive;
                 badge.style.background = "#00ff00";
                 document.getElementById('player-dead-overlay').classList.add('hidden');
             } else {
-                badge.textContent = "DEAD";
+                badge.textContent = APP_TEXT.Player.BadgeDead;
                 badge.style.background = "#555";
                 document.getElementById('player-dead-overlay').classList.remove('hidden');
             }
@@ -76,13 +79,13 @@ function listenToRoom() {
 
 function handleStatusChange(status) {
     document.getElementById('player-result-overlay').classList.add('hidden');
-    document.getElementById('player-ranking-overlay').classList.add('hidden'); // ★隠す
+    document.getElementById('player-ranking-overlay').classList.add('hidden');
     
     if(status.step === 'standby') {
         document.getElementById('player-lobby-msg').classList.remove('hidden');
         document.getElementById('player-quiz-area').classList.add('hidden');
         document.getElementById('player-wait-msg').classList.add('hidden');
-        document.getElementById('player-lobby-msg').innerHTML = "<h2>Ready?</h2><p>次の問題を待機中...</p>";
+        document.getElementById('player-lobby-msg').innerHTML = `<h2>${APP_TEXT.Player.MsgLobbyHead}</h2><p>${APP_TEXT.Player.MsgLobbyBody}</p>`;
     }
     else if(status.step === 'question') {
         window.db.ref(`rooms/${myRoomId}/questions/${status.qIndex}`).once('value', qSnap => {
@@ -100,7 +103,6 @@ function handleStatusChange(status) {
         showResultOverlay();
     }
     else if(status.step === 'ranking') {
-        // ★ランキング発表
         showRankingOverlay();
     }
 }
@@ -112,7 +114,7 @@ function startTimer(startTime) {
     window.db.ref(`rooms/${myRoomId}/config/timeLimit`).once('value', snap => {
         const limit = snap.val() || 0;
         if(limit === 0) {
-            disp.textContent = "制限なし";
+            disp.textContent = "No Limit";
             return;
         }
         timerInterval = setInterval(() => {
@@ -133,7 +135,7 @@ function renderQuestion(q) {
 
     if (q.type === 'sort') {
         const p = document.createElement('p');
-        p.textContent = "正しい順にタップしてください（開発中）";
+        p.textContent = "Tap in order (Dev)";
         container.appendChild(p);
         q.c.forEach((choice) => {
             const btn = document.createElement('button');
@@ -149,7 +151,7 @@ function renderQuestion(q) {
         inp.style.width = '80%';
         container.appendChild(inp);
         const btn = document.createElement('button');
-        btn.textContent = "送信";
+        btn.textContent = "Send";
         btn.className = 'btn-primary';
         btn.style.marginTop = '10px';
         btn.onclick = () => submitAnswer(inp.value);
@@ -191,49 +193,60 @@ function showResultOverlay() {
         if (res === 'win') {
             overlay.style.background = "rgba(255, 235, 59, 0.95)";
             icon.textContent = "⭕";
-            text.textContent = "正解！";
+            text.textContent = APP_TEXT.Player.MsgCorrect;
             text.style.color = "#d00";
         } else if (res === 'lose') {
             overlay.style.background = "rgba(0, 0, 50, 0.9)";
             icon.textContent = "❌";
-            text.textContent = "不正解...";
+            text.textContent = APP_TEXT.Player.MsgWrong;
             text.style.color = "#fff";
         } else {
             overlay.style.background = "#fff";
             icon.textContent = "⏳";
-            text.textContent = "集計中...";
+            text.textContent = APP_TEXT.Player.MsgWait;
             text.style.color = "#666";
         }
     });
 }
 
-// ★追加：ランキング発表表示
 function showRankingOverlay() {
     const overlay = document.getElementById('player-ranking-overlay');
     const rankEl = document.getElementById('player-my-rank');
     const scoreEl = document.getElementById('player-my-score');
+    const listEl = document.getElementById('player-leaderboard');
     
     overlay.classList.remove('hidden');
     rankEl.textContent = "...";
     scoreEl.textContent = "...";
+    listEl.innerHTML = "";
 
-    // 全員データを取得して自分の順位を計算（簡易実装）
     window.db.ref(`rooms/${myRoomId}/players`).once('value', snap => {
         let list = [];
         snap.forEach(p => {
             const v = p.val();
-            list.push({ key: p.key, score: v.periodScore || 0, time: v.periodTime || 0 });
+            list.push({ key: p.key, name: v.name, score: v.periodScore || 0, time: v.periodTime || 0 });
         });
         
-        // ソート
         list.sort((a,b) => (b.score - a.score) || (a.time - b.time));
         
-        // 自分の順位を探す
+        // 自分の順位
         const myIndex = list.findIndex(p => p.key === myPlayerId);
         if (myIndex !== -1) {
             const myData = list[myIndex];
-            rankEl.textContent = `${myIndex + 1}位`;
-            scoreEl.textContent = `${myData.score}点`;
+            rankEl.textContent = `${myIndex + 1}${APP_TEXT.Player.RankUnit}`;
+            scoreEl.textContent = `${myData.score}${APP_TEXT.Player.ScoreUnit}`;
         }
+
+        // 上位5名のリスト表示
+        const top5 = list.slice(0, 5);
+        top5.forEach((p, i) => {
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.justifyContent = 'space-between';
+            row.style.padding = '5px 0';
+            row.style.borderBottom = '1px solid #666';
+            row.innerHTML = `<span>${i+1}. ${p.name}</span> <span>${p.score}pt</span>`;
+            listEl.appendChild(row);
+        });
     });
 }
