@@ -1,10 +1,10 @@
 /* =========================================================
- * host_config.js (v57: Rule Settings & Shuffle Q - Full Fix)
+ * host_config.js (v57: Final Config Logic)
  * =======================================================*/
 
 let selectedSetQuestions = [];
 
-// グローバルスコープに関数を定義
+// イベントリスナー用関数定義
 window.onSetSelectChange = function() {
     updateBuilderUI();
 };
@@ -15,6 +15,7 @@ function enterConfigMode() {
     const setSelect = document.getElementById('config-set-select');
     const container = document.getElementById('config-builder-ui');
     
+    // UI初期化
     if(setSelect) {
         setSelect.innerHTML = `<option value="">${APP_TEXT.Config.SelectDefault}</option>`;
         setSelect.removeEventListener('change', window.onSetSelectChange);
@@ -22,6 +23,7 @@ function enterConfigMode() {
     }
     
     if(container) {
+        // 初期状態は案内を表示
         container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">セットを選択してください</p>';
     }
     
@@ -59,6 +61,7 @@ function loadSetListInConfig() {
                 const firstQ = (item.questions && item.questions.length > 0) ? item.questions[0] : {};
                 const spMode = firstQ.specialMode || 'none';
                 
+                // データをvalueに埋め込む
                 opt.value = JSON.stringify({ q: item.questions, c: item.config || {}, t: item.title, sp: spMode });
                 opt.textContent = `${item.title} [${typeLabel}]` + (spMode !== 'none' ? ` (${spMode})` : '');
                 select.appendChild(opt);
@@ -88,7 +91,7 @@ function updateBuilderUI() {
 
     let html = '';
 
-    // 1. 回答モード
+    // 1. 回答モード (Panel/Bomb削除)
     html += `<div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>`;
     html += `
     <div class="config-item-box">
@@ -166,11 +169,11 @@ function updateBuilderUI() {
         </div>
     </div>`;
 
-    // 2. ルール設定
+    // 2. ルール設定 (ゲームタイプ & 脱落 & 時間)
     html += `<div id="config-rule-section">`;
     html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
     
-    // ゲームタイプ
+    // ゲームタイプ (得点 vs 陣取り)
     html += `
     <div class="config-item-box">
         <label class="config-label-large">${APP_TEXT.Config.LabelGameType}</label>
@@ -180,10 +183,11 @@ function updateBuilderUI() {
         </select>
     </div>`;
 
-    // カスタムスコア
+    // カスタムスコア (時間含む)
     html += `
     <div class="config-item-box">
         <h5 style="margin:0 0 10px 0;">${APP_TEXT.Config.HeadingCustomScore}</h5>
+        
         <div style="display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:10px; margin-bottom:10px; background:#f9f9f9; padding:5px; font-size:0.8em;">
             <div>
                 <span style="color:#333; font-weight:bold;">${APP_TEXT.Config.LabelBulkTime}</span>
@@ -201,6 +205,7 @@ function updateBuilderUI() {
                 <button id="config-bulk-loss-btn" class="btn-mini" style="background:#d00; color:white;">${APP_TEXT.Config.BtnReflect}</button>
             </div>
         </div>
+
         <div id="config-questions-list" style="font-size:0.9em; max-height:300px; overflow-y:auto; border:1px solid #eee; padding:5px;"></div>
     </div>`;
 
@@ -225,7 +230,6 @@ function updateBuilderUI() {
     // 追加ボタン
     html += `<button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:15px; border:none; border-radius:8px; box-shadow:0 4px 8px rgba(0,85,255,0.3); font-size:1.1em; margin-top:20px;">${APP_TEXT.Config.BtnAddList}</button>`;
 
-    // HTML挿入
     container.innerHTML = html;
 
     // イベントリスナー
@@ -272,7 +276,7 @@ function renderQuestionsListUI(questions) {
         
         const pts = q.points !== undefined ? q.points : 1;
         const loss = q.loss !== undefined ? q.loss : 0;
-        const time = q.timeLimit !== undefined ? q.timeLimit : 0; 
+        const time = q.timeLimit !== undefined ? q.timeLimit : 0;
 
         div.innerHTML = `
             <div style="flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-weight:bold; font-size:0.9em; margin-right:5px;">
@@ -307,6 +311,7 @@ function applySpecialModeLock(spMode) {
         ruleSec.style.display = 'none'; 
         updateModeDetails('time_attack');
     } else if (spMode === 'panel_attack') {
+        // パネルアタック指定の場合、ゲームタイプを陣取りに固定
         const gameType = document.getElementById('config-game-type');
         if(gameType) {
             gameType.value = 'territory';
@@ -352,34 +357,48 @@ function updateEliminationUI() {
 
 function addPeriodToPlaylist() {
     const select = document.getElementById('config-set-select');
+    const mode = document.getElementById('config-mode-select').value;
+
     if(!select.value) { alert(APP_TEXT.Config.AlertNoSet); return; }
     
-    const setData = JSON.parse(select.value);
-    let title = setData.t;
-    let questionsWithPoints = JSON.parse(JSON.stringify(setData.q || []));
+    let questionsWithPoints = [];
+    let title = "New Period";
     
-    const pointInputs = document.querySelectorAll('.q-point-input');
-    const lossInputs = document.querySelectorAll('.q-loss-input');
-    const timeInputs = document.querySelectorAll('.q-time-input');
-    
-    if (pointInputs.length > 0) {
-        pointInputs.forEach(input => {
-            const idx = parseInt(input.getAttribute('data-index'));
-            if (questionsWithPoints[idx]) questionsWithPoints[idx].points = parseInt(input.value) || 1;
-        });
-        lossInputs.forEach(input => {
-            const idx = parseInt(input.getAttribute('data-index'));
-            if (questionsWithPoints[idx]) questionsWithPoints[idx].loss = parseInt(input.value) || 0;
-        });
-        timeInputs.forEach(input => {
-            const idx = parseInt(input.getAttribute('data-index'));
-            if (questionsWithPoints[idx]) questionsWithPoints[idx].timeLimit = parseInt(input.value) || 0;
-        });
+    if (select.value) {
+        const data = JSON.parse(select.value);
+        title = data.t;
+        questionsWithPoints = JSON.parse(JSON.stringify(data.q || []));
+        
+        const pointInputs = document.querySelectorAll('.q-point-input');
+        const lossInputs = document.querySelectorAll('.q-loss-input');
+        const timeInputs = document.querySelectorAll('.q-time-input');
+        
+        if (pointInputs.length > 0) {
+            pointInputs.forEach(input => {
+                const idx = parseInt(input.getAttribute('data-index'));
+                if (questionsWithPoints[idx]) questionsWithPoints[idx].points = parseInt(input.value) || 1;
+            });
+            lossInputs.forEach(input => {
+                const idx = parseInt(input.getAttribute('data-index'));
+                if (questionsWithPoints[idx]) questionsWithPoints[idx].loss = parseInt(input.value) || 0;
+            });
+            timeInputs.forEach(input => {
+                const idx = parseInt(input.getAttribute('data-index'));
+                if (questionsWithPoints[idx]) questionsWithPoints[idx].timeLimit = parseInt(input.value) || 0;
+            });
+        }
     }
 
-    const mode = document.getElementById('config-mode-select').value;
+    let initialStatus = 'revive'; 
+    let passCount = 5;
+    let intermediateRanking = false; 
+
+    let elimCount = 1;
+    if (document.getElementById('config-elimination-rule').value === 'wrong_and_slowest') {
+        elimCount = parseInt(document.getElementById('config-elimination-count').value) || 1;
+    }
+
     const gameType = document.getElementById('config-game-type').value;
-    const elimRule = document.getElementById('config-elimination-rule').value;
     
     let shuffle = 'off';
     if (mode === 'normal') shuffle = document.getElementById('config-shuffle-q').value;
@@ -395,8 +414,8 @@ function addPeriodToPlaylist() {
 
     const newConfig = {
         initialStatus: 'revive', passCount: 5, intermediateRanking: false,
-        eliminationRule: elimRule,
-        eliminationCount: (elimRule === 'wrong_and_slowest') ? (parseInt(document.getElementById('config-elimination-count').value) || 1) : 1,
+        eliminationRule: document.getElementById('config-elimination-rule').value,
+        eliminationCount: elimCount,
         lossPoint: 0, scoreUnit: 'point', theme: 'light',
         timeLimit: 0, 
         mode: mode,
@@ -440,7 +459,6 @@ function renderConfigPreview() {
             arrowDiv.innerHTML = '<div class="playlist-arrow"></div>';
             container.appendChild(arrowDiv);
             
-            // ピリオド間設定（簡略化）
             const settingDiv = document.createElement('div');
             settingDiv.className = 'playlist-inter-setting';
             settingDiv.innerHTML = `<div style="font-size:0.7em; color:#666;">Inter-Period Settings</div>`;
