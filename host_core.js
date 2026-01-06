@@ -1,260 +1,217 @@
 /* =========================================================
- * host_core.js 〔全置換・安定版 v3〕
- * 目的：
- * - firebase.js の views / showView を破壊しない
- * - 「ダッシュボードへ戻る」「メインへ戻る」が
- *   “後から生成されたボタン”でも必ず効く（イベント委譲）
+ * host_core.js (v57: Bootloader)
  * =======================================================*/
 
-(() => {
-  /* =====================
-   * グローバル状態
-   * ===================== */
-  window.currentShowId = window.currentShowId ?? null;
-  window.currentRoomId = window.currentRoomId ?? null;
+// グローバル変数
+let currentShowId = null;
+let currentRoomId = null;
+let createdQuestions = [];
+let editingSetId = null;
+let periodPlaylist = [];
+let currentPeriodIndex = -1;
+let studioQuestions = [];
+let currentConfig = {};
+let currentQIndex = 0;
 
-  window.createdQuestions = window.createdQuestions ?? [];
-  window.editingSetId = window.editingSetId ?? null;
+// 画面管理
+window.views = {};
 
-  window.periodPlaylist = window.periodPlaylist ?? [];
-  window.currentPeriodIndex = window.currentPeriodIndex ?? -1;
+window.showView = function(targetView) {
+    // 全てのビューを隠す
+    Object.values(window.views).forEach(v => {
+        if(v) v.classList.add('hidden');
+    });
+    // ターゲットだけ表示
+    if(targetView) {
+        targetView.classList.remove('hidden');
+    }
+};
 
-  window.studioQuestions = window.studioQuestions ?? [];
-  window.currentConfig = window.currentConfig ?? {};
-  window.currentQIndex = window.currentQIndex ?? 0;
-
-  /* =====================
-   * showView セーフラッパー
-   * ===================== */
-  if (typeof window.showView !== "function") {
-    window.showView = function (targetId) {
-      document.querySelectorAll(".view").forEach(v => v.classList.add("hidden"));
-      const target = document.getElementById(targetId);
-      if (target) target.classList.remove("hidden");
-      else {
-        console.warn("[showView] target not found:", targetId);
-        document.getElementById("main-view")?.classList.remove("hidden");
-      }
-      document.body.classList.remove("dark-theme");
-    };
-  }
-
-  /* =====================
-   * テキスト設定反映
-   * ===================== */
-  window.applyTextConfig = function () {
-    if (typeof APP_TEXT === "undefined") return;
-
-    document.querySelectorAll("[data-text]").forEach(el => {
-      const keys = el.dataset.text.split(".");
-      let v = APP_TEXT;
-      keys.forEach(k => (v = v ? v[k] : null));
-      if (v) el.textContent = v;
+window.applyTextConfig = function() {
+    if(typeof APP_TEXT === 'undefined') return;
+    
+    document.querySelectorAll('[data-text]').forEach(el => {
+        const keys = el.getAttribute('data-text').split('.');
+        let val = APP_TEXT;
+        keys.forEach(k => { if(val) val = val[k]; });
+        if(val) el.textContent = val;
     });
 
-    const placeholders = {
-      "show-id-input": APP_TEXT.Login?.Placeholder,
-      "room-code-input": APP_TEXT.Player?.PlaceholderCode,
-      "player-name-input": APP_TEXT.Player?.PlaceholderName,
-      "viewer-room-code": APP_TEXT.Player?.PlaceholderCode,
-      "config-program-title": APP_TEXT.Config?.PlaceholderProgName,
-      "quiz-set-title": APP_TEXT.Creator?.PlaceholderSetName,
-      "question-text": APP_TEXT.Creator?.PlaceholderQ,
+    const phMap = {
+        'show-id-input': APP_TEXT.Login.Placeholder,
+        'quiz-set-title': APP_TEXT.Creator.PlaceholderSetName,
+        'question-text': APP_TEXT.Creator.PlaceholderQ,
+        'config-program-title': APP_TEXT.Config.PlaceholderProgName,
+        'room-code-input': APP_TEXT.Player.PlaceholderCode,
+        'player-name-input': APP_TEXT.Player.PlaceholderName,
+        'viewer-room-code': APP_TEXT.Player.PlaceholderCode 
     };
-
-    Object.entries(placeholders).forEach(([id, text]) => {
-      const el = document.getElementById(id);
-      if (el && text) el.placeholder = text;
-    });
-  };
-
-  /* =====================
-   * ダッシュボード遷移
-   * ===================== */
-  function enterDashboard() {
-    if (!window.currentShowId) {
-      window.showView("main-view");
-      return;
+    for(let id in phMap) {
+        const el = document.getElementById(id);
+        if(el) el.placeholder = phMap[id];
     }
-    window.showView("host-dashboard-view");
-    document.getElementById("dashboard-show-id")?.textContent = window.currentShowId || "---";
-    loadSavedSets();
-  }
-  window.enterDashboard = enterDashboard;
+};
 
-  function backToDashboardSafely() {
-    if (window.currentShowId) enterDashboard();
-    else window.showView("main-view");
-  }
-
-  /* =====================
-   * 保存済みセット読込（ダッシュボード）
-   * ===================== */
-  function loadSavedSets() {
-    const list = document.getElementById("dash-set-list");
-    if (!list) return;
-
-    if (!window.db || !window.currentShowId) {
-      list.innerHTML = `<p style="text-align:center;color:#999;">(DB未接続)</p>`;
-      return;
-    }
-
-    list.innerHTML = `<p style="text-align:center;">Loading...</p>`;
-
-    window.db.ref(`saved_sets/${window.currentShowId}`)
-      .once("value", snap => {
-        list.innerHTML = "";
-        const data = snap.val();
-        if (!data) {
-          list.innerHTML = `<p style="text-align:center;color:#999;">セットはありません</p>`;
-          return;
-        }
-
-        Object.entries(data).forEach(([key, item]) => {
-          const row = document.createElement("div");
-          row.className = "set-item";
-          row.innerHTML = `
-            <div><b>${item.title ?? "(no title)"}</b></div>
-            <button class="btn-mini btn-edit">Edit</button>
-          `;
-          row.querySelector("button").onclick = () => {
-            if (typeof window.loadSetForEditing === "function") {
-              window.loadSetForEditing(key, item);
-            } else {
-              console.warn("loadSetForEditing not loaded");
-            }
-          };
-          list.appendChild(row);
-        });
-      });
-  }
-
-  /* =====================================================
-   * ✅ 最重要：イベント委譲（後から生成されたボタンでも効く）
-   * ===================================================== */
-  function isDashboardButton(el) {
-    if (!el) return false;
-
-    // 1) 推奨：class / data属性
-    if (el.closest(".back-to-dashboard")) return true;
-    if (el.closest('[data-action="dashboard"]')) return true;
-    if (el.closest('[data-nav="dashboard"]')) return true;
-
-    // 2) よくあるID候補（多少増えても問題なし）
-    const id = el.id || "";
-    const idHit = [
-      "config-header-back-btn", "config-back-btn", "config-dashboard-btn",
-      "creator-back-btn", "creator-dashboard-btn",
-      "studio-back-btn", "studio-dashboard-btn",
-      "viewer-back-btn", "viewer-dashboard-btn",
-      "btn-dashboard", "dash-back-btn"
-    ].includes(id);
-    if (idHit) return true;
-
-    // 3) 最終手段：ヘッダー内でボタン文言が「ダッシュボード / Dashboard」
-    const btn = el.closest("button, a");
-    if (!btn) return false;
-    const txt = (btn.textContent || "").trim();
-    if (!txt) return false;
-    const inHeader = !!btn.closest(".view-header");
-    if (!inHeader) return false;
-    return (txt === "ダッシュボード" || txt === "Dashboard");
-  }
-
-  function isMainBackButton(el) {
-    if (!el) return false;
-    if (el.closest(".back-to-main")) return true;
-    if (el.closest('[data-action="main"]')) return true;
-
-    const btn = el.closest("button, a");
-    if (!btn) return false;
-    const txt = (btn.textContent || "").trim();
-    const inHeader = !!btn.closest(".view-header");
-    if (!inHeader) return false;
-    return (txt === "ホーム" || txt === "戻る" || txt === "Home");
-  }
-
-  function isLogoutButton(el) {
-    if (!el) return false;
-    if (el.closest(".btn-logout")) return true;
-
-    const btn = el.closest("button, a");
-    if (!btn) return false;
-    const txt = (btn.textContent || "").trim();
-    const inHeader = !!btn.closest(".view-header");
-    if (!inHeader) return false;
-    return (txt === "ログアウト" || txt === "Logout");
-  }
-
-  document.addEventListener("click", (e) => {
-    const t = e.target;
-
-    // ダッシュボードへ
-    if (isDashboardButton(t)) {
-      e.preventDefault();
-      backToDashboardSafely();
-      return;
-    }
-
-    // メインへ戻る
-    if (isMainBackButton(t)) {
-      e.preventDefault();
-      window.showView("main-view");
-      return;
-    }
-
-    // ログアウト
-    if (isLogoutButton(t)) {
-      e.preventDefault();
-      window.showView("main-view");
-      return;
-    }
-  }, true); // captureで拾う（他のonclickより先に動かせる）
-
-  /* =====================
-   * 初期化
-   * ===================== */
-  document.addEventListener("DOMContentLoaded", () => {
+// 起動時処理
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. テキスト適用
     window.applyTextConfig();
 
-    document.getElementById("main-host-btn")
-      ?.addEventListener("click", () => window.showView("host-login-view"));
+    // 2. ビューの登録
+    window.views = {
+        main: document.getElementById('main-view'),
+        hostLogin: document.getElementById('host-login-view'),
+        dashboard: document.getElementById('host-dashboard-view'),
+        creator: document.getElementById('creator-view'),
+        config: document.getElementById('config-view'),
+        hostControl: document.getElementById('host-control-view'),
+        ranking: document.getElementById('ranking-view'),
+        respondent: document.getElementById('respondent-view'),
+        playerGame: document.getElementById('player-game-view'),
+        viewerLogin: document.getElementById('viewer-login-view'), 
+        viewerMain: document.getElementById('viewer-main-view') 
+    };
 
-    document.getElementById("main-player-btn")
-      ?.addEventListener("click", () => window.showView("respondent-view"));
+    // 3. 初期表示 (メインメニュー以外を隠す)
+    // style_common.cssで .view {display:block} になっているので、
+    // ここで明示的に main 以外を hidden にする
+    Object.values(window.views).forEach(v => {
+        if(v && v.id !== 'main-view') v.classList.add('hidden');
+    });
 
-    document.getElementById("host-login-submit-btn")
-      ?.addEventListener("click", () => {
-        const v = document.getElementById("show-id-input")?.value?.trim();
-        if (!v) {
-          alert(APP_TEXT?.Login?.AlertEmpty || "番組IDを入力してください");
-          return;
+    // 4. イベントリスナー登録
+    const hostBtn = document.getElementById('main-host-btn');
+    if(hostBtn) hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
+
+    const playerBtn = document.getElementById('main-player-btn');
+    if(playerBtn) playerBtn.addEventListener('click', () => window.showView(window.views.respondent));
+
+    const loginBtn = document.getElementById('host-login-submit-btn');
+    if(loginBtn) {
+        loginBtn.addEventListener('click', () => {
+            const input = document.getElementById('show-id-input').value.trim().toUpperCase();
+            if(!input) { alert(APP_TEXT.Login.AlertEmpty); return; }
+            if(!/^[A-Z0-9_-]+$/.test(input)) { alert(APP_TEXT.Login.AlertError); return; }
+            currentShowId = input;
+            enterDashboard();
+        });
+    }
+
+    // 戻るボタン共通
+    document.querySelectorAll('.back-to-main').forEach(btn => {
+        if (btn.closest('#viewer-login-view') || btn.closest('#host-dashboard-view')) {
+            // ログアウト等の扱い
+            btn.addEventListener('click', () => window.showView(window.views.main));
+        } else if (btn.classList.contains('header-back-btn')) {
+            // ダッシュボードに戻る系
+            btn.addEventListener('click', () => enterDashboard());
+        } else {
+            btn.addEventListener('click', () => window.showView(window.views.main));
         }
-        window.currentShowId = v.toUpperCase();
-        enterDashboard();
-      });
+    });
 
-    // ダッシュボード内の機能ボタン（存在すれば）
-    document.getElementById("dash-create-btn")
-      ?.addEventListener("click", () => {
-        if (typeof window.initCreatorMode === "function") window.initCreatorMode();
-        else console.warn("initCreatorMode not loaded");
-      });
+    // 各機能への遷移
+    const createBtn = document.getElementById('dash-create-btn');
+    if(createBtn) createBtn.addEventListener('click', () => {
+        if(typeof window.initCreatorMode === 'function') window.initCreatorMode();
+    });
 
-    document.getElementById("dash-config-btn")
-      ?.addEventListener("click", () => {
-        if (typeof window.enterConfigMode === "function") window.enterConfigMode();
-        else console.warn("enterConfigMode not loaded");
-      });
+    const configBtn = document.getElementById('dash-config-btn');
+    if(configBtn) {
+        configBtn.addEventListener('click', () => {
+            periodPlaylist = [];
+            if(typeof enterConfigMode === 'function') enterConfigMode();
+        });
+    }
 
-    document.getElementById("dash-studio-btn")
-      ?.addEventListener("click", () => {
-        if (typeof window.startRoom === "function") window.startRoom();
-        else console.warn("startRoom not loaded");
-      });
+    const studioBtn = document.getElementById('dash-studio-btn');
+    if(studioBtn) studioBtn.addEventListener('click', startRoom);
 
-    document.getElementById("dash-viewer-btn")
-      ?.addEventListener("click", () => window.showView("viewer-login-view"));
-  });
+    const dashViewerBtn = document.getElementById('dash-viewer-btn');
+    if(dashViewerBtn) dashViewerBtn.addEventListener('click', () => window.showView(window.views.viewerLogin));
 
-})();
+    // 保存・追加ボタン等のリスナー
+    const addQBtn = document.getElementById('add-question-btn');
+    if(addQBtn) addQBtn.addEventListener('click', addQuestion);
+    
+    const saveBtn = document.getElementById('save-to-cloud-btn');
+    if(saveBtn) saveBtn.addEventListener('click', saveToCloud);
+
+    const configAddBtn = document.getElementById('config-add-playlist-btn');
+    if(configAddBtn) configAddBtn.addEventListener('click', addPeriodToPlaylist);
+
+    const configSaveProgBtn = document.getElementById('config-save-program-btn');
+    if(configSaveProgBtn) configSaveProgBtn.addEventListener('click', saveProgramToCloud);
+
+    const configGoStudioBtn = document.getElementById('config-go-studio-btn');
+    if(configGoStudioBtn) configGoStudioBtn.addEventListener('click', startRoom);
+});
+
+function enterDashboard() {
+    window.showView(window.views.dashboard);
+    document.getElementById('dashboard-show-id').textContent = currentShowId;
+    loadSavedSets();
+}
+
+function loadSavedSets() {
+    const listEl = document.getElementById('dash-set-list');
+    listEl.innerHTML = `<p style="text-align:center;">${APP_TEXT.Config.SelectLoading}</p>`;
+
+    window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
+        const data = snap.val();
+        listEl.innerHTML = '';
+        if(!data) {
+            listEl.innerHTML = `<p style="text-align:center; color:#999;">${APP_TEXT.Config.SelectEmpty}</p>`;
+            return;
+        }
+        Object.keys(data).forEach(key => {
+            const item = data[key];
+            const div = document.createElement('div');
+            div.className = 'set-item';
+            
+            // 問題形式の表示ラベル
+            let typeLabel = "Mix";
+            if (item.questions && item.questions.length > 0) {
+                const type = item.questions[0].type;
+                if (type === 'choice') typeLabel = APP_TEXT.Creator.TypeChoice;
+                else if (type === 'sort') typeLabel = APP_TEXT.Creator.TypeSort;
+                else if (type === 'free_oral') typeLabel = APP_TEXT.Creator.TypeFreeOral;
+                else if (type === 'free_written') typeLabel = APP_TEXT.Creator.TypeFreeWritten;
+                else if (type === 'multi') typeLabel = APP_TEXT.Creator.TypeMulti;
+            }
+
+            div.innerHTML = `
+                <div>
+                    <span style="font-weight:bold;">${item.title}</span> <span style="font-size:0.8em; color:#0055ff;">[${typeLabel}]</span>
+                    <div style="font-size:0.8em; color:#666;">
+                        ${new Date(item.createdAt).toLocaleDateString()} / ${item.questions.length}Q
+                    </div>
+                </div>
+            `;
+            const btnArea = document.createElement('div');
+            btnArea.style.display = 'flex';
+            btnArea.style.gap = '5px';
+
+            const editBtn = document.createElement('button');
+            editBtn.textContent = "Edit";
+            editBtn.className = 'btn-mini';
+            editBtn.style.backgroundColor = '#2c3e50';
+            editBtn.style.color = 'white';
+            editBtn.onclick = () => loadSetForEditing(key, item);
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'delete-btn';
+            delBtn.textContent = "Del";
+            delBtn.onclick = () => {
+                if(confirm(APP_TEXT.Dashboard.DeleteConfirm)) {
+                    window.db.ref(`saved_sets/${currentShowId}/${key}`).remove();
+                    div.remove();
+                }
+            };
+            btnArea.appendChild(editBtn);
+            btnArea.appendChild(delBtn);
+            div.appendChild(btnArea);
+            listEl.appendChild(div);
+        });
+    });
+}
