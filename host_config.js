@@ -1,554 +1,655 @@
 /* =========================================================
- * host_studio.js (v58: Race Logic Implemented)
+ * host_config.js (v59: Win Condition & Interperiod)
  * =======================================================*/
 
-let currentProgramConfig = { finalRanking: true };
-let buzzWinnerId = null;
-let turnQueue = [];
-let taTimer = null;
+let selectedSetQuestions = [];
 
-function startRoom() {
-    studioQuestions = [];
-    periodPlaylist = [];
-    currentQIndex = 0;
-    currentPeriodIndex = 0;
-    currentConfig = { theme: 'light', scoreUnit: 'point', mode: 'normal' };
-    currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    
-    window.db.ref(`rooms/${currentRoomId}`).set({
-        questions: [],
-        status: { step: 'standby', qIndex: 0, currentAnswerer: null, isBuzzActive: false },
-        config: currentConfig,
-        players: {}
-    }).then(() => {
-        enterHostMode(currentRoomId);
-    });
-}
+window.onSetSelectChange = function() {
+    updateBuilderUI();
+};
 
-function enterHostMode(roomId) {
-    window.showView(window.views.hostControl);
-    document.getElementById('host-room-id').textContent = roomId;
-    document.getElementById('studio-show-id').textContent = currentShowId;
+function enterConfigMode() {
+    window.showView(window.views.config);
     
-    // UI初期化
-    document.getElementById('studio-program-loader').classList.remove('hidden');
-    document.getElementById('studio-timeline-area').classList.add('hidden');
-    document.getElementById('control-panel').classList.add('hidden');
+    const setSelect = document.getElementById('config-set-select');
+    const container = document.getElementById('config-builder-ui');
     
-    // 各種コントロールエリアを隠す
-    document.getElementById('host-buzz-winner-area').classList.add('hidden');
-    document.getElementById('host-manual-judge-area').classList.add('hidden');
-    document.getElementById('host-panel-control-area').classList.add('hidden');
-    document.getElementById('host-bomb-control-area').classList.add('hidden');
-    document.getElementById('host-multi-control-area').classList.add('hidden');
-    document.getElementById('host-race-control-area').classList.add('hidden');
-    
-    updateKanpe(); 
-    loadProgramsInStudio();
-
-    // プレイヤー監視
-    window.db.ref(`rooms/${roomId}/players`).on('value', snap => {
-        const players = snap.val() || {};
-        const total = Object.keys(players).length;
-        const alive = Object.values(players).filter(p => p.isAlive).length;
-        document.getElementById('host-player-count').textContent = total;
-        document.getElementById('host-alive-count').textContent = alive;
-        
-        if (currentConfig.mode === 'buzz') identifyBuzzWinner(players);
-        
-        // ★v58: レース画面のリアルタイム更新
-        if (currentConfig.gameType === 'race') {
-            updateRaceView(players);
-        }
-    });
-    setupStudioButtons(roomId);
-}
-
-function identifyBuzzWinner(players) {
-    if (buzzWinnerId) return;
-    let candidates = [];
-    Object.keys(players).forEach(key => {
-        const p = players[key];
-        if (p.buzzTime && !p.isLocked && p.lastResult !== 'lose') {
-            candidates.push({ id: key, time: p.buzzTime, name: p.name });
-        }
-    });
-    if (candidates.length > 0) {
-        candidates.sort((a, b) => a.time - b.time);
-        const winner = candidates[0];
-        buzzWinnerId = winner.id;
-        window.db.ref(`rooms/${currentRoomId}/status`).update({ currentAnswerer: winner.id, isBuzzActive: false });
-        document.getElementById('host-buzz-winner-name').textContent = winner.name;
-        document.getElementById('host-buzz-winner-area').classList.remove('hidden');
-        document.getElementById('host-manual-judge-area').classList.remove('hidden');
-        if(document.getElementById('host-show-answer-btn')) document.getElementById('host-show-answer-btn').classList.add('hidden');
+    if(setSelect) {
+        setSelect.innerHTML = `<option value="">${APP_TEXT.Config.SelectDefault}</option>`;
+        setSelect.removeEventListener('change', window.onSetSelectChange);
+        setSelect.addEventListener('change', window.onSetSelectChange);
     }
+    
+    if(container) {
+        container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">セットを選択してください</p>';
+    }
+    
+    document.getElementById('config-program-title').value = '';
+    document.getElementById('config-final-ranking-chk').checked = true;
+
+    loadSetListInConfig();
+    loadSavedProgramsInConfig();
+    renderConfigPreview();
 }
 
-function loadProgramsInStudio() {
-    const select = document.getElementById('studio-program-select');
-    const btn = document.getElementById('studio-load-program-btn');
-    if(!select || !btn) return;
+function loadSetListInConfig() {
+    const select = document.getElementById('config-set-select');
+    if(!select) return;
+
     select.innerHTML = `<option value="">${APP_TEXT.Config.SelectLoading}</option>`;
     
-    window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
+    window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
         const data = snap.val();
-        select.innerHTML = `<option value="">${APP_TEXT.Studio.SelectProgDefault}</option>`;
+        select.innerHTML = `<option value="">${APP_TEXT.Config.SelectDefault}</option>`;
         if(data) {
             Object.keys(data).forEach(key => {
                 const item = data[key];
                 const opt = document.createElement('option');
-                opt.value = JSON.stringify(item);
-                opt.textContent = item.title;
+                let typeLabel = "Mix";
+                if(item.questions && item.questions.length > 0) {
+                     const t = item.questions[0].type;
+                     if(t === 'choice') typeLabel = "選択式";
+                     else if(t === 'sort') typeLabel = "並べ替え";
+                     else if(t === 'free_oral') typeLabel = "口頭";
+                     else if(t === 'free_written') typeLabel = "記述";
+                     else if(t === 'multi') typeLabel = "多答";
+                }
+                const firstQ = (item.questions && item.questions.length > 0) ? item.questions[0] : {};
+                const spMode = firstQ.specialMode || 'none';
+                opt.value = JSON.stringify({ q: item.questions, c: item.config || {}, t: item.title, sp: spMode });
+                opt.textContent = `${item.title} [${typeLabel}]` + (spMode !== 'none' ? ` (${spMode})` : '');
                 select.appendChild(opt);
             });
-        }
-    });
-
-    btn.onclick = () => {
-        const val = select.value;
-        if(!val) return;
-        const prog = JSON.parse(val);
-        if(confirm(APP_TEXT.Studio.MsgConfirmLoad)) {
-            periodPlaylist = prog.playlist || [];
-            currentProgramConfig.finalRanking = (prog.finalRanking !== false);
-            currentPeriodIndex = 0;
-            document.getElementById('studio-program-loader').classList.add('hidden');
-            document.getElementById('studio-timeline-area').classList.remove('hidden');
-            renderStudioTimeline();
-            alert(APP_TEXT.Studio.MsgLoaded);
-        }
-    };
-}
-
-function renderStudioTimeline() {
-    const container = document.getElementById('studio-period-timeline');
-    container.innerHTML = '';
-    if(periodPlaylist.length === 0) return;
-    document.getElementById('studio-footer-controls').classList.remove('hidden');
-
-    periodPlaylist.forEach((item, index) => {
-        const div = document.createElement('div');
-        div.className = 'timeline-card';
-        if (index === currentPeriodIndex) div.classList.add('active');
-        
-        let statusText = "START";
-        let interText = "";
-        let modeText = item.config.mode ? item.config.mode.toUpperCase() : "NORMAL";
-        // ★v58: ゲームタイプの表示
-        if (item.config.gameType === 'territory') modeText += " (PANEL)";
-        if (item.config.gameType === 'race') modeText += " (RACE)";
-
-        div.innerHTML = `
-            <div>
-                <h5 style="margin:0;">No.${index + 1}: ${item.title}${interText}</h5>
-                <div class="info" style="margin-top:5px;">
-                    <span style="color:#d00; font-weight:bold;">[${modeText}]</span> ${statusText}
-                </div>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-}
-
-function playCurrentPeriod() {
-    if(!periodPlaylist[currentPeriodIndex]) { alert(APP_TEXT.Studio.MsgNoPeriod); return; }
-    playPeriod(currentPeriodIndex);
-}
-
-window.playPeriod = function(index) {
-    if(!periodPlaylist[index]) return;
-    const item = periodPlaylist[index];
-    
-    currentPeriodIndex = index;
-    studioQuestions = item.questions;
-    currentConfig = item.config;
-    currentQIndex = 0;
-    turnQueue = [];
-    if(taTimer) clearTimeout(taTimer);
-    
-    document.getElementById('studio-timeline-area').classList.add('hidden');
-    document.getElementById('control-panel').classList.remove('hidden');
-    
-    // エリアリセット
-    document.getElementById('host-panel-control-area').classList.add('hidden');
-    document.getElementById('host-bomb-control-area').classList.add('hidden');
-    document.getElementById('host-multi-control-area').classList.add('hidden');
-    document.getElementById('host-race-control-area').classList.add('hidden');
-    
-    if (currentConfig.mode === 'time_attack') currentConfig.timeLimit = 5;
-
-    // ★v58: ゲームタイプ別の初期化
-    if (currentConfig.gameType === 'territory') {
-        startPanelGame(currentRoomId);
-    } else if (currentConfig.gameType === 'race') {
-        document.getElementById('host-race-control-area').classList.remove('hidden');
-        // レースの場合は初期描画を実行
-        window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
-            updateRaceView(snap.val() || {});
-        });
-    }
-    
-    if (currentConfig.mode === 'bomb') {
-        startBombGame(currentRoomId);
-    } else {
-        window.db.ref(`rooms/${currentRoomId}/questions`).set(studioQuestions);
-        window.db.ref(`rooms/${currentRoomId}/status`).update({ step: 'standby', qIndex: 0, currentAnswerer: null, isBuzzActive: false, multiState: [] });
-        updateKanpe();
-    }
-
-    window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
-    
-    // プレイヤー状態リセット
-    window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
-        let players = [];
-        snap.forEach(p => {
-            const val = p.val();
-            players.push({ key: p.key, isAlive: val.isAlive, score: val.periodScore||0, time: val.periodTime||0, name: val.name });
-        });
-        
-        if (currentConfig.mode === 'time_attack' && players.length > 0) {
-            buzzWinnerId = players[0].key; 
-            document.getElementById('host-buzz-winner-name').textContent = players[0].name;
-            document.getElementById('host-buzz-winner-area').classList.remove('hidden');
-        }
-        
-        snap.forEach(p => {
-            p.ref.update({ periodScore: 0, periodTime: 0, lastTime: 99999, lastResult: null, buzzTime: null, isLocked: false });
-        });
-    });
-
-    document.getElementById('current-period-title').textContent = `${item.title}`;
-    
-    const btnStart = document.getElementById('host-start-btn');
-    const btnStartTA = document.getElementById('host-start-ta-btn');
-    if(btnStart) btnStart.classList.add('hidden');
-    if(btnStartTA) btnStartTA.classList.add('hidden');
-    document.getElementById('host-manual-judge-area').classList.add('hidden');
-
-    if (currentConfig.mode === 'time_attack') {
-        if(btnStartTA) btnStartTA.classList.remove('hidden');
-        document.getElementById('host-status-area').textContent = APP_TEXT.Studio.MsgTimeAttackReady;
-    } else if (currentConfig.mode !== 'bomb') {
-        if(btnStart) btnStart.classList.remove('hidden');
-        document.getElementById('host-status-area').textContent = "Ready...";
-    }
-    
-    if(currentConfig.mode !== 'time_attack') {
-        buzzWinnerId = null;
-        document.getElementById('host-buzz-winner-area').classList.add('hidden');
-    }
-};
-
-// ★v58: レース画面更新ロジック
-function updateRaceView(players) {
-    const container = document.getElementById('host-race-monitor');
-    if(!container) return;
-    container.innerHTML = '';
-    
-    const activePlayers = [];
-    Object.keys(players).forEach(key => {
-        if(players[key].isAlive) activePlayers.push({ name: players[key].name, score: players[key].periodScore || 0 });
-    });
-    
-    // 得点の高い順に表示
-    activePlayers.sort((a,b) => b.score - a.score);
-    
-    // ゴール設定（Configで設定した passCount を流用）
-    const goal = currentConfig.passCount || 10;
-    
-    activePlayers.forEach(p => {
-        const row = document.createElement('div');
-        row.className = 'race-lane';
-        if (p.score >= goal) row.classList.add('goal');
-        
-        const percent = Math.min(100, (p.score / goal) * 100);
-        
-        row.innerHTML = `
-            <div class="race-name">${p.name}</div>
-            <div class="race-track">
-                <div class="race-bar" style="width:${percent}%"></div>
-            </div>
-            <div class="race-score">${p.score}</div>
-        `;
-        container.appendChild(row);
-    });
-}
-
-function startPanelGame(roomId) {
-    const panels = Array(25).fill(0);
-    window.db.ref(`rooms/${roomId}/status`).update({
-        step: 'panel',
-        panels: panels
-    });
-    const grid = document.getElementById('host-panel-grid');
-    document.getElementById('host-panel-control-area').classList.remove('hidden');
-    grid.innerHTML = '';
-    for(let i=0; i<25; i++) {
-        const btn = document.createElement('button');
-        btn.textContent = i+1;
-        btn.style.height = "40px";
-        btn.onclick = () => {
-            window.db.ref(`rooms/${roomId}/status/panels/${i}`).once('value', snap => {
-                let val = snap.val() || 0;
-                val = (val + 1) % 5;
-                window.db.ref(`rooms/${roomId}/status/panels/${i}`).set(val);
-                updateHostPanelColor(btn, val);
-            });
-        };
-        grid.appendChild(btn);
-    }
-}
-function updateHostPanelColor(btn, val) {
-    const colors = ['#ddd', '#ffaaaa', '#aaffaa', '#ffffff', '#aaaaff'];
-    btn.style.background = colors[val];
-}
-function startBombGame(roomId) { 
-    const count = currentConfig.bombCount || 10;
-    const cards = [];
-    for(let i=0; i<count; i++) cards.push({ type: 0, open: false });
-    const targetIdx = Math.floor(Math.random() * count);
-    cards[targetIdx].type = 1; 
-    window.db.ref(`rooms/${roomId}/status`).update({ step: 'bomb', cards: cards });
-    const grid = document.getElementById('host-bomb-grid');
-    document.getElementById('host-bomb-control-area').classList.remove('hidden');
-    grid.innerHTML = '';
-    for(let i=0; i<count; i++) {
-        const btn = document.createElement('button');
-        btn.textContent = i+1;
-        if(i === targetIdx) btn.textContent += " (★)"; 
-        btn.style.height = "40px";
-        btn.onclick = () => {
-            window.db.ref(`rooms/${roomId}/status/cards/${i}/open`).set(true);
-            btn.disabled = true;
-            btn.style.background = "#555";
-        };
-        grid.appendChild(btn);
-    }
-}
-
-function setupStudioButtons(roomId) {
-    const btnClose = document.getElementById('host-close-studio-btn');
-    if (btnClose) {
-        btnClose.onclick = () => {
-            periodPlaylist = [];
-            currentRoomId = null;
-            if(taTimer) clearTimeout(taTimer);
-            enterDashboard();
-        };
-    }
-    
-    const btnStart = document.getElementById('host-start-btn');
-    if(btnStart) btnStart.onclick = () => {
-        const now = firebase.database.ServerValue.TIMESTAMP;
-        let updateData = { step: 'question', qIndex: currentQIndex, startTime: now };
-        if (currentConfig.mode === 'buzz') {
-            updateData.isBuzzActive = true;
-            updateData.currentAnswerer = null;
-            buzzWinnerId = null; 
-            window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
-                snap.forEach(p => p.ref.update({ buzzTime: null, lastResult: null }));
-            });
-        }
-        window.db.ref(`rooms/${roomId}/status`).update(updateData);
-        btnStart.classList.add('hidden');
-        document.getElementById('host-status-area').textContent = "Active...";
-    };
-
-    const btnStartTA = document.getElementById('host-start-ta-btn');
-    if(btnStartTA) btnStartTA.onclick = () => {
-        btnStartTA.classList.add('hidden');
-        if(document.getElementById('host-manual-judge-area')) {
-            document.getElementById('host-manual-judge-area').classList.remove('hidden');
-        }
-        startTaLoop(roomId);
-    };
-
-    const btnCorrect = document.getElementById('host-judge-correct-btn');
-    if(btnCorrect) btnCorrect.onclick = () => {
-        if (currentConfig.mode === 'time_attack') {
-            if(buzzWinnerId) {
-                window.db.ref(`rooms/${roomId}/players/${buzzWinnerId}`).once('value', snap => {
-                    const val = snap.val();
-                    snap.ref.update({ periodScore: (val.periodScore||0) + 1 });
-                });
-            }
-            clearTimeout(taTimer);
-            nextTaQuestion(roomId);
-            return;
-        }
-
-        if (!buzzWinnerId) return;
-        const q = studioQuestions[currentQIndex];
-        const points = parseInt(q.points) || 1;
-
-        window.db.ref(`rooms/${roomId}/players/${buzzWinnerId}`).once('value', snap => {
-            const val = snap.val();
-            snap.ref.update({ periodScore: (val.periodScore||0) + points, lastResult: 'win' });
-        });
-
-        finishQuestion(roomId);
-    };
-
-    const btnWrong = document.getElementById('host-judge-wrong-btn');
-    if(btnWrong) btnWrong.onclick = () => {
-        if (currentConfig.mode === 'time_attack') {
-            clearTimeout(taTimer);
-            nextTaQuestion(roomId);
-            return;
-        }
-        if (!buzzWinnerId) return;
-        const q = studioQuestions[currentQIndex];
-        const loss = parseInt(q.loss) || 0;
-        window.db.ref(`rooms/${roomId}/players/${buzzWinnerId}`).once('value', snap => {
-            const val = snap.val();
-            let newScore = (val.periodScore||0);
-            if(loss > 0) newScore -= loss;
-            snap.ref.update({ periodScore: newScore, lastResult: 'lose', buzzTime: null });
-        });
-        const action = currentConfig.buzzWrongAction;
-        buzzWinnerId = null;
-        document.getElementById('host-buzz-winner-area').classList.add('hidden');
-        if (action === 'end') finishQuestion(roomId);
-        else window.db.ref(`rooms/${roomId}/status`).update({ currentAnswerer: null, isBuzzActive: true });
-    };
-
-    const btnPass = document.getElementById('host-judge-pass-btn');
-    if(btnPass) btnPass.onclick = () => { /* Turn mode pass logic */ };
-
-    const btnShowAns = document.getElementById('host-show-answer-btn');
-    if(btnShowAns) btnShowAns.onclick = () => finishQuestion(roomId);
-
-    const btnNext = document.getElementById('host-next-btn');
-    if(btnNext) btnNext.onclick = (e) => {
-        const action = e.target.dataset.action;
-        if (action === "next") { playPeriod(currentPeriodIndex + 1); return; }
-        if (action === "end") { alert(APP_TEXT.Studio.MsgAllEnd); btnNext.classList.add('hidden'); return; }
-        currentQIndex++;
-        buzzWinnerId = null;
-        window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
-            snap.forEach(p => p.ref.update({ lastAnswer: null, lastTime: 99999, lastResult: null, buzzTime: null, isLocked: false }));
-        });
-        updateKanpe();
-        if(btnStart) btnStart.classList.remove('hidden');
-        btnNext.classList.add('hidden');
-        document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} Standby...`;
-    };
-    
-    const btnRanking = document.getElementById('host-ranking-btn');
-    if(btnRanking) btnRanking.onclick = () => {
-        window.db.ref(`rooms/${roomId}/status`).update({ step: 'ranking' });
-        window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
-            let ranking = [];
-            snap.forEach(p => {
-                const v = p.val();
-                ranking.push({ name: v.name, score: v.periodScore, time: v.periodTime, isAlive: v.isAlive });
-            });
-            ranking.sort((a,b) => (b.score - a.score) || (a.time - b.time));
-            renderRankingView(ranking);
-            window.showView(window.views.ranking);
-        });
-    };
-    
-    const rankingBackBtn = document.getElementById('ranking-back-btn');
-    if(rankingBackBtn) rankingBackBtn.onclick = () => {
-        window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby' });
-        window.showView(window.views.hostControl);
-    };
-}
-
-function finishQuestion(roomId) {
-    window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer', isBuzzActive: false });
-    if(document.getElementById('host-show-answer-btn')) document.getElementById('host-show-answer-btn').classList.add('hidden');
-    if(document.getElementById('host-manual-judge-area')) document.getElementById('host-manual-judge-area').classList.add('hidden');
-    
-    const btnNext = document.getElementById('host-next-btn');
-    if(btnNext) {
-        btnNext.classList.remove('hidden');
-        if (currentQIndex >= studioQuestions.length - 1) {
-            btnNext.textContent = APP_TEXT.Studio.BtnNextPeriod; 
-            btnNext.dataset.action = "next";
         } else {
-            btnNext.textContent = APP_TEXT.Studio.BtnNextQ;
-            btnNext.dataset.action = "nextQ";
+            select.innerHTML = `<option value="">${APP_TEXT.Config.SelectEmpty}</option>`;
         }
-    }
+    });
 }
 
-function startTaLoop(roomId) { currentQIndex = -1; nextTaQuestion(roomId); }
-function nextTaQuestion(roomId) {
-    currentQIndex++;
-    if (currentQIndex >= studioQuestions.length) {
-        document.getElementById('host-status-area').textContent = "FINISHED";
+function updateBuilderUI() {
+    const container = document.getElementById('config-builder-ui');
+    const select = document.getElementById('config-set-select');
+    if (!container || !select) return;
+
+    if (!select.value) {
+        selectedSetQuestions = [];
+        container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">セットを選択してください</p>';
         return;
     }
-    updateKanpe();
-    window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', qIndex: currentQIndex, startTime: firebase.database.ServerValue.TIMESTAMP });
-    document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} (5s)`;
-    taTimer = setTimeout(() => { nextTaQuestion(roomId); }, 5000);
-}
 
-function updateKanpe() {
-    const kanpeArea = document.getElementById('host-kanpe-area');
-    if(studioQuestions.length === 0) { kanpeArea.classList.add('hidden'); return; }
-    if(studioQuestions.length > currentQIndex) {
-        const q = studioQuestions[currentQIndex];
-        kanpeArea.classList.remove('hidden');
-        let questionHtml = `Q${currentQIndex+1}. ${q.q}`;
-        if (q.type === 'multi') {
-            document.getElementById('host-multi-control-area').classList.remove('hidden');
-            const mGrid = document.getElementById('host-multi-grid');
-            mGrid.innerHTML = '';
-            window.db.ref(`rooms/${currentRoomId}/status/multiState`).once('value', snap => {
-                const states = snap.val() || Array(q.c.length).fill(false);
-                q.c.forEach((ans, i) => {
-                    const btn = document.createElement('div');
-                    btn.className = 'multi-ans-btn';
-                    if(states[i]) btn.classList.add('opened');
-                    btn.textContent = ans;
-                    btn.onclick = () => {
-                        window.db.ref(`rooms/${currentRoomId}/status/multiState/${i}`).set(!states[i]);
-                        states[i] = !states[i];
-                        if(states[i]) btn.classList.add('opened'); else btn.classList.remove('opened');
-                    };
-                    mGrid.appendChild(btn);
-                });
-            });
-        } else {
-            document.getElementById('host-multi-control-area').classList.add('hidden');
-        }
-        document.getElementById('kanpe-question').innerHTML = questionHtml; 
-        document.getElementById('kanpe-answer').textContent = (q.type === 'multi') ? `全${q.c.length}項目` : `正解: ${q.correct}`;
-        
-        const timeLimit = (q.timeLimit !== undefined && q.timeLimit > 0) ? q.timeLimit : 0;
-        document.getElementById('kanpe-time-limit').textContent = timeLimit ? `${timeLimit}s` : "No Limit";
-    } else {
-        kanpeArea.classList.add('hidden');
-    }
-}
+    const setData = JSON.parse(select.value);
+    selectedSetQuestions = setData.q || [];
+    const config = setData.c || {};
+    const spMode = setData.sp || 'none';
 
-function renderRankingView(data) {
-    const list = document.getElementById('ranking-list');
-    list.innerHTML = '';
-    if (data.length === 0) { list.innerHTML = '<p style="padding:20px;">No players</p>'; return; }
-    
-    data.forEach((r, i) => {
-        const rank = i + 1;
-        const div = document.createElement('div');
-        let rankClass = 'rank-row';
-        if (rank === 1) rankClass += ' rank-1';
-        else if (rank === 2) rankClass += ' rank-2';
-        else if (rank === 3) rankClass += ' rank-3';
-        div.className = rankClass;
-        let scoreText = `${r.score}`; 
-        
-        div.innerHTML = `
-            <div style="display:flex; align-items:center;">
-                <span class="rank-badge">${rank}</span>
-                <span>${r.name}</span>
+    let html = '';
+
+    // 1. 回答モード
+    html += `<div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>`;
+    html += `
+    <div class="config-item-box">
+        <select id="config-mode-select" class="btn-block config-select highlight-select">
+            <option value="normal" ${config.mode === 'normal' ? 'selected' : ''}>${APP_TEXT.Config.ModeNormal}</option>
+            <option value="buzz" ${config.mode === 'buzz' ? 'selected' : ''}>${APP_TEXT.Config.ModeBuzz}</option>
+            <option value="turn" ${config.mode === 'turn' ? 'selected' : ''}>${APP_TEXT.Config.ModeTurn}</option>
+            <option value="time_attack" ${config.mode === 'time_attack' ? 'selected' : ''} style="color:red;">${APP_TEXT.Config.ModeTimeAttack}</option>
+        </select>
+        <p id="config-mode-locked-msg" class="hidden" style="color:#d00; font-size:0.8em; margin-top:5px; font-weight:bold;">${APP_TEXT.Config.MsgLockedMode}</p>
+
+        <div id="mode-details-normal" class="mode-details hidden" style="margin-top:15px;">
+            <label class="config-label">${APP_TEXT.Config.LabelNormalLimit}</label>
+            <select id="config-normal-limit" class="btn-block config-select">
+                <option value="one">${APP_TEXT.Config.NormalLimitOne}</option>
+                <option value="unlimited">${APP_TEXT.Config.NormalLimitUnlimited}</option>
+            </select>
+            <div style="margin-top:10px;">
+                <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
+                <select id="config-shuffle-q" class="btn-block config-select">
+                    <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
+                    <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
+                </select>
             </div>
-            <div class="rank-score">${scoreText}</div>
+        </div>
+
+        <div id="mode-details-buzz" class="mode-details hidden" style="margin-top:15px;">
+            <label class="config-label">${APP_TEXT.Config.LabelBuzzWrongAction}</label>
+            <select id="config-buzz-wrong-action" class="btn-block config-select" style="margin-bottom:10px;">
+                <option value="next">${APP_TEXT.Config.BuzzWrongNext}</option>
+                <option value="reset">${APP_TEXT.Config.BuzzWrongReset}</option>
+                <option value="end">${APP_TEXT.Config.BuzzWrongEnd}</option>
+            </select>
+            <label class="config-label">${APP_TEXT.Config.LabelBuzzTime}</label>
+            <select id="config-buzz-timer" class="btn-block config-select" style="margin-bottom:10px;">
+                <option value="0">${APP_TEXT.Config.BuzzTimeNone}</option>
+                <option value="3">${APP_TEXT.Config.BuzzTime3}</option>
+                <option value="5">${APP_TEXT.Config.BuzzTime5}</option>
+                <option value="10">${APP_TEXT.Config.BuzzTime10}</option>
+            </select>
+            <div style="margin-top:10px;">
+                <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
+                <select id="config-buzz-shuffle" class="btn-block config-select">
+                    <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
+                    <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="mode-details-turn" class="mode-details hidden" style="margin-top:15px;">
+            <label class="config-label">${APP_TEXT.Config.LabelTurnOrder}</label>
+            <select id="config-turn-order" class="btn-block config-select" style="margin-bottom:10px;">
+                <option value="fixed">${APP_TEXT.Config.TurnOrderFixed}</option>
+                <option value="random">${APP_TEXT.Config.TurnOrderRandom}</option>
+                <option value="rank">${APP_TEXT.Config.TurnOrderRank}</option>
+            </select>
+            <label class="config-label">${APP_TEXT.Config.LabelTurnPass}</label>
+            <select id="config-turn-pass" class="btn-block config-select">
+                <option value="ok">${APP_TEXT.Config.TurnPassOk}</option>
+                <option value="ng">${APP_TEXT.Config.TurnPassNg}</option>
+            </select>
+            <div style="margin-top:10px;">
+                <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
+                <select id="config-turn-shuffle" class="btn-block config-select">
+                    <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
+                    <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="mode-details-time_attack" class="mode-details hidden" style="margin-top:15px; background:#fff5e6; padding:10px; border-radius:5px;">
+            <p style="font-size:0.9em; margin:0; color:#d32f2f; font-weight:bold;">※Time Shock: 5 sec/Q</p>
+        </div>
+    </div>`;
+
+    // 2. ルール設定 (ゲームタイプ & 勝利条件)
+    html += `<div id="config-rule-section">`;
+    html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
+    
+    html += `
+    <div class="config-item-box">
+        <label class="config-label-large">${APP_TEXT.Config.LabelGameType}</label>
+        <select id="config-game-type" class="btn-block config-select" style="font-size:1.1em; margin-bottom:10px;">
+            <option value="score">${APP_TEXT.Config.GameTypeScore}</option>
+            <option value="territory">${APP_TEXT.Config.GameTypeTerritory}</option>
+            <option value="race">${APP_TEXT.Config.GameTypeRace}</option>
+        </select>
+
+        <label class="config-label-large" style="margin-top:15px;">${APP_TEXT.Config.LabelWinCond}</label>
+        <select id="config-win-cond" class="btn-block config-select" style="font-size:1.1em; margin-bottom:10px;">
+            <option value="all">${APP_TEXT.Config.WinAll}</option>
+            <option value="score">${APP_TEXT.Config.WinScore}</option>
+            <option value="survivor">${APP_TEXT.Config.WinSurvivor}</option>
+        </select>
+        
+        <div id="config-win-target-area" class="hidden" style="margin-top:10px; background:#f9f9f9; padding:5px; border-radius:4px; border:1px dashed #ccc;">
+            <label style="font-size:0.9em; font-weight:bold;">${APP_TEXT.Config.LabelWinTarget}</label>
+            <input type="number" id="config-win-target" value="10" min="1" style="width:60px; text-align:center; padding:5px; margin-left:10px; border:1px solid #aaa; border-radius:4px;">
+        </div>
+    </div>`;
+
+    // カスタムスコア
+    html += `
+    <div class="config-item-box">
+        <h5 style="margin:0 0 10px 0;">${APP_TEXT.Config.HeadingCustomScore}</h5>
+        
+        <div style="display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:10px; margin-bottom:10px; background:#f9f9f9; padding:5px; font-size:0.8em;">
+            <div>
+                <span style="color:#333; font-weight:bold;">${APP_TEXT.Config.LabelBulkTime}</span>
+                <input type="number" id="config-bulk-time-input" value="0" min="0" style="width:40px; text-align:center; margin:0 5px;">
+                <button id="config-bulk-time-btn" class="btn-mini" style="background:#333; color:white;">${APP_TEXT.Config.BtnReflect}</button>
+            </div>
+            <div>
+                <span style="color:#0055ff; font-weight:bold;">${APP_TEXT.Config.LabelBulkPt}</span>
+                <input type="number" id="config-bulk-point-input" value="1" min="1" style="width:40px; text-align:center; margin:0 5px;">
+                <button id="config-bulk-point-btn" class="btn-mini" style="background:#0055ff; color:white;">${APP_TEXT.Config.BtnReflect}</button>
+            </div>
+            <div>
+                <span style="color:#d00; font-weight:bold;">${APP_TEXT.Config.LabelBulkLoss}</span>
+                <input type="number" id="config-bulk-loss-input" value="0" min="0" style="width:40px; text-align:center; margin:0 5px;">
+                <button id="config-bulk-loss-btn" class="btn-mini" style="background:#d00; color:white;">${APP_TEXT.Config.BtnReflect}</button>
+            </div>
+        </div>
+
+        <div id="config-questions-list" style="font-size:0.9em; max-height:300px; overflow-y:auto; border:1px solid #eee; padding:5px;"></div>
+    </div>`;
+
+    // 脱落条件
+    html += `
+    <div class="config-item-box">
+        <label class="config-label-large">${APP_TEXT.Config.LabelElim}</label>
+        <select id="config-elimination-rule" class="btn-block config-select" style="font-size:1.1em; margin-bottom:10px;">
+            <option value="none" ${config.eliminationRule === 'none' ? 'selected' : ''}>${APP_TEXT.Config.RuleNone}</option>
+            <option value="wrong_only" ${config.eliminationRule === 'wrong_only' ? 'selected' : ''}>${APP_TEXT.Config.RuleWrong}</option>
+            <option value="wrong_and_slowest" ${config.eliminationRule === 'wrong_and_slowest' ? 'selected' : ''}>${APP_TEXT.Config.RuleSlow}</option>
+        </select>
+        <div id="config-elimination-count-area" class="hidden" style="display:flex; align-items:center; gap:10px; background:#fff0f5; padding:10px; border-radius:5px;">
+            <span style="font-weight:bold; color:#d00;">${APP_TEXT.Config.LabelElimCount}</span>
+            <input type="number" id="config-elimination-count" value="${config.eliminationCount || 1}" min="1" style="width:60px; text-align:center; padding:5px; border:1px solid #d00; border-radius:4px;">
+            <span>${APP_TEXT.Config.LabelElimCountSuffix}</span>
+        </div>
+    </div>`;
+    
+    html += `</div>`; // End rule section
+
+    html += `<button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:15px; border:none; border-radius:8px; box-shadow:0 4px 8px rgba(0,85,255,0.3); font-size:1.1em; margin-top:20px;">${APP_TEXT.Config.BtnAddList}</button>`;
+
+    container.innerHTML = html;
+
+    // イベントリスナー
+    const modeSel = document.getElementById('config-mode-select');
+    if(modeSel) modeSel.addEventListener('change', (e) => updateModeDetails(e.target.value));
+    
+    const elimSel = document.getElementById('config-elimination-rule');
+    if(elimSel) elimSel.addEventListener('change', updateEliminationUI);
+    
+    const gameTypeSel = document.getElementById('config-game-type');
+    const winCondSel = document.getElementById('config-win-cond');
+    
+    if(gameTypeSel) {
+        gameTypeSel.addEventListener('change', (e) => {
+            const val = e.target.value;
+            // レースの場合、強制的にスコア勝利
+            if (val === 'race') {
+                if(winCondSel) winCondSel.value = 'score';
+                document.getElementById('config-win-target-area')?.classList.remove('hidden');
+            }
+        });
+    }
+    
+    if(winCondSel) {
+        winCondSel.addEventListener('change', (e) => {
+            const val = e.target.value;
+            const targetArea = document.getElementById('config-win-target-area');
+            if (val === 'score') targetArea?.classList.remove('hidden');
+            else targetArea?.classList.add('hidden');
+        });
+    }
+    
+    const addBtn = document.getElementById('config-add-playlist-btn');
+    if(addBtn) addBtn.addEventListener('click', addPeriodToPlaylist);
+
+    document.getElementById('config-bulk-time-btn')?.addEventListener('click', () => {
+        const val = document.getElementById('config-bulk-time-input').value;
+        document.querySelectorAll('.q-time-input').forEach(inp => inp.value = val);
+    });
+    document.getElementById('config-bulk-point-btn')?.addEventListener('click', () => {
+        const val = document.getElementById('config-bulk-point-input').value;
+        document.querySelectorAll('.q-point-input').forEach(inp => inp.value = val);
+    });
+    document.getElementById('config-bulk-loss-btn')?.addEventListener('click', () => {
+        const val = document.getElementById('config-bulk-loss-input').value;
+        document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = val);
+    });
+
+    if(modeSel) updateModeDetails(modeSel.value);
+    updateEliminationUI();
+    renderQuestionsListUI(selectedSetQuestions);
+    applySpecialModeLock(spMode);
+}
+
+function renderQuestionsListUI(questions) {
+    const list = document.getElementById('config-questions-list');
+    if(!list) return;
+    list.innerHTML = '';
+    questions.forEach((q, i) => {
+        const div = document.createElement('div');
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.marginBottom = '5px';
+        div.style.borderBottom = '1px solid #eee';
+        div.style.paddingBottom = '5px';
+        const pts = q.points !== undefined ? q.points : 1;
+        const loss = q.loss !== undefined ? q.loss : 0;
+        const time = q.timeLimit !== undefined ? q.timeLimit : 0;
+        div.innerHTML = `
+            <div style="flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-weight:bold; font-size:0.9em; margin-right:5px;">Q${i+1}. ${q.q}</div>
+            <div style="display:flex; align-items:center; gap:3px;">
+                <span style="font-size:0.7em; color:#333;">${APP_TEXT.Config.LabelHeaderTime}</span>
+                <input type="number" class="q-time-input" data-index="${i}" value="${time}" min="0" style="width:40px; text-align:center; padding:3px; border:1px solid #333; border-radius:3px;">
+                <span style="font-size:0.7em; color:#0055ff; margin-left:3px;">${APP_TEXT.Config.LabelHeaderPt}</span>
+                <input type="number" class="q-point-input" data-index="${i}" value="${pts}" min="1" style="width:30px; text-align:center; padding:3px; border:1px solid #0055ff; border-radius:3px; font-weight:bold;">
+                <span style="font-size:0.7em; color:#d00; margin-left:3px;">${APP_TEXT.Config.LabelHeaderLoss}</span>
+                <input type="number" class="q-loss-input" data-index="${i}" value="${loss}" min="0" style="width:30px; text-align:center; padding:3px; border:1px solid #d00; border-radius:3px; font-weight:bold;">
+            </div>
         `;
         list.appendChild(div);
     });
+}
+
+function applySpecialModeLock(spMode) {
+    const modeSelect = document.getElementById('config-mode-select');
+    const lockMsg = document.getElementById('config-mode-locked-msg');
+    const ruleSec = document.getElementById('config-rule-section');
+    if(!modeSelect) return;
+    if (spMode === 'time_attack') {
+        modeSelect.value = 'time_attack';
+        modeSelect.disabled = true;
+        lockMsg.classList.remove('hidden');
+        ruleSec.style.display = 'none'; 
+        updateModeDetails('time_attack');
+    } else if (spMode === 'panel_attack') {
+        const gameType = document.getElementById('config-game-type');
+        if(gameType) {
+            gameType.value = 'territory';
+            gameType.disabled = true;
+        }
+        unlockConfig();
+    } else {
+        unlockConfig();
+    }
+}
+
+function unlockConfig() {
+    const modeSelect = document.getElementById('config-mode-select');
+    const lockMsg = document.getElementById('config-mode-locked-msg');
+    const ruleSec = document.getElementById('config-rule-section');
+    const gameType = document.getElementById('config-game-type');
+    if(!modeSelect) return;
+    modeSelect.disabled = false;
+    lockMsg.classList.add('hidden');
+    ruleSec.style.display = 'block';
+    if(gameType) gameType.disabled = false;
+    updateModeDetails(modeSelect.value);
+}
+
+function updateModeDetails(mode) {
+    document.querySelectorAll('.mode-details').forEach(el => el.classList.add('hidden'));
+    if (mode === 'normal') document.getElementById('mode-details-normal')?.classList.remove('hidden');
+    else if (mode === 'buzz') document.getElementById('mode-details-buzz')?.classList.remove('hidden');
+    else if (mode === 'turn') document.getElementById('mode-details-turn')?.classList.remove('hidden');
+    else if (mode === 'time_attack') document.getElementById('mode-details-time_attack')?.classList.remove('hidden');
+}
+
+function updateEliminationUI() {
+    const rule = document.getElementById('config-elimination-rule').value;
+    const countArea = document.getElementById('config-elimination-count-area');
+    if (rule === 'wrong_and_slowest') countArea?.classList.remove('hidden');
+    else countArea?.classList.add('hidden');
+}
+
+function addPeriodToPlaylist() {
+    const select = document.getElementById('config-set-select');
+    const mode = document.getElementById('config-mode-select').value;
+    if(!select.value && mode !== 'panel_attack' && mode !== 'bomb') {
+         alert(APP_TEXT.Config.AlertNoSet); return; 
+    }
+    
+    let questionsWithPoints = [];
+    let title = "New Period";
+    if (select.value) {
+        const data = JSON.parse(select.value);
+        title = data.t;
+        questionsWithPoints = JSON.parse(JSON.stringify(data.q || []));
+        const pointInputs = document.querySelectorAll('.q-point-input');
+        const lossInputs = document.querySelectorAll('.q-loss-input');
+        const timeInputs = document.querySelectorAll('.q-time-input');
+        if (pointInputs.length > 0) {
+            pointInputs.forEach(input => {
+                const idx = parseInt(input.getAttribute('data-index'));
+                if (questionsWithPoints[idx]) questionsWithPoints[idx].points = parseInt(input.value) || 1;
+            });
+            lossInputs.forEach(input => {
+                const idx = parseInt(input.getAttribute('data-index'));
+                if (questionsWithPoints[idx]) questionsWithPoints[idx].loss = parseInt(input.value) || 0;
+            });
+            timeInputs.forEach(input => {
+                const idx = parseInt(input.getAttribute('data-index'));
+                if (questionsWithPoints[idx]) questionsWithPoints[idx].timeLimit = parseInt(input.value) || 0;
+            });
+        }
+    }
+
+    let elimCount = 1;
+    if (document.getElementById('config-elimination-rule').value === 'wrong_and_slowest') {
+        elimCount = parseInt(document.getElementById('config-elimination-count').value) || 1;
+    }
+
+    const gameType = document.getElementById('config-game-type').value;
+    const winCond = document.getElementById('config-win-cond').value;
+    
+    // 勝利条件の数値 (ScoreかSurvivalで使用)
+    let winTarget = 0;
+    if (winCond === 'score') {
+        winTarget = parseInt(document.getElementById('config-win-target').value) || 10;
+    }
+
+    // シャッフル
+    let shuffle = 'off';
+    if (mode === 'normal') shuffle = document.getElementById('config-shuffle-q').value;
+    else if (mode === 'buzz') shuffle = document.getElementById('config-buzz-shuffle').value;
+    else if (mode === 'turn') shuffle = document.getElementById('config-turn-shuffle').value;
+    
+    if(shuffle === 'on') {
+        for (let i = questionsWithPoints.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [questionsWithPoints[i], questionsWithPoints[j]] = [questionsWithPoints[j], questionsWithPoints[i]];
+        }
+    }
+
+    const newConfig = {
+        initialStatus: 'revive', passCount: 5, intermediateRanking: false, // Default Interperiod
+        eliminationRule: document.getElementById('config-elimination-rule').value,
+        eliminationCount: elimCount,
+        lossPoint: 0, scoreUnit: 'point', theme: 'light',
+        timeLimit: 0, 
+        mode: mode,
+        gameType: gameType,
+        winCondition: winCond, // ★v59
+        winTarget: winTarget,  // ★v59
+        
+        normalLimit: document.getElementById('config-normal-limit')?.value || 'unlimited',
+        buzzWrongAction: document.getElementById('config-buzz-wrong-action')?.value || 'next',
+        buzzTime: parseInt(document.getElementById('config-buzz-timer')?.value) || 0,
+        turnOrder: document.getElementById('config-turn-order')?.value || 'fixed',
+        turnPass: document.getElementById('config-turn-pass')?.value || 'ok',
+        
+        shuffleChoices: 'off',
+        bombCount: 10,
+        bombTarget: 'bomb1'
+    };
+    
+    periodPlaylist.push({
+        title: title,
+        questions: questionsWithPoints,
+        config: newConfig
+    });
+    
+    renderConfigPreview();
+    updateBuilderUI();
+}
+
+function renderConfigPreview() {
+    const container = document.getElementById('config-playlist-preview');
+    if(!container) return;
+    container.innerHTML = '';
+    
+    if(periodPlaylist.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:#999; font-size:0.8em;">${APP_TEXT.Config.AlertEmptyList}</p>`;
+        return;
+    }
+    
+    periodPlaylist.forEach((item, index) => {
+        if (index > 0) {
+            const arrowDiv = document.createElement('div');
+            arrowDiv.className = 'playlist-arrow-container';
+            arrowDiv.innerHTML = '<div class="playlist-arrow"></div>';
+            container.appendChild(arrowDiv);
+            
+            // ★v59: ピリオド間設定UI復活
+            const settingDiv = document.createElement('div');
+            settingDiv.className = 'playlist-inter-setting';
+            const isRanking = (item.config.initialStatus === 'ranking');
+            const isInterRank = item.config.intermediateRanking;
+            
+            settingDiv.innerHTML = `
+                <div style="font-size:0.7em; color:#666; font-weight:bold; margin-bottom:3px;">${APP_TEXT.Config.InterHeading}</div>
+                <div style="display:flex; flex-direction:column; gap:5px;">
+                    <div style="display:flex; gap:5px; align-items:center;">
+                        <select class="inter-status-select" data-index="${index}">
+                            <option value="revive" ${item.config.initialStatus === 'revive' ? 'selected' : ''}>${APP_TEXT.Config.StatusRevive}</option>
+                            <option value="continue" ${item.config.initialStatus === 'continue' ? 'selected' : ''}>${APP_TEXT.Config.StatusContinue}</option>
+                            <option value="ranking" ${item.config.initialStatus === 'ranking' ? 'selected' : ''}>${APP_TEXT.Config.StatusRanking}</option>
+                        </select>
+                        <div class="inter-pass-area ${isRanking ? '' : 'hidden'}" style="display:flex; align-items:center; gap:3px;">
+                            <span style="font-size:0.8em;">${APP_TEXT.Config.LabelTop}</span>
+                            <input type="number" class="inter-pass-input" data-index="${index}" value="${item.config.passCount}" min="1" style="width:50px; padding:5px; text-align:center;">
+                            <span style="font-size:0.8em;">${APP_TEXT.Config.LabelName}</span>
+                        </div>
+                    </div>
+                    <label style="font-size:0.9em; cursor:pointer;">
+                        <input type="checkbox" class="inter-ranking-chk" data-index="${index}" ${isInterRank ? 'checked' : ''}>
+                        ${APP_TEXT.Config.CheckInterRank}
+                    </label>
+                </div>
+            `;
+            container.appendChild(settingDiv);
+        }
+
+        const div = document.createElement('div');
+        div.className = 'timeline-card';
+        div.style.marginBottom = "0"; 
+        
+        let modeLabel = item.config.mode.toUpperCase();
+        if(item.config.gameType === 'territory') modeLabel += " (PANEL)";
+        if(item.config.gameType === 'race') modeLabel += " (RACE)";
+        
+        // 勝利条件の表示
+        let condText = "";
+        if(item.config.winCondition === 'score') condText = ` / First to ${item.config.winTarget}pt`;
+        if(item.config.winCondition === 'survivor') condText = ` / SURVIVAL`;
+
+        div.innerHTML = `
+            <div style="flex:1;">
+                <div style="font-weight:bold; font-size:1.1em;">${index+1}. ${item.title}</div>
+                <div style="font-size:0.8em; color:#666;">
+                    [${modeLabel}] ${item.questions.length}Q${condText}
+                </div>
+            </div>
+            <button class="delete-btn" onclick="removeFromPlaylist(${index})">Del</button>
+        `;
+        container.appendChild(div);
+    });
+
+    // イベント再バインド (Interperiod用)
+    document.querySelectorAll('.inter-status-select').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+            const idx = e.target.getAttribute('data-index');
+            const val = e.target.value;
+            periodPlaylist[idx].config.initialStatus = val;
+            const passArea = e.target.closest('div').querySelector('.inter-pass-area');
+            if(passArea) {
+                if (val === 'ranking') passArea.classList.remove('hidden');
+                else passArea.classList.add('hidden');
+            }
+        });
+    });
+    document.querySelectorAll('.inter-pass-input').forEach(inp => {
+        inp.addEventListener('change', (e) => {
+            const idx = e.target.getAttribute('data-index');
+            periodPlaylist[idx].config.passCount = parseInt(e.target.value) || 5;
+        });
+    });
+    document.querySelectorAll('.inter-ranking-chk').forEach(chk => {
+        chk.addEventListener('change', (e) => {
+            const idx = e.target.getAttribute('data-index');
+            periodPlaylist[idx].config.intermediateRanking = e.target.checked;
+        });
+    });
+}
+
+window.removeFromPlaylist = function(index) {
+    periodPlaylist.splice(index, 1);
+    renderConfigPreview();
+};
+
+function loadSavedProgramsInConfig() {
+    const listEl = document.getElementById('config-saved-programs-list');
+    if(!listEl) return;
+    listEl.innerHTML = `<p style="text-align:center;">${APP_TEXT.Config.SelectLoading}</p>`;
+
+    window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
+        const data = snap.val();
+        listEl.innerHTML = '';
+        if(!data) {
+            listEl.innerHTML = `<p style="text-align:center; color:#999;">${APP_TEXT.Config.SelectEmpty}</p>`;
+            return;
+        }
+        Object.keys(data).forEach(key => {
+            const item = data[key];
+            const div = document.createElement('div');
+            div.className = 'set-item';
+            div.innerHTML = `
+                <div>
+                    <span style="font-weight:bold;">${item.title}</span>
+                    <div style="font-size:0.8em; color:#666;">
+                        ${new Date(item.createdAt).toLocaleDateString()} / ${item.playlist ? item.playlist.length : 0} Periods
+                    </div>
+                </div>
+            `;
+            const btnArea = document.createElement('div');
+            btnArea.style.display = 'flex';
+            btnArea.style.gap = '5px';
+
+            const loadBtn = document.createElement('button');
+            loadBtn.textContent = APP_TEXT.Config.BtnLoadProg;
+            loadBtn.className = 'btn-mini';
+            loadBtn.style.backgroundColor = '#0055ff';
+            loadBtn.style.color = 'white';
+            loadBtn.onclick = () => {
+                if(confirm(APP_TEXT.Config.MsgConfirmLoadProg)) {
+                    periodPlaylist = item.playlist || [];
+                    document.getElementById('config-final-ranking-chk').checked = (item.finalRanking !== false);
+                    document.getElementById('config-program-title').value = item.title;
+                    renderConfigPreview();
+                    alert("Loaded.");
+                }
+            };
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'delete-btn';
+            delBtn.textContent = APP_TEXT.Config.BtnDelProg;
+            delBtn.onclick = () => {
+                if(confirm(APP_TEXT.Config.MsgConfirmDelProg)) {
+                    window.db.ref(`saved_programs/${currentShowId}/${key}`).remove()
+                    .then(() => {
+                        div.remove();
+                    });
+                }
+            };
+
+            btnArea.appendChild(loadBtn);
+            btnArea.appendChild(delBtn);
+            div.appendChild(btnArea);
+            listEl.appendChild(div);
+        });
+    });
+}
+
+function saveProgramToCloud() {
+    if(periodPlaylist.length === 0) {
+        alert(APP_TEXT.Config.AlertEmptyList);
+        return;
+    }
+    const titleInput = document.getElementById('config-program-title');
+    const title = titleInput.value.trim();
+    if(!title) {
+        alert(APP_TEXT.Config.AlertNoTitle);
+        return;
+    }
+    const finalRanking = document.getElementById('config-final-ranking-chk').checked;
+    const cleanPlaylist = JSON.parse(JSON.stringify(periodPlaylist));
+    const saveObj = {
+        title: title,
+        playlist: cleanPlaylist, 
+        finalRanking: finalRanking,
+        createdAt: firebase.database.ServerValue.TIMESTAMP
+    };
+    window.db.ref(`saved_programs/${currentShowId}`).push(saveObj)
+    .then(() => {
+        window.showToast(APP_TEXT.Config.MsgSaved);
+        titleInput.value = '';
+        periodPlaylist = []; 
+        renderConfigPreview();
+        loadSavedProgramsInConfig(); 
+    })
+    .catch(err => alert("Error: " + err.message));
 }
