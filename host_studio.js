@@ -611,4 +611,35 @@ function updateKanpe() {
         document.getElementById('kanpe-question').innerHTML = questionHtml; 
         document.getElementById('kanpe-answer').textContent = (q.type === 'multi') ? `全${q.c.length}項目` : `正解: ${q.correct}`;
         
-        const timeLimit = (q.timeLimit !== undefined && q.
+        const timeLimit = (q.timeLimit !== undefined && q.timeLimit > 0) ? q.timeLimit : 0;
+        document.getElementById('kanpe-time-limit').textContent = timeLimit ? `${timeLimit}s` : "No Limit";
+    } else {
+        kanpeArea.classList.add('hidden');
+    }
+}
+
+function renderRankingView(data) {
+    const list = document.getElementById('ranking-list');
+    list.innerHTML = '';
+    if (data.length === 0) { list.innerHTML = '<p style="padding:20px;">No players</p>'; return; }
+    
+    data.forEach((r, i) => {
+        const rank = i + 1;
+        const div = document.createElement('div');
+        let rankClass = 'rank-row';
+        if (rank === 1) rankClass += ' rank-1';
+        else if (rank === 2) rankClass += ' rank-2';
+        else if (rank === 3) rankClass += ' rank-3';
+        div.className = rankClass;
+        let scoreText = `${r.score}`; 
+        
+        div.innerHTML = `
+            <div style="display:flex; align-items:center;">
+                <span class="rank-badge">${rank}</span>
+                <span>${r.name}</span>
+            </div>
+            <div class="rank-score">${scoreText}</div>
+        `;
+        list.appendChild(div);
+    });
+}
