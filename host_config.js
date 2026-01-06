@@ -3,7 +3,7 @@ type: uploaded file
 fileName: host_config.js
 fullContent:
 /* =========================================================
- * host_config.js (v61: Solo Mode Added)
+ * host_config.js (v63: UI Fixes & Solo Mode)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -60,7 +60,7 @@ function loadSetListInConfig() {
                 }
                 const firstQ = (item.questions && item.questions.length > 0) ? item.questions[0] : {};
                 const spMode = firstQ.specialMode || 'none';
-                // データ格納
+                
                 opt.value = JSON.stringify({ q: item.questions, c: item.config || {}, t: item.title, sp: spMode });
                 opt.textContent = `${item.title} [${typeLabel}]` + (spMode !== 'none' ? ` (${spMode})` : '');
                 select.appendChild(opt);
@@ -91,7 +91,7 @@ function updateBuilderUI() {
     const firstQ = selectedSetQuestions.length > 0 ? selectedSetQuestions[0] : {};
     const qType = firstQ.type;
 
-    // 「口頭」なら一斉回答を禁止にするロジック
+    // 「口頭」なら一斉回答を禁止にする（早押し強制）
     if (qType === 'free_oral' && config.mode === 'normal') {
         config.mode = 'buzz'; 
     }
@@ -102,18 +102,21 @@ function updateBuilderUI() {
     html += `<div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>`;
     html += `<div class="config-item-box">`;
     
-    // Selectボックスの生成
     html += `<select id="config-mode-select" class="btn-block config-select highlight-select">`;
     
+    // 通常モード (口頭以外で表示)
     if (qType !== 'free_oral') {
         html += `<option value="normal" ${config.mode === 'normal' ? 'selected' : ''}>${APP_TEXT.Config.ModeNormal}</option>`;
     }
-    // ★追加: 一人挑戦モード
+    
+    // 一人挑戦 (常時表示)
     html += `<option value="solo" ${config.mode === 'solo' ? 'selected' : ''}>一人挑戦 (Solo Challenge)</option>`;
 
+    // 早押し・順番 (常時表示)
     html += `<option value="buzz" ${config.mode === 'buzz' ? 'selected' : ''}>${APP_TEXT.Config.ModeBuzz}</option>`;
     html += `<option value="turn" ${config.mode === 'turn' ? 'selected' : ''}>${APP_TEXT.Config.ModeTurn}</option>`;
     
+    // タイムショック固定 (口頭以外で表示)
     if (qType !== 'free_oral') {
         html += `<option value="time_attack" ${config.mode === 'time_attack' ? 'selected' : ''} style="color:red;">★タイムショック (固定)</option>`;
     }
@@ -125,7 +128,7 @@ function updateBuilderUI() {
 
     html += `<p id="config-mode-locked-msg" class="hidden" style="color:#d00; font-size:0.8em; margin-top:5px; font-weight:bold;">${APP_TEXT.Config.MsgLockedMode}</p>`;
 
-    // 詳細設定エリア (各モード用)
+    // --- 詳細設定エリア ---
     html += `
         <div id="mode-details-normal" class="mode-details hidden" style="margin-top:15px;">
             <label class="config-label">${APP_TEXT.Config.LabelNormalLimit}</label>
@@ -148,13 +151,10 @@ function updateBuilderUI() {
                 <option value="manual">手動進行 (自分のペース)</option>
                 <option value="auto">自動進行 (タイムショック風)</option>
             </select>
-            
             <div id="config-solo-auto-settings" class="hidden" style="margin-top:10px; border-top:1px dashed #99c; padding-top:10px;">
                 <label class="config-label">1問あたりの制限時間 (秒)</label>
                 <input type="number" id="config-solo-seconds" value="5" min="1" max="60" class="btn-block" style="font-size:1.2em; text-align:center; font-weight:bold;">
-                <p style="font-size:0.8em; margin:5px 0 0 0; color:#0055ff;">
-                    ※時間切れで次へ進みます
-                </p>
+                <p style="font-size:0.8em; margin:5px 0 0 0; color:#0055ff;">※時間切れで次へ進みます</p>
             </div>
         </div>
 
@@ -205,9 +205,7 @@ function updateBuilderUI() {
         <div id="mode-details-time_attack" class="mode-details hidden" style="margin-top:15px; background:#fff5e6; padding:10px; border-radius:5px;">
             <label class="config-label">1問あたりの制限時間 (秒)</label>
             <input type="number" id="config-ta-seconds" value="${config.timeLimit || 5}" min="1" max="60" class="btn-block" style="font-size:1.2em; text-align:center; font-weight:bold;">
-            <p style="font-size:0.8em; margin:5px 0 0 0; color:#d32f2f;">
-                ※自動で次の問題へ進みます
-            </p>
+            <p style="font-size:0.8em; margin:5px 0 0 0; color:#d32f2f;">※自動で次の問題へ進みます</p>
         </div>
     </div>`;
 
@@ -237,27 +235,32 @@ function updateBuilderUI() {
         </div>
     </div>`;
 
-    // カスタムスコア
+    // ★修正: 一括設定エリア（スリム化・一括ボタン統合）
     html += `
     <div class="config-item-box">
         <h5 style="margin:0 0 10px 0;">${APP_TEXT.Config.HeadingCustomScore}</h5>
         
-        <div style="display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:10px; margin-bottom:10px; background:#f9f9f9; padding:5px; font-size:0.8em;">
-            <div>
-                <span style="color:#333; font-weight:bold;">${APP_TEXT.Config.LabelBulkTime}</span>
-                <input type="number" id="config-bulk-time-input" value="0" min="0" style="width:40px; text-align:center; margin:0 5px;">
-                <button id="config-bulk-time-btn" class="btn-mini" style="background:#333; color:white;">${APP_TEXT.Config.BtnReflect}</button>
+        <div style="background:#f0f4f8; padding:10px; border-radius:5px; border:1px solid #ccc; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:5px;">
+                <div style="flex:1;">
+                    <label style="font-size:0.8em; color:#333; font-weight:bold; display:block;">制限時間</label>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <input type="number" id="config-bulk-time-input" placeholder="0" min="0" style="width:60px; padding:5px; text-align:center;">
+                        <label style="font-size:0.8em; cursor:pointer; white-space:nowrap;">
+                            <input type="checkbox" id="config-bulk-time-unlimited"> 無制限
+                        </label>
+                    </div>
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:0.8em; color:#0055ff; font-weight:bold; display:block;">得点</label>
+                    <input type="number" id="config-bulk-point-input" placeholder="1" min="1" style="width:60px; padding:5px; text-align:center;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:0.8em; color:#d00; font-weight:bold; display:block;">失点</label>
+                    <input type="number" id="config-bulk-loss-input" placeholder="0" min="0" style="width:60px; padding:5px; text-align:center;">
+                </div>
             </div>
-            <div>
-                <span style="color:#0055ff; font-weight:bold;">${APP_TEXT.Config.LabelBulkPt}</span>
-                <input type="number" id="config-bulk-point-input" value="1" min="1" style="width:40px; text-align:center; margin:0 5px;">
-                <button id="config-bulk-point-btn" class="btn-mini" style="background:#0055ff; color:white;">${APP_TEXT.Config.BtnReflect}</button>
-            </div>
-            <div>
-                <span style="color:#d00; font-weight:bold;">${APP_TEXT.Config.LabelBulkLoss}</span>
-                <input type="number" id="config-bulk-loss-input" value="0" min="0" style="width:40px; text-align:center; margin:0 5px;">
-                <button id="config-bulk-loss-btn" class="btn-mini" style="background:#d00; color:white;">${APP_TEXT.Config.BtnReflect}</button>
-            </div>
+            <button id="config-bulk-reflect-btn" class="btn-mini btn-block" style="background:#333; color:white; padding:8px; font-weight:bold;">一括反映</button>
         </div>
 
         <div id="config-questions-list" style="font-size:0.9em; max-height:300px; overflow-y:auto; border:1px solid #eee; padding:5px;"></div>
@@ -289,7 +292,7 @@ function updateBuilderUI() {
     const modeSel = document.getElementById('config-mode-select');
     if(modeSel) modeSel.addEventListener('change', (e) => updateModeDetails(e.target.value));
     
-    // ★追加: ソロモードのスタイル変更検知
+    // ソロモードのスタイル変更検知
     const soloStyleSel = document.getElementById('config-solo-style');
     if(soloStyleSel) {
         soloStyleSel.addEventListener('change', (e) => {
@@ -328,18 +331,40 @@ function updateBuilderUI() {
     const addBtn = document.getElementById('config-add-playlist-btn');
     if(addBtn) addBtn.addEventListener('click', addPeriodToPlaylist);
 
-    document.getElementById('config-bulk-time-btn')?.addEventListener('click', () => {
-        const val = document.getElementById('config-bulk-time-input').value;
-        document.querySelectorAll('.q-time-input').forEach(inp => inp.value = val);
+    // ★修正: 一括反映ロジック
+    document.getElementById('config-bulk-reflect-btn')?.addEventListener('click', () => {
+        const timeVal = document.getElementById('config-bulk-time-input').value;
+        const ptVal = document.getElementById('config-bulk-point-input').value;
+        const lossVal = document.getElementById('config-bulk-loss-input').value;
+        const isUnlimited = document.getElementById('config-bulk-time-unlimited').checked;
+
+        if (isUnlimited || timeVal !== '') {
+            const applyTime = isUnlimited ? 0 : parseInt(timeVal);
+            document.querySelectorAll('.q-time-input').forEach(inp => inp.value = applyTime);
+        }
+        if (ptVal !== '') {
+            document.querySelectorAll('.q-point-input').forEach(inp => inp.value = ptVal);
+        }
+        if (lossVal !== '') {
+            document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = lossVal);
+        }
     });
-    document.getElementById('config-bulk-point-btn')?.addEventListener('click', () => {
-        const val = document.getElementById('config-bulk-point-input').value;
-        document.querySelectorAll('.q-point-input').forEach(inp => inp.value = val);
-    });
-    document.getElementById('config-bulk-loss-btn')?.addEventListener('click', () => {
-        const val = document.getElementById('config-bulk-loss-input').value;
-        document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = val);
-    });
+    
+    // 無制限チェック時の挙動
+    const unlimitedChk = document.getElementById('config-bulk-time-unlimited');
+    const timeInput = document.getElementById('config-bulk-time-input');
+    if(unlimitedChk && timeInput) {
+        unlimitedChk.addEventListener('change', (e) => {
+            if(e.target.checked) {
+                timeInput.value = '';
+                timeInput.disabled = true;
+                timeInput.placeholder = "∞";
+            } else {
+                timeInput.disabled = false;
+                timeInput.placeholder = "0";
+            }
+        });
+    }
 
     // 初期化実行
     if(modeSel) updateModeDetails(modeSel.value);
@@ -367,11 +392,11 @@ function renderQuestionsListUI(questions) {
             <div style="flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-weight:bold; font-size:0.9em; margin-right:5px;">Q${i+1}. ${q.q}</div>
             <div style="display:flex; align-items:center; gap:3px;">
                 <span style="font-size:0.7em; color:#333;">${APP_TEXT.Config.LabelHeaderTime}</span>
-                <input type="number" class="q-time-input" data-index="${i}" value="${time}" min="0" style="width:40px; text-align:center; padding:3px; border:1px solid #333; border-radius:3px;">
+                <input type="number" class="q-time-input" data-index="${i}" value="${time}" min="0" style="width:50px; text-align:center; padding:5px; border:1px solid #333; border-radius:3px;">
                 <span style="font-size:0.7em; color:#0055ff; margin-left:3px;">${APP_TEXT.Config.LabelHeaderPt}</span>
-                <input type="number" class="q-point-input" data-index="${i}" value="${pts}" min="1" style="width:30px; text-align:center; padding:3px; border:1px solid #0055ff; border-radius:3px; font-weight:bold;">
+                <input type="number" class="q-point-input" data-index="${i}" value="${pts}" min="1" style="width:50px; text-align:center; padding:5px; border:1px solid #0055ff; border-radius:3px; font-weight:bold;">
                 <span style="font-size:0.7em; color:#d00; margin-left:3px;">${APP_TEXT.Config.LabelHeaderLoss}</span>
-                <input type="number" class="q-loss-input" data-index="${i}" value="${loss}" min="0" style="width:30px; text-align:center; padding:3px; border:1px solid #d00; border-radius:3px; font-weight:bold;">
+                <input type="number" class="q-loss-input" data-index="${i}" value="${loss}" min="0" style="width:50px; text-align:center; padding:5px; border:1px solid #d00; border-radius:3px; font-weight:bold;">
             </div>
         `;
         list.appendChild(div);
@@ -420,7 +445,7 @@ function updateModeDetails(mode) {
     else if (mode === 'buzz') document.getElementById('mode-details-buzz')?.classList.remove('hidden');
     else if (mode === 'turn') document.getElementById('mode-details-turn')?.classList.remove('hidden');
     else if (mode === 'time_attack') document.getElementById('mode-details-time_attack')?.classList.remove('hidden');
-    else if (mode === 'solo') document.getElementById('mode-details-solo')?.classList.remove('hidden'); // ★追加
+    else if (mode === 'solo') document.getElementById('mode-details-solo')?.classList.remove('hidden');
 }
 
 function updateEliminationUI() {
@@ -487,12 +512,10 @@ function addPeriodToPlaylist() {
         }
     }
     
-    // タイムアタック秒数を取得
     let taSeconds = 5;
     if (mode === 'time_attack') {
         taSeconds = parseInt(document.getElementById('config-ta-seconds').value) || 5;
     }
-    // ★追加: ソロモード（自動）の場合の秒数
     if (mode === 'solo' && document.getElementById('config-solo-style').value === 'auto') {
          taSeconds = parseInt(document.getElementById('config-solo-seconds').value) || 5;
     }
@@ -514,7 +537,6 @@ function addPeriodToPlaylist() {
         turnOrder: document.getElementById('config-turn-order')?.value || 'fixed',
         turnPass: document.getElementById('config-turn-pass')?.value || 'ok',
         
-        // ★追加: ソロモードのスタイル
         soloStyle: document.getElementById('config-solo-style')?.value || 'manual',
 
         shuffleChoices: 'off',
@@ -584,7 +606,6 @@ function renderConfigPreview() {
         
         let modeLabel = item.config.mode.toUpperCase();
         if(item.config.mode === 'time_attack') modeLabel += ` (${item.config.timeLimit}s)`;
-        // ★追加: ソロモードのラベル表示
         if(item.config.mode === 'solo') modeLabel += ` [${item.config.soloStyle === 'auto' ? 'Auto ' + item.config.timeLimit + 's' : 'Manual'}]`;
 
         if(item.config.gameType === 'territory') modeLabel += " (PANEL)";
