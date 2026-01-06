@@ -156,13 +156,15 @@ document.addEventListener('DOMContentLoaded', () => {
 function enterDashboard() {
     window.showView(window.views.dashboard);
     document.getElementById('dashboard-show-id').textContent = currentShowId;
-    loadSavedSets();
+    
+    // 新しい関数名に変更
+    loadAllDashboardItems(); 
 
-    // デザイン設定があればダッシュボード復帰時に読み直し（任意だけど便利）
     if(typeof window.loadDesignSettings === 'function') {
         window.loadDesignSettings();
     }
 }
+
 
 /* host_core.js の loadSavedSets をこれに差し替え */
 function loadAllDashboardItems() {
