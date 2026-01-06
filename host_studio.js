@@ -3,7 +3,7 @@ type: uploaded file
 fileName: host_studio.js
 fullContent:
 /* =========================================================
- * host_studio.js (v67: Safe Fix)
+ * host_studio.js (v67: Safe Fix - No Optional Chaining)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
@@ -24,7 +24,7 @@ function startRoom() {
         status: { step: 'standby', qIndex: 0, currentAnswerer: null, isBuzzActive: false },
         config: currentConfig,
         players: {}
-    }).then(() => {
+    }).then(function() {
         enterHostMode(currentRoomId);
     });
 }
@@ -38,12 +38,12 @@ function enterHostMode(roomId) {
         idLabel.style.cursor = "pointer"; 
         idLabel.title = "Click to Copy"; 
         
-        idLabel.onclick = () => {
+        idLabel.onclick = function() {
             if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(roomId).then(() => {
+                navigator.clipboard.writeText(roomId).then(function() {
                     if(window.showToast) window.showToast("ID Copied: " + roomId);
                     else alert("ID Copied: " + roomId);
-                }).catch(err => console.error(err));
+                }).catch(function(err) { console.error(err); });
             } else {
                 alert("Room ID: " + roomId);
             }
@@ -67,10 +67,10 @@ function enterHostMode(roomId) {
     updateKanpe(); 
     loadProgramsInStudio();
 
-    window.db.ref(`rooms/${roomId}/players`).on('value', snap => {
+    window.db.ref(`rooms/${roomId}/players`).on('value', function(snap) {
         const players = snap.val() || {};
         const total = Object.keys(players).length;
-        const alive = Object.values(players).filter(p => p.isAlive).length;
+        const alive = Object.values(players).filter(function(p) { return p.isAlive; }).length;
         document.getElementById('host-player-count').textContent = total;
         document.getElementById('host-alive-count').textContent = alive;
         
@@ -83,14 +83,14 @@ function enterHostMode(roomId) {
 function identifyBuzzWinner(players) {
     if (buzzWinnerId) return;
     let candidates = [];
-    Object.keys(players).forEach(key => {
+    Object.keys(players).forEach(function(key) {
         const p = players[key];
         if (p.buzzTime && !p.isLocked && p.lastResult !== 'lose') {
             candidates.push({ id: key, time: p.buzzTime, name: p.name });
         }
     });
     if (candidates.length > 0) {
-        candidates.sort((a, b) => a.time - b.time);
+        candidates.sort(function(a, b) { return a.time - b.time; });
         const winner = candidates[0];
         buzzWinnerId = winner.id;
         window.db.ref(`rooms/${currentRoomId}/status`).update({ currentAnswerer: winner.id, isBuzzActive: false });
@@ -109,11 +109,11 @@ function loadProgramsInStudio() {
     if(!select || !btn) return;
     select.innerHTML = `<option value="">${APP_TEXT.Config.SelectLoading}</option>`;
     
-    window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
+    window.db.ref(`saved_programs/${currentShowId}`).once('value', function(snap) {
         const data = snap.val();
         select.innerHTML = `<option value="">${APP_TEXT.Studio.SelectProgDefault}</option>`;
         if(data) {
-            Object.keys(data).forEach(key => {
+            Object.keys(data).forEach(function(key) {
                 const item = data[key];
                 const opt = document.createElement('option');
                 opt.value = JSON.stringify(item);
@@ -123,7 +123,7 @@ function loadProgramsInStudio() {
         }
     });
 
-    btn.onclick = () => {
+    btn.onclick = function() {
         const val = select.value;
         if(!val) return;
         const prog = JSON.parse(val);
@@ -145,7 +145,7 @@ function renderStudioTimeline() {
     if(periodPlaylist.length === 0) return;
     document.getElementById('studio-footer-controls').classList.remove('hidden');
 
-    periodPlaylist.forEach((item, index) => {
+    periodPlaylist.forEach(function(item, index) {
         const div = document.createElement('div');
         div.className = 'timeline-card';
         if (index === currentPeriodIndex) div.classList.add('active');
@@ -210,7 +210,7 @@ window.playPeriod = function(index) {
         startPanelGame(currentRoomId);
     } else if (currentConfig.gameType === 'race') {
         document.getElementById('host-race-control-area').classList.remove('hidden');
-        window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
+        window.db.ref(`rooms/${currentRoomId}/players`).once('value', function(snap) {
             updateRaceView(snap.val() || {});
         });
     }
@@ -225,10 +225,9 @@ window.playPeriod = function(index) {
 
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
     
-    // プレイヤー状態リセット
-    window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
+    window.db.ref(`rooms/${currentRoomId}/players`).once('value', function(snap) {
         let players = [];
-        snap.forEach(p => {
+        snap.forEach(function(p) {
             const val = p.val();
             players.push({ 
                 key: p.key, 
@@ -238,13 +237,13 @@ window.playPeriod = function(index) {
             });
         });
 
-        players.sort((a, b) => b.score - a.score);
+        players.sort(function(a, b) { return b.score - a.score; });
 
         const updates = {};
         const passCount = currentConfig.passCount || 5;
         const initStatus = currentConfig.initialStatus || 'revive';
 
-        players.forEach((p, idx) => {
+        players.forEach(function(p, idx) {
             let nextAlive = true;
             if (initStatus === 'revive') nextAlive = true;
             else if (initStatus === 'continue') nextAlive = p.isAlive;
@@ -297,15 +296,15 @@ function updateRaceView(players) {
     container.innerHTML = '';
     
     const activePlayers = [];
-    Object.keys(players).forEach(key => {
+    Object.keys(players).forEach(function(key) {
         if(players[key].isAlive) activePlayers.push({ name: players[key].name, score: players[key].periodScore || 0 });
     });
     
-    activePlayers.sort((a,b) => b.score - a.score);
+    activePlayers.sort(function(a,b) { return b.score - a.score; });
     
     const goal = currentConfig.passCount || 10;
     
-    activePlayers.forEach(p => {
+    activePlayers.forEach(function(p) {
         const row = document.createElement('div');
         row.className = 'race-lane';
         if (p.score >= goal) row.classList.add('goal');
@@ -329,8 +328,8 @@ function startPanelGame(roomId) {
         const btn = document.createElement('button');
         btn.textContent = i+1;
         btn.style.height = "40px";
-        btn.onclick = () => {
-            window.db.ref(`rooms/${roomId}/status/panels/${i}`).once('value', snap => {
+        btn.onclick = function() {
+            window.db.ref(`rooms/${roomId}/status/panels/${i}`).once('value', function(snap) {
                 let val = snap.val() || 0;
                 val = (val + 1) % 5;
                 window.db.ref(`rooms/${roomId}/status/panels/${i}`).set(val);
@@ -359,7 +358,7 @@ function startBombGame(roomId) {
         btn.textContent = i+1;
         if(i === targetIdx) btn.textContent += " (★)"; 
         btn.style.height = "40px";
-        btn.onclick = () => {
+        btn.onclick = function() {
             window.db.ref(`rooms/${roomId}/status/cards/${i}/open`).set(true);
             btn.disabled = true;
             btn.style.background = "#555";
@@ -371,7 +370,7 @@ function startBombGame(roomId) {
 function setupStudioButtons(roomId) {
     const btnClose = document.getElementById('host-close-studio-btn');
     if (btnClose) {
-        btnClose.onclick = () => {
+        btnClose.onclick = function() {
             periodPlaylist = [];
             currentRoomId = null;
             if(taTimer) clearTimeout(taTimer);
@@ -381,17 +380,16 @@ function setupStudioButtons(roomId) {
     
     const btnMasterPlay = document.getElementById('studio-master-play-btn');
     if (btnMasterPlay) {
-        btnMasterPlay.onclick = () => {
+        btnMasterPlay.onclick = function() {
             playPeriod(currentPeriodIndex);
         };
     }
     
     const btnStart = document.getElementById('host-start-btn');
-    if(btnStart) btnStart.onclick = () => {
+    if(btnStart) btnStart.onclick = function() {
         const now = firebase.database.ServerValue.TIMESTAMP;
         let updateData = { step: 'question', qIndex: currentQIndex, startTime: now };
         
-        // ソロモード（手動）の場合
         if (currentConfig.mode === 'solo' && currentConfig.soloStyle === 'manual') {
             document.getElementById('host-manual-judge-area').classList.remove('hidden');
             const ansBtn = document.getElementById('host-show-answer-btn');
@@ -401,8 +399,8 @@ function setupStudioButtons(roomId) {
             updateData.isBuzzActive = true;
             updateData.currentAnswerer = null;
             buzzWinnerId = null; 
-            window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
-                snap.forEach(p => p.ref.update({ buzzTime: null, lastResult: null }));
+            window.db.ref(`rooms/${roomId}/players`).once('value', function(snap) {
+                snap.forEach(function(p) { p.ref.update({ buzzTime: null, lastResult: null }); });
             });
         }
         
@@ -413,7 +411,7 @@ function setupStudioButtons(roomId) {
     };
 
     const btnStartTA = document.getElementById('host-start-ta-btn');
-    if(btnStartTA) btnStartTA.onclick = () => {
+    if(btnStartTA) btnStartTA.onclick = function() {
         btnStartTA.classList.add('hidden');
         if(document.getElementById('host-manual-judge-area')) {
             document.getElementById('host-manual-judge-area').classList.remove('hidden');
@@ -426,7 +424,7 @@ function setupStudioButtons(roomId) {
     };
 
     const btnCorrect = document.getElementById('host-judge-correct-btn');
-    if(btnCorrect) btnCorrect.onclick = () => {
+    if(btnCorrect) btnCorrect.onclick = function() {
         if (currentConfig.mode === 'solo' && currentConfig.soloStyle === 'auto') {
             scoreAllAlivePlayers(roomId, 1);
             return;
@@ -449,7 +447,7 @@ function setupStudioButtons(roomId) {
     };
 
     const btnWrong = document.getElementById('host-judge-wrong-btn');
-    if(btnWrong) btnWrong.onclick = () => {
+    if(btnWrong) btnWrong.onclick = function() {
         if (currentConfig.mode === 'solo' && currentConfig.soloStyle === 'auto') {
             return;
         }
@@ -465,7 +463,7 @@ function setupStudioButtons(roomId) {
 
         if (!buzzWinnerId) return;
         const loss = 0; 
-        window.db.ref(`rooms/${roomId}/players/${buzzWinnerId}`).once('value', snap => {
+        window.db.ref(`rooms/${roomId}/players/${buzzWinnerId}`).once('value', function(snap) {
             const val = snap.val();
             let newScore = (val.periodScore||0) - loss;
             let isAlive = val.isAlive;
@@ -481,16 +479,16 @@ function setupStudioButtons(roomId) {
     };
 
     const btnShowAns = document.getElementById('host-show-answer-btn');
-    if(btnShowAns) btnShowAns.onclick = () => finishQuestion(roomId);
+    if(btnShowAns) btnShowAns.onclick = function() { finishQuestion(roomId); };
 
     const btnNext = document.getElementById('host-next-btn');
-    if(btnNext) btnNext.onclick = (e) => {
+    if(btnNext) btnNext.onclick = function(e) {
         const action = e.target.dataset.action;
         if (action === "next") { playPeriod(currentPeriodIndex + 1); return; }
         currentQIndex++;
         buzzWinnerId = null;
-        window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
-            snap.forEach(p => p.ref.update({ lastAnswer: null, lastTime: 99999, lastResult: null, buzzTime: null, isLocked: false }));
+        window.db.ref(`rooms/${roomId}/players`).once('value', function(snap) {
+            snap.forEach(function(p) { p.ref.update({ lastAnswer: null, lastTime: 99999, lastResult: null, buzzTime: null, isLocked: false }); });
         });
         updateKanpe();
         if(btnStart) btnStart.classList.remove('hidden');
@@ -499,29 +497,29 @@ function setupStudioButtons(roomId) {
     };
     
     const btnRanking = document.getElementById('host-ranking-btn');
-    if(btnRanking) btnRanking.onclick = () => {
+    if(btnRanking) btnRanking.onclick = function() {
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'ranking' });
-        window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
+        window.db.ref(`rooms/${roomId}/players`).once('value', function(snap) {
             let ranking = [];
-            snap.forEach(p => {
+            snap.forEach(function(p) {
                 const v = p.val();
                 ranking.push({ name: v.name, score: v.periodScore, time: v.periodTime, isAlive: v.isAlive });
             });
-            ranking.sort((a,b) => (b.score - a.score) || (a.time - b.time));
+            ranking.sort(function(a,b) { return (b.score - a.score) || (a.time - b.time); });
             renderRankingView(ranking);
             window.showView(window.views.ranking);
         });
     };
     
     const rankingBackBtn = document.getElementById('ranking-back-btn');
-    if(rankingBackBtn) rankingBackBtn.onclick = () => {
+    if(rankingBackBtn) rankingBackBtn.onclick = function() {
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby' });
         window.showView(window.views.hostControl);
     };
 }
 
 function scorePlayer(roomId, playerId, points) {
-    window.db.ref(`rooms/${roomId}/players/${playerId}`).once('value', snap => {
+    window.db.ref(`rooms/${roomId}/players/${playerId}`).once('value', function(snap) {
         const val = snap.val();
         const newScore = (val.periodScore||0) + points;
         snap.ref.update({ periodScore: newScore, lastResult: 'win' });
@@ -529,8 +527,8 @@ function scorePlayer(roomId, playerId, points) {
 }
 
 function scoreAllAlivePlayers(roomId, points) {
-    window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
-        snap.forEach(p => {
+    window.db.ref(`rooms/${roomId}/players`).once('value', function(snap) {
+        snap.forEach(function(p) {
             if(p.val().isAlive) {
                 p.ref.update({ 
                     periodScore: (p.val().periodScore||0) + points,
@@ -588,7 +586,7 @@ function nextTaQuestion(roomId) {
         timeLimit: currentConfig.timeLimit 
     });
     document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} (${currentConfig.timeLimit}s)`;
-    taTimer = setTimeout(() => { nextTaQuestion(roomId); }, currentConfig.timeLimit * 1000);
+    taTimer = setTimeout(function() { nextTaQuestion(roomId); }, currentConfig.timeLimit * 1000);
 }
 
 function startSoloLoop(roomId) { currentQIndex = -1; nextSoloAutoQuestion(roomId); }
@@ -618,7 +616,7 @@ function nextSoloAutoQuestion(roomId) {
     
     document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} Auto (${duration}s)`;
     
-    taTimer = setTimeout(() => { 
+    taTimer = setTimeout(function() { 
         nextSoloAutoQuestion(roomId); 
     }, duration * 1000);
 }
@@ -634,14 +632,14 @@ function updateKanpe() {
             document.getElementById('host-multi-control-area').classList.remove('hidden');
             const mGrid = document.getElementById('host-multi-grid');
             mGrid.innerHTML = '';
-            window.db.ref(`rooms/${currentRoomId}/status/multiState`).once('value', snap => {
+            window.db.ref(`rooms/${currentRoomId}/status/multiState`).once('value', function(snap) {
                 const states = snap.val() || Array(q.c.length).fill(false);
-                q.c.forEach((ans, i) => {
+                q.c.forEach(function(ans, i) {
                     const btn = document.createElement('div');
                     btn.className = 'multi-ans-btn';
                     if(states[i]) btn.classList.add('opened');
                     btn.textContent = ans;
-                    btn.onclick = () => {
+                    btn.onclick = function() {
                         window.db.ref(`rooms/${currentRoomId}/status/multiState/${i}`).set(!states[i]);
                         states[i] = !states[i];
                         if(states[i]) btn.classList.add('opened'); else btn.classList.remove('opened');
@@ -667,7 +665,7 @@ function renderRankingView(data) {
     list.innerHTML = '';
     if (data.length === 0) { list.innerHTML = '<p style="padding:20px;">No players</p>'; return; }
     
-    data.forEach((r, i) => {
+    data.forEach(function(r, i) {
         const rank = i + 1;
         const div = document.createElement('div');
         let rankClass = 'rank-row';
