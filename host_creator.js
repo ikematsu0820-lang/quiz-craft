@@ -1,5 +1,5 @@
 /* =========================================================
- * host_creator.js (v58: Free Types & Fixed Logic)
+ * host_creator.js (v57: Full & Complete)
  * =======================================================*/
 
 let editingQuestionIndex = null;
@@ -16,14 +16,10 @@ window.initCreatorMode = function() {
     renderQuestionList();
     window.showView(window.views.creator);
     
-    // Type Selectを初期化（アンロック）
     const typeSelect = document.getElementById('creator-q-type');
-    if(typeSelect) {
-        typeSelect.disabled = false;
-        const lockMsg = document.getElementById('creator-type-locked-msg');
-        if(lockMsg) lockMsg.classList.add('hidden');
-        renderCreatorForm(typeSelect.value); // 初期フォーム表示
-    }
+    typeSelect.disabled = false;
+    document.getElementById('creator-type-locked-msg').classList.add('hidden');
+    renderCreatorForm(typeSelect.value);
 };
 
 window.loadSetForEditing = function(key, item) {
@@ -33,15 +29,12 @@ window.loadSetForEditing = function(key, item) {
     document.getElementById('save-to-cloud-btn').textContent = APP_TEXT.Creator.BtnUpdate;
     
     const typeSelect = document.getElementById('creator-q-type');
-    const lockMsg = document.getElementById('creator-type-locked-msg');
     
     if(createdQuestions.length > 0) {
         const firstQ = createdQuestions[0];
-        
-        // 保存された問題形式を復元してロック
         typeSelect.value = firstQ.type;
         typeSelect.disabled = true;
-        if(lockMsg) lockMsg.classList.remove('hidden');
+        document.getElementById('creator-type-locked-msg').classList.remove('hidden');
 
         if(firstQ.layout) document.getElementById('creator-set-layout').value = firstQ.layout;
         if(firstQ.align) updateAlignUI(firstQ.align);
@@ -59,7 +52,7 @@ window.loadSetForEditing = function(key, item) {
     } else {
         resetGlobalSettings();
         typeSelect.disabled = false;
-        if(lockMsg) lockMsg.classList.add('hidden');
+        document.getElementById('creator-type-locked-msg').classList.add('hidden');
     }
 
     resetForm();
@@ -68,23 +61,19 @@ window.loadSetForEditing = function(key, item) {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Type選択の初期化
     const typeSelect = document.getElementById('creator-q-type');
-    if(typeSelect) {
-        typeSelect.innerHTML = `
-            <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
-            <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
-            <option value="free_oral">${APP_TEXT.Creator.TypeFreeOral}</option>
-            <option value="free_written">${APP_TEXT.Creator.TypeFreeWritten}</option>
-            <option value="multi">${APP_TEXT.Creator.TypeMulti}</option>
-        `;
-        typeSelect.addEventListener('change', (e) => {
-            // 問題がなければフォーム切り替え
-            if (createdQuestions.length === 0) {
-                renderCreatorForm(e.target.value);
-            }
-        });
-    }
+    typeSelect.innerHTML = `
+        <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
+        <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
+        <option value="free_oral">${APP_TEXT.Creator.TypeFreeOral}</option>
+        <option value="free_written">${APP_TEXT.Creator.TypeFreeWritten}</option>
+        <option value="multi">${APP_TEXT.Creator.TypeMulti}</option>
+    `;
+    typeSelect.addEventListener('change', (e) => {
+        if (createdQuestions.length === 0) {
+            renderCreatorForm(e.target.value);
+        }
+    });
 
     document.querySelectorAll('.btn-align').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -96,10 +85,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const imgBtn = document.getElementById('design-bg-image-btn');
     const imgInput = document.getElementById('design-bg-image-file');
     const clearBtn = document.getElementById('design-bg-clear-btn');
+
     if(imgBtn && imgInput) {
         imgBtn.addEventListener('click', () => imgInput.click());
         imgInput.addEventListener('change', handleImageUpload);
     }
+    
     if(clearBtn) {
         clearBtn.addEventListener('click', () => {
             document.getElementById('design-bg-image-data').value = "";
@@ -108,16 +99,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const updateBtn = document.getElementById('update-question-btn');
-    if(updateBtn) updateBtn.addEventListener('click', updateQuestion);
-    
-    const cancelBtn = document.getElementById('cancel-update-btn');
-    if(cancelBtn) cancelBtn.addEventListener('click', resetForm);
+    document.getElementById('update-question-btn').addEventListener('click', updateQuestion);
+    document.getElementById('cancel-update-btn').addEventListener('click', resetForm);
 });
 
 window.showToast = function(msg) {
     const container = document.getElementById('toast-container');
-    if(!container) return;
     const div = document.createElement('div');
     div.className = 'toast-msg';
     div.textContent = msg;
@@ -187,9 +174,8 @@ function resetForm() {
     document.getElementById('update-question-area').classList.add('hidden');
     document.getElementById('question-text').value = '';
     
-    // フォームの中身を、現在のType設定に合わせて再描画
-    const typeSelect = document.getElementById('creator-q-type');
-    if(typeSelect) renderCreatorForm(typeSelect.value);
+    const type = document.getElementById('creator-q-type').value;
+    renderCreatorForm(type);
 }
 
 function renderCreatorForm(type, data = null) {
@@ -265,12 +251,10 @@ function renderCreatorForm(type, data = null) {
         addBtn.onclick = () => addSortInput(sortDiv);
         container.appendChild(addBtn);
 
-    } else if (type === 'free_oral' || type === 'free_written') {
+    } else if (type === 'free_written' || type === 'free_oral') {
         const optDiv = document.createElement('div');
         optDiv.style.marginBottom = '10px';
-        optDiv.innerHTML = `
-            <p style="font-size:0.8em; color:#666; margin:5px 0;">${APP_TEXT.Creator.DescText}</p>
-        `;
+        optDiv.innerHTML = `<p style="font-size:0.8em; color:#666; margin:5px 0;">${APP_TEXT.Creator.DescText}</p>`;
         container.appendChild(optDiv);
 
         const input = document.createElement('input');
@@ -427,7 +411,6 @@ function getQuestionDataFromForm() {
 
     } else if (type === 'free_written' || type === 'free_oral') {
         const ansText = document.getElementById('creator-text-answer').value.trim();
-        // 記述式は正解必須、口頭は任意
         if (type === 'free_written' && !ansText) { alert(APP_TEXT.Creator.AlertNoTextAns); return null; }
         const answers = ansText ? ansText.split(',').map(s => s.trim()).filter(s => s) : [];
         newQ.correct = answers; 
@@ -451,7 +434,6 @@ function addQuestion() {
         renderQuestionList();
         window.showToast(APP_TEXT.Creator.MsgAddedToast);
         
-        // ★ロック処理
         document.getElementById('creator-q-type').disabled = true;
         document.getElementById('creator-type-locked-msg').classList.remove('hidden');
     }
@@ -498,7 +480,6 @@ function deleteQuestion(index) {
         else if(editingQuestionIndex > index) editingQuestionIndex--;
         renderQuestionList();
         
-        // 全削除ならロック解除
         if(createdQuestions.length === 0) {
             document.getElementById('creator-q-type').disabled = false;
             document.getElementById('creator-type-locked-msg').classList.add('hidden');
