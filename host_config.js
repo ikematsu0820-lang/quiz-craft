@@ -1,5 +1,5 @@
-　/* =========================================================
- * host_config.js (v60: Time Attack Timer Setting Added)
+/* =========================================================
+ * host_config.js (v60: Variable Time Attack)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -83,12 +83,11 @@ function updateBuilderUI() {
     const config = setData.c || {};
     const spMode = setData.sp || 'none';
     
-    // ★追加: 形式チェック
+    // 形式チェック
     const firstQ = selectedSetQuestions.length > 0 ? selectedSetQuestions[0] : {};
     const qType = firstQ.type;
 
     // 「口頭」なら一斉回答を禁止にするロジック
-    // デフォルトモードが禁止されているものだった場合、強制的に安全なモード(buzz)へ変更
     if (qType === 'free_oral' && config.mode === 'normal') {
         config.mode = 'buzz'; 
     }
@@ -102,25 +101,16 @@ function updateBuilderUI() {
     // Selectボックスの生成
     html += `<select id="config-mode-select" class="btn-block config-select highlight-select">`;
     
-    // 一斉回答 (Oral以外なら表示)
     if (qType !== 'free_oral') {
         html += `<option value="normal" ${config.mode === 'normal' ? 'selected' : ''}>${APP_TEXT.Config.ModeNormal}</option>`;
     }
-    
-    // 早押し (常にOK)
     html += `<option value="buzz" ${config.mode === 'buzz' ? 'selected' : ''}>${APP_TEXT.Config.ModeBuzz}</option>`;
-    
-    // 順番回答 (常にOK)
     html += `<option value="turn" ${config.mode === 'turn' ? 'selected' : ''}>${APP_TEXT.Config.ModeTurn}</option>`;
-    
-    // タイムアタック (Oral以外なら表示 ※タイムアタックは実質一斉回答なので)
     if (qType !== 'free_oral') {
         html += `<option value="time_attack" ${config.mode === 'time_attack' ? 'selected' : ''} style="color:red;">${APP_TEXT.Config.ModeTimeAttack}</option>`;
     }
-    
     html += `</select>`;
     
-    // 注意書き
     if (qType === 'free_oral') {
         html += `<p style="font-size:0.8em; color:#d00; margin-top:5px;">※口頭回答のため「一斉回答」は選択できません</p>`;
     }
@@ -318,7 +308,6 @@ function updateBuilderUI() {
     });
 
     // 初期化実行
-    // modeSelがない場合(セット未選択)はスキップ
     if(modeSel) updateModeDetails(modeSel.value);
     
     updateEliminationUI();
@@ -462,8 +451,8 @@ function addPeriodToPlaylist() {
             [questionsWithPoints[i], questionsWithPoints[j]] = [questionsWithPoints[j], questionsWithPoints[i]];
         }
     }
-
-    // ★追加: タイムアタック設定秒数の取得
+    
+    // ★修正: タイムアタック秒数を取得
     let taSeconds = 5;
     if (mode === 'time_attack') {
         taSeconds = parseInt(document.getElementById('config-ta-seconds').value) || 5;
@@ -474,7 +463,7 @@ function addPeriodToPlaylist() {
         eliminationRule: document.getElementById('config-elimination-rule').value,
         eliminationCount: elimCount,
         lossPoint: 0, scoreUnit: 'point', theme: 'light',
-        timeLimit: (mode === 'time_attack') ? taSeconds : 0, // ★ここを変更！
+        timeLimit: (mode === 'time_attack') ? taSeconds : 0, 
         mode: mode,
         gameType: gameType,
         winCondition: winCond, 
@@ -552,6 +541,9 @@ function renderConfigPreview() {
         div.style.marginBottom = "0"; 
         
         let modeLabel = item.config.mode.toUpperCase();
+        // ★修正: タイムショックなら秒数も表示
+        if(item.config.mode === 'time_attack') modeLabel += ` (${item.config.timeLimit}s)`;
+
         if(item.config.gameType === 'territory') modeLabel += " (PANEL)";
         if(item.config.gameType === 'race') modeLabel += " (RACE)";
         
