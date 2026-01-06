@@ -104,3 +104,65 @@
     border: 1px solid #00cec9;
     color: #00cec9;
 }
+/* style_host.css の一番下に追加してください */
+
+/* ▼ ダッシュボード：統合リストのスタイル */
+.dash-list-item {
+    background: #2d2d34;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.dash-list-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* セット（素材）用のデザイン */
+.item-type-set {
+    border-left: 6px solid #00cec9; /* シアン */
+}
+.badge-set {
+    background: #00cec9;
+    color: #000;
+    font-size: 0.7em;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 5px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* プログラム（構成）用のデザイン */
+.item-type-prog {
+    border-left: 6px solid #e94560; /* ピンク */
+}
+.badge-prog {
+    background: #e94560;
+    color: #fff;
+    font-size: 0.7em;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 5px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* リスト内のテキスト調整 */
+.item-title {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #eee;
+}
+.item-meta {
+    font-size: 0.8em;
+    color: #aaa;
+    margin-top: 3px;
+}
