@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v59: Win Logic & Interperiod)
+ * host_studio.js (v59-fix: Play Button Fixed)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
@@ -128,7 +128,6 @@ function renderStudioTimeline() {
         let statusText = "START";
         let interText = "";
         
-        // Interperiod表示
         if (index > 0) {
             const st = item.config.initialStatus;
             if(st === 'revive') interText = " [Revive All]";
@@ -178,7 +177,6 @@ window.playPeriod = function(index) {
     
     if (currentConfig.mode === 'time_attack') currentConfig.timeLimit = 5;
 
-    // ゲームタイプ初期化
     if (currentConfig.gameType === 'territory') {
         startPanelGame(currentRoomId);
     } else if (currentConfig.gameType === 'race') {
@@ -198,7 +196,7 @@ window.playPeriod = function(index) {
 
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
     
-    // ★v59: ピリオド間処理 (Interperiod Logic)
+    // ピリオド間処理
     window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
         let players = [];
         snap.forEach(p => {
@@ -206,12 +204,11 @@ window.playPeriod = function(index) {
             players.push({ 
                 key: p.key, 
                 isAlive: val.isAlive, 
-                score: val.periodScore||0, // 前のピリオドのスコア
+                score: val.periodScore||0,
                 name: val.name 
             });
         });
 
-        // 並べ替え (Rankingモード用)
         players.sort((a, b) => b.score - a.score);
 
         const updates = {};
@@ -220,18 +217,12 @@ window.playPeriod = function(index) {
 
         players.forEach((p, idx) => {
             let nextAlive = true;
-            if (initStatus === 'revive') {
-                nextAlive = true;
-            } else if (initStatus === 'continue') {
-                nextAlive = p.isAlive;
-            } else if (initStatus === 'ranking') {
-                // 上位X名かつ、前回死んでいない人(または全員から?)
-                // 通常は「予選」なので全員対象で上位X名
-                nextAlive = (idx < passCount);
-            }
+            if (initStatus === 'revive') nextAlive = true;
+            else if (initStatus === 'continue') nextAlive = p.isAlive;
+            else if (initStatus === 'ranking') nextAlive = (idx < passCount);
             
             updates[`${p.key}/isAlive`] = nextAlive;
-            updates[`${p.key}/periodScore`] = 0; // 新ピリオド用にリセット
+            updates[`${p.key}/periodScore`] = 0; 
             updates[`${p.key}/periodTime`] = 0;
             updates[`${p.key}/lastTime`] = 99999;
             updates[`${p.key}/lastResult`] = null;
@@ -243,9 +234,7 @@ window.playPeriod = function(index) {
             window.db.ref(`rooms/${currentRoomId}/players`).update(updates);
         }
         
-        // TimeAttackなら最初のプレイヤーをセット
         if (currentConfig.mode === 'time_attack' && players.length > 0) {
-            // ここは簡易的。本来はisAliveな最初の人を探すべき
             const survivor = players.find((_, i) => updates[players[i].key+'/isAlive']);
             if(survivor) {
                 buzzWinnerId = survivor.key;
@@ -289,7 +278,7 @@ function updateRaceView(players) {
     
     activePlayers.sort((a,b) => b.score - a.score);
     
-    const goal = currentConfig.passCount || 10; // レースはpassCountをゴール値として使用
+    const goal = currentConfig.passCount || 10;
     
     activePlayers.forEach(p => {
         const row = document.createElement('div');
@@ -354,6 +343,7 @@ function startBombGame(roomId) {
     }
 }
 
+// ★v59-fix: Playボタンのリスナー追加
 function setupStudioButtons(roomId) {
     const btnClose = document.getElementById('host-close-studio-btn');
     if (btnClose) {
@@ -362,6 +352,14 @@ function setupStudioButtons(roomId) {
             currentRoomId = null;
             if(taTimer) clearTimeout(taTimer);
             enterDashboard();
+        };
+    }
+    
+    // ★追加: 再生ボタンのリスナー
+    const btnMasterPlay = document.getElementById('studio-master-play-btn');
+    if (btnMasterPlay) {
+        btnMasterPlay.onclick = () => {
+            playPeriod(currentPeriodIndex);
         };
     }
     
@@ -409,18 +407,14 @@ function setupStudioButtons(roomId) {
         const q = studioQuestions[currentQIndex];
         const points = parseInt(q.points) || 1;
 
-        // 得点更新
         window.db.ref(`rooms/${roomId}/players/${buzzWinnerId}`).once('value', snap => {
             const val = snap.val();
             const newScore = (val.periodScore||0) + points;
             snap.ref.update({ periodScore: newScore, lastResult: 'win' });
             
-            // ★v59: 勝利条件チェック (Score先取)
             if (currentConfig.winCondition === 'score') {
                 const target = currentConfig.winTarget || 10;
-                // Raceモードならgoal値を使用
                 const goal = (currentConfig.gameType === 'race') ? (currentConfig.passCount||10) : target;
-                
                 if (newScore >= goal) {
                     announceWinner(val.name + " WINS!", roomId);
                 }
@@ -446,7 +440,6 @@ function setupStudioButtons(roomId) {
             let newScore = (val.periodScore||0);
             if(loss > 0) newScore -= loss;
             
-            // 脱落判定
             let isAlive = val.isAlive;
             if (currentConfig.eliminationRule === 'wrong_only' || currentConfig.eliminationRule === 'wrong_and_slowest') {
                 isAlive = false;
@@ -454,26 +447,19 @@ function setupStudioButtons(roomId) {
             
             snap.ref.update({ periodScore: newScore, lastResult: 'lose', buzzTime: null, isAlive: isAlive });
             
-            // ★v59: 勝利条件チェック (Survivor)
             if (currentConfig.winCondition === 'survivor') {
-                // 他の生存者をカウント
                 window.db.ref(`rooms/${roomId}/players`).once('value', allSnap => {
                     let aliveCount = 0;
                     let lastMan = null;
                     allSnap.forEach(s => {
                         const p = s.val();
-                        // 今死んだ人はまだDB反映前かもしれないのでメモリ上で判断...だが、
-                        // ここはfirebaseのupdate完了を待たずに走るので、
-                        // 自身がbuzzWinnerIdなら死んだものとして扱う
                         let pAlive = p.isAlive;
-                        if (s.key === buzzWinnerId) pAlive = isAlive; // 最新状態
-                        
+                        if (s.key === buzzWinnerId) pAlive = isAlive; 
                         if (pAlive) {
                             aliveCount++;
                             lastMan = p.name;
                         }
                     });
-                    
                     if (aliveCount <= 1) {
                         announceWinner((lastMan ? lastMan : "NO ONE") + " SURVIVED!", roomId);
                     }
@@ -489,7 +475,7 @@ function setupStudioButtons(roomId) {
     };
 
     const btnPass = document.getElementById('host-judge-pass-btn');
-    if(btnPass) btnPass.onclick = () => { /* Turn mode pass logic */ };
+    if(btnPass) btnPass.onclick = () => { };
 
     const btnShowAns = document.getElementById('host-show-answer-btn');
     if(btnShowAns) btnShowAns.onclick = () => finishQuestion(roomId);
@@ -532,13 +518,9 @@ function setupStudioButtons(roomId) {
     };
 }
 
-// ★v59: 勝者決定時の処理
 function announceWinner(msg, roomId) {
     alert(msg);
-    // 全工程終了ボタンへの誘導など
-    // ここではシンプルにアラートだけ出し、進行はホストに委ねる
-    // または強制的に問題を終了させる
-    window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer', isBuzzActive: false }); // 正解画面へ強制遷移
+    window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer', isBuzzActive: false });
     const btnNext = document.getElementById('host-next-btn');
     if(btnNext) {
         btnNext.classList.remove('hidden');
