@@ -270,6 +270,16 @@ function startBombGame(roomId) {
 }
 
 function setupStudioButtons(roomId) {
+    // --- ★ここから追加 ---
+    const btnMasterPlay = document.getElementById('studio-master-play-btn');
+    if(btnMasterPlay) {
+        btnMasterPlay.onclick = () => {
+            // 現在選択されているピリオドを開始する関数を呼ぶ
+            playCurrentPeriod();
+        };
+    }
+    // --- ★ここまで追加 ---
+
     const btnClose = document.getElementById('host-close-studio-btn');
     if (btnClose) {
         btnClose.onclick = () => {
