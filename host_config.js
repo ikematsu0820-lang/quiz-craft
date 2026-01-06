@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v57: Final Config Logic)
+ * host_config.js (v58: Rule Settings & Race Logic)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -18,6 +18,7 @@ function enterConfigMode() {
     // UI初期化
     if(setSelect) {
         setSelect.innerHTML = `<option value="">${APP_TEXT.Config.SelectDefault}</option>`;
+        // リスナー重複登録防止
         setSelect.removeEventListener('change', window.onSetSelectChange);
         setSelect.addEventListener('change', window.onSetSelectChange);
     }
@@ -91,7 +92,7 @@ function updateBuilderUI() {
 
     let html = '';
 
-    // 1. 回答モード (Panel/Bomb削除)
+    // 1. 回答モード (Panel/Bomb削除、v57準拠)
     html += `<div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>`;
     html += `
     <div class="config-item-box">
@@ -173,14 +174,19 @@ function updateBuilderUI() {
     html += `<div id="config-rule-section">`;
     html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
     
-    // ゲームタイプ (得点 vs 陣取り)
+    // ★v58: ゲームタイプ (得点 / 陣取り / レース)
     html += `
     <div class="config-item-box">
         <label class="config-label-large">${APP_TEXT.Config.LabelGameType}</label>
         <select id="config-game-type" class="btn-block config-select" style="font-size:1.1em; margin-bottom:10px;">
             <option value="score">${APP_TEXT.Config.GameTypeScore}</option>
             <option value="territory">${APP_TEXT.Config.GameTypeTerritory}</option>
+            <option value="race">${APP_TEXT.Config.GameTypeRace}</option>
         </select>
+        <div id="config-race-setting" class="hidden" style="margin-top:10px; background:#f9f9f9; padding:5px; border-radius:4px; border:1px dashed #ccc;">
+            <label style="font-size:0.9em; font-weight:bold;">${APP_TEXT.Config.LabelRaceGoal}</label>
+            <input type="number" id="config-race-goal" value="10" min="1" style="width:60px; text-align:center; padding:5px; margin-left:10px; border:1px solid #aaa; border-radius:4px;">
+        </div>
     </div>`;
 
     // カスタムスコア (時間含む)
@@ -238,6 +244,16 @@ function updateBuilderUI() {
     
     const elimSel = document.getElementById('config-elimination-rule');
     if(elimSel) elimSel.addEventListener('change', updateEliminationUI);
+    
+    // ★v58: ゲームタイプ変更時のリスナー
+    const gameTypeSel = document.getElementById('config-game-type');
+    if(gameTypeSel) {
+        gameTypeSel.addEventListener('change', (e) => {
+            const raceArea = document.getElementById('config-race-setting');
+            if(e.target.value === 'race') raceArea?.classList.remove('hidden');
+            else raceArea?.classList.add('hidden');
+        });
+    }
     
     const addBtn = document.getElementById('config-add-playlist-btn');
     if(addBtn) addBtn.addEventListener('click', addPeriodToPlaylist);
@@ -346,6 +362,7 @@ function updateModeDetails(mode) {
     else if (mode === 'buzz') document.getElementById('mode-details-buzz')?.classList.remove('hidden');
     else if (mode === 'turn') document.getElementById('mode-details-turn')?.classList.remove('hidden');
     else if (mode === 'time_attack') document.getElementById('mode-details-time_attack')?.classList.remove('hidden');
+    else if (mode === 'bomb' || mode === 'panel_attack') document.getElementById('mode-details-bomb')?.classList.remove('hidden');
 }
 
 function updateEliminationUI() {
@@ -359,7 +376,9 @@ function addPeriodToPlaylist() {
     const select = document.getElementById('config-set-select');
     const mode = document.getElementById('config-mode-select').value;
 
-    if(!select.value) { alert(APP_TEXT.Config.AlertNoSet); return; }
+    if(!select.value && mode !== 'panel_attack' && mode !== 'bomb') {
+         alert(APP_TEXT.Config.AlertNoSet); return; 
+    }
     
     let questionsWithPoints = [];
     let title = "New Period";
@@ -389,10 +408,6 @@ function addPeriodToPlaylist() {
         }
     }
 
-    let initialStatus = 'revive'; 
-    let passCount = 5;
-    let intermediateRanking = false; 
-
     let elimCount = 1;
     if (document.getElementById('config-elimination-rule').value === 'wrong_and_slowest') {
         elimCount = parseInt(document.getElementById('config-elimination-count').value) || 1;
@@ -400,6 +415,13 @@ function addPeriodToPlaylist() {
 
     const gameType = document.getElementById('config-game-type').value;
     
+    // ★v58: レースゴール設定
+    let passCount = 5;
+    if (gameType === 'race') {
+        passCount = parseInt(document.getElementById('config-race-goal').value) || 10;
+    }
+
+    // ★v58: シャッフル処理
     let shuffle = 'off';
     if (mode === 'normal') shuffle = document.getElementById('config-shuffle-q').value;
     else if (mode === 'buzz') shuffle = document.getElementById('config-buzz-shuffle').value;
@@ -413,7 +435,7 @@ function addPeriodToPlaylist() {
     }
 
     const newConfig = {
-        initialStatus: 'revive', passCount: 5, intermediateRanking: false,
+        initialStatus: 'revive', passCount: passCount, intermediateRanking: false,
         eliminationRule: document.getElementById('config-elimination-rule').value,
         eliminationCount: elimCount,
         lossPoint: 0, scoreUnit: 'point', theme: 'light',
@@ -471,6 +493,7 @@ function renderConfigPreview() {
         
         let modeLabel = item.config.mode.toUpperCase();
         if(item.config.gameType === 'territory') modeLabel += " (PANEL)";
+        if(item.config.gameType === 'race') modeLabel += " (RACE)";
 
         div.innerHTML = `
             <div style="flex:1;">
