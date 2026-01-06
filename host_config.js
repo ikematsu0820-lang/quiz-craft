@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v57: Final Config Logic)
+ * host_config.js (v58: Program Loader Added)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -31,7 +31,10 @@ function enterConfigMode() {
     document.getElementById('config-final-ranking-chk').checked = true;
 
     loadSetListInConfig();
-    loadSavedProgramsInConfig();
+    
+    // ★修正箇所: リスト読み込みをやめて、プルダウン読み込みを実行
+    initProgramLoaderInConfig(); 
+    
     renderConfigPreview();
 }
 
@@ -72,6 +75,50 @@ function loadSetListInConfig() {
     });
 }
 
+// ★新規追加: プログラム読み込み用プルダウンの初期化
+function initProgramLoaderInConfig() {
+    const select = document.getElementById('config-program-loader-select');
+    const btn = document.getElementById('config-program-load-btn');
+    if(!select || !btn) return;
+
+    select.innerHTML = '<option>Loading...</option>';
+
+    // Firebaseからプログラム一覧を取得してプルダウンに入れる
+    window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
+        const data = snap.val();
+        select.innerHTML = '<option value="">-- Select Program --</option>';
+        if(data) {
+            Object.keys(data).forEach(key => {
+                const item = data[key];
+                const opt = document.createElement('option');
+                opt.value = JSON.stringify(item); // データをそのままvalueに
+                opt.textContent = item.title;
+                select.appendChild(opt);
+            });
+        }
+    });
+
+    // Loadボタンの動作
+    btn.onclick = () => {
+        const val = select.value;
+        if(!val) return;
+        
+        if(!confirm(APP_TEXT.Config.MsgConfirmLoadProg)) return;
+
+        const prog = JSON.parse(val);
+        periodPlaylist = prog.playlist || [];
+        
+        // UI反映
+        const titleInput = document.getElementById('config-program-title');
+        const rankChk = document.getElementById('config-final-ranking-chk');
+        if(titleInput) titleInput.value = prog.title || "";
+        if(rankChk) rankChk.checked = (prog.finalRanking !== false);
+
+        renderConfigPreview();
+        alert("Program Loaded!");
+    };
+}
+
 function updateBuilderUI() {
     const container = document.getElementById('config-builder-ui');
     const select = document.getElementById('config-set-select');
@@ -91,7 +138,7 @@ function updateBuilderUI() {
 
     let html = '';
 
-    // 1. 回答モード (Panel/Bomb削除)
+    // 1. 回答モード
     html += `<div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>`;
     html += `
     <div class="config-item-box">
@@ -169,21 +216,20 @@ function updateBuilderUI() {
         </div>
     </div>`;
 
-    // 2. ルール設定 (ゲームタイプ & 脱落 & 時間)
+    // 2. ルール設定
     html += `<div id="config-rule-section">`;
     html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
     
-    // ゲームタイプ (得点 vs 陣取り)
     html += `
     <div class="config-item-box">
         <label class="config-label-large">${APP_TEXT.Config.LabelGameType}</label>
         <select id="config-game-type" class="btn-block config-select" style="font-size:1.1em; margin-bottom:10px;">
             <option value="score">${APP_TEXT.Config.GameTypeScore}</option>
             <option value="territory">${APP_TEXT.Config.GameTypeTerritory}</option>
+            <option value="race">${APP_TEXT.Config.GameTypeRace}</option>
         </select>
     </div>`;
 
-    // カスタムスコア (時間含む)
     html += `
     <div class="config-item-box">
         <h5 style="margin:0 0 10px 0;">${APP_TEXT.Config.HeadingCustomScore}</h5>
@@ -209,7 +255,6 @@ function updateBuilderUI() {
         <div id="config-questions-list" style="font-size:0.9em; max-height:300px; overflow-y:auto; border:1px solid #eee; padding:5px;"></div>
     </div>`;
 
-    // 脱落条件
     html += `
     <div class="config-item-box">
         <label class="config-label-large">${APP_TEXT.Config.LabelElim}</label>
@@ -311,7 +356,6 @@ function applySpecialModeLock(spMode) {
         ruleSec.style.display = 'none'; 
         updateModeDetails('time_attack');
     } else if (spMode === 'panel_attack') {
-        // パネルアタック指定の場合、ゲームタイプを陣取りに固定
         const gameType = document.getElementById('config-game-type');
         if(gameType) {
             gameType.value = 'territory';
@@ -341,7 +385,6 @@ function unlockConfig() {
 
 function updateModeDetails(mode) {
     document.querySelectorAll('.mode-details').forEach(el => el.classList.add('hidden'));
-    
     if (mode === 'normal') document.getElementById('mode-details-normal')?.classList.remove('hidden');
     else if (mode === 'buzz') document.getElementById('mode-details-buzz')?.classList.remove('hidden');
     else if (mode === 'turn') document.getElementById('mode-details-turn')?.classList.remove('hidden');
@@ -388,10 +431,6 @@ function addPeriodToPlaylist() {
             });
         }
     }
-
-    let initialStatus = 'revive'; 
-    let passCount = 5;
-    let intermediateRanking = false; 
 
     let elimCount = 1;
     if (document.getElementById('config-elimination-rule').value === 'wrong_and_slowest') {
@@ -453,7 +492,6 @@ function renderConfigPreview() {
     }
     
     periodPlaylist.forEach((item, index) => {
-        // ▼▼▼ 修正点1: Inter-Period 設定の復活 ▼▼▼
         if (index > 0) {
             const arrowDiv = document.createElement('div');
             arrowDiv.className = 'playlist-arrow-container';
@@ -463,7 +501,6 @@ function renderConfigPreview() {
             const settingDiv = document.createElement('div');
             settingDiv.className = 'playlist-inter-setting';
             
-            // 設定値を読み出し（デフォルトは revive: 全員復活）
             const currentStatus = item.config.initialStatus || 'revive';
             
             settingDiv.innerHTML = `
@@ -478,7 +515,6 @@ function renderConfigPreview() {
             `;
             container.appendChild(settingDiv);
         }
-        // ▲▲▲ 修正点1 終了 ▲▲▲
 
         const div = document.createElement('div');
         div.className = 'timeline-card';
@@ -487,7 +523,6 @@ function renderConfigPreview() {
         let modeLabel = item.config.mode.toUpperCase();
         if(item.config.gameType === 'territory') modeLabel += " (PANEL)";
 
-        // ▼▼▼ 修正点2: Editボタンの追加 ▼▼▼
         div.innerHTML = `
             <div style="flex:1;">
                 <div style="font-weight:bold; font-size:1.1em;">${index+1}. ${item.title}</div>
@@ -500,78 +535,14 @@ function renderConfigPreview() {
                 <button class="delete-btn" onclick="removeFromPlaylist(${index})">Del</button>
             </div>
         `;
-        // ▲▲▲ 修正点2 終了 ▲▲▲
         container.appendChild(div);
     });
 }
-    
+
 window.removeFromPlaylist = function(index) {
     periodPlaylist.splice(index, 1);
     renderConfigPreview();
 };
-
-function loadSavedProgramsInConfig() {
-    const listEl = document.getElementById('config-saved-programs-list');
-    if(!listEl) return;
-    listEl.innerHTML = `<p style="text-align:center;">${APP_TEXT.Config.SelectLoading}</p>`;
-
-    window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
-        const data = snap.val();
-        listEl.innerHTML = '';
-        if(!data) {
-            listEl.innerHTML = `<p style="text-align:center; color:#999;">${APP_TEXT.Config.SelectEmpty}</p>`;
-            return;
-        }
-        Object.keys(data).forEach(key => {
-            const item = data[key];
-            const div = document.createElement('div');
-            div.className = 'set-item';
-            div.innerHTML = `
-                <div>
-                    <span style="font-weight:bold;">${item.title}</span>
-                    <div style="font-size:0.8em; color:#666;">
-                        ${new Date(item.createdAt).toLocaleDateString()} / ${item.playlist ? item.playlist.length : 0} Periods
-                    </div>
-                </div>
-            `;
-            const btnArea = document.createElement('div');
-            btnArea.style.display = 'flex';
-            btnArea.style.gap = '5px';
-
-            const loadBtn = document.createElement('button');
-            loadBtn.textContent = APP_TEXT.Config.BtnLoadProg;
-            loadBtn.className = 'btn-mini';
-            loadBtn.style.backgroundColor = '#0055ff';
-            loadBtn.style.color = 'white';
-            loadBtn.onclick = () => {
-                if(confirm(APP_TEXT.Config.MsgConfirmLoadProg)) {
-                    periodPlaylist = item.playlist || [];
-                    document.getElementById('config-final-ranking-chk').checked = (item.finalRanking !== false);
-                    document.getElementById('config-program-title').value = item.title;
-                    renderConfigPreview();
-                    alert("Loaded.");
-                }
-            };
-
-            const delBtn = document.createElement('button');
-            delBtn.className = 'delete-btn';
-            delBtn.textContent = APP_TEXT.Config.BtnDelProg;
-            delBtn.onclick = () => {
-                if(confirm(APP_TEXT.Config.MsgConfirmDelProg)) {
-                    window.db.ref(`saved_programs/${currentShowId}/${key}`).remove()
-                    .then(() => {
-                        div.remove();
-                    });
-                }
-            };
-
-            btnArea.appendChild(loadBtn);
-            btnArea.appendChild(delBtn);
-            div.appendChild(btnArea);
-            listEl.appendChild(div);
-        });
-    });
-}
 
 function saveProgramToCloud() {
     if(periodPlaylist.length === 0) {
@@ -598,109 +569,62 @@ function saveProgramToCloud() {
         titleInput.value = '';
         periodPlaylist = []; 
         renderConfigPreview();
-        loadSavedProgramsInConfig(); 
+        // loadSavedProgramsInConfig(); // 削除済み関数なので呼ばない
     })
     .catch(err => alert("Error: " + err.message));
 }
 
+// 最後に便利関数
 window.updateInterPeriod = function(index, val) {
     if(periodPlaylist[index]) {
         periodPlaylist[index].config.initialStatus = val;
     }
 };
 
-// リストの「Edit」ボタンを押した時に呼ばれる関数
 window.editPlaylistItem = function(index) {
     const item = periodPlaylist[index];
     if(!item) return;
 
     if(!confirm("このセットを編集エリアに読み込みますか？\n（現在のリストからは一度削除されます）")) return;
 
-    // 1. データをビルダー変数に戻す
-    selectedSetQuestions = JSON.parse(JSON.stringify(item.questions)); // 深いコピー
+    selectedSetQuestions = JSON.parse(JSON.stringify(item.questions));
     
-    // 2. 画面の入力欄に設定を反映
     const c = item.config;
-    
-    // 基本設定
     if(document.getElementById('config-mode-select')) document.getElementById('config-mode-select').value = c.mode;
     if(document.getElementById('config-game-type')) document.getElementById('config-game-type').value = c.gameType || 'score';
     if(document.getElementById('config-elimination-rule')) document.getElementById('config-elimination-rule').value = c.eliminationRule;
     if(document.getElementById('config-elimination-count')) document.getElementById('config-elimination-count').value = c.eliminationCount || 1;
     
-    // モード別詳細
     if(c.mode === 'normal') {
         if(document.getElementById('config-normal-limit')) document.getElementById('config-normal-limit').value = c.normalLimit;
-        if(document.getElementById('config-shuffle-q')) document.getElementById('config-shuffle-q').value = c.shuffleChoices || 'off'; // ※名前揺れ注意
+        if(document.getElementById('config-shuffle-q')) document.getElementById('config-shuffle-q').value = c.shuffleChoices || 'off';
     } else if (c.mode === 'buzz') {
         if(document.getElementById('config-buzz-wrong-action')) document.getElementById('config-buzz-wrong-action').value = c.buzzWrongAction;
         if(document.getElementById('config-buzz-timer')) document.getElementById('config-buzz-timer').value = c.buzzTime;
     }
     
-    // 3. UIの表示更新
     updateModeDetails(c.mode);
     updateEliminationUI();
     renderQuestionsListUI(selectedSetQuestions);
     
-    // 4. リストから削除して再描画
     removeFromPlaylist(index);
-    
-    // 5. 上部にスクロールして案内
     document.getElementById('config-view').scrollIntoView({behavior: "smooth"});
     alert("設定を読み込みました。修正して「リストに追加」を押してください。");
 };
-/* host_config.js の一番下に追加 */
 
-// ダッシュボードからプログラムを読み込むための関数
 window.loadProgramToConfig = function(progData) {
     if(!confirm("このプログラム構成を読み込んで編集画面を開きますか？")) return;
-    
-    // データをセット
     periodPlaylist = JSON.parse(JSON.stringify(progData.playlist || []));
-    
-    // 画面遷移
     window.showView(window.views.config);
-    
-    // UI初期化・反映
     const setSelect = document.getElementById('config-set-select');
-    if(setSelect) setSelect.value = ""; // 選択状態リセット
+    if(setSelect) setSelect.value = ""; 
     document.getElementById('config-builder-ui').innerHTML = '<p style="text-align:center; color:#666; padding:20px;">セットを選択してください</p>';
-    
-    // プログラム設定の復元
     const titleInput = document.getElementById('config-program-title');
     if(titleInput) titleInput.value = progData.title || "";
-    
     const rankChk = document.getElementById('config-final-ranking-chk');
     if(rankChk) rankChk.checked = (progData.finalRanking !== false);
-    
-    // リスト描画
-    loadSetListInConfig(); // セット選択肢は読み込んでおく
-    renderConfigPreview(); // プレイリスト描画
-    
+    loadSetListInConfig(); 
+    initProgramLoaderInConfig(); // これも一応呼んでおく
+    renderConfigPreview(); 
     alert("プログラムを読み込みました。");
 };
-
-/* host_config.js の一番下に追加してください */
-
-window.loadProgramToConfigOnDash = function(progData) {
-    if(!confirm("このプログラムを読み込んで編集しますか？")) return;
-    
-    // 構成リスト(periodPlaylist)をセット
-    periodPlaylist = JSON.parse(JSON.stringify(progData.playlist || []));
-    
-    // 画面切り替え
-    window.showView(window.views.config);
-    
-    // UIの反映
-    if(document.getElementById('config-program-title')) {
-        document.getElementById('config-program-title').value = progData.title || "";
-    }
-    if(document.getElementById('config-final-ranking-chk')) {
-        document.getElementById('config-final-ranking-chk').checked = (progData.finalRanking !== false);
-    }
-    
-    // リストの再描画
-    renderConfigPreview();
-    alert("プログラムを読み込みました。");
-};
-
