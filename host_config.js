@@ -3,7 +3,7 @@ type: uploaded file
 fileName: host_config.js
 fullContent:
 /* =========================================================
- * host_config.js (v64: Syntax Fix & Bulk UI Update)
+ * host_config.js (v65: Fixed All Syntax Errors)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -37,6 +37,12 @@ function enterConfigMode() {
     loadSetListInConfig();
     loadSavedProgramsInConfig();
     renderConfigPreview();
+}
+
+// ヘルパー: 安全に値を取得する関数
+function getElValue(id, defaultValue) {
+    const el = document.getElementById(id);
+    return el ? el.value : defaultValue;
 }
 
 function loadSetListInConfig() {
@@ -518,11 +524,11 @@ function addPeriodToPlaylist() {
     
     let taSeconds = 5;
     if (mode === 'time_attack') {
-        taSeconds = parseInt(document.getElementById('config-ta-seconds').value) || 5;
+        taSeconds = parseInt(getElValue('config-ta-seconds', 5));
     }
-    const soloStyle = document.getElementById('config-solo-style')?.value;
+    const soloStyle = getElValue('config-solo-style', 'manual');
     if (mode === 'solo' && soloStyle === 'auto') {
-         taSeconds = parseInt(document.getElementById('config-solo-seconds').value) || 5;
+         taSeconds = parseInt(getElValue('config-solo-seconds', 5));
     }
 
     const newConfig = {
@@ -536,13 +542,13 @@ function addPeriodToPlaylist() {
         winCondition: winCond, 
         winTarget: winTarget, 
         
-        normalLimit: document.getElementById('config-normal-limit')?.value || 'unlimited',
-        buzzWrongAction: document.getElementById('config-buzz-wrong-action')?.value || 'next',
-        buzzTime: parseInt(document.getElementById('config-buzz-timer')?.value) || 0,
-        turnOrder: document.getElementById('config-turn-order')?.value || 'fixed',
-        turnPass: document.getElementById('config-turn-pass')?.value || 'ok',
+        normalLimit: getElValue('config-normal-limit', 'unlimited'),
+        buzzWrongAction: getElValue('config-buzz-wrong-action', 'next'),
+        buzzTime: parseInt(getElValue('config-buzz-timer', 0)),
+        turnOrder: getElValue('config-turn-order', 'fixed'),
+        turnPass: getElValue('config-turn-pass', 'ok'),
         
-        soloStyle: soloStyle || 'manual',
+        soloStyle: soloStyle,
 
         shuffleChoices: 'off',
         bombCount: 10,
@@ -557,206 +563,6 @@ function addPeriodToPlaylist() {
     
     renderConfigPreview();
     updateBuilderUI();
-}
-
-function renderConfigPreview() {
-    const container = document.getElementById('config-playlist-preview');
-    if(!container) return;
-    container.innerHTML = '';
-    
-    if(periodPlaylist.length === 0) {
-        container.innerHTML = `<p style="text-align:center; color:#999; font-size:0.8em;">${APP_TEXT.Config.AlertEmptyList}</p>`;
-        return;
-    }
-    
-    periodPlaylist.forEach((item, index) => {
-        if (index > 0) {
-            const arrowDiv = document.createElement('div');
-            arrowDiv.className = 'playlist-arrow-container';
-            arrowDiv.innerHTML = '<div class="playlist-arrow"></div>';
-            container.appendChild(arrowDiv);
-            
-            const settingDiv = document.createElement('div');
-            settingDiv.className = 'playlist-inter-setting';
-            const isRanking = (item.config.initialStatus === 'ranking');
-            const isInterRank = item.config.intermediateRanking;
-            
-            settingDiv.innerHTML = `
-                <div style="font-size:0.7em; color:#666; font-weight:bold; margin-bottom:3px;">${APP_TEXT.Config.InterHeading}</div>
-                <div style="display:flex; flex-direction:column; gap:5px;">
-                    <div style="display:flex; gap:5px; align-items:center;">
-                        <select class="inter-status-select" data-index="${index}">
-                            <option value="revive" ${item.config.initialStatus === 'revive' ? 'selected' : ''}>${APP_TEXT.Config.StatusRevive}</option>
-                            <option value="continue" ${item.config.initialStatus === 'continue' ? 'selected' : ''}>${APP_TEXT.Config.StatusContinue}</option>
-                            <option value="ranking" ${item.config.initialStatus === 'ranking' ? 'selected' : ''}>${APP_TEXT.Config.StatusRanking}</option>
-                        </select>
-                        <div class="inter-pass-area ${isRanking ? '' : 'hidden'}" style="display:flex; align-items:center; gap:3px;">
-                            <span style="font-size:0.8em;">${APP_TEXT.Config.LabelTop}</span>
-                            <input type="number" class="inter-pass-input" data-index="${index}" value="${item.config.passCount}" min="1" style="width:50px; padding:5px; text-align:center;">
-                            <span style="font-size:0.8em;">${APP_TEXT.Config.LabelName}</span>
-                        </div>
-                    </div>
-                    <label style="font-size:0.9em; cursor:pointer;">
-                        <input type="checkbox" class="inter-ranking-chk" data-index="${index}" ${isInterRank ? 'checked' : ''}>
-                        ${APP_TEXT.Config.CheckInterRank}
-                    </label>
-                </div>
-            `;
-            container.appendChild(settingDiv);
-        }
-
-        const div = document.createElement('div');
-        div.className = 'timeline-card';
-        div.style.marginBottom = "0"; 
-        
-        let modeLabel = item.config.mode.toUpperCase();
-        if(item.config.mode === 'time_attack') modeLabel += ` (${item.config.timeLimit}s)`;
-        if(item.config.mode === 'solo') modeLabel += ` [${item.config.soloStyle === 'auto' ? 'Auto ' + item.config.timeLimit + 's' : 'Manual'}]`;
-
-        if(item.config.gameType === 'territory') modeLabel += " (PANEL)";
-        if(item.config.gameType === 'race') modeLabel += " (RACE)";
-        
-        let condText = "";
-        if(item.config.winCondition === 'score') condText = ` / First to ${item.config.winTarget}pt`;
-        if(item.config.winCondition === 'survivor') condText = ` / SURVIVAL`;
-
-        div.innerHTML = `
-            <div style="flex:1;">
-                <div style="font-weight:bold; font-size:1.1em;">${index+1}. ${item.title}</div>
-                <div style="font-size:0.8em; color:#666;">
-                    [${modeLabel}] ${item.questions.length}Q${condText}
-                </div>
-            </div>
-            <button class="delete-btn" onclick="removeFromPlaylist(${index})">Del</button>
-        `;
-        container.appendChild(div);
-    });
-
-    document.querySelectorAll('.inter-status-select').forEach(sel => {
-        sel.addEventListener('change', (e) => {
-            const idx = e.target.getAttribute('data-index');
-            const val = e.target.value;
-            periodPlaylist[idx].config.initialStatus = val;
-            const passArea = e.target.closest('div').querySelector('.inter-pass-area');
-            if(passArea) {
-                if (val === 'ranking') passArea.classList.remove('hidden');
-                else passArea.classList.add('hidden');
-            }
-        });
-    });
-    document.querySelectorAll('.inter-pass-input').forEach(inp => {
-        inp.addEventListener('change', (e) => {
-            const idx = e.target.getAttribute('data-index');
-            periodPlaylist[idx].config.passCount = parseInt(e.target.value) || 5;
-        });
-    });
-    document.querySelectorAll('.inter-ranking-chk').forEach(chk => {
-        chk.addEventListener('change', (e) => {
-            const idx = e.target.getAttribute('data-index');
-            periodPlaylist[idx].config.intermediateRanking = e.target.checked;
-        });
-    });
-}
-
-window.removeFromPlaylist = function(index) {
-    periodPlaylist.splice(index, 1);
-    renderConfigPreview();
-};
-
-function loadSavedProgramsInConfig() {
-    const listEl = document.getElementById('config-saved-programs-list');
-    if(!listEl) return;
-    listEl.innerHTML = `<p style="text-align:center;">${APP_TEXT.Config.SelectLoading}</p>`;
-
-    window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
-        const data = snap.val();
-        listEl.innerHTML = '';
-        if(!data) {
-            listEl.innerHTML = `<p style="text-align:center; color:#999;">${APP_TEXT.Config.SelectEmpty}</p>`;
-            return;
-        }
-        Object.keys(data).forEach(key => {
-            const item = data[key];
-            const div = document.createElement('div');
-            div.className = 'set-item';
-            div.innerHTML = `
-                <div>
-                    <span style="font-weight:bold;">${item.title}</span>
-                    <div style="font-size:0.8em; color:#666;">
-                        ${new Date(item.createdAt).toLocaleDateString()} / ${item.playlist ? item.playlist.length : 0} Periods
-                    </div>
-                </div>
-            `;
-            const btnArea = document.createElement('div');
-            btnArea.style.display = 'flex';
-            btnArea.style.gap = '5px';
-
-            const loadBtn = document.createElement('button');
-            loadBtn.textContent = APP_TEXT.Config.BtnLoadProg;
-            loadBtn.className = 'btn-mini';
-            loadBtn.style.backgroundColor = '#0055ff';
-            loadBtn.style.color = 'white';
-            loadBtn.onclick = () => {
-                if(confirm(APP_TEXT.Config.MsgConfirmLoadProg)) {
-                    periodPlaylist = item.playlist || [];
-                    const rankChk = document.getElementById('config-final-ranking-chk');
-                    if(rankChk) rankChk.checked = (item.finalRanking !== false);
-                    document.getElementById('config-program-title').value = item.title;
-                    renderConfigPreview();
-                    alert("Loaded.");
-                }
-            };
-
-            const delBtn = document.createElement('button');
-            delBtn.className = 'delete-btn';
-            delBtn.textContent = APP_TEXT.Config.BtnDelProg;
-            delBtn.onclick = () => {
-                if(confirm(APP_TEXT.Config.MsgConfirmDelProg)) {
-                    window.db.ref(`saved_programs/${currentShowId}/${key}`).remove()
-                    .then(() => {
-                        div.remove();
-                    });
-                }
-            };
-
-            btnArea.appendChild(loadBtn);
-            btnArea.appendChild(delBtn);
-            div.appendChild(btnArea);
-            listEl.appendChild(div);
-        });
-    });
-}
-
-function saveProgramToCloud() {
-    if(periodPlaylist.length === 0) {
-        alert(APP_TEXT.Config.AlertEmptyList);
-        return;
-    }
-    const titleInput = document.getElementById('config-program-title');
-    const title = titleInput.value.trim();
-    if(!title) {
-        alert(APP_TEXT.Config.AlertNoTitle);
-        return;
-    }
-    const rankChk = document.getElementById('config-final-ranking-chk');
-    const finalRanking = rankChk ? rankChk.checked : true;
-    
-    const cleanPlaylist = JSON.parse(JSON.stringify(periodPlaylist));
-    const saveObj = {
-        title: title,
-        playlist: cleanPlaylist, 
-        finalRanking: finalRanking,
-        createdAt: firebase.database.ServerValue.TIMESTAMP
-    };
-    window.db.ref(`saved_programs/${currentShowId}`).push(saveObj)
-    .then(() => {
-        window.showToast(APP_TEXT.Config.MsgSaved);
-        titleInput.value = '';
-        periodPlaylist = []; 
-        renderConfigPreview();
-        loadSavedProgramsInConfig(); 
-    })
-    .catch(err => alert("Error: " + err.message));
 }
 
 }
