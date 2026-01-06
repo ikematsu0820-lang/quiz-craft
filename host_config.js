@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v59: Win Condition & Interperiod)
+ * host_config.js (v59-fix2: Mode Restriction Logic)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -56,6 +56,7 @@ function loadSetListInConfig() {
                 }
                 const firstQ = (item.questions && item.questions.length > 0) ? item.questions[0] : {};
                 const spMode = firstQ.specialMode || 'none';
+                // データ格納
                 opt.value = JSON.stringify({ q: item.questions, c: item.config || {}, t: item.title, sp: spMode });
                 opt.textContent = `${item.title} [${typeLabel}]` + (spMode !== 'none' ? ` (${spMode})` : '');
                 select.appendChild(opt);
@@ -81,21 +82,53 @@ function updateBuilderUI() {
     selectedSetQuestions = setData.q || [];
     const config = setData.c || {};
     const spMode = setData.sp || 'none';
+    
+    // ★追加: 形式チェック
+    const firstQ = selectedSetQuestions.length > 0 ? selectedSetQuestions[0] : {};
+    const qType = firstQ.type;
+
+    // 「口頭」なら一斉回答を禁止にするロジック
+    // デフォルトモードが禁止されているものだった場合、強制的に安全なモード(buzz)へ変更
+    if (qType === 'free_oral' && config.mode === 'normal') {
+        config.mode = 'buzz'; 
+    }
 
     let html = '';
 
-    // 1. 回答モード
+    // 1. 回答モード (動的生成)
     html += `<div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>`;
-    html += `
-    <div class="config-item-box">
-        <select id="config-mode-select" class="btn-block config-select highlight-select">
-            <option value="normal" ${config.mode === 'normal' ? 'selected' : ''}>${APP_TEXT.Config.ModeNormal}</option>
-            <option value="buzz" ${config.mode === 'buzz' ? 'selected' : ''}>${APP_TEXT.Config.ModeBuzz}</option>
-            <option value="turn" ${config.mode === 'turn' ? 'selected' : ''}>${APP_TEXT.Config.ModeTurn}</option>
-            <option value="time_attack" ${config.mode === 'time_attack' ? 'selected' : ''} style="color:red;">${APP_TEXT.Config.ModeTimeAttack}</option>
-        </select>
-        <p id="config-mode-locked-msg" class="hidden" style="color:#d00; font-size:0.8em; margin-top:5px; font-weight:bold;">${APP_TEXT.Config.MsgLockedMode}</p>
+    html += `<div class="config-item-box">`;
+    
+    // Selectボックスの生成
+    html += `<select id="config-mode-select" class="btn-block config-select highlight-select">`;
+    
+    // 一斉回答 (Oral以外なら表示)
+    if (qType !== 'free_oral') {
+        html += `<option value="normal" ${config.mode === 'normal' ? 'selected' : ''}>${APP_TEXT.Config.ModeNormal}</option>`;
+    }
+    
+    // 早押し (常にOK)
+    html += `<option value="buzz" ${config.mode === 'buzz' ? 'selected' : ''}>${APP_TEXT.Config.ModeBuzz}</option>`;
+    
+    // 順番回答 (常にOK)
+    html += `<option value="turn" ${config.mode === 'turn' ? 'selected' : ''}>${APP_TEXT.Config.ModeTurn}</option>`;
+    
+    // タイムアタック (Oral以外なら表示 ※タイムアタックは実質一斉回答なので)
+    if (qType !== 'free_oral') {
+        html += `<option value="time_attack" ${config.mode === 'time_attack' ? 'selected' : ''} style="color:red;">${APP_TEXT.Config.ModeTimeAttack}</option>`;
+    }
+    
+    html += `</select>`;
+    
+    // 注意書き
+    if (qType === 'free_oral') {
+        html += `<p style="font-size:0.8em; color:#d00; margin-top:5px;">※口頭回答のため「一斉回答」は選択できません</p>`;
+    }
 
+    html += `<p id="config-mode-locked-msg" class="hidden" style="color:#d00; font-size:0.8em; margin-top:5px; font-weight:bold;">${APP_TEXT.Config.MsgLockedMode}</p>`;
+
+    // 詳細設定エリア (各モード用)
+    html += `
         <div id="mode-details-normal" class="mode-details hidden" style="margin-top:15px;">
             <label class="config-label">${APP_TEXT.Config.LabelNormalLimit}</label>
             <select id="config-normal-limit" class="btn-block config-select">
@@ -156,7 +189,9 @@ function updateBuilderUI() {
         </div>
         
         <div id="mode-details-time_attack" class="mode-details hidden" style="margin-top:15px; background:#fff5e6; padding:10px; border-radius:5px;">
-            <p style="font-size:0.9em; margin:0; color:#d32f2f; font-weight:bold;">※Time Shock: 5 sec/Q</p>
+            <p style="font-size:0.9em; margin:0; color:#d32f2f; font-weight:bold;">
+                ※Time Shock: 5 sec/Q (Auto Advance)
+            </p>
         </div>
     </div>`;
 
@@ -280,7 +315,10 @@ function updateBuilderUI() {
         document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = val);
     });
 
+    // 初期化実行
+    // modeSelがない場合(セット未選択)はスキップ
     if(modeSel) updateModeDetails(modeSel.value);
+    
     updateEliminationUI();
     renderQuestionsListUI(selectedSetQuestions);
     applySpecialModeLock(spMode);
@@ -406,13 +444,11 @@ function addPeriodToPlaylist() {
     const gameType = document.getElementById('config-game-type').value;
     const winCond = document.getElementById('config-win-cond').value;
     
-    // 勝利条件の数値 (ScoreかSurvivalで使用)
     let winTarget = 0;
     if (winCond === 'score') {
         winTarget = parseInt(document.getElementById('config-win-target').value) || 10;
     }
 
-    // シャッフル
     let shuffle = 'off';
     if (mode === 'normal') shuffle = document.getElementById('config-shuffle-q').value;
     else if (mode === 'buzz') shuffle = document.getElementById('config-buzz-shuffle').value;
@@ -426,15 +462,15 @@ function addPeriodToPlaylist() {
     }
 
     const newConfig = {
-        initialStatus: 'revive', passCount: 5, intermediateRanking: false, // Default Interperiod
+        initialStatus: 'revive', passCount: 5, intermediateRanking: false,
         eliminationRule: document.getElementById('config-elimination-rule').value,
         eliminationCount: elimCount,
         lossPoint: 0, scoreUnit: 'point', theme: 'light',
         timeLimit: 0, 
         mode: mode,
         gameType: gameType,
-        winCondition: winCond, // ★v59
-        winTarget: winTarget,  // ★v59
+        winCondition: winCond, 
+        winTarget: winTarget, 
         
         normalLimit: document.getElementById('config-normal-limit')?.value || 'unlimited',
         buzzWrongAction: document.getElementById('config-buzz-wrong-action')?.value || 'next',
@@ -474,7 +510,6 @@ function renderConfigPreview() {
             arrowDiv.innerHTML = '<div class="playlist-arrow"></div>';
             container.appendChild(arrowDiv);
             
-            // ★v59: ピリオド間設定UI復活
             const settingDiv = document.createElement('div');
             settingDiv.className = 'playlist-inter-setting';
             const isRanking = (item.config.initialStatus === 'ranking');
@@ -512,7 +547,6 @@ function renderConfigPreview() {
         if(item.config.gameType === 'territory') modeLabel += " (PANEL)";
         if(item.config.gameType === 'race') modeLabel += " (RACE)";
         
-        // 勝利条件の表示
         let condText = "";
         if(item.config.winCondition === 'score') condText = ` / First to ${item.config.winTarget}pt`;
         if(item.config.winCondition === 'survivor') condText = ` / SURVIVAL`;
@@ -529,7 +563,6 @@ function renderConfigPreview() {
         container.appendChild(div);
     });
 
-    // イベント再バインド (Interperiod用)
     document.querySelectorAll('.inter-status-select').forEach(sel => {
         sel.addEventListener('change', (e) => {
             const idx = e.target.getAttribute('data-index');
