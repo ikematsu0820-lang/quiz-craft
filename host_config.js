@@ -1,5 +1,5 @@
-/* =========================================================
- * host_config.js (v59-fix2: Mode Restriction Logic)
+　/* =========================================================
+ * host_config.js (v60: Time Attack Timer Setting Added)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -189,8 +189,10 @@ function updateBuilderUI() {
         </div>
         
         <div id="mode-details-time_attack" class="mode-details hidden" style="margin-top:15px; background:#fff5e6; padding:10px; border-radius:5px;">
-            <p style="font-size:0.9em; margin:0; color:#d32f2f; font-weight:bold;">
-                ※Time Shock: 5 sec/Q (Auto Advance)
+            <label class="config-label">1問あたりの制限時間 (秒)</label>
+            <input type="number" id="config-ta-seconds" value="${config.timeLimit || 5}" min="1" max="60" class="btn-block" style="font-size:1.2em; text-align:center; font-weight:bold;">
+            <p style="font-size:0.8em; margin:5px 0 0 0; color:#d32f2f;">
+                ※自動で次の問題へ進みます
             </p>
         </div>
     </div>`;
@@ -461,12 +463,18 @@ function addPeriodToPlaylist() {
         }
     }
 
+    // ★追加: タイムアタック設定秒数の取得
+    let taSeconds = 5;
+    if (mode === 'time_attack') {
+        taSeconds = parseInt(document.getElementById('config-ta-seconds').value) || 5;
+    }
+
     const newConfig = {
         initialStatus: 'revive', passCount: 5, intermediateRanking: false,
         eliminationRule: document.getElementById('config-elimination-rule').value,
         eliminationCount: elimCount,
         lossPoint: 0, scoreUnit: 'point', theme: 'light',
-        timeLimit: 0, 
+        timeLimit: (mode === 'time_attack') ? taSeconds : 0, // ★ここを変更！
         mode: mode,
         gameType: gameType,
         winCondition: winCond, 
