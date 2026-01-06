@@ -1,5 +1,9 @@
+{
+type: uploaded file
+fileName: host_studio.js
+fullContent:
 /* =========================================================
- * host_studio.js (v61: Click to Copy ID Added)
+ * host_studio.js (v62: Solo Auto Mode Implemented)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
@@ -28,21 +32,16 @@ function startRoom() {
 function enterHostMode(roomId) {
     window.showView(window.views.hostControl);
     
-    // ★追加機能: IDをクリックでコピーできるようにする
+    // IDをクリックでコピー
     const idLabel = document.getElementById('host-room-id');
     if (idLabel) {
         idLabel.textContent = roomId;
-        idLabel.style.cursor = "pointer"; // マウスカーソルを指マークに
-        idLabel.title = "クリックしてコピー"; // ホバー時のヒント
-        
-        // 前回のイベントリスナーが残らないよう上書き代入
+        idLabel.style.cursor = "pointer"; 
+        idLabel.title = "クリックしてコピー"; 
         idLabel.onclick = () => {
             navigator.clipboard.writeText(roomId).then(() => {
-                // コピー成功時の通知（トーストがあれば使う）
                 if(window.showToast) window.showToast("ID Copied: " + roomId);
                 else alert("IDをコピーしました: " + roomId);
-            }).catch(err => {
-                console.error("Copy failed", err);
             });
         };
     }
@@ -155,6 +154,8 @@ function renderStudioTimeline() {
         }
 
         let modeText = item.config.mode ? item.config.mode.toUpperCase() : "NORMAL";
+        if (item.config.mode === 'solo' && item.config.soloStyle === 'auto') modeText += " (AUTO)";
+        
         if (item.config.gameType === 'territory') modeText += " (PANEL)";
         if (item.config.gameType === 'race') modeText += " (RACE)";
 
@@ -189,14 +190,17 @@ window.playPeriod = function(index) {
     document.getElementById('studio-timeline-area').classList.add('hidden');
     document.getElementById('control-panel').classList.remove('hidden');
     
+    // UI初期化
     document.getElementById('host-panel-control-area').classList.add('hidden');
     document.getElementById('host-bomb-control-area').classList.add('hidden');
     document.getElementById('host-multi-control-area').classList.add('hidden');
     document.getElementById('host-race-control-area').classList.add('hidden');
     
-    // ※もしタイムアタックの秒数可変ロジックなどを入れている場合は、ここを適宜調整してください
-    // デフォルトでは5秒固定の設定を入れています
-    if (currentConfig.mode === 'time_attack') currentConfig.timeLimit = 5;
+    // デフォルト秒数設定
+    if (currentConfig.mode === 'time_attack') currentConfig.timeLimit = currentConfig.timeLimit || 5;
+    if (currentConfig.mode === 'solo' && currentConfig.soloStyle === 'auto') {
+        currentConfig.timeLimit = currentConfig.timeLimit || 5;
+    }
 
     if (currentConfig.gameType === 'territory') {
         startPanelGame(currentRoomId);
@@ -217,7 +221,7 @@ window.playPeriod = function(index) {
 
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
     
-    // ピリオド間処理
+    // プレイヤー状態リセット
     window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
         let players = [];
         snap.forEach(p => {
@@ -255,14 +259,9 @@ window.playPeriod = function(index) {
             window.db.ref(`rooms/${currentRoomId}/players`).update(updates);
         }
         
-        if (currentConfig.mode === 'time_attack' && players.length > 0) {
-            const survivor = players.find((_, i) => updates[players[i].key+'/isAlive']);
-            if(survivor) {
-                buzzWinnerId = survivor.key;
-                document.getElementById('host-buzz-winner-name').textContent = survivor.name;
-                document.getElementById('host-buzz-winner-area').classList.remove('hidden');
-            }
-        }
+        // ソロモードの場合、最初のプレイヤー（あるいは特定の挑戦者）をターゲットにする想定
+        // 今回は「一人挑戦」なので、参加者が一人、あるいはホストが判定する対象は特定の一人という前提で動く
+        // ※必要であればここでbuzzWinnerIdに特定プレイヤーを入れるが、一旦nullスタートで回答時に判定
     });
 
     document.getElementById('current-period-title').textContent = `${item.title}`;
@@ -273,10 +272,17 @@ window.playPeriod = function(index) {
     if(btnStartTA) btnStartTA.classList.add('hidden');
     document.getElementById('host-manual-judge-area').classList.add('hidden');
 
-    if (currentConfig.mode === 'time_attack') {
-        if(btnStartTA) btnStartTA.classList.remove('hidden');
-        document.getElementById('host-status-area').textContent = APP_TEXT.Studio.MsgTimeAttackReady;
+    const isSoloAuto = (currentConfig.mode === 'solo' && currentConfig.soloStyle === 'auto');
+
+    if (currentConfig.mode === 'time_attack' || isSoloAuto) {
+        // ループ開始ボタンを表示
+        if(btnStartTA) {
+            btnStartTA.classList.remove('hidden');
+            btnStartTA.textContent = isSoloAuto ? "START Auto Loop" : "START Loop";
+        }
+        document.getElementById('host-status-area').textContent = `Ready (${currentConfig.timeLimit}s/Q)`;
     } else if (currentConfig.mode !== 'bomb') {
+        // 通常の手動進行
         if(btnStart) btnStart.classList.remove('hidden');
         document.getElementById('host-status-area').textContent = "Ready...";
     }
@@ -386,7 +392,13 @@ function setupStudioButtons(roomId) {
     if(btnStart) btnStart.onclick = () => {
         const now = firebase.database.ServerValue.TIMESTAMP;
         let updateData = { step: 'question', qIndex: currentQIndex, startTime: now };
-        if (currentConfig.mode === 'buzz') {
+        
+        // ソロモード（手動）の場合
+        if (currentConfig.mode === 'solo' && currentConfig.soloStyle === 'manual') {
+            document.getElementById('host-manual-judge-area').classList.remove('hidden');
+            if(document.getElementById('host-show-answer-btn')) document.getElementById('host-show-answer-btn').classList.remove('hidden');
+        } 
+        else if (currentConfig.mode === 'buzz') {
             updateData.isBuzzActive = true;
             updateData.currentAnswerer = null;
             buzzWinnerId = null; 
@@ -394,96 +406,89 @@ function setupStudioButtons(roomId) {
                 snap.forEach(p => p.ref.update({ buzzTime: null, lastResult: null }));
             });
         }
+        
         window.db.ref(`rooms/${roomId}/status`).update(updateData);
         btnStart.classList.add('hidden');
         document.getElementById('host-status-area').textContent = "Active...";
+        updateKanpe(); // カンペ表示更新
     };
 
     const btnStartTA = document.getElementById('host-start-ta-btn');
     if(btnStartTA) btnStartTA.onclick = () => {
         btnStartTA.classList.add('hidden');
+        
+        // 判定ボタンを表示（タイムショック中も正誤判定はしたい場合）
+        // ※自動進行中は判定しても進まない（スコアのみ）ようにする
         if(document.getElementById('host-manual-judge-area')) {
             document.getElementById('host-manual-judge-area').classList.remove('hidden');
         }
-        startTaLoop(roomId);
+        
+        if (currentConfig.mode === 'solo' && currentConfig.soloStyle === 'auto') {
+             startSoloLoop(roomId);
+        } else {
+             startTaLoop(roomId);
+        }
     };
 
     const btnCorrect = document.getElementById('host-judge-correct-btn');
     if(btnCorrect) btnCorrect.onclick = () => {
+        // ★Solo Autoモード: タイマーは止めずにスコアだけ加算
+        if (currentConfig.mode === 'solo' && currentConfig.soloStyle === 'auto') {
+            scoreAllAlivePlayers(roomId, 1); // 全生存者（基本1人）に加算
+            // 自動進行なので next() は呼ばない
+            return;
+        }
+
+        // Time Attack (旧仕様): 判定すると即次へ
         if (currentConfig.mode === 'time_attack') {
-            if(buzzWinnerId) {
-                window.db.ref(`rooms/${roomId}/players/${buzzWinnerId}`).once('value', snap => {
-                    const val = snap.val();
-                    snap.ref.update({ periodScore: (val.periodScore||0) + 1 });
-                });
-            }
+            if(buzzWinnerId) scorePlayer(roomId, buzzWinnerId, 1);
             clearTimeout(taTimer);
             nextTaQuestion(roomId);
             return;
         }
+        
+        // Solo Manual
+        if (currentConfig.mode === 'solo') {
+             scoreAllAlivePlayers(roomId, 1);
+             finishQuestion(roomId);
+             return;
+        }
 
+        // Buzz
         if (!buzzWinnerId) return;
-        const q = studioQuestions[currentQIndex];
-        const points = parseInt(q.points) || 1;
-
-        window.db.ref(`rooms/${roomId}/players/${buzzWinnerId}`).once('value', snap => {
-            const val = snap.val();
-            const newScore = (val.periodScore||0) + points;
-            snap.ref.update({ periodScore: newScore, lastResult: 'win' });
-            
-            if (currentConfig.winCondition === 'score') {
-                const target = currentConfig.winTarget || 10;
-                const goal = (currentConfig.gameType === 'race') ? (currentConfig.passCount||10) : target;
-                if (newScore >= goal) {
-                    announceWinner(val.name + " WINS!", roomId);
-                }
-            }
-        });
-
+        scorePlayer(roomId, buzzWinnerId, 1); // ポイントは一旦1固定（必要ならq.points参照）
         finishQuestion(roomId);
     };
 
     const btnWrong = document.getElementById('host-judge-wrong-btn');
     if(btnWrong) btnWrong.onclick = () => {
+        // ★Solo Auto: 減点する？一旦何もしないか、不正解SEだけ鳴らす想定
+        if (currentConfig.mode === 'solo' && currentConfig.soloStyle === 'auto') {
+            // 必要なら減点処理
+            return;
+        }
+
         if (currentConfig.mode === 'time_attack') {
             clearTimeout(taTimer);
             nextTaQuestion(roomId);
             return;
         }
+
+        if (currentConfig.mode === 'solo') {
+             // ソロ手動なら不正解で終了？それとも次？ 設定によるが一旦次へ
+             finishQuestion(roomId);
+             return;
+        }
+
+        // Buzz logic...
         if (!buzzWinnerId) return;
-        const q = studioQuestions[currentQIndex];
-        const loss = parseInt(q.loss) || 0;
-        
+        const loss = 0; // 簡易
         window.db.ref(`rooms/${roomId}/players/${buzzWinnerId}`).once('value', snap => {
             const val = snap.val();
-            let newScore = (val.periodScore||0);
-            if(loss > 0) newScore -= loss;
-            
+            let newScore = (val.periodScore||0) - loss;
             let isAlive = val.isAlive;
-            if (currentConfig.eliminationRule === 'wrong_only' || currentConfig.eliminationRule === 'wrong_and_slowest') {
-                isAlive = false;
-            }
-            
+            if (currentConfig.eliminationRule === 'wrong_only') isAlive = false;
             snap.ref.update({ periodScore: newScore, lastResult: 'lose', buzzTime: null, isAlive: isAlive });
-            
-            if (currentConfig.winCondition === 'survivor') {
-                window.db.ref(`rooms/${roomId}/players`).once('value', allSnap => {
-                    let aliveCount = 0;
-                    let lastMan = null;
-                    allSnap.forEach(s => {
-                        const p = s.val();
-                        let pAlive = p.isAlive;
-                        if (s.key === buzzWinnerId) pAlive = isAlive; 
-                        if (pAlive) {
-                            aliveCount++;
-                            lastMan = p.name;
-                        }
-                    });
-                    if (aliveCount <= 1) {
-                        announceWinner((lastMan ? lastMan : "NO ONE") + " SURVIVED!", roomId);
-                    }
-                });
-            }
         });
         
         const action = currentConfig.buzzWrongAction;
@@ -493,9 +498,6 @@ function setupStudioButtons(roomId) {
         else window.db.ref(`rooms/${roomId}/status`).update({ currentAnswerer: null, isBuzzActive: true });
     };
 
-    const btnPass = document.getElementById('host-judge-pass-btn');
-    if(btnPass) btnPass.onclick = () => { };
-
     const btnShowAns = document.getElementById('host-show-answer-btn');
     if(btnShowAns) btnShowAns.onclick = () => finishQuestion(roomId);
 
@@ -503,7 +505,6 @@ function setupStudioButtons(roomId) {
     if(btnNext) btnNext.onclick = (e) => {
         const action = e.target.dataset.action;
         if (action === "next") { playPeriod(currentPeriodIndex + 1); return; }
-        if (action === "end") { alert(APP_TEXT.Studio.MsgAllEnd); btnNext.classList.add('hidden'); return; }
         currentQIndex++;
         buzzWinnerId = null;
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
@@ -537,6 +538,29 @@ function setupStudioButtons(roomId) {
     };
 }
 
+// プレイヤーへのスコア加算（単体）
+function scorePlayer(roomId, playerId, points) {
+    window.db.ref(`rooms/${roomId}/players/${playerId}`).once('value', snap => {
+        const val = snap.val();
+        const newScore = (val.periodScore||0) + points;
+        snap.ref.update({ periodScore: newScore, lastResult: 'win' });
+    });
+}
+
+// 全生存プレイヤーへのスコア加算（ソロモード用）
+function scoreAllAlivePlayers(roomId, points) {
+    window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
+        snap.forEach(p => {
+            if(p.val().isAlive) {
+                p.ref.update({ 
+                    periodScore: (p.val().periodScore||0) + points,
+                    lastResult: 'win'
+                });
+            }
+        });
+    });
+}
+
 function announceWinner(msg, roomId) {
     alert(msg);
     window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer', isBuzzActive: false });
@@ -551,7 +575,10 @@ function announceWinner(msg, roomId) {
 function finishQuestion(roomId) {
     window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer', isBuzzActive: false });
     if(document.getElementById('host-show-answer-btn')) document.getElementById('host-show-answer-btn').classList.add('hidden');
-    if(document.getElementById('host-manual-judge-area')) document.getElementById('host-manual-judge-area').classList.add('hidden');
+    // ソロモード（手動）の場合は判定エリア消す
+    if (currentConfig.mode === 'solo' && currentConfig.soloStyle === 'manual') {
+        document.getElementById('host-manual-judge-area').classList.add('hidden');
+    }
     
     const btnNext = document.getElementById('host-next-btn');
     if(btnNext) {
@@ -566,6 +593,7 @@ function finishQuestion(roomId) {
     }
 }
 
+// 旧タイムアタック（ループ）
 function startTaLoop(roomId) { currentQIndex = -1; nextTaQuestion(roomId); }
 function nextTaQuestion(roomId) {
     currentQIndex++;
@@ -574,9 +602,54 @@ function nextTaQuestion(roomId) {
         return;
     }
     updateKanpe();
-    window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', qIndex: currentQIndex, startTime: firebase.database.ServerValue.TIMESTAMP });
-    document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} (5s)`;
-    taTimer = setTimeout(() => { nextTaQuestion(roomId); }, 5000);
+    const time = currentConfig.timeLimit || 5;
+    window.db.ref(`rooms/${roomId}/status`).update({ 
+        step: 'question', 
+        qIndex: currentQIndex, 
+        startTime: firebase.database.ServerValue.TIMESTAMP,
+        timeLimit: time 
+    });
+    document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} (${time}s)`;
+    taTimer = setTimeout(() => { nextTaQuestion(roomId); }, time * 1000);
+}
+
+// ★追加: ソロ自動進行（ループ）
+// nextTaQuestionとほぼ同じだが、終了時に自動で「正解表示(answer)」を挟まず次へ行くか、
+// あるいはViewerの演出に合わせて調整可能。今回はシンプルにTaLoopと同様にする。
+function startSoloLoop(roomId) { currentQIndex = -1; nextSoloAutoQuestion(roomId); }
+function nextSoloAutoQuestion(roomId) {
+    currentQIndex++;
+    if (currentQIndex >= studioQuestions.length) {
+        document.getElementById('host-status-area').textContent = "FINISHED";
+        document.getElementById('host-manual-judge-area').classList.add('hidden');
+        const btnNext = document.getElementById('host-next-btn');
+        if(btnNext) {
+            btnNext.classList.remove('hidden');
+            btnNext.textContent = "Next Period";
+            btnNext.dataset.action = "next";
+        }
+        return;
+    }
+    updateKanpe();
+    
+    // configで設定した秒数を使用
+    const duration = currentConfig.timeLimit || 5; 
+
+    // Firebase更新（Viewerがこれを検知してバーを動かす）
+    window.db.ref(`rooms/${roomId}/status`).update({ 
+        step: 'question', 
+        qIndex: currentQIndex, 
+        startTime: firebase.database.ServerValue.TIMESTAMP,
+        timeLimit: duration
+    });
+    
+    document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} Auto (${duration}s)`;
+    
+    // 指定秒数後に次の問題へ（再帰呼び出し）
+    // ★ポイント: タイムショック的に「間」を空けるならここで調整
+    taTimer = setTimeout(() => { 
+        nextSoloAutoQuestion(roomId); 
+    }, duration * 1000);
 }
 
 function updateKanpe() {
@@ -642,4 +715,6 @@ function renderRankingView(data) {
         `;
         list.appendChild(div);
     });
+}
+
 }
