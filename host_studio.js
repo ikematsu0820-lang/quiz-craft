@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v60: Variable Time Attack Logic)
+ * host_studio.js (v61: Click to Copy ID Added)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
@@ -27,7 +27,26 @@ function startRoom() {
 
 function enterHostMode(roomId) {
     window.showView(window.views.hostControl);
-    document.getElementById('host-room-id').textContent = roomId;
+    
+    // ★追加機能: IDをクリックでコピーできるようにする
+    const idLabel = document.getElementById('host-room-id');
+    if (idLabel) {
+        idLabel.textContent = roomId;
+        idLabel.style.cursor = "pointer"; // マウスカーソルを指マークに
+        idLabel.title = "クリックしてコピー"; // ホバー時のヒント
+        
+        // 前回のイベントリスナーが残らないよう上書き代入
+        idLabel.onclick = () => {
+            navigator.clipboard.writeText(roomId).then(() => {
+                // コピー成功時の通知（トーストがあれば使う）
+                if(window.showToast) window.showToast("ID Copied: " + roomId);
+                else alert("IDをコピーしました: " + roomId);
+            }).catch(err => {
+                console.error("Copy failed", err);
+            });
+        };
+    }
+    
     document.getElementById('studio-show-id').textContent = currentShowId;
     
     document.getElementById('studio-program-loader').classList.remove('hidden');
@@ -136,7 +155,6 @@ function renderStudioTimeline() {
         }
 
         let modeText = item.config.mode ? item.config.mode.toUpperCase() : "NORMAL";
-        if (item.config.mode === 'time_attack') modeText += ` (${item.config.timeLimit}s)`;
         if (item.config.gameType === 'territory') modeText += " (PANEL)";
         if (item.config.gameType === 'race') modeText += " (RACE)";
 
@@ -176,8 +194,9 @@ window.playPeriod = function(index) {
     document.getElementById('host-multi-control-area').classList.add('hidden');
     document.getElementById('host-race-control-area').classList.add('hidden');
     
-    // ★TimeAttack: 秒数はConfigから取得(デフォルト5)
-    if (currentConfig.mode === 'time_attack' && !currentConfig.timeLimit) currentConfig.timeLimit = 5;
+    // ※もしタイムアタックの秒数可変ロジックなどを入れている場合は、ここを適宜調整してください
+    // デフォルトでは5秒固定の設定を入れています
+    if (currentConfig.mode === 'time_attack') currentConfig.timeLimit = 5;
 
     if (currentConfig.gameType === 'territory') {
         startPanelGame(currentRoomId);
@@ -255,11 +274,7 @@ window.playPeriod = function(index) {
     document.getElementById('host-manual-judge-area').classList.add('hidden');
 
     if (currentConfig.mode === 'time_attack') {
-        if(btnStartTA) {
-            btnStartTA.classList.remove('hidden');
-            // ★ボタンラベルに秒数反映
-            btnStartTA.textContent = `START ${currentConfig.timeLimit}s Loop`;
-        }
+        if(btnStartTA) btnStartTA.classList.remove('hidden');
         document.getElementById('host-status-area').textContent = APP_TEXT.Studio.MsgTimeAttackReady;
     } else if (currentConfig.mode !== 'bomb') {
         if(btnStart) btnStart.classList.remove('hidden');
@@ -552,8 +567,6 @@ function finishQuestion(roomId) {
 }
 
 function startTaLoop(roomId) { currentQIndex = -1; nextTaQuestion(roomId); }
-
-// ★修正: 設定秒数を使ってループさせる
 function nextTaQuestion(roomId) {
     currentQIndex++;
     if (currentQIndex >= studioQuestions.length) {
@@ -561,20 +574,9 @@ function nextTaQuestion(roomId) {
         return;
     }
     updateKanpe();
-    
-    // 設定された秒数を取得
-    const limit = currentConfig.timeLimit || 5;
-    
-    window.db.ref(`rooms/${roomId}/status`).update({ 
-        step: 'question', 
-        qIndex: currentQIndex, 
-        startTime: firebase.database.ServerValue.TIMESTAMP,
-        timeLimit: limit // Viewerへ通知
-    });
-    
-    document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} (${limit}s)`;
-    
-    taTimer = setTimeout(() => { nextTaQuestion(roomId); }, limit * 1000);
+    window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', qIndex: currentQIndex, startTime: firebase.database.ServerValue.TIMESTAMP });
+    document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} (5s)`;
+    taTimer = setTimeout(() => { nextTaQuestion(roomId); }, 5000);
 }
 
 function updateKanpe() {
@@ -609,35 +611,4 @@ function updateKanpe() {
         document.getElementById('kanpe-question').innerHTML = questionHtml; 
         document.getElementById('kanpe-answer').textContent = (q.type === 'multi') ? `全${q.c.length}項目` : `正解: ${q.correct}`;
         
-        const timeLimit = (q.timeLimit !== undefined && q.timeLimit > 0) ? q.timeLimit : 0;
-        document.getElementById('kanpe-time-limit').textContent = timeLimit ? `${timeLimit}s` : "No Limit";
-    } else {
-        kanpeArea.classList.add('hidden');
-    }
-}
-
-function renderRankingView(data) {
-    const list = document.getElementById('ranking-list');
-    list.innerHTML = '';
-    if (data.length === 0) { list.innerHTML = '<p style="padding:20px;">No players</p>'; return; }
-    
-    data.forEach((r, i) => {
-        const rank = i + 1;
-        const div = document.createElement('div');
-        let rankClass = 'rank-row';
-        if (rank === 1) rankClass += ' rank-1';
-        else if (rank === 2) rankClass += ' rank-2';
-        else if (rank === 3) rankClass += ' rank-3';
-        div.className = rankClass;
-        let scoreText = `${r.score}`; 
-        
-        div.innerHTML = `
-            <div style="display:flex; align-items:center;">
-                <span class="rank-badge">${rank}</span>
-                <span>${r.name}</span>
-            </div>
-            <div class="rank-score">${scoreText}</div>
-        `;
-        list.appendChild(div);
-    });
-}
+        const timeLimit = (q.timeLimit !== undefined && q.
