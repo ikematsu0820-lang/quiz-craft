@@ -142,18 +142,33 @@ function handleImageUpload(e) {
 }
 
 function resetGlobalSettings() {
-    document.getElementById('creator-set-layout').value = 'standard';
-    updateAlignUI('center');
+    // まずUIを初期値に
+    if(typeof setDefaultDesignUI === 'function') {
+        // host_design.js側を優先（あれば）
+        setDefaultDesignUI();
+    } else {
+        // 念のためのフォールバック（旧挙動）
+        document.getElementById('creator-set-layout').value = 'standard';
+        updateAlignUI('center');
+        document.getElementById('creator-special-mode').value = 'none';
+        document.getElementById('design-main-bg-color').value = "#222222";
+        document.getElementById('design-bg-image-data').value = "";
+        document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgNoImage;
+        document.getElementById('design-q-text').value = "#ffffff";
+        document.getElementById('design-q-bg').value = "#2c5066";
+        document.getElementById('design-q-border').value = "#ffffff";
+        document.getElementById('design-c-text').value = "#ffffff";
+        document.getElementById('design-c-bg').value = "#365c75";
+        document.getElementById('design-c-border').value = "#ffffff";
+    }
+
+    // Special Mode は Creator側の設定なのでここで初期化
     document.getElementById('creator-special-mode').value = 'none';
-    document.getElementById('design-main-bg-color').value = "#222222";
-    document.getElementById('design-bg-image-data').value = "";
-    document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgNoImage;
-    document.getElementById('design-q-text').value = "#ffffff";
-    document.getElementById('design-q-bg').value = "#2c5066";
-    document.getElementById('design-q-border').value = "#ffffff";
-    document.getElementById('design-c-text').value = "#ffffff";
-    document.getElementById('design-c-bg').value = "#365c75";
-    document.getElementById('design-c-border').value = "#ffffff";
+
+    // 保存済みのデザインがあれば読み込んで上書き
+    if(typeof window.loadDesignSettings === 'function') {
+        window.loadDesignSettings();
+    }
 }
 
 function updateAlignUI(align) {
