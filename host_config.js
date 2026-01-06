@@ -3,7 +3,7 @@ type: uploaded file
 fileName: host_config.js
 fullContent:
 /* =========================================================
- * host_config.js (v63: UI Fixes & Solo Mode)
+ * host_config.js (v64: Syntax Fix & Bulk UI Update)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -28,8 +28,11 @@ function enterConfigMode() {
         container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">セットを選択してください</p>';
     }
     
-    document.getElementById('config-program-title').value = '';
-    document.getElementById('config-final-ranking-chk').checked = true;
+    const titleInput = document.getElementById('config-program-title');
+    if(titleInput) titleInput.value = '';
+    
+    const rankChk = document.getElementById('config-final-ranking-chk');
+    if(rankChk) rankChk.checked = true;
 
     loadSetListInConfig();
     loadSavedProgramsInConfig();
@@ -61,7 +64,8 @@ function loadSetListInConfig() {
                 const firstQ = (item.questions && item.questions.length > 0) ? item.questions[0] : {};
                 const spMode = firstQ.specialMode || 'none';
                 
-                opt.value = JSON.stringify({ q: item.questions, c: item.config || {}, t: item.title, sp: spMode });
+                const valObj = { q: item.questions, c: item.config || {}, t: item.title, sp: spMode };
+                opt.value = JSON.stringify(valObj);
                 opt.textContent = `${item.title} [${typeLabel}]` + (spMode !== 'none' ? ` (${spMode})` : '');
                 select.appendChild(opt);
             });
@@ -87,36 +91,29 @@ function updateBuilderUI() {
     const config = setData.c || {};
     const spMode = setData.sp || 'none';
     
-    // 形式チェック
     const firstQ = selectedSetQuestions.length > 0 ? selectedSetQuestions[0] : {};
     const qType = firstQ.type;
 
-    // 「口頭」なら一斉回答を禁止にする（早押し強制）
     if (qType === 'free_oral' && config.mode === 'normal') {
         config.mode = 'buzz'; 
     }
 
     let html = '';
 
-    // 1. 回答モード (動的生成)
+    // 1. 回答モード
     html += `<div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>`;
     html += `<div class="config-item-box">`;
     
     html += `<select id="config-mode-select" class="btn-block config-select highlight-select">`;
     
-    // 通常モード (口頭以外で表示)
     if (qType !== 'free_oral') {
         html += `<option value="normal" ${config.mode === 'normal' ? 'selected' : ''}>${APP_TEXT.Config.ModeNormal}</option>`;
     }
     
-    // 一人挑戦 (常時表示)
     html += `<option value="solo" ${config.mode === 'solo' ? 'selected' : ''}>一人挑戦 (Solo Challenge)</option>`;
-
-    // 早押し・順番 (常時表示)
     html += `<option value="buzz" ${config.mode === 'buzz' ? 'selected' : ''}>${APP_TEXT.Config.ModeBuzz}</option>`;
     html += `<option value="turn" ${config.mode === 'turn' ? 'selected' : ''}>${APP_TEXT.Config.ModeTurn}</option>`;
     
-    // タイムショック固定 (口頭以外で表示)
     if (qType !== 'free_oral') {
         html += `<option value="time_attack" ${config.mode === 'time_attack' ? 'selected' : ''} style="color:red;">★タイムショック (固定)</option>`;
     }
@@ -128,7 +125,7 @@ function updateBuilderUI() {
 
     html += `<p id="config-mode-locked-msg" class="hidden" style="color:#d00; font-size:0.8em; margin-top:5px; font-weight:bold;">${APP_TEXT.Config.MsgLockedMode}</p>`;
 
-    // --- 詳細設定エリア ---
+    // 詳細設定エリア
     html += `
         <div id="mode-details-normal" class="mode-details hidden" style="margin-top:15px;">
             <label class="config-label">${APP_TEXT.Config.LabelNormalLimit}</label>
@@ -209,7 +206,7 @@ function updateBuilderUI() {
         </div>
     </div>`;
 
-    // 2. ルール設定 (ゲームタイプ & 勝利条件)
+    // 2. ルール設定
     html += `<div id="config-rule-section">`;
     html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
     
@@ -235,38 +232,38 @@ function updateBuilderUI() {
         </div>
     </div>`;
 
-    // ★修正: 一括設定エリア（スリム化・一括ボタン統合）
+    // 3. 一括設定エリア（スリム化）
     html += `
     <div class="config-item-box">
         <h5 style="margin:0 0 10px 0;">${APP_TEXT.Config.HeadingCustomScore}</h5>
         
         <div style="background:#f0f4f8; padding:10px; border-radius:5px; border:1px solid #ccc; margin-bottom:10px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:5px;">
-                <div style="flex:1;">
-                    <label style="font-size:0.8em; color:#333; font-weight:bold; display:block;">制限時間</label>
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; margin-bottom:10px;">
+                <div style="text-align:center;">
+                    <label style="font-size:0.8em; color:#333; font-weight:bold; display:block; margin-bottom:3px;">制限時間</label>
                     <div style="display:flex; align-items:center; gap:5px;">
-                        <input type="number" id="config-bulk-time-input" placeholder="0" min="0" style="width:60px; padding:5px; text-align:center;">
-                        <label style="font-size:0.8em; cursor:pointer; white-space:nowrap;">
+                        <input type="number" id="config-bulk-time-input" placeholder="0" min="0" style="width:60px; padding:5px; text-align:center; border:1px solid #ccc; border-radius:4px;">
+                        <label style="font-size:0.8em; cursor:pointer; white-space:nowrap; display:flex; align-items:center;">
                             <input type="checkbox" id="config-bulk-time-unlimited"> 無制限
                         </label>
                     </div>
                 </div>
-                <div style="flex:1;">
-                    <label style="font-size:0.8em; color:#0055ff; font-weight:bold; display:block;">得点</label>
-                    <input type="number" id="config-bulk-point-input" placeholder="1" min="1" style="width:60px; padding:5px; text-align:center;">
+                <div style="text-align:center;">
+                    <label style="font-size:0.8em; color:#0055ff; font-weight:bold; display:block; margin-bottom:3px;">得点</label>
+                    <input type="number" id="config-bulk-point-input" placeholder="1" min="1" style="width:60px; padding:5px; text-align:center; border:1px solid #ccc; border-radius:4px;">
                 </div>
-                <div style="flex:1;">
-                    <label style="font-size:0.8em; color:#d00; font-weight:bold; display:block;">失点</label>
-                    <input type="number" id="config-bulk-loss-input" placeholder="0" min="0" style="width:60px; padding:5px; text-align:center;">
+                <div style="text-align:center;">
+                    <label style="font-size:0.8em; color:#d00; font-weight:bold; display:block; margin-bottom:3px;">失点</label>
+                    <input type="number" id="config-bulk-loss-input" placeholder="0" min="0" style="width:60px; padding:5px; text-align:center; border:1px solid #ccc; border-radius:4px;">
                 </div>
             </div>
-            <button id="config-bulk-reflect-btn" class="btn-mini btn-block" style="background:#333; color:white; padding:8px; font-weight:bold;">一括反映</button>
+            <button id="config-bulk-reflect-btn" class="btn-block" style="background:#333; color:white; padding:8px; font-weight:bold; border-radius:4px; font-size:0.9em;">一括反映</button>
         </div>
 
         <div id="config-questions-list" style="font-size:0.9em; max-height:300px; overflow-y:auto; border:1px solid #eee; padding:5px;"></div>
     </div>`;
 
-    // 脱落条件
+    // 4. 脱落条件
     html += `
     <div class="config-item-box">
         <label class="config-label-large">${APP_TEXT.Config.LabelElim}</label>
@@ -288,17 +285,18 @@ function updateBuilderUI() {
 
     container.innerHTML = html;
 
-    // イベントリスナー
+    // イベントリスナー設定
     const modeSel = document.getElementById('config-mode-select');
     if(modeSel) modeSel.addEventListener('change', (e) => updateModeDetails(e.target.value));
     
-    // ソロモードのスタイル変更検知
     const soloStyleSel = document.getElementById('config-solo-style');
     if(soloStyleSel) {
         soloStyleSel.addEventListener('change', (e) => {
             const autoSettings = document.getElementById('config-solo-auto-settings');
-            if(e.target.value === 'auto') autoSettings.classList.remove('hidden');
-            else autoSettings.classList.add('hidden');
+            if(autoSettings) {
+                if(e.target.value === 'auto') autoSettings.classList.remove('hidden');
+                else autoSettings.classList.add('hidden');
+            }
         });
     }
 
@@ -311,10 +309,10 @@ function updateBuilderUI() {
     if(gameTypeSel) {
         gameTypeSel.addEventListener('change', (e) => {
             const val = e.target.value;
-            // レースの場合、強制的にスコア勝利
             if (val === 'race') {
                 if(winCondSel) winCondSel.value = 'score';
-                document.getElementById('config-win-target-area')?.classList.remove('hidden');
+                const area = document.getElementById('config-win-target-area');
+                if(area) area.classList.remove('hidden');
             }
         });
     }
@@ -323,34 +321,39 @@ function updateBuilderUI() {
         winCondSel.addEventListener('change', (e) => {
             const val = e.target.value;
             const targetArea = document.getElementById('config-win-target-area');
-            if (val === 'score') targetArea?.classList.remove('hidden');
-            else targetArea?.classList.add('hidden');
+            if(targetArea) {
+                if (val === 'score') targetArea.classList.remove('hidden');
+                else targetArea.classList.add('hidden');
+            }
         });
     }
     
     const addBtn = document.getElementById('config-add-playlist-btn');
     if(addBtn) addBtn.addEventListener('click', addPeriodToPlaylist);
 
-    // ★修正: 一括反映ロジック
-    document.getElementById('config-bulk-reflect-btn')?.addEventListener('click', () => {
-        const timeVal = document.getElementById('config-bulk-time-input').value;
-        const ptVal = document.getElementById('config-bulk-point-input').value;
-        const lossVal = document.getElementById('config-bulk-loss-input').value;
-        const isUnlimited = document.getElementById('config-bulk-time-unlimited').checked;
+    // 一括反映処理
+    const reflectBtn = document.getElementById('config-bulk-reflect-btn');
+    if(reflectBtn) {
+        reflectBtn.addEventListener('click', () => {
+            const timeVal = document.getElementById('config-bulk-time-input').value;
+            const ptVal = document.getElementById('config-bulk-point-input').value;
+            const lossVal = document.getElementById('config-bulk-loss-input').value;
+            const isUnlimited = document.getElementById('config-bulk-time-unlimited').checked;
 
-        if (isUnlimited || timeVal !== '') {
-            const applyTime = isUnlimited ? 0 : parseInt(timeVal);
-            document.querySelectorAll('.q-time-input').forEach(inp => inp.value = applyTime);
-        }
-        if (ptVal !== '') {
-            document.querySelectorAll('.q-point-input').forEach(inp => inp.value = ptVal);
-        }
-        if (lossVal !== '') {
-            document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = lossVal);
-        }
-    });
+            if (isUnlimited || timeVal !== '') {
+                const applyTime = isUnlimited ? 0 : parseInt(timeVal);
+                document.querySelectorAll('.q-time-input').forEach(inp => inp.value = applyTime);
+            }
+            if (ptVal !== '') {
+                document.querySelectorAll('.q-point-input').forEach(inp => inp.value = ptVal);
+            }
+            if (lossVal !== '') {
+                document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = lossVal);
+            }
+        });
+    }
     
-    // 無制限チェック時の挙動
+    // 無制限チェックボックス制御
     const unlimitedChk = document.getElementById('config-bulk-time-unlimited');
     const timeInput = document.getElementById('config-bulk-time-input');
     if(unlimitedChk && timeInput) {
@@ -366,7 +369,6 @@ function updateBuilderUI() {
         });
     }
 
-    // 初期化実行
     if(modeSel) updateModeDetails(modeSel.value);
     
     updateEliminationUI();
@@ -412,7 +414,7 @@ function applySpecialModeLock(spMode) {
         modeSelect.value = 'time_attack';
         modeSelect.disabled = true;
         lockMsg.classList.remove('hidden');
-        ruleSec.style.display = 'none'; 
+        if(ruleSec) ruleSec.style.display = 'none'; 
         updateModeDetails('time_attack');
     } else if (spMode === 'panel_attack') {
         const gameType = document.getElementById('config-game-type');
@@ -434,7 +436,7 @@ function unlockConfig() {
     if(!modeSelect) return;
     modeSelect.disabled = false;
     lockMsg.classList.add('hidden');
-    ruleSec.style.display = 'block';
+    if(ruleSec) ruleSec.style.display = 'block';
     if(gameType) gameType.disabled = false;
     updateModeDetails(modeSelect.value);
 }
@@ -451,8 +453,10 @@ function updateModeDetails(mode) {
 function updateEliminationUI() {
     const rule = document.getElementById('config-elimination-rule').value;
     const countArea = document.getElementById('config-elimination-count-area');
-    if (rule === 'wrong_and_slowest') countArea?.classList.remove('hidden');
-    else countArea?.classList.add('hidden');
+    if(countArea) {
+        if (rule === 'wrong_and_slowest') countArea.classList.remove('hidden');
+        else countArea.classList.add('hidden');
+    }
 }
 
 function addPeriodToPlaylist() {
@@ -516,7 +520,8 @@ function addPeriodToPlaylist() {
     if (mode === 'time_attack') {
         taSeconds = parseInt(document.getElementById('config-ta-seconds').value) || 5;
     }
-    if (mode === 'solo' && document.getElementById('config-solo-style').value === 'auto') {
+    const soloStyle = document.getElementById('config-solo-style')?.value;
+    if (mode === 'solo' && soloStyle === 'auto') {
          taSeconds = parseInt(document.getElementById('config-solo-seconds').value) || 5;
     }
 
@@ -525,7 +530,7 @@ function addPeriodToPlaylist() {
         eliminationRule: document.getElementById('config-elimination-rule').value,
         eliminationCount: elimCount,
         lossPoint: 0, scoreUnit: 'point', theme: 'light',
-        timeLimit: (mode === 'time_attack' || (mode === 'solo' && document.getElementById('config-solo-style').value === 'auto')) ? taSeconds : 0, 
+        timeLimit: (mode === 'time_attack' || (mode === 'solo' && soloStyle === 'auto')) ? taSeconds : 0, 
         mode: mode,
         gameType: gameType,
         winCondition: winCond, 
@@ -537,7 +542,7 @@ function addPeriodToPlaylist() {
         turnOrder: document.getElementById('config-turn-order')?.value || 'fixed',
         turnPass: document.getElementById('config-turn-pass')?.value || 'ok',
         
-        soloStyle: document.getElementById('config-solo-style')?.value || 'manual',
+        soloStyle: soloStyle || 'manual',
 
         shuffleChoices: 'off',
         bombCount: 10,
@@ -694,7 +699,8 @@ function loadSavedProgramsInConfig() {
             loadBtn.onclick = () => {
                 if(confirm(APP_TEXT.Config.MsgConfirmLoadProg)) {
                     periodPlaylist = item.playlist || [];
-                    document.getElementById('config-final-ranking-chk').checked = (item.finalRanking !== false);
+                    const rankChk = document.getElementById('config-final-ranking-chk');
+                    if(rankChk) rankChk.checked = (item.finalRanking !== false);
                     document.getElementById('config-program-title').value = item.title;
                     renderConfigPreview();
                     alert("Loaded.");
@@ -732,7 +738,9 @@ function saveProgramToCloud() {
         alert(APP_TEXT.Config.AlertNoTitle);
         return;
     }
-    const finalRanking = document.getElementById('config-final-ranking-chk').checked;
+    const rankChk = document.getElementById('config-final-ranking-chk');
+    const finalRanking = rankChk ? rankChk.checked : true;
+    
     const cleanPlaylist = JSON.parse(JSON.stringify(periodPlaylist));
     const saveObj = {
         title: title,
