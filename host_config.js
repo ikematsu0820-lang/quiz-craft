@@ -1,5 +1,9 @@
+{
+type: uploaded file
+fileName: host_config.js
+fullContent:
 /* =========================================================
- * host_config.js (v60: Variable Time Attack)
+ * host_config.js (v61: Solo Mode Added)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -104,10 +108,14 @@ function updateBuilderUI() {
     if (qType !== 'free_oral') {
         html += `<option value="normal" ${config.mode === 'normal' ? 'selected' : ''}>${APP_TEXT.Config.ModeNormal}</option>`;
     }
+    // ★追加: 一人挑戦モード
+    html += `<option value="solo" ${config.mode === 'solo' ? 'selected' : ''}>一人挑戦 (Solo Challenge)</option>`;
+
     html += `<option value="buzz" ${config.mode === 'buzz' ? 'selected' : ''}>${APP_TEXT.Config.ModeBuzz}</option>`;
     html += `<option value="turn" ${config.mode === 'turn' ? 'selected' : ''}>${APP_TEXT.Config.ModeTurn}</option>`;
+    
     if (qType !== 'free_oral') {
-        html += `<option value="time_attack" ${config.mode === 'time_attack' ? 'selected' : ''} style="color:red;">${APP_TEXT.Config.ModeTimeAttack}</option>`;
+        html += `<option value="time_attack" ${config.mode === 'time_attack' ? 'selected' : ''} style="color:red;">★タイムショック (固定)</option>`;
     }
     html += `</select>`;
     
@@ -131,6 +139,22 @@ function updateBuilderUI() {
                     <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
                     <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
                 </select>
+            </div>
+        </div>
+
+        <div id="mode-details-solo" class="mode-details hidden" style="margin-top:15px; background:#f0f8ff; padding:10px; border-radius:5px; border:1px solid #add8e6;">
+            <label class="config-label">進行スタイル (Progression)</label>
+            <select id="config-solo-style" class="btn-block config-select" style="margin-bottom:10px;">
+                <option value="manual">手動進行 (自分のペース)</option>
+                <option value="auto">自動進行 (タイムショック風)</option>
+            </select>
+            
+            <div id="config-solo-auto-settings" class="hidden" style="margin-top:10px; border-top:1px dashed #99c; padding-top:10px;">
+                <label class="config-label">1問あたりの制限時間 (秒)</label>
+                <input type="number" id="config-solo-seconds" value="5" min="1" max="60" class="btn-block" style="font-size:1.2em; text-align:center; font-weight:bold;">
+                <p style="font-size:0.8em; margin:5px 0 0 0; color:#0055ff;">
+                    ※時間切れで次へ進みます
+                </p>
             </div>
         </div>
 
@@ -265,6 +289,16 @@ function updateBuilderUI() {
     const modeSel = document.getElementById('config-mode-select');
     if(modeSel) modeSel.addEventListener('change', (e) => updateModeDetails(e.target.value));
     
+    // ★追加: ソロモードのスタイル変更検知
+    const soloStyleSel = document.getElementById('config-solo-style');
+    if(soloStyleSel) {
+        soloStyleSel.addEventListener('change', (e) => {
+            const autoSettings = document.getElementById('config-solo-auto-settings');
+            if(e.target.value === 'auto') autoSettings.classList.remove('hidden');
+            else autoSettings.classList.add('hidden');
+        });
+    }
+
     const elimSel = document.getElementById('config-elimination-rule');
     if(elimSel) elimSel.addEventListener('change', updateEliminationUI);
     
@@ -386,6 +420,7 @@ function updateModeDetails(mode) {
     else if (mode === 'buzz') document.getElementById('mode-details-buzz')?.classList.remove('hidden');
     else if (mode === 'turn') document.getElementById('mode-details-turn')?.classList.remove('hidden');
     else if (mode === 'time_attack') document.getElementById('mode-details-time_attack')?.classList.remove('hidden');
+    else if (mode === 'solo') document.getElementById('mode-details-solo')?.classList.remove('hidden'); // ★追加
 }
 
 function updateEliminationUI() {
@@ -452,10 +487,14 @@ function addPeriodToPlaylist() {
         }
     }
     
-    // ★修正: タイムアタック秒数を取得
+    // タイムアタック秒数を取得
     let taSeconds = 5;
     if (mode === 'time_attack') {
         taSeconds = parseInt(document.getElementById('config-ta-seconds').value) || 5;
+    }
+    // ★追加: ソロモード（自動）の場合の秒数
+    if (mode === 'solo' && document.getElementById('config-solo-style').value === 'auto') {
+         taSeconds = parseInt(document.getElementById('config-solo-seconds').value) || 5;
     }
 
     const newConfig = {
@@ -463,7 +502,7 @@ function addPeriodToPlaylist() {
         eliminationRule: document.getElementById('config-elimination-rule').value,
         eliminationCount: elimCount,
         lossPoint: 0, scoreUnit: 'point', theme: 'light',
-        timeLimit: (mode === 'time_attack') ? taSeconds : 0, 
+        timeLimit: (mode === 'time_attack' || (mode === 'solo' && document.getElementById('config-solo-style').value === 'auto')) ? taSeconds : 0, 
         mode: mode,
         gameType: gameType,
         winCondition: winCond, 
@@ -475,6 +514,9 @@ function addPeriodToPlaylist() {
         turnOrder: document.getElementById('config-turn-order')?.value || 'fixed',
         turnPass: document.getElementById('config-turn-pass')?.value || 'ok',
         
+        // ★追加: ソロモードのスタイル
+        soloStyle: document.getElementById('config-solo-style')?.value || 'manual',
+
         shuffleChoices: 'off',
         bombCount: 10,
         bombTarget: 'bomb1'
@@ -541,8 +583,9 @@ function renderConfigPreview() {
         div.style.marginBottom = "0"; 
         
         let modeLabel = item.config.mode.toUpperCase();
-        // ★修正: タイムショックなら秒数も表示
         if(item.config.mode === 'time_attack') modeLabel += ` (${item.config.timeLimit}s)`;
+        // ★追加: ソロモードのラベル表示
+        if(item.config.mode === 'solo') modeLabel += ` [${item.config.soloStyle === 'auto' ? 'Auto ' + item.config.timeLimit + 's' : 'Manual'}]`;
 
         if(item.config.gameType === 'territory') modeLabel += " (PANEL)";
         if(item.config.gameType === 'race') modeLabel += " (RACE)";
@@ -685,4 +728,6 @@ function saveProgramToCloud() {
         loadSavedProgramsInConfig(); 
     })
     .catch(err => alert("Error: " + err.message));
+}
+
 }
