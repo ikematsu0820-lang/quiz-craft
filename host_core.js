@@ -1,5 +1,5 @@
 /* =========================================================
- * host_core.js (v57: Bootloader)
+ * host_core.js (v60: Nav Fix - Header buttons + Viewer back to Dashboard)
  * =======================================================*/
 
 // グローバル変数
@@ -16,214 +16,227 @@ let currentQIndex = 0;
 // 画面管理
 window.views = {};
 
-window.showView = function(targetView) {
-    // 全てのビューを隠す
-    Object.values(window.views).forEach(v => {
-        if(v) v.classList.add('hidden');
-    });
-    // ターゲットだけ表示
-    if(targetView) {
-        targetView.classList.remove('hidden');
-    }
+window.showView = function (targetView) {
+  Object.values(window.views).forEach((v) => {
+    if (v) v.classList.add("hidden");
+  });
+  if (targetView) targetView.classList.remove("hidden");
 };
 
-window.applyTextConfig = function() {
-    if(typeof APP_TEXT === 'undefined') return;
-    
-    document.querySelectorAll('[data-text]').forEach(el => {
-        const keys = el.getAttribute('data-text').split('.');
-        let val = APP_TEXT;
-        keys.forEach(k => { if(val) val = val[k]; });
-        if(val) el.textContent = val;
-    });
+window.applyTextConfig = function () {
+  if (typeof APP_TEXT === "undefined") return;
 
-    const phMap = {
-        'show-id-input': APP_TEXT.Login.Placeholder,
-        'quiz-set-title': APP_TEXT.Creator.PlaceholderSetName,
-        'question-text': APP_TEXT.Creator.PlaceholderQ,
-        'config-program-title': APP_TEXT.Config.PlaceholderProgName,
-        'room-code-input': APP_TEXT.Player.PlaceholderCode,
-        'player-name-input': APP_TEXT.Player.PlaceholderName,
-        'viewer-room-code': APP_TEXT.Player.PlaceholderCode 
-    };
-    for(let id in phMap) {
-        const el = document.getElementById(id);
-        if(el) el.placeholder = phMap[id];
-    }
+  document.querySelectorAll("[data-text]").forEach((el) => {
+    const keys = el.getAttribute("data-text").split(".");
+    let val = APP_TEXT;
+    keys.forEach((k) => {
+      if (val) val = val[k];
+    });
+    if (val) el.textContent = val;
+  });
+
+  const phMap = {
+    "show-id-input": APP_TEXT.Login.Placeholder,
+    "quiz-set-title": APP_TEXT.Creator.PlaceholderSetName,
+    "question-text": APP_TEXT.Creator.PlaceholderQ,
+    "config-program-title": APP_TEXT.Config.PlaceholderProgName,
+    "room-code-input": APP_TEXT.Player.PlaceholderCode,
+    "player-name-input": APP_TEXT.Player.PlaceholderName,
+    "viewer-room-code": APP_TEXT.Player.PlaceholderCode,
+  };
+
+  for (let id in phMap) {
+    const el = document.getElementById(id);
+    if (el) el.placeholder = phMap[id];
+  }
 };
-
-// 起動時処理
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. テキスト適用
-    window.applyTextConfig();
-
-    // 2. ビューの登録
-    window.views = {
-        main: document.getElementById('main-view'),
-        hostLogin: document.getElementById('host-login-view'),
-        dashboard: document.getElementById('host-dashboard-view'),
-        creator: document.getElementById('creator-view'),
-        config: document.getElementById('config-view'),
-        hostControl: document.getElementById('host-control-view'),
-        ranking: document.getElementById('ranking-view'),
-        respondent: document.getElementById('respondent-view'),
-        playerGame: document.getElementById('player-game-view'),
-        viewerLogin: document.getElementById('viewer-login-view'), 
-        viewerMain: document.getElementById('viewer-main-view') 
-    };
-
-    // 3. 初期表示 (メインメニュー以外を隠す)
-    // style_common.cssで .view {display:block} になっているので、
-    // ここで明示的に main 以外を hidden にする
-    Object.values(window.views).forEach(v => {
-        if(v && v.id !== 'main-view') v.classList.add('hidden');
-    });
-
-    // 4. イベントリスナー登録
-    const hostBtn = document.getElementById('main-host-btn');
-    if(hostBtn) hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
-
-    const playerBtn = document.getElementById('main-player-btn');
-    if(playerBtn) playerBtn.addEventListener('click', () => window.showView(window.views.respondent));
-
-    const loginBtn = document.getElementById('host-login-submit-btn');
-    if(loginBtn) {
-        loginBtn.addEventListener('click', () => {
-            const input = document.getElementById('show-id-input').value.trim().toUpperCase();
-            if(!input) { alert(APP_TEXT.Login.AlertEmpty); return; }
-            if(!/^[A-Z0-9_-]+$/.test(input)) { alert(APP_TEXT.Login.AlertError); return; }
-            currentShowId = input;
-            enterDashboard();
-        });
-    }
-
-    // 戻るボタン共通
-    document.querySelectorAll('.back-to-main').forEach(btn => {
-        if (btn.closest('#viewer-login-view') || btn.closest('#host-dashboard-view')) {
-            // ログアウト等の扱い
-            btn.addEventListener('click', () => window.showView(window.views.main));
-        } else if (btn.classList.contains('header-back-btn')) {
-            // ダッシュボードに戻る系
-            btn.addEventListener('click', () => enterDashboard());
-        } else {
-            btn.addEventListener('click', () => window.showView(window.views.main));
-        }
-    });
-
-    // 各機能への遷移
-    const createBtn = document.getElementById('dash-create-btn');
-    if(createBtn) createBtn.addEventListener('click', () => {
-        if(typeof window.initCreatorMode === 'function') window.initCreatorMode();
-    });
-
-    const configBtn = document.getElementById('dash-config-btn');
-    if(configBtn) {
-        configBtn.addEventListener('click', () => {
-            periodPlaylist = [];
-            if(typeof enterConfigMode === 'function') enterConfigMode();
-        });
-    }
-
-    // ★修正: startRoom を直渡ししない（未定義で落ちるのを防ぐ）
-    const studioBtn = document.getElementById('dash-studio-btn');
-    if(studioBtn) {
-        studioBtn.addEventListener('click', () => {
-            if (typeof startRoom === 'function') startRoom();
-            else alert('startRoom が未読み込みです（host_studio.js の読み込み順を確認）');
-        });
-    }
-
-    const dashViewerBtn = document.getElementById('dash-viewer-btn');
-    if(dashViewerBtn) dashViewerBtn.addEventListener('click', () => window.showView(window.views.viewerLogin));
-
-    // 保存・追加ボタン等のリスナー
-    const addQBtn = document.getElementById('add-question-btn');
-    if(addQBtn) addQBtn.addEventListener('click', addQuestion);
-    
-    const saveBtn = document.getElementById('save-to-cloud-btn');
-    if(saveBtn) saveBtn.addEventListener('click', saveToCloud);
-
-    const configAddBtn = document.getElementById('config-add-playlist-btn');
-    if(configAddBtn) configAddBtn.addEventListener('click', addPeriodToPlaylist);
-
-    const configSaveProgBtn = document.getElementById('config-save-program-btn');
-    if(configSaveProgBtn) configSaveProgBtn.addEventListener('click', saveProgramToCloud);
-
-    // ★修正: ここも同様に遅延呼び出し
-    const configGoStudioBtn = document.getElementById('config-go-studio-btn');
-    if(configGoStudioBtn) {
-        configGoStudioBtn.addEventListener('click', () => {
-            if (typeof startRoom === 'function') startRoom();
-            else alert('startRoom が未読み込みです（host_studio.js の読み込み順を確認）');
-        });
-    }
-});
 
 function enterDashboard() {
-    window.showView(window.views.dashboard);
-    document.getElementById('dashboard-show-id').textContent = currentShowId;
-    loadSavedSets();
+  if (!currentShowId) {
+    window.showView(window.views.hostLogin);
+    return;
+  }
+  const disp = document.getElementById("dashboard-show-id");
+  if (disp) disp.textContent = currentShowId;
+
+  // セット一覧の描画など（host_creator / host_config 側に任せる）
+  if (typeof window.loadSavedSetsForDashboard === "function") {
+    window.loadSavedSetsForDashboard();
+  }
+
+  window.showView(window.views.dashboard);
 }
 
-function loadSavedSets() {
-    const listEl = document.getElementById('dash-set-list');
-    listEl.innerHTML = `<p style="text-align:center;">${APP_TEXT.Config.SelectLoading}</p>`;
+function bindNavButtons() {
+  // 右上のヘッダーボタン（ホーム/ログアウト/ダッシュボード等）を全部まとめて処理
+  document.querySelectorAll(".header-back-btn").forEach((btn) => {
+    // 2重登録防止
+    if (btn.dataset.navBound === "1") return;
+    btn.dataset.navBound = "1";
 
-    window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
-        const data = snap.val();
-        listEl.innerHTML = '';
-        if(!data) {
-            listEl.innerHTML = `<p style="text-align:center; color:#999;">${APP_TEXT.Config.SelectEmpty}</p>`;
-            return;
-        }
-        Object.keys(data).forEach(key => {
-            const item = data[key];
-            const div = document.createElement('div');
-            div.className = 'set-item';
-            
-            // 問題形式の表示ラベル
-            let typeLabel = "Mix";
-            if (item.questions && item.questions.length > 0) {
-                const type = item.questions[0].type;
-                if (type === 'choice') typeLabel = APP_TEXT.Creator.TypeChoice;
-                else if (type === 'sort') typeLabel = APP_TEXT.Creator.TypeSort;
-                else if (type === 'free_oral') typeLabel = APP_TEXT.Creator.TypeFreeOral;
-                else if (type === 'free_written') typeLabel = APP_TEXT.Creator.TypeFreeWritten;
-                else if (type === 'multi') typeLabel = APP_TEXT.Creator.TypeMulti;
-            }
+    btn.addEventListener("click", () => {
+      // 1) Dashboardの「ログアウト」= メインへ
+      if (btn.closest("#host-dashboard-view")) {
+        currentShowId = null;
+        currentRoomId = null;
+        window.showView(window.views.main);
+        return;
+      }
 
-            div.innerHTML = `
-                <div>
-                    <span style="font-weight:bold;">${item.title}</span> <span style="font-size:0.8em; color:#0055ff;">[${typeLabel}]</span>
-                    <div style="font-size:0.8em; color:#666;">
-                        ${new Date(item.createdAt).toLocaleDateString()} / ${item.questions.length}Q
-                    </div>
-                </div>
-            `;
-            const btnArea = document.createElement('div');
-            btnArea.style.display = 'flex';
-            btnArea.style.gap = '5px';
+      // 2) Hostログイン画面の「ホーム」= メインへ
+      if (btn.closest("#host-login-view")) {
+        window.showView(window.views.main);
+        return;
+      }
 
-            const editBtn = document.createElement('button');
-            editBtn.textContent = "Edit";
-            editBtn.className = 'btn-mini';
-            editBtn.style.backgroundColor = '#2c3e50';
-            editBtn.style.color = 'white';
-            editBtn.onclick = () => loadSetForEditing(key, item);
+      // 3) Player入口の「ホーム」= メインへ
+      if (btn.closest("#respondent-view")) {
+        window.showView(window.views.main);
+        return;
+      }
 
-            const delBtn = document.createElement('button');
-            delBtn.className = 'delete-btn';
-            delBtn.textContent = "Del";
-            delBtn.onclick = () => {
-                if(confirm(APP_TEXT.Dashboard.DeleteConfirm)) {
-                    window.db.ref(`saved_sets/${currentShowId}/${key}`).remove();
-                    div.remove();
-                }
-            };
-            btnArea.appendChild(editBtn);
-            btnArea.appendChild(delBtn);
-            div.appendChild(btnArea);
-            listEl.appendChild(div);
-        });
+      // 4) Viewer(モニター)接続画面：
+      //    ここは「ダッシュボードに統一」したいので、showIdがあればダッシュボードへ
+      //    showIdが無ければメインへ
+      if (btn.closest("#viewer-login-view")) {
+        if (currentShowId) enterDashboard();
+        else window.showView(window.views.main);
+        return;
+      }
+
+      // 5) それ以外（Creator/Config/Studioなど）は基本ダッシュボードへ
+      enterDashboard();
+    });
+  });
+
+  // back-to-main だけ付いてる古いボタンが万一あっても動くように保険
+  document.querySelectorAll(".back-to-main").forEach((btn) => {
+    if (btn.dataset.backMainBound === "1") return;
+    btn.dataset.backMainBound = "1";
+    btn.addEventListener("click", () => window.showView(window.views.main));
+  });
+}
+
+function startRoom() {
+  if (!currentShowId) {
+    alert("Show IDが未設定です。ログインし直してください。");
+    window.showView(window.views.hostLogin);
+    return;
+  }
+
+  // ルームID自動生成（6桁）
+  currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  // Studio 画面へ
+  window.showView(window.views.hostControl);
+
+  // 表示更新
+  const roomEl = document.getElementById("host-room-id");
+  if (roomEl) roomEl.textContent = currentRoomId;
+  const showEl = document.getElementById("studio-show-id");
+  if (showEl) showEl.textContent = currentShowId;
+
+  // Firebaseの rooms が初期化される前に studio 側が読みに行くと事故るので
+  // 先に最低限の初期データを作ってから、studio 側の監視を開始
+  if (!window.db) {
+    alert("Firebaseが初期化されていません");
+    return;
+  }
+
+  const roomRef = window.db.ref(`rooms/${currentRoomId}`);
+
+  const baseInit = {
+    showId: currentShowId,
+    createdAt: firebase.database.ServerValue.TIMESTAMP,
+    status: { step: "lobby", qIndex: 0 },
+    players: {},
+    config: {},
+    questions: [],
+  };
+
+  roomRef
+    .set(baseInit)
+    .then(() => {
+      // studio の各種リスナー開始（host_studio.js 側の想定）
+      if (typeof window.initStudioListeners === "function") {
+        window.initStudioListeners(currentRoomId);
+      }
+    })
+    .catch((e) => {
+      console.error(e);
+      alert("ルーム作成に失敗しました");
     });
 }
+
+// 起動時処理
+document.addEventListener("DOMContentLoaded", () => {
+  // 1. テキスト適用
+  window.applyTextConfig();
+
+  // 2. ビューの登録
+  window.views = {
+    main: document.getElementById("main-view"),
+    hostLogin: document.getElementById("host-login-view"),
+    dashboard: document.getElementById("host-dashboard-view"),
+    creator: document.getElementById("creator-view"),
+    config: document.getElementById("config-view"),
+    hostControl: document.getElementById("host-control-view"),
+    ranking: document.getElementById("ranking-view"),
+    respondent: document.getElementById("respondent-view"),
+    playerGame: document.getElementById("player-game-view"),
+    viewerLogin: document.getElementById("viewer-login-view"),
+    viewerMain: document.getElementById("viewer-main-view"),
+  };
+
+  // 3. 初期表示（main以外を隠す）
+  Object.values(window.views).forEach((v) => {
+    if (v && v.id !== "main-view") v.classList.add("hidden");
+  });
+
+  // 4. ナビボタン登録（ここが今回の修正ポイント）
+  bindNavButtons();
+
+  // 5. メインメニュー
+  const hostBtn = document.getElementById("main-host-btn");
+  if (hostBtn) hostBtn.addEventListener("click", () => window.showView(window.views.hostLogin));
+
+  const playerBtn = document.getElementById("main-player-btn");
+  if (playerBtn) playerBtn.addEventListener("click", () => window.showView(window.views.respondent));
+
+  // 6. Hostログイン
+  const loginBtn = document.getElementById("host-login-submit-btn");
+  if (loginBtn) {
+    loginBtn.addEventListener("click", () => {
+      const input = document.getElementById("show-id-input").value.trim().toUpperCase();
+      if (!input) {
+        alert(APP_TEXT.Login.AlertEmpty);
+        return;
+      }
+      if (!/^[A-Z0-9_-]+$/.test(input)) {
+        alert(APP_TEXT.Login.AlertError);
+        return;
+      }
+      currentShowId = input;
+      enterDashboard();
+    });
+  }
+
+  // 7. Dashboard 各ボタン
+  const createBtn = document.getElementById("dash-create-btn");
+  if (createBtn) createBtn.addEventListener("click", () => typeof window.initCreatorMode === "function" && window.initCreatorMode());
+
+  const configBtn = document.getElementById("dash-config-btn");
+  if (configBtn) {
+    configBtn.addEventListener("click", () => {
+      periodPlaylist = [];
+      if (typeof window.enterConfigMode === "function") window.enterConfigMode();
+      else if (typeof enterConfigMode === "function") enterConfigMode();
+    });
+  }
+
+  const studioBtn = document.getElementById("dash-studio-btn");
+  if (studioBtn) studioBtn.addEventListener("click", startRoom);
+
+  const dashViewerBtn = document.getElementById("dash-viewer-btn");
+  if (dashViewerBtn) dashViewerBtn.addEventListener("click", () => window.showView(window.views.viewerLogin));
+});
