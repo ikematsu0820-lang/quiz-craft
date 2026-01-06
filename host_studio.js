@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v59-fix: Play Button Fixed)
+ * host_studio.js (v60: Time Attack Logic Update)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
@@ -175,7 +175,8 @@ window.playPeriod = function(index) {
     document.getElementById('host-multi-control-area').classList.add('hidden');
     document.getElementById('host-race-control-area').classList.add('hidden');
     
-    if (currentConfig.mode === 'time_attack') currentConfig.timeLimit = 5;
+    // Configから正しく制限時間を読み込む（TimeAttack以外でもセットされる可能性があるため）
+    // if (currentConfig.mode === 'time_attack') currentConfig.timeLimit = 5; // ★削除: Configの値を優先
 
     if (currentConfig.gameType === 'territory') {
         startPanelGame(currentRoomId);
@@ -555,9 +556,22 @@ function nextTaQuestion(roomId) {
         return;
     }
     updateKanpe();
-    window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', qIndex: currentQIndex, startTime: firebase.database.ServerValue.TIMESTAMP });
-    document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} (5s)`;
-    taTimer = setTimeout(() => { nextTaQuestion(roomId); }, 5000);
+    
+    // ★設定された秒数を取得（デフォルト5秒）
+    const limit = currentConfig.timeLimit || 5;
+    
+    // Firebase更新
+    window.db.ref(`rooms/${roomId}/status`).update({ 
+        step: 'question', 
+        qIndex: currentQIndex, 
+        startTime: firebase.database.ServerValue.TIMESTAMP,
+        timeLimit: limit // Viewerに何秒か伝える
+    });
+    
+    document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} (${limit}s)`;
+    
+    // 指定秒数後に次の問題へ
+    taTimer = setTimeout(() => { nextTaQuestion(roomId); }, limit * 1000);
 }
 
 function updateKanpe() {
