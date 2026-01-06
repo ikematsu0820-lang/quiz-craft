@@ -3,7 +3,7 @@ type: uploaded file
 fileName: host_studio.js
 fullContent:
 /* =========================================================
- * host_studio.js (v66: Syntax Fix & Solo Auto)
+ * host_studio.js (v67: Safe Fix)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
@@ -32,23 +32,19 @@ function startRoom() {
 function enterHostMode(roomId) {
     window.showView(window.views.hostControl);
     
-    // IDクリックでコピー
     const idLabel = document.getElementById('host-room-id');
     if (idLabel) {
         idLabel.textContent = roomId;
         idLabel.style.cursor = "pointer"; 
-        idLabel.title = "クリックしてコピー"; 
+        idLabel.title = "Click to Copy"; 
+        
         idLabel.onclick = () => {
-            // クリップボードAPIが使えるかチェック
-            if(navigator.clipboard && navigator.clipboard.writeText) {
+            if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(roomId).then(() => {
                     if(window.showToast) window.showToast("ID Copied: " + roomId);
-                    else alert("IDをコピーしました: " + roomId);
-                }).catch(err => {
-                    console.error("Copy failed", err);
-                });
+                    else alert("ID Copied: " + roomId);
+                }).catch(err => console.error(err));
             } else {
-                // 古い環境用フォールバックなど（今回は簡易アラート）
                 alert("Room ID: " + roomId);
             }
         };
@@ -585,15 +581,14 @@ function nextTaQuestion(roomId) {
         return;
     }
     updateKanpe();
-    const time = currentConfig.timeLimit || 5;
     window.db.ref(`rooms/${roomId}/status`).update({ 
         step: 'question', 
         qIndex: currentQIndex, 
         startTime: firebase.database.ServerValue.TIMESTAMP,
-        timeLimit: time 
+        timeLimit: currentConfig.timeLimit 
     });
-    document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} (${time}s)`;
-    taTimer = setTimeout(() => { nextTaQuestion(roomId); }, time * 1000);
+    document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} (${currentConfig.timeLimit}s)`;
+    taTimer = setTimeout(() => { nextTaQuestion(roomId); }, currentConfig.timeLimit * 1000);
 }
 
 function startSoloLoop(roomId) { currentQIndex = -1; nextSoloAutoQuestion(roomId); }
