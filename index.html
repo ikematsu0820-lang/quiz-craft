@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style_common.css?v=55">
-<link rel="stylesheet" href="style_host.css?v=56">
+<link rel="stylesheet" href="style_common.css?v=57">
+<link rel="stylesheet" href="style_host.css?v=58">
 <link rel="stylesheet" href="style_player.css?v=55">
 <link rel="stylesheet" href="style_viewer.css?v=55">
 </head>
@@ -154,12 +154,10 @@
     <hr>
     <div style="background:#f0f8ff; padding:15px; border:2px solid #87ceeb; border-radius:8px; margin-bottom:20px;">
         <h3 style="margin:0 0 10px 0; color:#0055ff; font-size:1.1em; text-align:center;" data-text="Config.HeadingAdd">Add Period</h3>
-        
         <div style="margin-bottom:15px;">
             <label class="config-label-large" data-text="Config.LabelSet">Set</label>
             <select id="config-set-select" class="btn-block config-select" style="font-size:1.1em;"></select>
         </div>
-        
         <div id="config-builder-ui"></div>
     </div>
     
@@ -221,6 +219,11 @@
     <div id="host-multi-control-area" class="hidden" style="margin-bottom:15px; background:#fffbe6; padding:10px; border:1px solid #e6b800;">
         <h5 style="margin:0 0 5px 0;" data-text="Studio.LabelMultiControl">Multi Answer Control</h5>
         <div id="host-multi-grid" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:5px;"></div>
+    </div>
+    
+    <div id="host-race-control-area" class="hidden" style="margin-bottom:15px; background:#fff5e6; padding:10px; border:1px solid #ff9800;">
+        <h5 style="margin:0 0 5px 0;" data-text="Studio.LabelRaceControl">Race Control</h5>
+        <div id="host-race-monitor" class="race-container"></div>
     </div>
 
     <div id="studio-timeline-area">
@@ -335,6 +338,9 @@
         <div id="viewer-panel-grid" class="hidden"></div>
         <div id="viewer-bomb-grid" class="hidden"></div>
         <div id="viewer-multi-grid" class="hidden"></div>
+        
+        <div id="viewer-race-area" class="hidden race-container" style="margin-top:20px; border-color:#fff;"></div>
+        
         <div id="viewer-sub-text"></div>
         <div id="viewer-ranking-area"></div>
     </div>
@@ -343,13 +349,13 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=57"></script>
-<script src="host_core.js?v=57"></script>
-<script src="host_creator.js?v=57"></script>
-<script src="host_config.js?v=57"></script>
-<script src="host_studio.js?v=57"></script>
+<script src="text_config.js?v=58"></script>
+<script src="host_core.js?v=58"></script>
+<script src="host_creator.js?v=58"></script>
+<script src="host_config.js?v=58"></script>
+<script src="host_studio.js?v=58"></script>
 <script src="player.js?v=54"></script>
-<script src="viewer.js?v=54"></script>
+<script src="viewer.js?v=58"></script>
 
 </body>
 </html>
