@@ -1,62 +1,65 @@
 /* =========================================================
- * style_common.css (v57: Base Styles)
+ * style_common.css (v58: Modern Dark Theme)
  * =======================================================*/
 
 body {
     font-family: "Helvetica Neue", Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
-    color: #333;
-    user-select: none; /* スマホでの誤選択防止 */
+    /* 背景を深いダークグレーに */
+    background-color: #121212;
+    color: #e0e0e0;
+    user-select: none;
 }
 
 /* 画面切り替えの基本 */
 .view {
-    display: block; /* デフォルトは表示 */
+    display: block;
     padding: 20px;
     box-sizing: border-box;
     max-width: 600px;
     margin: 0 auto;
     min-height: 100vh;
-    background: #fff;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    /* カードのような浮き上がり感 */
+    background: #1e1e1e;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    border-left: 1px solid #333;
+    border-right: 1px solid #333;
 }
 
-/* 明示的に隠すクラス */
-.hidden {
-    display: none !important;
-}
+.hidden { display: none !important; }
 
-/* タイトルヘッダー */
+/* ヘッダー */
 .view-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    border-bottom: 2px solid #333;
+    border-bottom: 2px solid #e94560; /* アクセントのピンクレッド */
     padding-bottom: 10px;
 }
 
 .header-back-btn {
-    background: #666;
-    color: white;
-    border: none;
+    background: #333;
+    color: #ccc;
+    border: 1px solid #555;
     padding: 5px 15px;
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.9em;
+    transition: all 0.2s;
 }
+.header-back-btn:hover { background: #444; color: white; }
 
-/* 汎用ボタン */
+/* ボタン共通設定 */
 button {
     cursor: pointer;
     font-family: inherit;
-    transition: opacity 0.2s;
+    transition: transform 0.1s, opacity 0.2s, box-shadow 0.2s;
+    border: none;
+    outline: none;
 }
-button:active {
-    opacity: 0.7;
-}
+button:active { transform: translateY(2px); opacity: 0.8; }
 
 .btn-block {
     display: block;
@@ -64,40 +67,42 @@ button:active {
     padding: 12px;
     margin-bottom: 10px;
     font-size: 1em;
-    border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     text-align: center;
     box-sizing: border-box;
+    font-weight: bold;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3); /* 影をつけて立体的に */
 }
 
-.btn-primary { background-color: #0055ff; color: white; }
-.btn-success { background-color: #28a745; color: white; }
-.btn-danger { background-color: #dc3545; color: white; }
-.btn-warning { background-color: #ffc107; color: black; }
-.btn-info { background-color: #17a2b8; color: white; }
-.btn-dark { background-color: #343a40; color: white; }
+/* ★ カラーパレットの刷新（!importantでHTML側の直書きを強制上書き） */
+.btn-primary { background-color: #0f3460 !important; color: white; } /* 深いブルー */
+.btn-success { background-color: #00b894 !important; color: white; } /* ミントグリーン */
+.btn-danger { background-color: #e94560 !important; color: white; } /* ビビッドピンク */
+.btn-warning { background-color: #fce38a !important; color: #333; } /* パステルイエロー */
+.btn-info { background-color: #00cec9 !important; color: #333; } /* シアン */
+.btn-dark { background-color: #636e72 !important; color: white; } /* グレー */
 
-/* ロゴ画像 */
-.app-logo {
-    max-width: 80%;
-    height: auto;
-    display: block;
-    margin: 0 auto;
-}
-.app-logo-small {
-    max-width: 100px;
-    height: auto;
-    display: block;
-    margin: 0 auto;
-}
-
-/* 入力フォーム共通 */
-input[type="text"], input[type="number"] {
+/* フォーム要素 */
+input[type="text"], input[type="number"], select {
     padding: 10px;
-    border: 1px solid #ccc;
+    background: #2d2d34; /* 暗い背景 */
+    border: 1px solid #555;
+    color: #fff;
     border-radius: 4px;
     font-size: 1em;
     box-sizing: border-box;
+}
+input:focus, select:focus {
+    border-color: #0f3460;
+    background: #363640;
+    outline: none;
+}
+
+/* ロゴなど */
+.app-logo, .app-logo-small {
+    display: block;
+    margin: 0 auto;
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); /* ロゴを少し光らせる */
 }
 
 /* トースト通知 */
@@ -112,12 +117,14 @@ input[type="text"], input[type="number"] {
     pointer-events: none;
 }
 .toast-msg {
-    background: rgba(0,0,0,0.8);
+    background: rgba(15, 52, 96, 0.95); /* 青系の透過背景 */
     color: white;
-    padding: 10px 20px;
-    border-radius: 20px;
+    padding: 12px 20px;
+    border-radius: 4px;
     margin-bottom: 10px;
     text-align: center;
+    border: 1px solid #e94560;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     animation: fadeOut 3s forwards;
 }
 @keyframes fadeOut {
