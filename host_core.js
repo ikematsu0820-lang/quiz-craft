@@ -1,5 +1,5 @@
 /* =========================================================
- * host_core.js (v59: Navigation Logic Fix)
+ * host_core.js (v62: Safe Mode & Error Handling)
  * =======================================================*/
 
 // グローバル変数
@@ -90,29 +90,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- ★v59: ナビゲーション修正 (戻るボタン) ---
-    
-    // 汎用の戻るボタン (ホームへ)
+    // --- ナビゲーション (戻るボタン) ---
     document.querySelectorAll('.back-to-main').forEach(btn => {
-        // ID指定がある特別なボタン以外を処理
         if (!btn.id) {
             btn.addEventListener('click', () => window.showView(window.views.main));
         }
     });
 
-    // Creator -> Dashboard
     const creatorBack = document.getElementById('creator-back-btn');
     if(creatorBack) creatorBack.addEventListener('click', () => enterDashboard());
 
-    // Config -> Dashboard
     const configBack = document.getElementById('config-header-back-btn');
     if(configBack) configBack.addEventListener('click', () => enterDashboard());
 
-    // Viewer Login -> Home
     const viewerBack = document.getElementById('viewer-back-btn');
     if(viewerBack) viewerBack.addEventListener('click', () => window.showView(window.views.main));
 
-    // Dashboard Logout -> Home
     const logoutBtn = document.querySelector('#host-dashboard-view .btn-logout');
     if(logoutBtn) logoutBtn.addEventListener('click', () => window.showView(window.views.main));
 
@@ -131,11 +124,26 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ★修正: 関数が存在するかチェックしてから実行するように変更（これでボタンが死なない）
     const studioBtn = document.getElementById('dash-studio-btn');
-    if(studioBtn) studioBtn.addEventListener('click', startRoom);
+    if(studioBtn) {
+        studioBtn.addEventListener('click', () => {
+            if (typeof startRoom === 'function') {
+                startRoom();
+            } else {
+                alert("エラー: host_studio.js が正しく読み込まれていません。\nコードに記述ミスがないか確認してください。");
+            }
+        });
+    }
 
     const dashViewerBtn = document.getElementById('dash-viewer-btn');
-    if(dashViewerBtn) dashViewerBtn.addEventListener('click', () => window.showView(window.views.viewerLogin));
+    if(dashViewerBtn) {
+        dashViewerBtn.addEventListener('click', () => {
+            if(window.views && window.views.viewerLogin) {
+                window.showView(window.views.viewerLogin);
+            }
+        });
+    }
 
     // --- その他ボタン割り当て ---
     const addQBtn = document.getElementById('add-question-btn');
@@ -151,13 +159,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if(configSaveProgBtn) configSaveProgBtn.addEventListener('click', saveProgramToCloud);
 
     const configGoStudioBtn = document.getElementById('config-go-studio-btn');
-    if(configGoStudioBtn) configGoStudioBtn.addEventListener('click', startRoom);
+    if(configGoStudioBtn) configGoStudioBtn.addEventListener('click', () => {
+        if (typeof startRoom === 'function') startRoom();
+    });
 });
 
 function enterDashboard() {
     window.showView(window.views.dashboard);
     document.getElementById('dashboard-show-id').textContent = currentShowId;
-    loadSavedSets();
+    if(typeof loadSavedSets === 'function') loadSavedSets();
 }
 
 function loadSavedSets() {
