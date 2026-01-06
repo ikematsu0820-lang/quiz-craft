@@ -1,5 +1,5 @@
 /* =========================================================
- * viewer.js (v58: Race Display Logic)
+ * viewer.js (v60: Time Attack Bar Added)
  * =======================================================*/
 
 let viewerRoomId = null;
@@ -49,10 +49,9 @@ function startViewer(roomId) {
 
 function updateViewerDisplay(status) {
     // statusがnullの場合は既存表示を維持しつつモード切替のみ反映
-    // ただし初回ロード時はstatusが必要
     if(!status && !viewerConfig) return;
     
-    // status取得
+    // status未取得なら一度だけ取得して再実行
     if (!status) {
         window.db.ref(`rooms/${viewerRoomId}/status`).once('value', snap => {
             if(snap.exists()) updateViewerDisplay(snap.val());
@@ -68,12 +67,24 @@ function updateViewerDisplay(status) {
     const multiGrid = document.getElementById('viewer-multi-grid');
     const raceArea = document.getElementById('viewer-race-area');
     const rankingArea = document.getElementById('viewer-ranking-area');
+    
+    // ★追加: タイムバーの要素取得
+    const timerArea = document.getElementById('viewer-timer-bar-area');
+    const timerBar = document.getElementById('viewer-timer-bar');
 
     // 全エリア一旦リセット
     panelGrid.classList.add('hidden');
     bombGrid.classList.add('hidden');
     multiGrid.classList.add('hidden');
     rankingArea.innerHTML = '';
+    
+    // ★追加: タイムバーのリセット
+    if (timerArea && timerBar) {
+        // 一旦アニメーションを停止して満タンに戻す
+        timerBar.style.transition = 'none';
+        timerBar.style.width = '100%';
+        timerArea.classList.add('hidden'); // 基本は隠す
+    }
     
     // レースモードなら常時表示
     if(viewerConfig.gameType === 'race') {
@@ -87,8 +98,25 @@ function updateViewerDisplay(status) {
         statusDiv.textContent = APP_TEXT.Viewer.Waiting;
         mainText.innerHTML = '';
         subText.innerHTML = '';
+        
     } else if (status.step === 'question') {
         statusDiv.textContent = `Q${status.qIndex + 1}`;
+        
+        // ★追加: タイムアタックモードならバーを動かす
+        if (viewerConfig.mode === 'time_attack' && timerArea && timerBar) {
+            timerArea.classList.remove('hidden'); // 表示
+            
+            // サーバーから送られてくる秒数 (host_studio.jsで設定したもの)
+            const duration = status.timeLimit || 5; 
+            
+            // 少し待ってからアニメーション開始（DOM反映待ち）
+            setTimeout(() => {
+                timerBar.className = 'timer-animate'; // CSSで transition: width linear を定義済みと想定
+                timerBar.style.transition = `width ${duration}s linear`;
+                timerBar.style.width = '0%';
+            }, 50);
+        }
+
         window.db.ref(`rooms/${viewerRoomId}/questions/${status.qIndex}`).once('value', snap => {
             const q = snap.val();
             if(q) {
@@ -111,6 +139,7 @@ function updateViewerDisplay(status) {
                 }
             }
         });
+        
     } else if (status.step === 'answer') {
         statusDiv.textContent = APP_TEXT.Viewer.AnswerCheck;
         window.db.ref(`rooms/${viewerRoomId}/questions/${status.qIndex}`).once('value', snap => {
@@ -135,16 +164,19 @@ function updateViewerDisplay(status) {
                 if(q.type === 'multi') renderMultiGrid(q, status.multiState);
             }
         });
+        
     } else if (status.step === 'panel') {
         statusDiv.textContent = "PANEL ATTACK";
         mainText.innerHTML = '';
         subText.innerHTML = '';
         renderPanelGrid(status.panels);
+        
     } else if (status.step === 'bomb') {
         statusDiv.textContent = "BOMB GAME";
         mainText.innerHTML = '';
         subText.innerHTML = '';
         renderBombGrid(status.cards);
+        
     } else if (status.step === 'ranking') {
         statusDiv.textContent = "RANKING";
         mainText.innerHTML = '';
