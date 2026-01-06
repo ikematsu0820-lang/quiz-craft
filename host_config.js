@@ -505,39 +505,6 @@ function renderConfigPreview() {
     });
 }
     
-    periodPlaylist.forEach((item, index) => {
-        if (index > 0) {
-            const arrowDiv = document.createElement('div');
-            arrowDiv.className = 'playlist-arrow-container';
-            arrowDiv.innerHTML = '<div class="playlist-arrow"></div>';
-            container.appendChild(arrowDiv);
-            
-            const settingDiv = document.createElement('div');
-            settingDiv.className = 'playlist-inter-setting';
-            settingDiv.innerHTML = `<div style="font-size:0.7em; color:#666;">Inter-Period Settings</div>`;
-            container.appendChild(settingDiv);
-        }
-
-        const div = document.createElement('div');
-        div.className = 'timeline-card';
-        div.style.marginBottom = "0"; 
-        
-        let modeLabel = item.config.mode.toUpperCase();
-        if(item.config.gameType === 'territory') modeLabel += " (PANEL)";
-
-        div.innerHTML = `
-            <div style="flex:1;">
-                <div style="font-weight:bold; font-size:1.1em;">${index+1}. ${item.title}</div>
-                <div style="font-size:0.8em; color:#666;">
-                    [${modeLabel}] ${item.questions.length}Q
-                </div>
-            </div>
-            <button class="delete-btn" onclick="removeFromPlaylist(${index})">Del</button>
-        `;
-        container.appendChild(div);
-    });
-}
-
 window.removeFromPlaylist = function(index) {
     periodPlaylist.splice(index, 1);
     renderConfigPreview();
