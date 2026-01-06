@@ -1,10 +1,10 @@
 /* =========================================================
- * text_config.js (v57: Rule Settings & Free Types)
+ * text_config.js (v58: Race & Free Types Support)
  * =======================================================*/
 
 const APP_TEXT = {
     AppTitle: "Quiz Studio",
-    Version: "Cloud Edition v57",
+    Version: "Cloud Edition v58",
     
     Main: { HostBtn: "クイズを作る", PlayerBtn: "クイズに答える" },
     Login: { Title: "番組IDを入力", Placeholder: "例: QUIZ2026", SubmitBtn: "ログイン / 新規作成", BackBtn: "ホーム", AlertEmpty: "番組IDを入力してください", AlertError: "ID文字種エラー" },
@@ -50,9 +50,10 @@ const APP_TEXT = {
         ModeTurn: "順番回答 (Turn-based)", 
         ModeTimeAttack: "★タイムショック (固定)", 
         
-        LabelGameType: "ゲームルール (得点/陣取り)",
-        GameTypeScore: "得点制 (Score)",
-        GameTypeTerritory: "陣取り (Panel 25)",
+        LabelGameType: "ゲームルール (成果報酬)",
+        GameTypeScore: "得点 (Score)", 
+        GameTypeTerritory: "陣取り (Panel 25)", 
+        GameTypeRace: "レース (Sugoroku)", 
         
         LabelNormalLimit: "▼ 回答回数制限", NormalLimitOne: "1回のみ (修正不可)", NormalLimitUnlimited: "何度でも修正可",
         
@@ -66,6 +67,7 @@ const APP_TEXT = {
         LabelTurnPass: "▼ パス設定", TurnPassOk: "パス可 (次へ回す)", TurnPassNg: "パス不可",
         
         LabelBombCount: "カード枚数", LabelBombTarget: "アタリ/ハズレ枚数",
+        LabelRaceGoal: "ゴール地点 (pt)", 
         
         LabelRule: "脱落・時間設定", LabelElim: "▼ 脱落条件", RuleNone: "脱落なし", RuleWrong: "不正解者のみ脱落", RuleSlow: "不正解 ＋ 回答が遅い人も脱落", LabelElimCount: "遅い順に", LabelElimCountSuffix: "名が脱落", LabelTime: "制限時間",
         HeadingCustomScore: "問題別配点・失点・時間設定", LabelBulkTime: "時間一括:", LabelBulkPt: "得点一括:", LabelBulkLoss: "失点一括:", 
@@ -79,8 +81,8 @@ const APP_TEXT = {
         BtnLoad: "読み込んでセット", BtnMasterPlay: "再生 ▶", BtnStart: "問題 START！", BtnAnswer: "正解発表", BtnNextQ: "次の問題へ", BtnNextPeriod: "次のピリオドへ進む", BtnInterRanking: "中間発表へ", BtnFinalRanking: "最終結果発表へ", BtnEnd: "全工程終了", BtnRanking: "中間順位", BtnClose: "スタジオを閉じて戻る", BtnBackRanking: "スタジオに戻る",
         BtnCorrect: "⭕️ 正解", BtnWrong: "❌ 不正解", BtnPass: "パス (Skip)", MsgBuzzWin: "回答権: ", MsgBuzzWait: "回答権なし...", MsgTurnWait: "順番待ち...", MsgConfirmLoad: "プログラムを読み込んでセットしますか？\n（現在の進行内容はリセットされます）", MsgLoaded: "セットしました。再生ボタンで開始してください。", MsgThinking: "Thinking Time...", MsgAnswerCheck: "正解発表", MsgAllEnd: "全てのピリオドが終了しました！お疲れ様でした！", MsgConfirmBack: "ダッシュボードに戻りますか？",
         MsgTimeAttackReady: "Time Shock Ready...", MsgTimeAttackActive: "TIME SHOCK!", BtnStartTA: "カウント開始 (5s Loop)",
-        LabelPanelControl: "パネル操作 (クリックで色変更)", LabelBombControl: "カード操作 (クリックでオープン)", LabelMultiControl: "多答クイズ操作 (クリックでオープン)",
-        MsgPanelActive: "Panel Attack Mode", MsgBombActive: "Bomb Game Mode"
+        LabelPanelControl: "パネル操作 (クリックで色変更)", LabelBombControl: "カード操作 (クリックでオープン)", LabelMultiControl: "多答クイズ操作 (クリックでオープン)", LabelRaceControl: "レース進行状況",
+        MsgPanelActive: "Panel Attack Mode", MsgBombActive: "Bomb Game Mode", MsgRaceActive: "Race Mode"
     },
 
     Player: {
