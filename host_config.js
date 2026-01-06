@@ -649,3 +649,33 @@ window.editPlaylistItem = function(index) {
     document.getElementById('config-view').scrollIntoView({behavior: "smooth"});
     alert("設定を読み込みました。修正して「リストに追加」を押してください。");
 };
+/* host_config.js の一番下に追加 */
+
+// ダッシュボードからプログラムを読み込むための関数
+window.loadProgramToConfig = function(progData) {
+    if(!confirm("このプログラム構成を読み込んで編集画面を開きますか？")) return;
+    
+    // データをセット
+    periodPlaylist = JSON.parse(JSON.stringify(progData.playlist || []));
+    
+    // 画面遷移
+    window.showView(window.views.config);
+    
+    // UI初期化・反映
+    const setSelect = document.getElementById('config-set-select');
+    if(setSelect) setSelect.value = ""; // 選択状態リセット
+    document.getElementById('config-builder-ui').innerHTML = '<p style="text-align:center; color:#666; padding:20px;">セットを選択してください</p>';
+    
+    // プログラム設定の復元
+    const titleInput = document.getElementById('config-program-title');
+    if(titleInput) titleInput.value = progData.title || "";
+    
+    const rankChk = document.getElementById('config-final-ranking-chk');
+    if(rankChk) rankChk.checked = (progData.finalRanking !== false);
+    
+    // リスト描画
+    loadSetListInConfig(); // セット選択肢は読み込んでおく
+    renderConfigPreview(); // プレイリスト描画
+    
+    alert("プログラムを読み込みました。");
+};
