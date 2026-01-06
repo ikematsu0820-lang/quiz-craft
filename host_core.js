@@ -1,5 +1,6 @@
 /* =========================================================
- * host_core.js (v62: Safe Mode & Error Handling)
+ * host_core.js (修正版)
+ * 役割：メイン遷移、ログイン管理、共通データ保持
  * =======================================================*/
 
 // グローバル変数
@@ -15,15 +16,18 @@ let currentQIndex = 0;
 
 window.views = {};
 
-window.showView = function(targetView) {
-    Object.values(window.views).forEach(v => {
-        if(v) v.classList.add('hidden');
-    });
-    if(targetView) {
-        targetView.classList.remove('hidden');
+// 画面切り替えの共通関数
+window.showView = function(targetId) {
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    const target = document.getElementById(targetId);
+    if(target) {
+        target.classList.remove('hidden');
     }
+    // 画面遷移時に特定の設定をリセット
+    document.body.classList.remove('dark-theme');
 };
 
+// テキスト設定の反映
 window.applyTextConfig = function() {
     if(typeof APP_TEXT === 'undefined') return;
     
@@ -52,31 +56,12 @@ window.applyTextConfig = function() {
 document.addEventListener('DOMContentLoaded', () => {
     window.applyTextConfig();
 
-    window.views = {
-        main: document.getElementById('main-view'),
-        hostLogin: document.getElementById('host-login-view'),
-        dashboard: document.getElementById('host-dashboard-view'),
-        creator: document.getElementById('creator-view'),
-        config: document.getElementById('config-view'),
-        hostControl: document.getElementById('host-control-view'),
-        ranking: document.getElementById('ranking-view'),
-        respondent: document.getElementById('respondent-view'),
-        playerGame: document.getElementById('player-game-view'),
-        viewerLogin: document.getElementById('viewer-login-view'), 
-        viewerMain: document.getElementById('viewer-main-view') 
-    };
-
-    // 初期表示制御
-    Object.values(window.views).forEach(v => {
-        if(v && v.id !== 'main-view') v.classList.add('hidden');
-    });
-
-    // --- メインメニュー遷移 ---
+    // --- メインメニュー ---
     const hostBtn = document.getElementById('main-host-btn');
-    if(hostBtn) hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
+    if(hostBtn) hostBtn.addEventListener('click', () => window.showView('host-login-view'));
 
     const playerBtn = document.getElementById('main-player-btn');
-    if(playerBtn) playerBtn.addEventListener('click', () => window.showView(window.views.respondent));
+    if(playerBtn) playerBtn.addEventListener('click', () => window.showView('respondent-view'));
 
     // --- ホストログイン ---
     const loginBtn = document.getElementById('host-login-submit-btn');
@@ -84,7 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loginBtn.addEventListener('click', () => {
             const input = document.getElementById('show-id-input').value.trim().toUpperCase();
             if(!input) { alert(APP_TEXT.Login.AlertEmpty); return; }
-            if(!/^[A-Z0-9_-]+$/.test(input)) { alert(APP_TEXT.Login.AlertError); return; }
             currentShowId = input;
             enterDashboard();
         });
@@ -92,9 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- ナビゲーション (戻るボタン) ---
     document.querySelectorAll('.back-to-main').forEach(btn => {
-        if (!btn.id) {
-            btn.addEventListener('click', () => window.showView(window.views.main));
-        }
+        btn.addEventListener('click', () => window.showView('main-view'));
     });
 
     const creatorBack = document.getElementById('creator-back-btn');
@@ -103,14 +85,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const configBack = document.getElementById('config-header-back-btn');
     if(configBack) configBack.addEventListener('click', () => enterDashboard());
 
-    const viewerBack = document.getElementById('viewer-back-btn');
-    if(viewerBack) viewerBack.addEventListener('click', () => window.showView(window.views.main));
-
     const logoutBtn = document.querySelector('#host-dashboard-view .btn-logout');
-    if(logoutBtn) logoutBtn.addEventListener('click', () => window.showView(window.views.main));
+    if(logoutBtn) logoutBtn.addEventListener('click', () => window.showView('main-view'));
 
-
-    // --- ダッシュボード機能遷移 ---
+    // --- ダッシュボード機能ボタン ---
+    // ここで window. 内の関数を呼ぶことで、別ファイルの読み込み順が前後しても動作するようにします
     const createBtn = document.getElementById('dash-create-btn');
     if(createBtn) createBtn.addEventListener('click', () => {
         if(typeof window.initCreatorMode === 'function') window.initCreatorMode();
@@ -119,55 +98,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const configBtn = document.getElementById('dash-config-btn');
     if(configBtn) {
         configBtn.addEventListener('click', () => {
-            periodPlaylist = [];
-            if(typeof enterConfigMode === 'function') enterConfigMode();
+            if(typeof window.enterConfigMode === 'function') {
+                window.enterConfigMode();
+            } else {
+                alert("エラー: host_config.js が読み込まれていません。");
+            }
         });
     }
 
-    // ★修正: 関数が存在するかチェックしてから実行するように変更（これでボタンが死なない）
     const studioBtn = document.getElementById('dash-studio-btn');
     if(studioBtn) {
         studioBtn.addEventListener('click', () => {
-            if (typeof startRoom === 'function') {
-                startRoom();
+            if (typeof window.startRoom === 'function') {
+                window.startRoom();
             } else {
-                alert("エラー: host_studio.js が正しく読み込まれていません。\nコードに記述ミスがないか確認してください。");
+                alert("エラー: host_studio.js が読み込まれていません。");
             }
         });
     }
 
     const dashViewerBtn = document.getElementById('dash-viewer-btn');
     if(dashViewerBtn) {
-        dashViewerBtn.addEventListener('click', () => {
-            if(window.views && window.views.viewerLogin) {
-                window.showView(window.views.viewerLogin);
-            }
-        });
+        dashViewerBtn.addEventListener('click', () => window.showView('viewer-login-view'));
     }
-
-    // --- その他ボタン割り当て ---
-    const addQBtn = document.getElementById('add-question-btn');
-    if(addQBtn) addQBtn.addEventListener('click', addQuestion);
-    
-    const saveBtn = document.getElementById('save-to-cloud-btn');
-    if(saveBtn) saveBtn.addEventListener('click', saveToCloud);
-
-    const configAddBtn = document.getElementById('config-add-playlist-btn');
-    if(configAddBtn) configAddBtn.addEventListener('click', addPeriodToPlaylist);
-
-    const configSaveProgBtn = document.getElementById('config-save-program-btn');
-    if(configSaveProgBtn) configSaveProgBtn.addEventListener('click', saveProgramToCloud);
-
-    const configGoStudioBtn = document.getElementById('config-go-studio-btn');
-    if(configGoStudioBtn) configGoStudioBtn.addEventListener('click', () => {
-        if (typeof startRoom === 'function') startRoom();
-    });
 });
 
 function enterDashboard() {
-    window.showView(window.views.dashboard);
+    window.showView('host-dashboard-view');
     document.getElementById('dashboard-show-id').textContent = currentShowId;
-    if(typeof loadSavedSets === 'function') loadSavedSets();
+    loadSavedSets();
 }
 
 function loadSavedSets() {
@@ -185,48 +144,18 @@ function loadSavedSets() {
             const item = data[key];
             const div = document.createElement('div');
             div.className = 'set-item';
+            div.innerHTML = `<div><span style="font-weight:bold;">${item.title}</span></div>`;
             
-            let typeLabel = "Mix";
-            if (item.questions && item.questions.length > 0) {
-                const type = item.questions[0].type;
-                if (type === 'choice') typeLabel = APP_TEXT.Creator.TypeChoice;
-                else if (type === 'sort') typeLabel = APP_TEXT.Creator.TypeSort;
-                else if (type === 'free_oral') typeLabel = APP_TEXT.Creator.TypeFreeOral;
-                else if (type === 'free_written') typeLabel = APP_TEXT.Creator.TypeFreeWritten;
-                else if (type === 'multi') typeLabel = APP_TEXT.Creator.TypeMulti;
-            }
-
-            div.innerHTML = `
-                <div>
-                    <span style="font-weight:bold;">${item.title}</span> 
-                    <span style="font-size:0.8em; color:#0055ff; margin-left:5px; font-weight:bold;">[${typeLabel}]</span>
-                    <div style="font-size:0.8em; color:#666;">
-                        ${new Date(item.createdAt).toLocaleDateString()} / ${item.questions.length}Q
-                    </div>
-                </div>
-            `;
             const btnArea = document.createElement('div');
-            btnArea.style.display = 'flex';
-            btnArea.style.gap = '5px';
-
             const editBtn = document.createElement('button');
             editBtn.textContent = "Edit";
-            editBtn.className = 'btn-mini';
-            editBtn.style.backgroundColor = '#2c3e50';
-            editBtn.style.color = 'white';
-            editBtn.onclick = () => loadSetForEditing(key, item);
-
-            const delBtn = document.createElement('button');
-            delBtn.className = 'delete-btn';
-            delBtn.textContent = "Del";
-            delBtn.onclick = () => {
-                if(confirm(APP_TEXT.Dashboard.DeleteConfirm)) {
-                    window.db.ref(`saved_sets/${currentShowId}/${key}`).remove();
-                    div.remove();
+            editBtn.className = 'btn-mini btn-edit';
+            editBtn.onclick = () => {
+                if(typeof window.loadSetForEditing === 'function') {
+                    window.loadSetForEditing(key, item);
                 }
             };
             btnArea.appendChild(editBtn);
-            btnArea.appendChild(delBtn);
             div.appendChild(btnArea);
             listEl.appendChild(div);
         });
