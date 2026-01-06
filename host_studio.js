@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v57: Territory Game Support)
+ * host_studio.js (v59: Win Logic & Interperiod)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
@@ -33,11 +33,13 @@ function enterHostMode(roomId) {
     document.getElementById('studio-program-loader').classList.remove('hidden');
     document.getElementById('studio-timeline-area').classList.add('hidden');
     document.getElementById('control-panel').classList.add('hidden');
+    
     document.getElementById('host-buzz-winner-area').classList.add('hidden');
     document.getElementById('host-manual-judge-area').classList.add('hidden');
     document.getElementById('host-panel-control-area').classList.add('hidden');
     document.getElementById('host-bomb-control-area').classList.add('hidden');
     document.getElementById('host-multi-control-area').classList.add('hidden');
+    document.getElementById('host-race-control-area').classList.add('hidden');
     
     updateKanpe(); 
     loadProgramsInStudio();
@@ -48,7 +50,9 @@ function enterHostMode(roomId) {
         const alive = Object.values(players).filter(p => p.isAlive).length;
         document.getElementById('host-player-count').textContent = total;
         document.getElementById('host-alive-count').textContent = alive;
+        
         if (currentConfig.mode === 'buzz') identifyBuzzWinner(players);
+        if (currentConfig.gameType === 'race') updateRaceView(players);
     });
     setupStudioButtons(roomId);
 }
@@ -123,12 +127,22 @@ function renderStudioTimeline() {
         
         let statusText = "START";
         let interText = "";
+        
+        // Interperiod表示
+        if (index > 0) {
+            const st = item.config.initialStatus;
+            if(st === 'revive') interText = " [Revive All]";
+            else if(st === 'continue') interText = " [Continue]";
+            else if(st === 'ranking') interText = ` [Top ${item.config.passCount}]`;
+        }
+
         let modeText = item.config.mode ? item.config.mode.toUpperCase() : "NORMAL";
         if (item.config.gameType === 'territory') modeText += " (PANEL)";
+        if (item.config.gameType === 'race') modeText += " (RACE)";
 
         div.innerHTML = `
             <div>
-                <h5 style="margin:0;">No.${index + 1}: ${item.title}${interText}</h5>
+                <h5 style="margin:0;">No.${index + 1}: ${item.title}<span style="font-size:0.7em; color:#0055ff;">${interText}</span></h5>
                 <div class="info" style="margin-top:5px;">
                     <span style="color:#d00; font-weight:bold;">[${modeText}]</span> ${statusText}
                 </div>
@@ -156,15 +170,22 @@ window.playPeriod = function(index) {
     
     document.getElementById('studio-timeline-area').classList.add('hidden');
     document.getElementById('control-panel').classList.remove('hidden');
+    
     document.getElementById('host-panel-control-area').classList.add('hidden');
     document.getElementById('host-bomb-control-area').classList.add('hidden');
     document.getElementById('host-multi-control-area').classList.add('hidden');
+    document.getElementById('host-race-control-area').classList.add('hidden');
     
     if (currentConfig.mode === 'time_attack') currentConfig.timeLimit = 5;
 
-    // 陣取りならパネル起動
+    // ゲームタイプ初期化
     if (currentConfig.gameType === 'territory') {
         startPanelGame(currentRoomId);
+    } else if (currentConfig.gameType === 'race') {
+        document.getElementById('host-race-control-area').classList.remove('hidden');
+        window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
+            updateRaceView(snap.val() || {});
+        });
     }
     
     if (currentConfig.mode === 'bomb') {
@@ -177,22 +198,61 @@ window.playPeriod = function(index) {
 
     window.db.ref(`rooms/${currentRoomId}/config`).set(currentConfig);
     
+    // ★v59: ピリオド間処理 (Interperiod Logic)
     window.db.ref(`rooms/${currentRoomId}/players`).once('value', snap => {
         let players = [];
         snap.forEach(p => {
             const val = p.val();
-            players.push({ key: p.key, isAlive: val.isAlive, score: val.periodScore||0, time: val.periodTime||0, name: val.name });
+            players.push({ 
+                key: p.key, 
+                isAlive: val.isAlive, 
+                score: val.periodScore||0, // 前のピリオドのスコア
+                name: val.name 
+            });
         });
-        
-        if (currentConfig.mode === 'time_attack' && players.length > 0) {
-            buzzWinnerId = players[0].key; 
-            document.getElementById('host-buzz-winner-name').textContent = players[0].name;
-            document.getElementById('host-buzz-winner-area').classList.remove('hidden');
+
+        // 並べ替え (Rankingモード用)
+        players.sort((a, b) => b.score - a.score);
+
+        const updates = {};
+        const passCount = currentConfig.passCount || 5;
+        const initStatus = currentConfig.initialStatus || 'revive';
+
+        players.forEach((p, idx) => {
+            let nextAlive = true;
+            if (initStatus === 'revive') {
+                nextAlive = true;
+            } else if (initStatus === 'continue') {
+                nextAlive = p.isAlive;
+            } else if (initStatus === 'ranking') {
+                // 上位X名かつ、前回死んでいない人(または全員から?)
+                // 通常は「予選」なので全員対象で上位X名
+                nextAlive = (idx < passCount);
+            }
+            
+            updates[`${p.key}/isAlive`] = nextAlive;
+            updates[`${p.key}/periodScore`] = 0; // 新ピリオド用にリセット
+            updates[`${p.key}/periodTime`] = 0;
+            updates[`${p.key}/lastTime`] = 99999;
+            updates[`${p.key}/lastResult`] = null;
+            updates[`${p.key}/buzzTime`] = null;
+            updates[`${p.key}/isLocked`] = false;
+        });
+
+        if(Object.keys(updates).length > 0) {
+            window.db.ref(`rooms/${currentRoomId}/players`).update(updates);
         }
         
-        snap.forEach(p => {
-            p.ref.update({ periodScore: 0, periodTime: 0, lastTime: 99999, lastResult: null, buzzTime: null, isLocked: false });
-        });
+        // TimeAttackなら最初のプレイヤーをセット
+        if (currentConfig.mode === 'time_attack' && players.length > 0) {
+            // ここは簡易的。本来はisAliveな最初の人を探すべき
+            const survivor = players.find((_, i) => updates[players[i].key+'/isAlive']);
+            if(survivor) {
+                buzzWinnerId = survivor.key;
+                document.getElementById('host-buzz-winner-name').textContent = survivor.name;
+                document.getElementById('host-buzz-winner-area').classList.remove('hidden');
+            }
+        }
     });
 
     document.getElementById('current-period-title').textContent = `${item.title}`;
@@ -217,12 +277,37 @@ window.playPeriod = function(index) {
     }
 };
 
+function updateRaceView(players) {
+    const container = document.getElementById('host-race-monitor');
+    if(!container) return;
+    container.innerHTML = '';
+    
+    const activePlayers = [];
+    Object.keys(players).forEach(key => {
+        if(players[key].isAlive) activePlayers.push({ name: players[key].name, score: players[key].periodScore || 0 });
+    });
+    
+    activePlayers.sort((a,b) => b.score - a.score);
+    
+    const goal = currentConfig.passCount || 10; // レースはpassCountをゴール値として使用
+    
+    activePlayers.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'race-lane';
+        if (p.score >= goal) row.classList.add('goal');
+        const percent = Math.min(100, (p.score / goal) * 100);
+        row.innerHTML = `
+            <div class="race-name">${p.name}</div>
+            <div class="race-track"><div class="race-bar" style="width:${percent}%"></div></div>
+            <div class="race-score">${p.score}</div>
+        `;
+        container.appendChild(row);
+    });
+}
+
 function startPanelGame(roomId) {
     const panels = Array(25).fill(0);
-    window.db.ref(`rooms/${roomId}/status`).update({
-        step: 'panel',
-        panels: panels
-    });
+    window.db.ref(`rooms/${roomId}/status`).update({ step: 'panel', panels: panels });
     const grid = document.getElementById('host-panel-grid');
     document.getElementById('host-panel-control-area').classList.remove('hidden');
     grid.innerHTML = '';
@@ -324,9 +409,22 @@ function setupStudioButtons(roomId) {
         const q = studioQuestions[currentQIndex];
         const points = parseInt(q.points) || 1;
 
+        // 得点更新
         window.db.ref(`rooms/${roomId}/players/${buzzWinnerId}`).once('value', snap => {
             const val = snap.val();
-            snap.ref.update({ periodScore: (val.periodScore||0) + points, lastResult: 'win' });
+            const newScore = (val.periodScore||0) + points;
+            snap.ref.update({ periodScore: newScore, lastResult: 'win' });
+            
+            // ★v59: 勝利条件チェック (Score先取)
+            if (currentConfig.winCondition === 'score') {
+                const target = currentConfig.winTarget || 10;
+                // Raceモードならgoal値を使用
+                const goal = (currentConfig.gameType === 'race') ? (currentConfig.passCount||10) : target;
+                
+                if (newScore >= goal) {
+                    announceWinner(val.name + " WINS!", roomId);
+                }
+            }
         });
 
         finishQuestion(roomId);
@@ -342,12 +440,47 @@ function setupStudioButtons(roomId) {
         if (!buzzWinnerId) return;
         const q = studioQuestions[currentQIndex];
         const loss = parseInt(q.loss) || 0;
+        
         window.db.ref(`rooms/${roomId}/players/${buzzWinnerId}`).once('value', snap => {
             const val = snap.val();
             let newScore = (val.periodScore||0);
             if(loss > 0) newScore -= loss;
-            snap.ref.update({ periodScore: newScore, lastResult: 'lose', buzzTime: null });
+            
+            // 脱落判定
+            let isAlive = val.isAlive;
+            if (currentConfig.eliminationRule === 'wrong_only' || currentConfig.eliminationRule === 'wrong_and_slowest') {
+                isAlive = false;
+            }
+            
+            snap.ref.update({ periodScore: newScore, lastResult: 'lose', buzzTime: null, isAlive: isAlive });
+            
+            // ★v59: 勝利条件チェック (Survivor)
+            if (currentConfig.winCondition === 'survivor') {
+                // 他の生存者をカウント
+                window.db.ref(`rooms/${roomId}/players`).once('value', allSnap => {
+                    let aliveCount = 0;
+                    let lastMan = null;
+                    allSnap.forEach(s => {
+                        const p = s.val();
+                        // 今死んだ人はまだDB反映前かもしれないのでメモリ上で判断...だが、
+                        // ここはfirebaseのupdate完了を待たずに走るので、
+                        // 自身がbuzzWinnerIdなら死んだものとして扱う
+                        let pAlive = p.isAlive;
+                        if (s.key === buzzWinnerId) pAlive = isAlive; // 最新状態
+                        
+                        if (pAlive) {
+                            aliveCount++;
+                            lastMan = p.name;
+                        }
+                    });
+                    
+                    if (aliveCount <= 1) {
+                        announceWinner((lastMan ? lastMan : "NO ONE") + " SURVIVED!", roomId);
+                    }
+                });
+            }
         });
+        
         const action = currentConfig.buzzWrongAction;
         buzzWinnerId = null;
         document.getElementById('host-buzz-winner-area').classList.add('hidden');
@@ -356,7 +489,7 @@ function setupStudioButtons(roomId) {
     };
 
     const btnPass = document.getElementById('host-judge-pass-btn');
-    if(btnPass) btnPass.onclick = () => { /* Turn mode pass logic if needed */ };
+    if(btnPass) btnPass.onclick = () => { /* Turn mode pass logic */ };
 
     const btnShowAns = document.getElementById('host-show-answer-btn');
     if(btnShowAns) btnShowAns.onclick = () => finishQuestion(roomId);
@@ -377,12 +510,41 @@ function setupStudioButtons(roomId) {
         document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} Standby...`;
     };
     
-    // 省略: Rankingボタン等は既存維持でOKですが、念のため
     const btnRanking = document.getElementById('host-ranking-btn');
     if(btnRanking) btnRanking.onclick = () => {
         window.db.ref(`rooms/${roomId}/status`).update({ step: 'ranking' });
-        // ... Ranking Logic ...
+        window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
+            let ranking = [];
+            snap.forEach(p => {
+                const v = p.val();
+                ranking.push({ name: v.name, score: v.periodScore, time: v.periodTime, isAlive: v.isAlive });
+            });
+            ranking.sort((a,b) => (b.score - a.score) || (a.time - b.time));
+            renderRankingView(ranking);
+            window.showView(window.views.ranking);
+        });
     };
+    
+    const rankingBackBtn = document.getElementById('ranking-back-btn');
+    if(rankingBackBtn) rankingBackBtn.onclick = () => {
+        window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby' });
+        window.showView(window.views.hostControl);
+    };
+}
+
+// ★v59: 勝者決定時の処理
+function announceWinner(msg, roomId) {
+    alert(msg);
+    // 全工程終了ボタンへの誘導など
+    // ここではシンプルにアラートだけ出し、進行はホストに委ねる
+    // または強制的に問題を終了させる
+    window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer', isBuzzActive: false }); // 正解画面へ強制遷移
+    const btnNext = document.getElementById('host-next-btn');
+    if(btnNext) {
+        btnNext.classList.remove('hidden');
+        btnNext.textContent = APP_TEXT.Studio.BtnNextPeriod; 
+        btnNext.dataset.action = "next";
+    }
 }
 
 function finishQuestion(roomId) {
@@ -447,7 +609,36 @@ function updateKanpe() {
         }
         document.getElementById('kanpe-question').innerHTML = questionHtml; 
         document.getElementById('kanpe-answer').textContent = (q.type === 'multi') ? `全${q.c.length}項目` : `正解: ${q.correct}`;
+        
+        const timeLimit = (q.timeLimit !== undefined && q.timeLimit > 0) ? q.timeLimit : 0;
+        document.getElementById('kanpe-time-limit').textContent = timeLimit ? `${timeLimit}s` : "No Limit";
     } else {
         kanpeArea.classList.add('hidden');
     }
+}
+
+function renderRankingView(data) {
+    const list = document.getElementById('ranking-list');
+    list.innerHTML = '';
+    if (data.length === 0) { list.innerHTML = '<p style="padding:20px;">No players</p>'; return; }
+    
+    data.forEach((r, i) => {
+        const rank = i + 1;
+        const div = document.createElement('div');
+        let rankClass = 'rank-row';
+        if (rank === 1) rankClass += ' rank-1';
+        else if (rank === 2) rankClass += ' rank-2';
+        else if (rank === 3) rankClass += ' rank-3';
+        div.className = rankClass;
+        let scoreText = `${r.score}`; 
+        
+        div.innerHTML = `
+            <div style="display:flex; align-items:center;">
+                <span class="rank-badge">${rank}</span>
+                <span>${r.name}</span>
+            </div>
+            <div class="rank-score">${scoreText}</div>
+        `;
+        list.appendChild(div);
+    });
 }
