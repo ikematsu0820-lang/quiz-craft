@@ -1,5 +1,5 @@
 /* =========================================================
- * host_design.js (v58: Design Set Loader)
+ * host_design.js (v1: Extracted Design Settings)
  * =======================================================*/
 
 function getDesignPath() {
@@ -93,14 +93,10 @@ function saveDesignSettings() {
     });
 }
 
-// 画面遷移関数（セットローダー初期化を含む）
 window.enterDesignMode = function() {
     // UI初期化 → 保存済みがあれば上書き
     setDefaultDesignUI();
     if(typeof window.loadDesignSettings === 'function') window.loadDesignSettings();
-    
-    // セット読み込みプルダウンの初期化
-    initDesignSetLoader();
 
     if(window.views && window.views.design) window.showView(window.views.design);
 };
@@ -115,67 +111,3 @@ document.addEventListener('DOMContentLoaded', () => {
         if(typeof window.showToast === 'function') window.showToast("初期値に戻しました");
     });
 });
-
-// ★新規追加: セットからデザインを読み込む機能
-function initDesignSetLoader() {
-    const select = document.getElementById('design-set-loader-select');
-    const btn = document.getElementById('design-set-load-btn');
-    if(!select || !btn) return;
-
-    select.innerHTML = '<option>Loading...</option>';
-
-    window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
-        const data = snap.val();
-        select.innerHTML = '<option value="">-- Select Set --</option>';
-        if(data) {
-            Object.keys(data).forEach(key => {
-                const item = data[key];
-                let hasDesign = false;
-                if(item.questions && item.questions.length > 0 && item.questions[0].design) {
-                    hasDesign = true;
-                }
-                const opt = document.createElement('option');
-                opt.value = JSON.stringify(item); 
-                opt.textContent = item.title + (hasDesign ? " (Designあり)" : "");
-                select.appendChild(opt);
-            });
-        }
-    });
-
-    btn.onclick = () => {
-        const val = select.value;
-        if(!val) return;
-        
-        if(!confirm("選択したセットからデザイン設定を読み込みますか？\n（現在の設定は上書きされます）")) return;
-
-        const setItem = JSON.parse(val);
-        if(setItem.questions && setItem.questions.length > 0) {
-            const d = setItem.questions[0].design; 
-            const l = setItem.questions[0].layout;
-            const a = setItem.questions[0].align;
-
-            if(d) {
-                if(document.getElementById('design-main-bg-color')) document.getElementById('design-main-bg-color').value = d.mainBgColor || "#222222";
-                if(document.getElementById('design-bg-image-data')) document.getElementById('design-bg-image-data').value = d.bgImage || "";
-                
-                if(document.getElementById('design-q-text')) document.getElementById('design-q-text').value = d.qTextColor || "#ffffff";
-                if(document.getElementById('design-q-bg')) document.getElementById('design-q-bg').value = d.qBgColor || "#2c5066";
-                if(document.getElementById('design-q-border')) document.getElementById('design-q-border').value = d.qBorderColor || "#ffffff";
-                
-                if(document.getElementById('design-c-text')) document.getElementById('design-c-text').value = d.cTextColor || "#ffffff";
-                if(document.getElementById('design-c-bg')) document.getElementById('design-c-bg').value = d.cBgColor || "#365c75";
-                if(document.getElementById('design-c-border')) document.getElementById('design-c-border').value = d.cBorderColor || "#ffffff";
-
-                const bgStatus = document.getElementById('design-bg-image-status');
-                if(bgStatus) bgStatus.textContent = d.bgImage ? "Image Loaded" : "No Image";
-            }
-            
-            if(l && document.getElementById('creator-set-layout')) document.getElementById('creator-set-layout').value = l;
-            if(a && typeof updateAlignUI === 'function') updateAlignUI(a);
-
-            alert("デザインを読み込みました。\n確定するには下の「保存」ボタンを押してください。");
-        } else {
-            alert("このセットにはデザイン情報が含まれていません。");
-        }
-    };
-}
