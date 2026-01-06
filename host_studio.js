@@ -451,3 +451,50 @@ function updateKanpe() {
         kanpeArea.classList.add('hidden');
     }
 }
+/* --- 以下を host_studio.js の一番下に追加 --- */
+
+function judgeSimultaneousAnswers(roomId) {
+    // 早押し(buzz)やタイムアタック(time_attack)なら、この自動採点はしない（手動判定だから）
+    if (currentConfig.mode === 'buzz' || currentConfig.mode === 'time_attack') return;
+
+    const q = studioQuestions[currentQIndex];
+    
+    // まだ問題データがない、またはプレイヤー情報が取れない場合は何もしない安全策
+    if (!q) return;
+
+    window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
+        snap.forEach(pSnap => {
+            const player = pSnap.val();
+            let isCorrect = false;
+
+            // 1. 選択式 (Choice) の判定
+            // プレイヤーの答え(index)と、正解(correctIndex)が一致するか
+            if (q.type === 'choice') {
+                // 配列形式の正解データにも対応できるように柔軟にチェック
+                const ans = parseInt(player.lastAnswer);
+                if (Array.isArray(q.correct)) {
+                     if (q.correct.includes(ans)) isCorrect = true;
+                } else {
+                     if (ans === q.correctIndex || ans === q.correct) isCorrect = true;
+                }
+            }
+            // 2. 記述 (Free Written / Sort / Multi) などの判定
+            // 正解文字列リスト(q.correct)に、プレイヤーの答えが含まれているか
+            else if (q.correct && Array.isArray(q.correct)) {
+                // 完全一致で判定（必要なら表記揺れ対応ロジックをここに追加）
+                if (q.correct.includes(player.lastAnswer)) isCorrect = true;
+            }
+
+            // 正解なら加点、不正解なら記録のみ
+            if (isCorrect) {
+                const points = parseInt(q.points) || 1;
+                pSnap.ref.update({
+                    periodScore: (player.periodScore || 0) + points,
+                    lastResult: 'win'
+                });
+            } else {
+                pSnap.ref.update({ lastResult: 'lose' });
+            }
+        });
+    });
+}
