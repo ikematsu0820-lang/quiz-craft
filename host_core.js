@@ -1,5 +1,5 @@
 /* =========================================================
- * host_core.js (v58: Dashboard with Type Labels)
+ * host_core.js (v59: Navigation Logic Fix)
  * =======================================================*/
 
 // グローバル変数
@@ -66,16 +66,19 @@ document.addEventListener('DOMContentLoaded', () => {
         viewerMain: document.getElementById('viewer-main-view') 
     };
 
+    // 初期表示制御
     Object.values(window.views).forEach(v => {
         if(v && v.id !== 'main-view') v.classList.add('hidden');
     });
 
+    // --- メインメニュー遷移 ---
     const hostBtn = document.getElementById('main-host-btn');
     if(hostBtn) hostBtn.addEventListener('click', () => window.showView(window.views.hostLogin));
 
     const playerBtn = document.getElementById('main-player-btn');
     if(playerBtn) playerBtn.addEventListener('click', () => window.showView(window.views.respondent));
 
+    // --- ホストログイン ---
     const loginBtn = document.getElementById('host-login-submit-btn');
     if(loginBtn) {
         loginBtn.addEventListener('click', () => {
@@ -87,16 +90,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- ★v59: ナビゲーション修正 (戻るボタン) ---
+    
+    // 汎用の戻るボタン (ホームへ)
     document.querySelectorAll('.back-to-main').forEach(btn => {
-        if (btn.closest('#viewer-login-view') || btn.closest('#host-dashboard-view')) {
-            btn.addEventListener('click', () => window.showView(window.views.main));
-        } else if (btn.classList.contains('header-back-btn')) {
-            btn.addEventListener('click', () => enterDashboard());
-        } else {
+        // ID指定がある特別なボタン以外を処理
+        if (!btn.id) {
             btn.addEventListener('click', () => window.showView(window.views.main));
         }
     });
 
+    // Creator -> Dashboard
+    const creatorBack = document.getElementById('creator-back-btn');
+    if(creatorBack) creatorBack.addEventListener('click', () => enterDashboard());
+
+    // Config -> Dashboard
+    const configBack = document.getElementById('config-header-back-btn');
+    if(configBack) configBack.addEventListener('click', () => enterDashboard());
+
+    // Viewer Login -> Home
+    const viewerBack = document.getElementById('viewer-back-btn');
+    if(viewerBack) viewerBack.addEventListener('click', () => window.showView(window.views.main));
+
+    // Dashboard Logout -> Home
+    const logoutBtn = document.querySelector('#host-dashboard-view .btn-logout');
+    if(logoutBtn) logoutBtn.addEventListener('click', () => window.showView(window.views.main));
+
+
+    // --- ダッシュボード機能遷移 ---
     const createBtn = document.getElementById('dash-create-btn');
     if(createBtn) createBtn.addEventListener('click', () => {
         if(typeof window.initCreatorMode === 'function') window.initCreatorMode();
@@ -116,6 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dashViewerBtn = document.getElementById('dash-viewer-btn');
     if(dashViewerBtn) dashViewerBtn.addEventListener('click', () => window.showView(window.views.viewerLogin));
 
+    // --- その他ボタン割り当て ---
     const addQBtn = document.getElementById('add-question-btn');
     if(addQBtn) addQBtn.addEventListener('click', addQuestion);
     
@@ -154,7 +176,6 @@ function loadSavedSets() {
             const div = document.createElement('div');
             div.className = 'set-item';
             
-            // ★v58: 問題形式ラベルの判定と表示
             let typeLabel = "Mix";
             if (item.questions && item.questions.length > 0) {
                 const type = item.questions[0].type;
