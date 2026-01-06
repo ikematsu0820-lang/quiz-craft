@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v60: Time Attack Logic Update)
+ * host_studio.js (v60: Variable Time Attack Logic)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
@@ -136,6 +136,7 @@ function renderStudioTimeline() {
         }
 
         let modeText = item.config.mode ? item.config.mode.toUpperCase() : "NORMAL";
+        if (item.config.mode === 'time_attack') modeText += ` (${item.config.timeLimit}s)`;
         if (item.config.gameType === 'territory') modeText += " (PANEL)";
         if (item.config.gameType === 'race') modeText += " (RACE)";
 
@@ -175,8 +176,8 @@ window.playPeriod = function(index) {
     document.getElementById('host-multi-control-area').classList.add('hidden');
     document.getElementById('host-race-control-area').classList.add('hidden');
     
-    // Configから正しく制限時間を読み込む（TimeAttack以外でもセットされる可能性があるため）
-    // if (currentConfig.mode === 'time_attack') currentConfig.timeLimit = 5; // ★削除: Configの値を優先
+    // ★TimeAttack: 秒数はConfigから取得(デフォルト5)
+    if (currentConfig.mode === 'time_attack' && !currentConfig.timeLimit) currentConfig.timeLimit = 5;
 
     if (currentConfig.gameType === 'territory') {
         startPanelGame(currentRoomId);
@@ -254,7 +255,11 @@ window.playPeriod = function(index) {
     document.getElementById('host-manual-judge-area').classList.add('hidden');
 
     if (currentConfig.mode === 'time_attack') {
-        if(btnStartTA) btnStartTA.classList.remove('hidden');
+        if(btnStartTA) {
+            btnStartTA.classList.remove('hidden');
+            // ★ボタンラベルに秒数反映
+            btnStartTA.textContent = `START ${currentConfig.timeLimit}s Loop`;
+        }
         document.getElementById('host-status-area').textContent = APP_TEXT.Studio.MsgTimeAttackReady;
     } else if (currentConfig.mode !== 'bomb') {
         if(btnStart) btnStart.classList.remove('hidden');
@@ -344,7 +349,6 @@ function startBombGame(roomId) {
     }
 }
 
-// ★v59-fix: Playボタンのリスナー追加
 function setupStudioButtons(roomId) {
     const btnClose = document.getElementById('host-close-studio-btn');
     if (btnClose) {
@@ -356,7 +360,6 @@ function setupStudioButtons(roomId) {
         };
     }
     
-    // ★追加: 再生ボタンのリスナー
     const btnMasterPlay = document.getElementById('studio-master-play-btn');
     if (btnMasterPlay) {
         btnMasterPlay.onclick = () => {
@@ -549,6 +552,8 @@ function finishQuestion(roomId) {
 }
 
 function startTaLoop(roomId) { currentQIndex = -1; nextTaQuestion(roomId); }
+
+// ★修正: 設定秒数を使ってループさせる
 function nextTaQuestion(roomId) {
     currentQIndex++;
     if (currentQIndex >= studioQuestions.length) {
@@ -557,20 +562,18 @@ function nextTaQuestion(roomId) {
     }
     updateKanpe();
     
-    // ★設定された秒数を取得（デフォルト5秒）
+    // 設定された秒数を取得
     const limit = currentConfig.timeLimit || 5;
     
-    // Firebase更新
     window.db.ref(`rooms/${roomId}/status`).update({ 
         step: 'question', 
         qIndex: currentQIndex, 
         startTime: firebase.database.ServerValue.TIMESTAMP,
-        timeLimit: limit // Viewerに何秒か伝える
+        timeLimit: limit // Viewerへ通知
     });
     
     document.getElementById('host-status-area').textContent = `Q${currentQIndex+1} (${limit}s)`;
     
-    // 指定秒数後に次の問題へ
     taTimer = setTimeout(() => { nextTaQuestion(roomId); }, limit * 1000);
 }
 
