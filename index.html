@@ -69,12 +69,6 @@
     </div>
     <hr>
 
-    <div style="background:#fffbe6; padding:10px; border:1px solid #e6b800; border-radius:5px; margin-bottom:20px; display:flex; gap:10px; align-items:center;">
-        <label style="font-weight:bold; color:#b8860b; white-space:nowrap;">Import from Set:</label>
-        <select id="design-set-loader-select" style="flex:1;"></select>
-        <button id="design-set-load-btn" class="btn-warning" style="padding:8px 15px; font-size:0.9em;">Import</button>
-    </div>
-
     <div style="background:#fff; padding:15px; border-radius:8px; border:2px solid #2c5066; margin-bottom:15px;">
         <h4 style="margin:0 0 10px 0; color:#2c5066;">モニターレイアウト</h4>
         <select id="creator-set-layout" class="btn-block" style="background:#fff; margin-bottom:10px;">
@@ -82,78 +76,63 @@
             <option value="split_list" data-text="Creator.LayoutSplitList">Split List</option>
             <option value="split_grid" data-text="Creator.LayoutSplitGrid">Split Grid</option>
         </select>
-        ```
 
----
+        <h4 style="margin:15px 0 10px 0; color:#2c5066;">文字の配置</h4>
+        <div style="display:flex; gap:5px;">
+            <button type="button" class="btn-align" data-align="left" data-text="Creator.AlignLeft">Left</button>
+            <button type="button" class="btn-align active" data-align="center" data-text="Creator.AlignCenter">Center</button>
+            <button type="button" class="btn-align" data-align="right" data-text="Creator.AlignRight">Right</button>
+        </div>
+        <input type="hidden" id="creator-set-align" value="center">
+    </div>
 
-### 2. `host_config.js` の修正
-「リスト表示ロジック」を削除し、「プルダウンから読み込むロジック」を追加します。
+    <div style="background:#fffbe6; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #e6b800;">
+        <h4 style="margin:0 0 10px 0; color:#b8860b;">デザイン設定</h4>
 
-**変更手順:**
-1.  **`loadSavedProgramsInConfig` 関数を削除**してください。
-2.  代わりに **`initProgramLoaderInConfig`** を追加します。
-3.  `enterConfigMode` の中で、削除した関数の代わりに新しい関数を呼びます。
+        <div class="design-group" style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed #ccc;">
+            <label style="font-size:0.8em; font-weight:bold; color:#555;" data-text="Creator.GroupMain">Main Background</label>
+            <div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
+                <div>
+                    <label style="font-size:0.7em;" data-text="Creator.LabelColorBg">Color</label>
+                    <input type="color" id="design-main-bg-color" value="#222222" style="height:30px; width:50px;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:0.7em;" data-text="Creator.LabelBgImage">Image</label>
+                    <input type="file" id="design-bg-image-file" accept="image/*" style="display:none;">
+                    <div style="display:flex; gap:5px;">
+                        <button id="design-bg-image-btn" class="btn-dark" style="font-size:0.7em; padding:5px 10px;" data-text="Creator.BtnSelectImage">Select</button>
+                        <button id="design-bg-clear-btn" class="btn-danger" style="font-size:0.7em; padding:5px 10px;" data-text="Creator.BtnClearImage">Clear</button>
+                    </div>
+                    <span id="design-bg-image-status" style="font-size:0.7em; color:#00aa00;"></span>
+                </div>
+            </div>
+            <input type="hidden" id="design-bg-image-data">
+        </div>
 
-**修正後のコード（抜粋・変更点のみ）:**
+        <div class="design-group" style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed #ccc;">
+            <label style="font-size:0.8em; font-weight:bold; color:#555;" data-text="Creator.GroupQ">Question Area</label>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top:5px;">
+                <div><label style="font-size:0.7em;" data-text="Creator.LabelColorText">Text</label><input type="color" id="design-q-text" value="#ffffff" style="width:100%;"></div>
+                <div><label style="font-size:0.7em;" data-text="Creator.LabelColorBg">Bg</label><input type="color" id="design-q-bg" value="#2c5066" style="width:100%;"></div>
+                <div><label style="font-size:0.7em;" data-text="Creator.LabelColorBorder">Border</label><input type="color" id="design-q-border" value="#ffffff" style="width:100%;"></div>
+            </div>
+        </div>
 
-```javascript
-/* host_config.js */
+        <div class="design-group">
+            <label style="font-size:0.8em; font-weight:bold; color:#555;" data-text="Creator.GroupC">Choice Area</label>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top:5px;">
+                <div><label style="font-size:0.7em;" data-text="Creator.LabelColorText">Text</label><input type="color" id="design-c-text" value="#ffffff" style="width:100%;"></div>
+                <div><label style="font-size:0.7em;" data-text="Creator.LabelColorBg">Bg</label><input type="color" id="design-c-bg" value="#365c75" style="width:100%;"></div>
+                <div><label style="font-size:0.7em;" data-text="Creator.LabelColorBorder">Border</label><input type="color" id="design-c-border" value="#ffffff" style="width:100%;"></div>
+            </div>
+        </div>
+    </div>
 
-// 1. enterConfigMode を修正
-function enterConfigMode() {
-    window.showView(window.views.config);
-    // ... (既存の初期化コード) ...
-    
-    // loadSavedProgramsInConfig(); ← これを消して、以下にする
-    initProgramLoaderInConfig(); 
-    
-    // ...
-}
-
-// 2. 新しい関数を追加（ファイルのどこか、loadSetListInConfigの下あたり推奨）
-function initProgramLoaderInConfig() {
-    const select = document.getElementById('config-program-loader-select');
-    const btn = document.getElementById('config-program-load-btn');
-    if(!select || !btn) return;
-
-    select.innerHTML = '<option>Loading...</option>';
-
-    // Firebaseからプログラム一覧を取得してプルダウンに入れる
-    window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
-        const data = snap.val();
-        select.innerHTML = '<option value="">-- Select Program --</option>';
-        if(data) {
-            Object.keys(data).forEach(key => {
-                const item = data[key];
-                const opt = document.createElement('option');
-                opt.value = JSON.stringify(item); // データをそのままvalueに
-                opt.textContent = item.title;
-                select.appendChild(opt);
-            });
-        }
-    });
-
-    // Loadボタンの動作
-    btn.onclick = () => {
-        const val = select.value;
-        if(!val) return;
-        
-        if(!confirm(APP_TEXT.Config.MsgConfirmLoadProg)) return;
-
-        const prog = JSON.parse(val);
-        periodPlaylist = prog.playlist || [];
-        
-        // UI反映
-        const titleInput = document.getElementById('config-program-title');
-        const rankChk = document.getElementById('config-final-ranking-chk');
-        if(titleInput) titleInput.value = prog.title || "";
-        if(rankChk) rankChk.checked = (prog.finalRanking !== false);
-
-        renderConfigPreview();
-        alert("Program Loaded!");
-    };
-}
-
+    <div style="display:flex; gap:10px;">
+        <button id="design-reset-btn" class="btn-dark" style="flex:1; padding:12px; font-weight:bold;">初期値に戻す</button>
+        <button id="design-save-btn" class="btn-success" style="flex:1; padding:12px; font-weight:bold;">保存</button>
+    </div>
+</div>
 
 <div id="creator-view" class="view hidden">
     <div class="view-header">
@@ -203,41 +182,36 @@ function initProgramLoaderInConfig() {
         <button id="config-header-back-btn" class="header-back-btn back-to-main">ダッシュボード</button>
     </div>
     <hr>
-
-    <div style="background:#e6f0ff; padding:10px; border:1px solid #0055ff; border-radius:5px; margin-bottom:20px; display:flex; gap:10px; align-items:center;">
-        <label style="font-weight:bold; color:#0055ff; white-space:nowrap;">Load Program:</label>
-        <select id="config-program-loader-select" style="flex:1;"></select>
-        <button id="config-program-load-btn" class="btn-primary" style="padding:8px 15px; font-size:0.9em;">Load</button>
-    </div>
-
     <div style="background:#f0f8ff; padding:15px; border:2px solid #87ceeb; border-radius:8px; margin-bottom:20px;">
         <h3 style="margin:0 0 10px 0; color:#0055ff; font-size:1.1em; text-align:center;" data-text="Config.HeadingAdd">Add Period</h3>
+
         <div style="margin-bottom:15px;">
             <label class="config-label-large" data-text="Config.LabelSet">Set</label>
             <select id="config-set-select" class="btn-block config-select" style="font-size:1.1em;"></select>
         </div>
+
         <div id="config-builder-ui"></div>
     </div>
 
     <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
         <h4 style="color:#333; margin:0 0 10px 0;" data-text="Config.HeadingList">Playlist</h4>
         <div id="config-playlist-preview" style="background:#eee; padding:10px; border-radius:5px; min-height:50px;"><p style="text-align:center; color:#999; font-size:0.8em;">まだ追加されていません</p></div>
-        
         <div style="margin:10px 0; text-align:right;">
             <label style="font-weight:bold; color:#0055ff; cursor:pointer; background:#e6f0ff; padding:5px 10px; border-radius:4px;">
                 <input type="checkbox" id="config-final-ranking-chk" checked> <span data-text="Config.LabelFinalRank">Final Ranking</span>
             </label>
         </div>
-        
         <div style="display:flex; gap:5px; margin-bottom:15px; margin-top:15px;">
             <input type="text" id="config-program-title" placeholder="構成名を入力" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:4px;">
             <button id="config-save-program-btn" class="btn-info" style="flex:0 0 80px; font-weight:bold;" data-text="Config.BtnSaveProg">Save</button>
         </div>
     </div>
-
+    <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
+        <h4 style="color:#333; margin:0 0 10px 0;" data-text="Config.HeadingSavedProg">Saved Programs</h4>
+        <div id="config-saved-programs-list" style="max-height:200px; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:5px; border:1px solid #eee;"></div>
+    </div>
     <button id="config-go-studio-btn" class="btn-danger btn-block" style="padding:15px; font-weight:bold; font-size:1.2em;" data-text="Config.BtnGoStudio">Go Studio</button>
 </div>
-
 
 <!-- （以下、host-control-view / ranking / player / viewer-main は元のまま） -->
 
