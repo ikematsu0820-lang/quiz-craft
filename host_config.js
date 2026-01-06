@@ -602,9 +602,7 @@ function saveProgramToCloud() {
     })
     .catch(err => alert("Error: " + err.message));
 }
-/* host_config.js の一番下に追加 */
 
-// Inter-Period設定を変更した時に呼ばれる関数
 window.updateInterPeriod = function(index, val) {
     if(periodPlaylist[index]) {
         periodPlaylist[index].config.initialStatus = val;
