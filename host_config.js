@@ -3,7 +3,7 @@ type: uploaded file
 fileName: host_config.js
 fullContent:
 /* =========================================================
- * host_config.js (v67: Safe Fix)
+ * host_config.js (v67: Safe Fix - No Optional Chaining)
  * =======================================================*/
 
 let selectedSetQuestions = [];
@@ -51,11 +51,11 @@ function loadSetListInConfig() {
 
     select.innerHTML = `<option value="">${APP_TEXT.Config.SelectLoading}</option>`;
     
-    window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
+    window.db.ref(`saved_sets/${currentShowId}`).once('value', function(snap) {
         const data = snap.val();
         select.innerHTML = `<option value="">${APP_TEXT.Config.SelectDefault}</option>`;
         if(data) {
-            Object.keys(data).forEach(key => {
+            Object.keys(data).forEach(function(key) {
                 const item = data[key];
                 const opt = document.createElement('option');
                 let typeLabel = "Mix";
@@ -238,7 +238,7 @@ function updateBuilderUI() {
         </div>
     </div>`;
 
-    // 3. 一括設定エリア
+    // 3. 一括設定エリア（スリム化）
     html += `
     <div class="config-item-box">
         <h5 style="margin:0 0 10px 0;">${APP_TEXT.Config.HeadingCustomScore}</h5>
@@ -293,11 +293,15 @@ function updateBuilderUI() {
 
     // イベントリスナー設定
     const modeSel = document.getElementById('config-mode-select');
-    if(modeSel) modeSel.addEventListener('change', (e) => updateModeDetails(e.target.value));
+    if(modeSel) {
+        modeSel.addEventListener('change', function(e) {
+            updateModeDetails(e.target.value);
+        });
+    }
     
     const soloStyleSel = document.getElementById('config-solo-style');
     if(soloStyleSel) {
-        soloStyleSel.addEventListener('change', (e) => {
+        soloStyleSel.addEventListener('change', function(e) {
             const autoSettings = document.getElementById('config-solo-auto-settings');
             if(autoSettings) {
                 if(e.target.value === 'auto') autoSettings.classList.remove('hidden');
@@ -313,7 +317,7 @@ function updateBuilderUI() {
     const winCondSel = document.getElementById('config-win-cond');
     
     if(gameTypeSel) {
-        gameTypeSel.addEventListener('change', (e) => {
+        gameTypeSel.addEventListener('change', function(e) {
             const val = e.target.value;
             if (val === 'race') {
                 if(winCondSel) winCondSel.value = 'score';
@@ -324,7 +328,7 @@ function updateBuilderUI() {
     }
     
     if(winCondSel) {
-        winCondSel.addEventListener('change', (e) => {
+        winCondSel.addEventListener('change', function(e) {
             const val = e.target.value;
             const targetArea = document.getElementById('config-win-target-area');
             if(targetArea) {
@@ -340,21 +344,22 @@ function updateBuilderUI() {
     // 一括反映処理
     const reflectBtn = document.getElementById('config-bulk-reflect-btn');
     if(reflectBtn) {
-        reflectBtn.addEventListener('click', () => {
+        reflectBtn.addEventListener('click', function() {
             const timeVal = document.getElementById('config-bulk-time-input').value;
             const ptVal = document.getElementById('config-bulk-point-input').value;
             const lossVal = document.getElementById('config-bulk-loss-input').value;
-            const isUnlimited = document.getElementById('config-bulk-time-unlimited').checked;
+            const unlimitedChk = document.getElementById('config-bulk-time-unlimited');
+            const isUnlimited = unlimitedChk ? unlimitedChk.checked : false;
 
             if (isUnlimited || timeVal !== '') {
                 const applyTime = isUnlimited ? 0 : parseInt(timeVal);
-                document.querySelectorAll('.q-time-input').forEach(inp => inp.value = applyTime);
+                document.querySelectorAll('.q-time-input').forEach(function(inp) { inp.value = applyTime; });
             }
             if (ptVal !== '') {
-                document.querySelectorAll('.q-point-input').forEach(inp => inp.value = ptVal);
+                document.querySelectorAll('.q-point-input').forEach(function(inp) { inp.value = ptVal; });
             }
             if (lossVal !== '') {
-                document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = lossVal);
+                document.querySelectorAll('.q-loss-input').forEach(function(inp) { inp.value = lossVal; });
             }
         });
     }
@@ -363,7 +368,7 @@ function updateBuilderUI() {
     const unlimitedChk = document.getElementById('config-bulk-time-unlimited');
     const timeInput = document.getElementById('config-bulk-time-input');
     if(unlimitedChk && timeInput) {
-        unlimitedChk.addEventListener('change', (e) => {
+        unlimitedChk.addEventListener('change', function(e) {
             if(e.target.checked) {
                 timeInput.value = '';
                 timeInput.disabled = true;
@@ -386,7 +391,7 @@ function renderQuestionsListUI(questions) {
     const list = document.getElementById('config-questions-list');
     if(!list) return;
     list.innerHTML = '';
-    questions.forEach((q, i) => {
+    questions.forEach(function(q, i) {
         const div = document.createElement('div');
         div.style.display = 'flex';
         div.style.alignItems = 'center';
@@ -448,12 +453,14 @@ function unlockConfig() {
 }
 
 function updateModeDetails(mode) {
-    document.querySelectorAll('.mode-details').forEach(el => el.classList.add('hidden'));
-    if (mode === 'normal') document.getElementById('mode-details-normal')?.classList.remove('hidden');
-    else if (mode === 'buzz') document.getElementById('mode-details-buzz')?.classList.remove('hidden');
-    else if (mode === 'turn') document.getElementById('mode-details-turn')?.classList.remove('hidden');
-    else if (mode === 'time_attack') document.getElementById('mode-details-time_attack')?.classList.remove('hidden');
-    else if (mode === 'solo') document.getElementById('mode-details-solo')?.classList.remove('hidden');
+    document.querySelectorAll('.mode-details').forEach(function(el) { el.classList.add('hidden'); });
+    
+    // ★ここがエラーの原因でした。完全に修正しました。
+    if (mode === 'normal') { const el = document.getElementById('mode-details-normal'); if(el) el.classList.remove('hidden'); }
+    else if (mode === 'buzz') { const el = document.getElementById('mode-details-buzz'); if(el) el.classList.remove('hidden'); }
+    else if (mode === 'turn') { const el = document.getElementById('mode-details-turn'); if(el) el.classList.remove('hidden'); }
+    else if (mode === 'time_attack') { const el = document.getElementById('mode-details-time_attack'); if(el) el.classList.remove('hidden'); }
+    else if (mode === 'solo') { const el = document.getElementById('mode-details-solo'); if(el) el.classList.remove('hidden'); }
 }
 
 function updateEliminationUI() {
@@ -482,15 +489,15 @@ function addPeriodToPlaylist() {
         const lossInputs = document.querySelectorAll('.q-loss-input');
         const timeInputs = document.querySelectorAll('.q-time-input');
         if (pointInputs.length > 0) {
-            pointInputs.forEach(input => {
+            pointInputs.forEach(function(input) {
                 const idx = parseInt(input.getAttribute('data-index'));
                 if (questionsWithPoints[idx]) questionsWithPoints[idx].points = parseInt(input.value) || 1;
             });
-            lossInputs.forEach(input => {
+            lossInputs.forEach(function(input) {
                 const idx = parseInt(input.getAttribute('data-index'));
                 if (questionsWithPoints[idx]) questionsWithPoints[idx].loss = parseInt(input.value) || 0;
             });
-            timeInputs.forEach(input => {
+            timeInputs.forEach(function(input) {
                 const idx = parseInt(input.getAttribute('data-index'));
                 if (questionsWithPoints[idx]) questionsWithPoints[idx].timeLimit = parseInt(input.value) || 0;
             });
@@ -575,7 +582,7 @@ function renderConfigPreview() {
         return;
     }
     
-    periodPlaylist.forEach((item, index) => {
+    periodPlaylist.forEach(function(item, index) {
         if (index > 0) {
             const arrowDiv = document.createElement('div');
             arrowDiv.className = 'playlist-arrow-container';
@@ -638,8 +645,8 @@ function renderConfigPreview() {
         container.appendChild(div);
     });
 
-    document.querySelectorAll('.inter-status-select').forEach(sel => {
-        sel.addEventListener('change', (e) => {
+    document.querySelectorAll('.inter-status-select').forEach(function(sel) {
+        sel.addEventListener('change', function(e) {
             const idx = e.target.getAttribute('data-index');
             const val = e.target.value;
             periodPlaylist[idx].config.initialStatus = val;
@@ -650,14 +657,14 @@ function renderConfigPreview() {
             }
         });
     });
-    document.querySelectorAll('.inter-pass-input').forEach(inp => {
-        inp.addEventListener('change', (e) => {
+    document.querySelectorAll('.inter-pass-input').forEach(function(inp) {
+        inp.addEventListener('change', function(e) {
             const idx = e.target.getAttribute('data-index');
             periodPlaylist[idx].config.passCount = parseInt(e.target.value) || 5;
         });
     });
-    document.querySelectorAll('.inter-ranking-chk').forEach(chk => {
-        chk.addEventListener('change', (e) => {
+    document.querySelectorAll('.inter-ranking-chk').forEach(function(chk) {
+        chk.addEventListener('change', function(e) {
             const idx = e.target.getAttribute('data-index');
             periodPlaylist[idx].config.intermediateRanking = e.target.checked;
         });
@@ -674,14 +681,14 @@ function loadSavedProgramsInConfig() {
     if(!listEl) return;
     listEl.innerHTML = `<p style="text-align:center;">${APP_TEXT.Config.SelectLoading}</p>`;
 
-    window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
+    window.db.ref(`saved_programs/${currentShowId}`).once('value', function(snap) {
         const data = snap.val();
         listEl.innerHTML = '';
         if(!data) {
             listEl.innerHTML = `<p style="text-align:center; color:#999;">${APP_TEXT.Config.SelectEmpty}</p>`;
             return;
         }
-        Object.keys(data).forEach(key => {
+        Object.keys(data).forEach(function(key) {
             const item = data[key];
             const div = document.createElement('div');
             div.className = 'set-item';
@@ -702,7 +709,7 @@ function loadSavedProgramsInConfig() {
             loadBtn.className = 'btn-mini';
             loadBtn.style.backgroundColor = '#0055ff';
             loadBtn.style.color = 'white';
-            loadBtn.onclick = () => {
+            loadBtn.onclick = function() {
                 if(confirm(APP_TEXT.Config.MsgConfirmLoadProg)) {
                     periodPlaylist = item.playlist || [];
                     const rankChk = document.getElementById('config-final-ranking-chk');
@@ -716,10 +723,10 @@ function loadSavedProgramsInConfig() {
             const delBtn = document.createElement('button');
             delBtn.className = 'delete-btn';
             delBtn.textContent = APP_TEXT.Config.BtnDelProg;
-            delBtn.onclick = () => {
+            delBtn.onclick = function() {
                 if(confirm(APP_TEXT.Config.MsgConfirmDelProg)) {
                     window.db.ref(`saved_programs/${currentShowId}/${key}`).remove()
-                    .then(() => {
+                    .then(function() {
                         div.remove();
                     });
                 }
@@ -755,14 +762,14 @@ function saveProgramToCloud() {
         createdAt: firebase.database.ServerValue.TIMESTAMP
     };
     window.db.ref(`saved_programs/${currentShowId}`).push(saveObj)
-    .then(() => {
+    .then(function() {
         window.showToast(APP_TEXT.Config.MsgSaved);
         titleInput.value = '';
         periodPlaylist = []; 
         renderConfigPreview();
         loadSavedProgramsInConfig(); 
     })
-    .catch(err => alert("Error: " + err.message));
+    .catch(function(err) { alert("Error: " + err.message); });
 }
 
 }
