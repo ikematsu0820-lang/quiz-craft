@@ -679,3 +679,28 @@ window.loadProgramToConfig = function(progData) {
     
     alert("プログラムを読み込みました。");
 };
+
+/* host_config.js の一番下に追加してください */
+
+window.loadProgramToConfigOnDash = function(progData) {
+    if(!confirm("このプログラムを読み込んで編集しますか？")) return;
+    
+    // 構成リスト(periodPlaylist)をセット
+    periodPlaylist = JSON.parse(JSON.stringify(progData.playlist || []));
+    
+    // 画面切り替え
+    window.showView(window.views.config);
+    
+    // UIの反映
+    if(document.getElementById('config-program-title')) {
+        document.getElementById('config-program-title').value = progData.title || "";
+    }
+    if(document.getElementById('config-final-ranking-chk')) {
+        document.getElementById('config-final-ranking-chk').checked = (progData.finalRanking !== false);
+    }
+    
+    // リストの再描画
+    renderConfigPreview();
+    alert("プログラムを読み込みました。");
+};
+
