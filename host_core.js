@@ -164,63 +164,134 @@ function enterDashboard() {
     }
 }
 
-function loadSavedSets() {
+/* host_core.js の loadSavedSets をこれに差し替え */
+function loadAllDashboardItems() {
     const listEl = document.getElementById('dash-set-list');
+    if(!listEl) return;
+    
+    // 見出しを更新（HTMLをいじらなくて済むようにJSで書き換え）
+    const heading = listEl.previousElementSibling;
+    if(heading && heading.tagName === 'H4') heading.textContent = "保存済みデータ (Sets & Programs)";
+
     listEl.innerHTML = `<p style="text-align:center;">${APP_TEXT.Config.SelectLoading}</p>`;
 
-    window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
-        const data = snap.val();
+    // セットとプログラムを並行して取得
+    Promise.all([
+        window.db.ref(`saved_sets/${currentShowId}`).once('value'),
+        window.db.ref(`saved_programs/${currentShowId}`).once('value')
+    ]).then(([setSnap, progSnap]) => {
+        const sets = setSnap.val() || {};
+        const progs = progSnap.val() || {};
+        
+        let items = [];
+
+        // セットを配列化
+        Object.keys(sets).forEach(key => {
+            items.push({ type: 'set', key: key, data: sets[key], date: sets[key].createdAt || 0 });
+        });
+
+        // プログラムを配列化
+        Object.keys(progs).forEach(key => {
+            items.push({ type: 'prog', key: key, data: progs[key], date: progs[key].createdAt || 0 });
+        });
+
+        // 日付の新しい順にソート
+        items.sort((a, b) => b.date - a.date);
+
         listEl.innerHTML = '';
-        if(!data) {
-            listEl.innerHTML = `<p style="text-align:center; color:#999;">${APP_TEXT.Config.SelectEmpty}</p>`;
+        if(items.length === 0) {
+            listEl.innerHTML = `<p style="text-align:center; color:#999;">データがありません</p>`;
             return;
         }
-        Object.keys(data).forEach(key => {
-            const item = data[key];
-            const div = document.createElement('div');
-            div.className = 'set-item';
 
-            let typeLabel = "Mix";
-            if (item.questions && item.questions.length > 0) {
-                const type = item.questions[0].type;
-                if (type === 'choice') typeLabel = APP_TEXT.Creator.TypeChoice;
-                else if (type === 'sort') typeLabel = APP_TEXT.Creator.TypeSort;
-                else if (type === 'free_oral') typeLabel = APP_TEXT.Creator.TypeFreeOral;
-                else if (type === 'free_written') typeLabel = APP_TEXT.Creator.TypeFreeWritten;
-                else if (type === 'multi') typeLabel = APP_TEXT.Creator.TypeMulti;
+        items.forEach(item => {
+            const div = document.createElement('div');
+            const d = item.data;
+            const dateStr = new Date(item.date).toLocaleDateString();
+
+            if (item.type === 'set') {
+                // ▼ セット（素材）の表示
+                let typeLabel = "Mix";
+                if (d.questions && d.questions.length > 0) typeLabel = d.questions[0].type.toUpperCase();
+                
+                div.className = 'dash-list-item item-type-set';
+                div.innerHTML = `
+                    <div style="flex:1;">
+                        <div class="item-title"><span class="badge-set">SET</span> ${d.title}</div>
+                        <div class="item-meta">
+                            ${dateStr} / ${d.questions.length}Q / [${typeLabel}]
+                        </div>
+                    </div>
+                `;
+                
+                // ボタンエリア
+                const btnArea = document.createElement('div');
+                btnArea.style.display = 'flex';
+                btnArea.style.gap = '5px';
+
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn-mini';
+                editBtn.style.background = '#2c3e50';
+                editBtn.style.color = 'white';
+                editBtn.textContent = 'Edit';
+                editBtn.onclick = () => loadSetForEditing(item.key, d);
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-btn';
+                delBtn.textContent = 'Del';
+                delBtn.onclick = () => {
+                    if(confirm(APP_TEXT.Dashboard.DeleteConfirm)) {
+                        window.db.ref(`saved_sets/${currentShowId}/${item.key}`).remove().then(loadAllDashboardItems);
+                    }
+                };
+                
+                btnArea.appendChild(editBtn);
+                btnArea.appendChild(delBtn);
+                div.appendChild(btnArea);
+
+            } else {
+                // ▼ プログラム（構成）の表示
+                div.className = 'dash-list-item item-type-prog';
+                div.innerHTML = `
+                    <div style="flex:1;">
+                        <div class="item-title"><span class="badge-prog">PROG</span> ${d.title}</div>
+                        <div class="item-meta">
+                            ${dateStr} / ${d.playlist ? d.playlist.length : 0} Periods
+                        </div>
+                    </div>
+                `;
+
+                // ボタンエリア
+                const btnArea = document.createElement('div');
+                btnArea.style.display = 'flex';
+                btnArea.style.gap = '5px';
+
+                const loadBtn = document.createElement('button');
+                loadBtn.className = 'btn-mini';
+                loadBtn.style.background = '#e94560'; // ピンク
+                loadBtn.style.color = 'white';
+                loadBtn.textContent = 'Load';
+                loadBtn.onclick = () => {
+                    // ダッシュボードから直接Configへロードして遷移
+                    if(typeof window.loadProgramToConfig === 'function') {
+                        window.loadProgramToConfig(d);
+                    }
+                };
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-btn';
+                delBtn.textContent = 'Del';
+                delBtn.onclick = () => {
+                    if(confirm(APP_TEXT.Config.MsgConfirmDelProg)) {
+                        window.db.ref(`saved_programs/${currentShowId}/${item.key}`).remove().then(loadAllDashboardItems);
+                    }
+                };
+
+                btnArea.appendChild(loadBtn);
+                btnArea.appendChild(delBtn);
+                div.appendChild(btnArea);
             }
 
-            div.innerHTML = `
-                <div>
-                    <span style="font-weight:bold;">${item.title}</span> <span style="font-size:0.8em; color:#0055ff;">[${typeLabel}]</span>
-                    <div style="font-size:0.8em; color:#666;">
-                        ${new Date(item.createdAt).toLocaleDateString()} / ${item.questions.length}Q
-                    </div>
-                </div>
-            `;
-            const btnArea = document.createElement('div');
-            btnArea.style.display = 'flex';
-            btnArea.style.gap = '5px';
-
-            const editBtn = document.createElement('button');
-            editBtn.textContent = "Edit";
-            editBtn.className = 'btn-mini';
-            editBtn.style.backgroundColor = '#2c3e50';
-            editBtn.style.color = 'white';
-            editBtn.onclick = () => loadSetForEditing(key, item);
-
-            const delBtn = document.createElement('button');
-            delBtn.className = 'delete-btn';
-            delBtn.textContent = "Del";
-            delBtn.onclick = () => {
-                if(confirm(APP_TEXT.Dashboard.DeleteConfirm)) {
-                    window.db.ref(`saved_sets/${currentShowId}/${key}`).remove();
-                    div.remove();
-                }
-            };
-            btnArea.appendChild(editBtn);
-            btnArea.appendChild(delBtn);
-            div.appendChild(btnArea);
             listEl.appendChild(div);
         });
     });
