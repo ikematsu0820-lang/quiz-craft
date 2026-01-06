@@ -453,6 +453,59 @@ function renderConfigPreview() {
     }
     
     periodPlaylist.forEach((item, index) => {
+        // ▼▼▼ 修正点1: Inter-Period 設定の復活 ▼▼▼
+        if (index > 0) {
+            const arrowDiv = document.createElement('div');
+            arrowDiv.className = 'playlist-arrow-container';
+            arrowDiv.innerHTML = '<div class="playlist-arrow"></div>';
+            container.appendChild(arrowDiv);
+            
+            const settingDiv = document.createElement('div');
+            settingDiv.className = 'playlist-inter-setting';
+            
+            // 設定値を読み出し（デフォルトは revive: 全員復活）
+            const currentStatus = item.config.initialStatus || 'revive';
+            
+            settingDiv.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <label style="font-size:0.8em; font-weight:bold; color:#b8860b;">${APP_TEXT.Config.InterHeading || "Inter-Period:"}</label>
+                    <select onchange="updateInterPeriod(${index}, this.value)" class="inter-status-select" style="padding:5px;">
+                        <option value="revive" ${currentStatus === 'revive' ? 'selected' : ''}>${APP_TEXT.Config.StatusRevive}</option>
+                        <option value="continue" ${currentStatus === 'continue' ? 'selected' : ''}>${APP_TEXT.Config.StatusContinue}</option>
+                        <option value="ranking" ${currentStatus === 'ranking' ? 'selected' : ''}>${APP_TEXT.Config.StatusRanking}</option>
+                    </select>
+                </div>
+            `;
+            container.appendChild(settingDiv);
+        }
+        // ▲▲▲ 修正点1 終了 ▲▲▲
+
+        const div = document.createElement('div');
+        div.className = 'timeline-card';
+        div.style.marginBottom = "0"; 
+        
+        let modeLabel = item.config.mode.toUpperCase();
+        if(item.config.gameType === 'territory') modeLabel += " (PANEL)";
+
+        // ▼▼▼ 修正点2: Editボタンの追加 ▼▼▼
+        div.innerHTML = `
+            <div style="flex:1;">
+                <div style="font-weight:bold; font-size:1.1em;">${index+1}. ${item.title}</div>
+                <div style="font-size:0.8em; color:#666;">
+                    [${modeLabel}] ${item.questions.length}Q
+                </div>
+            </div>
+            <div style="display:flex; gap:5px; align-items:center;">
+                <button class="btn-mini" style="background:#2c3e50; color:white; padding:5px 10px;" onclick="editPlaylistItem(${index})">Edit</button>
+                <button class="delete-btn" onclick="removeFromPlaylist(${index})">Del</button>
+            </div>
+        `;
+        // ▲▲▲ 修正点2 終了 ▲▲▲
+        container.appendChild(div);
+    });
+}
+    
+    periodPlaylist.forEach((item, index) => {
         if (index > 0) {
             const arrowDiv = document.createElement('div');
             arrowDiv.className = 'playlist-arrow-container';
@@ -582,3 +635,52 @@ function saveProgramToCloud() {
     })
     .catch(err => alert("Error: " + err.message));
 }
+/* host_config.js の一番下に追加 */
+
+// Inter-Period設定を変更した時に呼ばれる関数
+window.updateInterPeriod = function(index, val) {
+    if(periodPlaylist[index]) {
+        periodPlaylist[index].config.initialStatus = val;
+    }
+};
+
+// リストの「Edit」ボタンを押した時に呼ばれる関数
+window.editPlaylistItem = function(index) {
+    const item = periodPlaylist[index];
+    if(!item) return;
+
+    if(!confirm("このセットを編集エリアに読み込みますか？\n（現在のリストからは一度削除されます）")) return;
+
+    // 1. データをビルダー変数に戻す
+    selectedSetQuestions = JSON.parse(JSON.stringify(item.questions)); // 深いコピー
+    
+    // 2. 画面の入力欄に設定を反映
+    const c = item.config;
+    
+    // 基本設定
+    if(document.getElementById('config-mode-select')) document.getElementById('config-mode-select').value = c.mode;
+    if(document.getElementById('config-game-type')) document.getElementById('config-game-type').value = c.gameType || 'score';
+    if(document.getElementById('config-elimination-rule')) document.getElementById('config-elimination-rule').value = c.eliminationRule;
+    if(document.getElementById('config-elimination-count')) document.getElementById('config-elimination-count').value = c.eliminationCount || 1;
+    
+    // モード別詳細
+    if(c.mode === 'normal') {
+        if(document.getElementById('config-normal-limit')) document.getElementById('config-normal-limit').value = c.normalLimit;
+        if(document.getElementById('config-shuffle-q')) document.getElementById('config-shuffle-q').value = c.shuffleChoices || 'off'; // ※名前揺れ注意
+    } else if (c.mode === 'buzz') {
+        if(document.getElementById('config-buzz-wrong-action')) document.getElementById('config-buzz-wrong-action').value = c.buzzWrongAction;
+        if(document.getElementById('config-buzz-timer')) document.getElementById('config-buzz-timer').value = c.buzzTime;
+    }
+    
+    // 3. UIの表示更新
+    updateModeDetails(c.mode);
+    updateEliminationUI();
+    renderQuestionsListUI(selectedSetQuestions);
+    
+    // 4. リストから削除して再描画
+    removeFromPlaylist(index);
+    
+    // 5. 上部にスクロールして案内
+    document.getElementById('config-view').scrollIntoView({behavior: "smooth"});
+    alert("設定を読み込みました。修正して「リストに追加」を押してください。");
+};
