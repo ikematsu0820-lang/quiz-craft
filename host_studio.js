@@ -358,9 +358,14 @@ function setupStudioButtons(roomId) {
     const btnPass = document.getElementById('host-judge-pass-btn');
     if(btnPass) btnPass.onclick = () => { /* Turn mode pass logic if needed */ };
 
-    const btnShowAns = document.getElementById('host-show-answer-btn');
-    if(btnShowAns) btnShowAns.onclick = () => finishQuestion(roomId);
-
+   const btnShowAns = document.getElementById('host-show-answer-btn');
+    if(btnShowAns) btnShowAns.onclick = () => {
+        // ★ここに追加：正解発表のタイミングで一斉採点を行う
+        judgeSimultaneousAnswers(roomId);
+        
+        // その後、画面を「正解表示」に切り替える（元の処理）
+        finishQuestion(roomId);
+    };
     const btnNext = document.getElementById('host-next-btn');
     if(btnNext) btnNext.onclick = (e) => {
         const action = e.target.dataset.action;
