@@ -1,13 +1,16 @@
 /* =========================================================
- * host_creator.js (v57: Full & Complete)
+ * host_creator.js (v62: Pop-up Naming)
  * =======================================================*/
 
 let editingQuestionIndex = null;
+let currentEditingTitle = ""; // ★追加: 入力欄の代わりにタイトルを記憶する変数
 
 window.initCreatorMode = function() {
     editingSetId = null;
+    currentEditingTitle = ""; // ★リセット
     createdQuestions = [];
-    document.getElementById('quiz-set-title').value = '';
+    
+    // ★削除: document.getElementById('quiz-set-title').value = ''; は不要
     document.getElementById('save-to-cloud-btn').textContent = APP_TEXT.Creator.BtnSave;
     
     resetGlobalSettings(); 
@@ -24,8 +27,10 @@ window.initCreatorMode = function() {
 
 window.loadSetForEditing = function(key, item) {
     editingSetId = key;
+    currentEditingTitle = item.title || ""; // ★記憶
     createdQuestions = item.questions || [];
-    document.getElementById('quiz-set-title').value = item.title;
+    
+    // ★削除: document.getElementById('quiz-set-title').value = item.title; は不要
     document.getElementById('save-to-cloud-btn').textContent = APP_TEXT.Creator.BtnUpdate;
     
     const typeSelect = document.getElementById('creator-q-type');
@@ -39,14 +44,14 @@ window.loadSetForEditing = function(key, item) {
         if(firstQ.layout) document.getElementById('creator-set-layout').value = firstQ.layout;
         if(firstQ.align) updateAlignUI(firstQ.align);
         if(firstQ.design) {
-            document.getElementById('design-main-bg-color').value = firstQ.design.mainBgColor || "#222222";
-            document.getElementById('design-bg-image-data').value = firstQ.design.bgImage || "";
-            document.getElementById('design-q-text').value = firstQ.design.qTextColor || "#ffffff";
-            document.getElementById('design-q-bg').value = firstQ.design.qBgColor || "#2c5066";
-            document.getElementById('design-q-border').value = firstQ.design.qBorderColor || "#ffffff";
-            document.getElementById('design-c-text').value = firstQ.design.cTextColor || "#ffffff";
-            document.getElementById('design-c-bg').value = firstQ.design.cBgColor || "#365c75";
-            document.getElementById('design-c-border').value = firstQ.design.cBorderColor || "#ffffff";
+            if(document.getElementById('design-main-bg-color')) document.getElementById('design-main-bg-color').value = firstQ.design.mainBgColor || "#222222";
+            if(document.getElementById('design-bg-image-data')) document.getElementById('design-bg-image-data').value = firstQ.design.bgImage || "";
+            if(document.getElementById('design-q-text')) document.getElementById('design-q-text').value = firstQ.design.qTextColor || "#ffffff";
+            if(document.getElementById('design-q-bg')) document.getElementById('design-q-bg').value = firstQ.design.qBgColor || "#2c5066";
+            if(document.getElementById('design-q-border')) document.getElementById('design-q-border').value = firstQ.design.qBorderColor || "#ffffff";
+            if(document.getElementById('design-c-text')) document.getElementById('design-c-text').value = firstQ.design.cTextColor || "#ffffff";
+            if(document.getElementById('design-c-bg')) document.getElementById('design-c-bg').value = firstQ.design.cBgColor || "#365c75";
+            if(document.getElementById('design-c-border')) document.getElementById('design-c-border').value = firstQ.design.cBorderColor || "#ffffff";
         }
         document.getElementById('creator-special-mode').value = firstQ.specialMode || 'none';
     } else {
@@ -62,18 +67,20 @@ window.loadSetForEditing = function(key, item) {
 
 document.addEventListener('DOMContentLoaded', () => {
     const typeSelect = document.getElementById('creator-q-type');
-    typeSelect.innerHTML = `
-        <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
-        <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
-        <option value="free_oral">${APP_TEXT.Creator.TypeFreeOral}</option>
-        <option value="free_written">${APP_TEXT.Creator.TypeFreeWritten}</option>
-        <option value="multi">${APP_TEXT.Creator.TypeMulti}</option>
-    `;
-    typeSelect.addEventListener('change', (e) => {
-        if (createdQuestions.length === 0) {
-            renderCreatorForm(e.target.value);
-        }
-    });
+    if(typeSelect) {
+        typeSelect.innerHTML = `
+            <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
+            <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
+            <option value="free_oral">${APP_TEXT.Creator.TypeFreeOral}</option>
+            <option value="free_written">${APP_TEXT.Creator.TypeFreeWritten}</option>
+            <option value="multi">${APP_TEXT.Creator.TypeMulti}</option>
+        `;
+        typeSelect.addEventListener('change', (e) => {
+            if (createdQuestions.length === 0) {
+                renderCreatorForm(e.target.value);
+            }
+        });
+    }
 
     document.querySelectorAll('.btn-align').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -99,8 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.getElementById('update-question-btn').addEventListener('click', updateQuestion);
-    document.getElementById('cancel-update-btn').addEventListener('click', resetForm);
+    const upBtn = document.getElementById('update-question-btn');
+    if(upBtn) upBtn.addEventListener('click', updateQuestion);
+    
+    const cancelBtn = document.getElementById('cancel-update-btn');
+    if(cancelBtn) cancelBtn.addEventListener('click', resetForm);
 });
 
 window.showToast = function(msg) {
@@ -142,30 +152,19 @@ function handleImageUpload(e) {
 }
 
 function resetGlobalSettings() {
-    // まずUIを初期値に
     if(typeof setDefaultDesignUI === 'function') {
-        // host_design.js側を優先（あれば）
         setDefaultDesignUI();
     } else {
-        // 念のためのフォールバック（旧挙動）
+        // Fallback
         document.getElementById('creator-set-layout').value = 'standard';
         updateAlignUI('center');
-        document.getElementById('creator-special-mode').value = 'none';
         document.getElementById('design-main-bg-color').value = "#222222";
         document.getElementById('design-bg-image-data').value = "";
         document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgNoImage;
-        document.getElementById('design-q-text').value = "#ffffff";
-        document.getElementById('design-q-bg').value = "#2c5066";
-        document.getElementById('design-q-border').value = "#ffffff";
-        document.getElementById('design-c-text').value = "#ffffff";
-        document.getElementById('design-c-bg').value = "#365c75";
-        document.getElementById('design-c-border').value = "#ffffff";
+        // (省略: カラー設定の初期化は host_design.js に委譲推奨)
     }
-
-    // Special Mode は Creator側の設定なのでここで初期化
     document.getElementById('creator-special-mode').value = 'none';
 
-    // 保存済みのデザインがあれば読み込んで上書き
     if(typeof window.loadDesignSettings === 'function') {
         window.loadDesignSettings();
     }
@@ -533,7 +532,15 @@ function renderQuestionList() {
 
 function saveToCloud() {
     if(createdQuestions.length === 0) { alert('No questions'); return; }
-    const title = document.getElementById('quiz-set-title').value.trim() || "Untitled";
+    
+    // ★変更: ポップアップで名前を入力させる
+    const inputTitle = prompt("セット名を入力してください:", currentEditingTitle);
+    if(inputTitle === null) return; // キャンセル時
+    if(!inputTitle.trim()) {
+        alert("セット名は必須です！");
+        return;
+    }
+    const title = inputTitle.trim();
     
     const layout = document.getElementById('creator-set-layout').value;
     const align = document.getElementById('creator-set-align').value;
