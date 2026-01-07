@@ -2,17 +2,20 @@
  * style_viewer.css (v61: U-NEXT Style Cinema UI)
  * =======================================================*/
 
+/* =========================================================
+ * style_viewer.css (v62: Scroll Fix)
+ * =======================================================*/
+
 :root {
     /* U-NEXT風カラーパレット */
-    --main-bg-color: #0a0a0a;       /* ほぼ真っ黒な背景 */
-    --accent-color: #00bfff;        /* 鮮やかなシアンブルー */
-    --text-main: #ffffff;           /* 真っ白な文字 */
-    --text-sub: #a0a0a0;            /* グレーの補助文字 */
+    --main-bg-color: #0a0a0a;
+    --accent-color: #00bfff;
+    --text-main: #ffffff;
+    --text-sub: #a0a0a0;
     
-    --q-bg-color: rgba(255, 255, 255, 0.05); /* うっすら透ける背景 */
-    --c-bg-color: transparent;      /* 選択肢は背景なしでスタイリッシュに */
+    --q-bg-color: rgba(255, 255, 255, 0.05);
+    --c-bg-color: transparent;
     
-    /* フォント設定（モダンなゴシック） */
     --font-stack: "Hiragino Kaku Gothic ProN", "Noto Sans JP", Roboto, sans-serif;
     
     --progress: 100%;
@@ -21,20 +24,28 @@
 body {
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    /* overflow: hidden;  ← ★これを削除しました！ */
     background-color: var(--main-bg-color);
     font-family: var(--font-stack);
 }
 
 #viewer-main-view {
     background-color: var(--main-bg-color);
-    background-image: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%); /* 中央がほんのり明るい */
+    background-image: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
     color: var(--text-main);
+    
+    /* モニター画面だけを固定・全画面化 */
     width: 100vw;
     height: 100vh;
+    position: fixed; /* これでモニター画面を独立レイヤー化 */
+    top: 0;
+    left: 0;
+    z-index: 9999;
+    
     display: flex;
     justify-content: center;
     align-items: center;
+    overflow: hidden; /* ★モニター画面の中でだけスクロール禁止にする */
 }
 
 #viewer-content {
