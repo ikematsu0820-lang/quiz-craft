@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style_common.css?v=55">
-<link rel="stylesheet" href="style_host.css?v=56">
-<link rel="stylesheet" href="style_player.css?v=55">
-<link rel="stylesheet" href="style_viewer.css?v=55">
+<link rel="stylesheet" href="style_common.css?v=60">
+<link rel="stylesheet" href="style_host.css?v=60">
+<link rel="stylesheet" href="style_player.css?v=60">
+<link rel="stylesheet" href="style_viewer.css?v=60">
 </head>
 <body>
 
@@ -46,7 +46,6 @@
     <hr>
 
     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
-        
         <button id="dash-create-btn" class="btn-info" style="height:80px; font-weight:bold; font-size:0.9em;" data-text="Dashboard.BtnCreate">Create</button>
         <button id="dash-config-btn" class="btn-primary" style="height:80px; font-weight:bold; font-size:0.9em; background-color:#2c3e50;" data-text="Dashboard.BtnConfig">Config</button>
         <button id="dash-design-btn" class="btn-primary" style="height:80px; font-weight:bold; font-size:0.9em; background-color:#2c5066; border-left:5px solid #d32f2f;">デザイン</button>
@@ -61,7 +60,6 @@
     </div>
 </div>
 
-<!-- ★ 新規：デザイン画面 -->
 <div id="design-view" class="view hidden">
     <div class="view-header">
         <h2 style="margin:0;">デザイン</h2>
@@ -79,6 +77,7 @@
         </div>
         <p style="font-size:0.8em; color:#8a6d3b; margin:5px 0 0 0;">※選択した構成の「最初の問題」のデザイン設定を適用します</p>
     </div>
+
     <div style="background:#fff; padding:15px; border-radius:8px; border:2px solid #2c5066; margin-bottom:15px;">
         <h4 style="margin:0 0 10px 0; color:#2c5066;">モニターレイアウト</h4>
         <select id="creator-set-layout" class="btn-block" style="background:#fff; margin-bottom:10px;">
@@ -95,54 +94,6 @@
         </div>
         <input type="hidden" id="creator-set-align" value="center">
     </div>
-
-    <div style="background:#fffbe6; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #e6b800;">
-        <h4 style="margin:0 0 10px 0; color:#b8860b;">デザイン設定</h4>
-
-        <div class="design-group" style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed #ccc;">
-            <label style="font-size:0.8em; font-weight:bold; color:#555;" data-text="Creator.GroupMain">Main Background</label>
-            <div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
-                <div>
-                    <label style="font-size:0.7em;" data-text="Creator.LabelColorBg">Color</label>
-                    <input type="color" id="design-main-bg-color" value="#222222" style="height:30px; width:50px;">
-                </div>
-                <div style="flex:1;">
-                    <label style="font-size:0.7em;" data-text="Creator.LabelBgImage">Image</label>
-                    <input type="file" id="design-bg-image-file" accept="image/*" style="display:none;">
-                    <div style="display:flex; gap:5px;">
-                        <button id="design-bg-image-btn" class="btn-dark" style="font-size:0.7em; padding:5px 10px;" data-text="Creator.BtnSelectImage">Select</button>
-                        <button id="design-bg-clear-btn" class="btn-danger" style="font-size:0.7em; padding:5px 10px;" data-text="Creator.BtnClearImage">Clear</button>
-                    </div>
-                    <span id="design-bg-image-status" style="font-size:0.7em; color:#00aa00;"></span>
-                </div>
-            </div>
-            <input type="hidden" id="design-bg-image-data">
-        </div>
-
-        <div class="design-group" style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed #ccc;">
-            <label style="font-size:0.8em; font-weight:bold; color:#555;" data-text="Creator.GroupQ">Question Area</label>
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top:5px;">
-                <div><label style="font-size:0.7em;" data-text="Creator.LabelColorText">Text</label><input type="color" id="design-q-text" value="#ffffff" style="width:100%;"></div>
-                <div><label style="font-size:0.7em;" data-text="Creator.LabelColorBg">Bg</label><input type="color" id="design-q-bg" value="#2c5066" style="width:100%;"></div>
-                <div><label style="font-size:0.7em;" data-text="Creator.LabelColorBorder">Border</label><input type="color" id="design-q-border" value="#ffffff" style="width:100%;"></div>
-            </div>
-        </div>
-
-        <div class="design-group">
-            <label style="font-size:0.8em; font-weight:bold; color:#555;" data-text="Creator.GroupC">Choice Area</label>
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top:5px;">
-                <div><label style="font-size:0.7em;" data-text="Creator.LabelColorText">Text</label><input type="color" id="design-c-text" value="#ffffff" style="width:100%;"></div>
-                <div><label style="font-size:0.7em;" data-text="Creator.LabelColorBg">Bg</label><input type="color" id="design-c-bg" value="#365c75" style="width:100%;"></div>
-                <div><label style="font-size:0.7em;" data-text="Creator.LabelColorBorder">Border</label><input type="color" id="design-c-border" value="#ffffff" style="width:100%;"></div>
-            </div>
-        </div>
-    </div>
-
-    <div style="display:flex; gap:10px;">
-        <button id="design-reset-btn" class="btn-dark" style="flex:1; padding:12px; font-weight:bold;">初期値に戻す</button>
-        <button id="design-save-btn" class="btn-success" style="flex:1; padding:12px; font-weight:bold;">保存</button>
-    </div>
-</div>
 
     <div style="background:#fffbe6; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #e6b800;">
         <h4 style="margin:0 0 10px 0; color:#b8860b;">デザイン設定</h4>
@@ -229,7 +180,6 @@
         <h5 data-text="Creator.ListHeading" style="margin:0 0 5px 0;">List</h5>
         <div id="q-list" style="background:white; padding:5px; border:1px solid #ddd; min-height:50px; margin-bottom:15px; max-height:300px; overflow-y:auto;"></div>
 
-        <!-- ★ Layout / Align / Design は「デザイン」画面へ移動 -->
         <button id="save-to-cloud-btn" class="btn-success btn-block" style="padding:15px; font-weight:bold;" data-text="Creator.BtnSave">Save</button>
     </div>
 </div>
@@ -242,7 +192,6 @@
     <hr>
     
     <div style="background:#f0f8ff; padding:15px; border:2px solid #87ceeb; border-radius:8px; margin-bottom:20px;">
-        
         <div style="border-bottom:1px dashed #555; padding-bottom:15px; margin-bottom:15px;">
             <label class="config-label-large" style="color:#0055ff;">📂 既存の構成を編集 (Load Program)</label>
             <div style="display:flex; gap:5px; margin-top:5px;">
@@ -253,6 +202,7 @@
             </div>
             <p style="font-size:0.8em; color:#aaa; margin:5px 0 0 0;">※読み込むと現在のリストは上書きされます</p>
         </div>
+
         <h3 style="margin:0 0 10px 0; color:#0055ff; font-size:1.1em; text-align:center;" data-text="Config.HeadingAdd">Add Period</h3>
 
         <div style="margin-bottom:15px;">
@@ -284,30 +234,7 @@
     <button id="config-go-studio-btn" class="btn-danger btn-block" style="padding:15px; font-weight:bold; font-size:1.2em;" data-text="Config.BtnGoStudio">Go Studio</button>
 </div>
 
-    <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
-        <h4 style="color:#333; margin:0 0 10px 0;" data-text="Config.HeadingList">Playlist</h4>
-        <div id="config-playlist-preview" style="background:#eee; padding:10px; border-radius:5px; min-height:50px;"><p style="text-align:center; color:#999; font-size:0.8em;">まだ追加されていません</p></div>
-        <div style="margin:10px 0; text-align:right;">
-            <label style="font-weight:bold; color:#0055ff; cursor:pointer; background:#e6f0ff; padding:5px 10px; border-radius:4px;">
-                <input type="checkbox" id="config-final-ranking-chk" checked> <span data-text="Config.LabelFinalRank">Final Ranking</span>
-            </label>
-        </div>
-        <div style="display:flex; gap:5px; margin-bottom:15px; margin-top:15px;">
-            <input type="text" id="config-program-title" placeholder="構成名を入力" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:4px;">
-            <button id="config-save-program-btn" class="btn-info" style="flex:0 0 80px; font-weight:bold;" data-text="Config.BtnSaveProg">Save</button>
-        </div>
-    </div>
-    <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
-        <h4 style="color:#333; margin:0 0 10px 0;" data-text="Config.HeadingSavedProg">Saved Programs</h4>
-        <div id="config-saved-programs-list" style="max-height:200px; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:5px; border:1px solid #eee;"></div>
-    </div>
-    <button id="config-go-studio-btn" class="btn-danger btn-block" style="padding:15px; font-weight:bold; font-size:1.2em;" data-text="Config.BtnGoStudio">Go Studio</button>
-</div>
-
-<!-- （以下、host-control-view / ranking / player / viewer-main は元のまま） -->
-
 <div id="host-control-view" class="view hidden">
-    <!-- ここは元ファイルのまま（省略せず残しています） -->
     <div style="background:#111; color:white; padding:10px; border-radius:8px; text-align:center; margin-bottom:10px; border:4px solid gold;">
         <div style="font-size:0.8em; color:gold;"><span data-text="Studio.OnAir">ON AIR</span> / <span id="studio-show-id">---</span></div>
         <div id="host-room-id" style="font-size:2em; font-weight:bold; letter-spacing:3px;">---</div>
@@ -403,7 +330,6 @@
 </div>
 
 <div id="player-game-view" class="view hidden">
-    <!-- 元ファイルのまま（省略なしにしたい場合はここも元を貼ってください） -->
     <div id="player-status-bar" style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.9em; padding:5px; background:#eee; border-radius:4px;">
         <span id="player-name-disp" style="font-weight:bold;" data-text="Player.LabelNameDefault">---</span>
         <span id="alive-badge" style="background:#00ff00; color:black; padding:2px 6px; border-radius:4px; font-weight:bold;" data-text="Player.BadgeAlive">ALIVE</span>
@@ -448,7 +374,6 @@
 <div id="viewer-login-view" class="view hidden">
     <div class="view-header">
         <h2 data-text="Viewer.Title" style="margin:0;">Monitor Connect</h2>
-        <!-- ★ Home → ダッシュボードに統一 -->
         <button class="header-back-btn back-to-main">ダッシュボード</button>
     </div>
     <hr>
@@ -469,22 +394,26 @@
         <div id="viewer-multi-grid" class="hidden"></div>
         <div id="viewer-sub-text"></div>
         <div id="viewer-ranking-area"></div>
+        <div id="viewer-race-area" class="hidden"></div>
+        <div id="viewer-timer-bar-area" class="hidden">
+            <div id="viewer-timer-bar"></div>
+        </div>
     </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=57"></script>
+<script src="text_config.js?v=60"></script>
 
-<script src="host_core.js?v=58"></script>
+<script src="host_core.js?v=60"></script>
 <script src="host_design.js?v=1"></script>
-<script src="host_creator.js?v=58"></script>
+<script src="host_creator.js?v=60"></script>
 
-<script src="host_config.js?v=57"></script>
-<script src="host_studio.js?v=57"></script>
-<script src="player.js?v=54"></script>
-<script src="viewer.js?v=54"></script>
+<script src="host_config.js?v=60"></script>
+<script src="host_studio.js?v=60"></script>
+<script src="player.js?v=60"></script>
+<script src="viewer.js?v=60"></script>
 
 </body>
 </html>
