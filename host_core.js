@@ -231,6 +231,26 @@ function loadAllDashboardItems() {
                 btnArea.style.display = 'flex';
                 btnArea.style.gap = '5px';
 
+                // ★追加: クイックスタートボタン
+                const quickBtn = document.createElement('button');
+                quickBtn.className = 'btn-mini';
+                // 派手なグラデーションで「すぐ始まる感」を出す
+                quickBtn.style.background = 'linear-gradient(135deg, #00bfff 0%, #0077ff 100%)'; 
+                quickBtn.style.color = 'white';
+                quickBtn.style.fontWeight = 'bold';
+                quickBtn.style.border = 'none';
+                quickBtn.style.boxShadow = '0 0 10px rgba(0, 191, 255, 0.5)';
+                quickBtn.innerHTML = '▶ Quick';
+                quickBtn.onclick = () => {
+                    if(typeof window.quickStartSet === 'function') {
+                        if(confirm(`「${d.title}」をU-NEXT風デザインで\n即座にスタジオ投影しますか？`)) {
+                            window.quickStartSet(d);
+                        }
+                    } else {
+                        alert("Quick Start function missing");
+                    }
+                };
+
                 const editBtn = document.createElement('button');
                 editBtn.className = 'btn-mini';
                 editBtn.style.background = '#2c3e50';
@@ -247,6 +267,7 @@ function loadAllDashboardItems() {
                     }
                 };
                 
+                btnArea.appendChild(quickBtn); // 先頭に追加
                 btnArea.appendChild(editBtn);
                 btnArea.appendChild(delBtn);
                 div.appendChild(btnArea);
