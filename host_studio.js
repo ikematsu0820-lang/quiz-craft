@@ -513,3 +513,103 @@ function judgeSimultaneousAnswers(roomId) {
         });
     });
 }
+/* host_studio.js の一番下に追加 */
+
+/* =========================================================
+ * Quick Start Logic (Set -> Studio Direct)
+ * =======================================================*/
+
+// ダッシュボードの「Quick Play」ボタンから呼ばれる関数
+window.quickStartSet = function(setData) {
+    if(!setData || !setData.questions) return;
+    
+    // 1. U-NEXT風デザインプリセット（強制注入）
+    const unextDesign = {
+        mainBgColor: "#0a0a0a",       // 漆黒
+        bgImage: "",
+        qTextColor: "#ffffff",        // 白
+        qBgColor: "rgba(255, 255, 255, 0.05)", // 透過ガラス風
+        qBorderColor: "#00bfff",      // シアンのアクセント
+        cTextColor: "#a0a0a0",        // グレー文字
+        cBgColor: "transparent",      // 背景なし
+        cBorderColor: "#333333"       // 薄い境界線
+    };
+
+    // 2. ルールプリセット（出題形式からよしなに決定）
+    // 基本は「ノーマル（一斉回答）」、スペシャルモードならそれに従う
+    const firstQ = setData.questions[0] || {};
+    let mode = 'normal';
+    let timeLimit = 0;
+
+    if (firstQ.specialMode === 'time_attack') {
+        mode = 'time_attack';
+        timeLimit = 5;
+    }
+
+    const autoConfig = {
+        mode: mode,
+        gameType: 'score',      // 基本は得点制
+        initialStatus: 'revive',
+        eliminationRule: 'none',
+        timeLimit: timeLimit,
+        shuffleChoices: 'off',
+        
+        // 演出系
+        theme: 'dark',
+        scoreUnit: 'Pt'
+    };
+
+    // 3. 質問データにデザインを結合
+    // (元データにデザインがなくても、ここでU-NEXT風にする)
+    const readyQuestions = setData.questions.map(q => {
+        // 既存のデザインがあれば優先、なければU-NEXTプリセット
+        const d = q.design || unextDesign;
+        // ただし、今回は「プリセットでカッコよく」が目的なので、
+        // 色設定がない場合（デフォルトの白等）は強制的に上書きするロジックもアリだが、
+        // ここでは「未設定ならU-NEXT」とする。
+        if(!q.design) {
+            q.design = unextDesign;
+        }
+        return q;
+    });
+
+    // 4. プレイリストを即席で作成
+    periodPlaylist = [{
+        title: setData.title || "Quick Play",
+        questions: readyQuestions,
+        config: autoConfig
+    }];
+
+    // 5. スタジオ起動（自動再生フラグを立てる）
+    window.isQuickStartMode = true; 
+    startRoom(); 
+    // startRoom完了後に、enterHostMode内で自動的にplayPeriod(0)させる連携が必要
+    // ※今回は startRoom() -> enterHostMode() の流れの中で
+    //   periodPlaylist が入っていれば、リストには表示される。
+    //   さらに「自動で1問目の待機状態」まで持っていく処理を追加します。
+};
+
+// 既存の enterHostMode を少し拡張して、Quick Startなら即座に準備完了にする
+const originalEnterHostMode = window.enterHostMode;
+window.enterHostMode = function(roomId) {
+    // 元の処理を実行
+    if(originalEnterHostMode) originalEnterHostMode(roomId);
+    else {
+        // 万が一のフォールバック（通常はありえないが念のため）
+        window.showView(window.views.hostControl);
+        // ... (省略: 元のロジックが必要な場合はここには書かず、元の関数を生かす)
+    }
+
+    // Quick Startの場合、自動で最初のセットを「セット」する
+    if (window.isQuickStartMode && periodPlaylist.length > 0) {
+        setTimeout(() => {
+            // 自動でロードして
+            renderStudioTimeline();
+            // 自動で「再生（Play）」ボタンを押したことにする
+            playPeriod(0);
+            
+            window.showToast("🚀 Quick Start: Ready!");
+            window.isQuickStartMode = false; // フラグ回収
+        }, 1000); // DB初期化待ちで少しだけ遅延
+    }
+};
