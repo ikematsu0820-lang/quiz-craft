@@ -1,284 +1,238 @@
 /* =========================================================
- * style_viewer.css (v56: Timer Bar Added)
+ * style_viewer.css (v61: U-NEXT Style Cinema UI)
  * =======================================================*/
 
 :root {
-    --main-text-color: #ffffff;
-    --main-bg-color: #222222;
-    --frame-color: #2c5066;
-    --bg-image: none;
+    /* U-NEXT風カラーパレット */
+    --main-bg-color: #0a0a0a;       /* ほぼ真っ黒な背景 */
+    --accent-color: #00bfff;        /* 鮮やかなシアンブルー */
+    --text-main: #ffffff;           /* 真っ白な文字 */
+    --text-sub: #a0a0a0;            /* グレーの補助文字 */
     
-    --q-text-color: #ffffff;
-    --q-bg-color: #2c5066;
-    --q-border-color: #ffffff;
-
-    --c-text-color: #ffffff;
-    --c-bg-color: #365c75;
-    --c-border-color: #ffffff;
+    --q-bg-color: rgba(255, 255, 255, 0.05); /* うっすら透ける背景 */
+    --c-bg-color: transparent;      /* 選択肢は背景なしでスタイリッシュに */
+    
+    /* フォント設定（モダンなゴシック） */
+    --font-stack: "Hiragino Kaku Gothic ProN", "Noto Sans JP", Roboto, sans-serif;
     
     --progress: 100%;
 }
 
-#viewer-main-view {
-    font-family: "Helvetica Neue", Arial, sans-serif;
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
     background-color: var(--main-bg-color);
-    background-image: var(--bg-image);
-    background-size: cover;
-    background-position: center;
+    font-family: var(--font-stack);
+}
+
+#viewer-main-view {
+    background-color: var(--main-bg-color);
+    background-image: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%); /* 中央がほんのり明るい */
+    color: var(--text-main);
     width: 100vw;
     height: 100vh;
-    position: fixed;
-    top: 0;
-    left: 0;
-    padding: 0;
-    margin: 0;
-    z-index: 9999;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 #viewer-content {
-    width: 95%;
+    width: 90%;
     height: 90%;
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
+/* ステータス表示（左上に小さくロゴっぽく配置） */
+#viewer-status {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: 2.5vh;
+    font-weight: 900;
+    color: var(--accent-color);
+    letter-spacing: 0.1em;
+    text-shadow: 0 0 10px rgba(0, 191, 255, 0.5); /* 青い発光 */
+    z-index: 100;
+}
+
+/* メイン表示エリア */
 #viewer-main-text {
     flex: 1;
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-#viewer-status {
-    height: 10%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 4vh;
-    color: gold;
-    font-weight: bold;
-    letter-spacing: 0.2em;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    justify-content: center; /* 垂直方向中央 */
+    align-items: center;     /* 水平方向中央 */
 }
 
+/* レイアウトコンテナ */
 .viewer-layout-container {
-    flex: 1;
-    display: flex;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 10px;
-}
-
-/* タイムショック用時計 */
-.clock-container {
-    position: absolute;
-    top: 2vh;
-    right: 2vh;
-    width: 15vh;
-    height: 15vh;
-    border-radius: 50%;
-    background: conic-gradient(red var(--progress), transparent 0);
-    box-shadow: 0 0 20px rgba(255,0,0,0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-}
-.clock-inner {
-    width: 80%;
-    height: 80%;
-    background: #000;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    font-size: 5vh;
-    font-weight: bold;
-}
-
-/* パネルアタック用グリッド */
-#viewer-panel-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: repeat(5, 1fr);
-    gap: 1vh;
-    width: 80vh;
-    height: 80vh;
-    margin: 0 auto;
-}
-.panel-cell {
-    background: #444;
-    border: 2px solid #666;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 4vh;
-    font-weight: bold;
-    color: rgba(255,255,255,0.3);
-    cursor: pointer;
-    transition: background 0.3s;
-}
-.panel-red { background: #d00 !important; color: white !important; box-shadow: 0 0 10px #d00; }
-.panel-green { background: #008800 !important; color: white !important; box-shadow: 0 0 10px #008800; }
-.panel-white { background: #ffffff !important; color: #333 !important; box-shadow: 0 0 10px #fff; }
-.panel-blue { background: #0055ff !important; color: white !important; box-shadow: 0 0 10px #0055ff; }
-
-/* ドボン用カードグリッド */
-#viewer-bomb-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr); 
-    gap: 2vh;
-    width: 90%;
-    height: 80%;
-    margin: 0 auto;
-    align-content: center;
-}
-
-/* 多答クイズ用グリッド */
-#viewer-multi-grid {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-content: center;
-    gap: 2vh;
     width: 100%;
     height: 100%;
-    padding: 20px;
-}
-
-/* カード共通 */
-.card-item {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-    border: 3px solid #fff;
-    border-radius: 10px;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    font-size: 5vh;
-    color: white;
-    cursor: pointer;
-    transition: transform 0.6s;
-    transform-style: preserve-3d;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    
-    min-width: 200px;
-    min-height: 120px;
-    aspect-ratio: 2/3;
-}
-.card-item.multi {
-    aspect-ratio: auto; /* 多答は横長 */
 }
 
-.card-item.flipped {
-    transform: rotateY(180deg);
-    background: #fff;
-    color: #333;
-}
-
-.card-number {
-    position: absolute;
-    backface-visibility: hidden;
-}
-
-.card-content {
-    transform: rotateY(180deg);
-    backface-visibility: hidden;
-    font-size: 4vh;
-    font-weight: bold;
-    text-align: center;
-    word-break: break-word;
-    padding: 10px;
-    display: block;
-}
-
-.card-safe { color: #00aa00; }
-.card-out { color: #d00; font-size: 6vh; }
-
-/* レイアウト関連 */
-.text-left { justify-content: flex-start !important; text-align: left !important; }
-.text-center { justify-content: center !important; text-align: center !important; }
-.text-right { justify-content: flex-end !important; text-align: right !important; }
-
+/* --- 問題文エリア (Q) --- */
 .q-area {
-    background: var(--q-bg-color);
-    color: var(--q-text-color);
-    border: 4px solid var(--q-border-color);
-    box-shadow: 0 0 15px rgba(0,0,0,0.5);
-    margin-bottom: 20px;
-    padding: 20px;
     font-size: 5vh;
-    font-weight: bold;
-    z-index: 10;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--text-main);
+    text-align: center;
+    
+    /* 枠線をなくし、左側のアクセントバーで表現 */
+    border: none;
+    border-left: 6px solid var(--accent-color);
+    background: linear-gradient(90deg, rgba(0,191,255,0.1) 0%, transparent 100%);
+    
+    padding: 40px;
+    margin-bottom: 4vh;
+    width: 90%;
+    border-radius: 4px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transition: all 0.3s ease;
+}
+
+/* --- 選択肢エリア (Choices) --- */
+.c-area {
+    width: 80%;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5vh;
 }
 
 .choice-item {
-    background: var(--c-bg-color);
-    color: var(--c-text-color);
-    border: 2px solid var(--c-border-color);
-    padding: 1.5vh 2vw;
-    font-size: 3.5vh;
+    font-size: 3vh;
+    color: var(--text-sub);
+    padding: 15px 20px;
+    border-bottom: 1px solid #333; /* 下線だけのミニマルデザイン */
     display: flex;
     align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    z-index: 10;
+    transition: color 0.3s, border-color 0.3s;
 }
 
-.layout-standard { flex-direction: column; }
-.layout-standard .q-area { flex: 1; display: flex; align-items: center; }
-.layout-standard .c-area { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 15px; }
+/* 選択肢の記号 (A, B, C...) */
+.choice-prefix {
+    color: var(--accent-color);
+    font-weight: bold;
+    font-family: 'Arial Black', sans-serif;
+    margin-right: 20px;
+    font-size: 1.2em;
+}
 
-.layout-split-list { flex-direction: row-reverse; gap: 20px; }
-.layout-split-list .q-area { width: 25%; writing-mode: vertical-rl; text-orientation: upright; display: flex; align-items: center; }
-.layout-split-list .c-area { width: 75%; display: flex; flex-direction: column; justify-content: center; gap: 15px; }
+/* 強調表示（正解発表時など） */
+.choice-item.highlight {
+    color: var(--text-main);
+    border-bottom-color: var(--accent-color);
+    background: rgba(255,255,255,0.05);
+}
 
-.layout-split-grid { flex-direction: row-reverse; gap: 20px; }
-.layout-split-grid .q-area { width: 25%; writing-mode: vertical-rl; text-orientation: upright; display: flex; align-items: center; }
-.layout-split-grid .c-area { width: 75%; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: minmax(100px, 1fr); gap: 15px; align-content: center; }
+/* --- レイアウト別調整 --- */
 
-.choice-prefix { color: gold; font-weight: bold; margin-right: 15px; font-family: 'Arial Black', sans-serif; }
+/* 左右分割レイアウトの調整 */
+.layout-split-list {
+    flex-direction: row;
+    align-items: stretch;
+}
+.layout-split-list .q-area {
+    width: 30%;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    border-left: none;
+    border-top: 6px solid var(--accent-color); /* 縦書きなら上にバー */
+    background: linear-gradient(180deg, rgba(0,191,255,0.1) 0%, transparent 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0;
+    margin-right: 4vh;
+}
+.layout-split-list .c-area {
+    width: 60%;
+    justify-content: center;
+}
 
-/* ★追加: タイムショック風バーのアニメーション */
+/* --- その他の要素 --- */
+
+/* タイムバー（画面上部に極細で表示） */
+#viewer-timer-bar-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: #333;
+    z-index: 200;
+}
+#viewer-timer-bar {
+    height: 100%;
+    width: 100%;
+    background-color: var(--accent-color);
+    box-shadow: 0 0 10px var(--accent-color);
+}
 .timer-animate {
     transition: width linear;
 }
 
-/* --- ここから追加 --- */
-
-/* 文字を表示するエリアを画面いっぱいに広げる設定 */
-#viewer-main-text {
-    flex: 1;
-    width: 100%;
-    height: 100%;
+/* パネルアタック */
+#viewer-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    width: 80vh;
+    height: 80vh;
+    margin: auto;
+}
+.panel-cell {
+    background: #222;
+    border: 1px solid #444;
+    color: #555;
+    font-size: 4vh;
+    font-weight: bold;
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
+    border-radius: 4px;
+}
+/* パネルの色 */
+.panel-red { background: #b71c1c !important; color: white !important; box-shadow: 0 0 15px #b71c1c; border:none; }
+.panel-green { background: #1b5e20 !important; color: white !important; box-shadow: 0 0 15px #1b5e20; border:none; }
+.panel-white { background: #f5f5f5 !important; color: #333 !important; box-shadow: 0 0 15px white; border:none; }
+.panel-blue { background: #0d47a1 !important; color: white !important; box-shadow: 0 0 15px #0d47a1; border:none; }
+
+/* 多答カード */
+.card-item {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+}
+.card-item.flipped {
+    background: #fff;
+    color: #000;
 }
 
-/* 文字サイズや色の基本設定 */
-.q-area {
-    font-size: 5vh;
-    font-weight: bold;
-    color: white;
-    text-align: center;
-    margin-bottom: 20px;
-    width: 90%;
-}
-.c-area {
-    width: 90%;
-}
-.choice-item {
-    font-size: 3vh;
-    background: rgba(255,255,255,0.1);
-    color: white;
-    margin-bottom: 10px;
+/* レース */
+.race-lane {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
     padding: 10px;
-    border-radius: 8px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 4px;
 }
-/* --- ここまで --- */
+.race-bar {
+    height: 10px;
+    background: var(--accent-color);
+    border-radius: 5px;
+    box-shadow: 0 0 8px var(--accent-color);
+}
+.race-name { color: var(--text-main); }
+.race-score { color: var(--accent-color); font-weight: bold; }
