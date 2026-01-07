@@ -213,3 +213,70 @@
 
 .item-title { font-weight: bold; color: #eee; }
 .item-meta { font-size: 0.8em; color: #aaa; margin-top: 4px; }
+
+/* =========================================================
+ * Dashboard UI Reform (Unified & Clean)
+ * =======================================================*/
+
+/* 1. ダッシュボードのボタンを全て統一デザインにする */
+#dash-create-btn,
+#dash-config-btn,
+#dash-design-btn,
+#dash-studio-btn,
+#dash-viewer-btn {
+    /* 色のバラつきをリセットしてダークグレーに統一 */
+    background: #1f1f1f !important;
+    color: #e0e0e0 !important;
+    
+    /* 枠線や影をフラットに */
+    border: 1px solid #333 !important;
+    box-shadow: none !important;
+    
+    /* 文字サイズの統一 */
+    font-size: 1.1em !important;
+    font-weight: normal !important;
+    letter-spacing: 0.05em;
+    
+    /* 角丸を少し小さくしてシャープに */
+    border-radius: 4px !important;
+    
+    /* ホバー時のアニメーション */
+    transition: all 0.3s ease;
+    
+    /* 配置の調整 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 !important; /* 内側の余白リセット */
+}
+
+/* 2. ホバー時（マウスを乗せた時）の演出 */
+/* U-NEXT風のシアンブルーで発光させる */
+#dash-create-btn:hover,
+#dash-config-btn:hover,
+#dash-design-btn:hover,
+#dash-studio-btn:hover,
+#dash-viewer-btn:hover {
+    background: #000 !important;
+    color: #00bfff !important; /* シアン */
+    border-color: #00bfff !important;
+    box-shadow: 0 0 15px rgba(0, 191, 255, 0.4) !important;
+    transform: translateY(-2px);
+}
+
+/* 3. 「スタジオ」ボタンだけ少し特別感を出す（でもサイズは揃える） */
+#dash-studio-btn {
+    /* 枠線だけ最初から少し青くしてメイン機能であることを示す */
+    border: 1px solid #0055ff !important;
+    background: linear-gradient(135deg, #1f1f1f 0%, #16213e 100%) !important;
+}
+
+/* 4. 「デザイン」ボタンの左側の赤線を消す */
+#dash-design-btn {
+    border-left: 1px solid #333 !important;
+}
+
+/* 5. グリッドの隙間調整（任意） */
+#host-dashboard-view > div:nth-child(3) {
+    gap: 15px !important; /* ボタン同士の間隔を少し広げる */
+}
