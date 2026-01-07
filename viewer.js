@@ -118,20 +118,55 @@ function updateViewerDisplay(status) {
         }
 
         window.db.ref(`rooms/${viewerRoomId}/questions/${status.qIndex}`).once('value', snap => {
+            window.db.ref(`rooms/${viewerRoomId}/questions/${status.qIndex}`).once('value', snap => {
             const q = snap.val();
             if(q) {
-                mainText.innerHTML = q.q;
+                // 1. デザイン設定（色など）があれば反映
+                if(q.design) {
+                    const r = document.documentElement.style;
+                    if(q.design.mainBgColor) r.setProperty('--main-bg-color', q.design.mainBgColor);
+                    if(q.design.bgImage) r.setProperty('--bg-image', `url(${q.design.bgImage})`);
+                    if(q.design.qTextColor) r.setProperty('--q-text-color', q.design.qTextColor);
+                    if(q.design.qBgColor) r.setProperty('--q-bg-color', q.design.qBgColor);
+                    if(q.design.qBorderColor) r.setProperty('--q-border-color', q.design.qBorderColor);
+                    if(q.design.cTextColor) r.setProperty('--c-text-color', q.design.cTextColor);
+                    if(q.design.cBgColor) r.setProperty('--c-bg-color', q.design.cBgColor);
+                    if(q.design.cBorderColor) r.setProperty('--c-border-color', q.design.cBorderColor);
+                }
+
+                // 2. レイアウト構造を作成 (CSSの .layout-xxx .q-area 等に対応させる)
+                const layout = q.layout || 'standard';
+                let html = `<div class="viewer-layout-container layout-${layout}">`;
+                
+                // 問題文エリア
+                html += `<div class="q-area">${q.q}</div>`;
+                
+                // 選択肢エリア (選択式の場合)
+                if(q.type === 'choice') {
+                    html += `<div class="c-area">`;
+                    q.c.forEach((c, i) => {
+                        html += `<div class="choice-item">
+                                    <span class="choice-prefix">${String.fromCharCode(65+i)}:</span> ${c}
+                                 </div>`;
+                    });
+                    html += `</div>`;
+                } 
+                // 並べ替えの場合
+                else if (q.type === 'sort') {
+                    html += `<div class="c-area" style="font-size:0.8em; color:#ccc;">(手元の端末で並べ替えてください)</div>`;
+                }
+
+                html += `</div>`; // End container
+                
+                mainText.innerHTML = html;
                 subText.innerHTML = '';
                 
-                // 選択肢表示
-                if(q.type === 'choice') {
-                    let html = '<div style="font-size:0.6em; margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">';
-                    q.c.forEach((c, i) => {
-                        html += `<div style="background:rgba(255,255,255,0.1); padding:10px; border-radius:5px;">${String.fromCharCode(65+i)}. ${c}</div>`;
-                    });
-                    html += '</div>';
-                    mainText.innerHTML += html;
+                // 多答表示 (既存ロジック維持)
+                if(q.type === 'multi') {
+                    renderMultiGrid(q, status.multiState);
                 }
+            }
+        });
                 
                 // 多答表示
                 if(q.type === 'multi') {
