@@ -383,3 +383,156 @@ label {
     background: #00bfff !important;
     box-shadow: 0 0 10px rgba(0, 191, 255, 0.5) !important;
 }
+/* =========================================================
+ * ALL PAGES: U-NEXT Style Unified Overrides
+ * (Config, Design, Studio, Monitor Login)
+ * =======================================================*/
+
+/* --- 1. 全画面共通：入力フォームと背景の強制ダーク化 --- */
+
+/* 白やパステルカラーの背景を持つ要素をすべてダークグレーに */
+div[style*="background:#f0f8ff"], /* 水色系 */
+div[style*="background:#fff"],    /* 白系 */
+div[style*="background:#eee"],    /* グレー系 */
+div[style*="background:#f9f9f9"],
+div[style*="background:#fffbe6"], /* 黄色系 */
+div[style*="background:#e6f0ff"],
+div[style*="background:#f3e5f5"]  /* 紫系 */
+{
+    background: #1f1f1f !important;
+    color: #e0e0e0 !important;
+    border: 1px solid #444 !important;
+    box-shadow: none !important;
+}
+
+/* 入力フォーム（文字が見えない問題を解決） */
+input, select, textarea {
+    background-color: #333 !important;
+    color: #fff !important;
+    border: 1px solid #555 !important;
+    border-radius: 4px !important;
+    padding: 10px !important;
+}
+input:focus, select:focus {
+    background-color: #000 !important;
+    border-color: #00bfff !important; /* シアン */
+    outline: none !important;
+}
+
+/* 見出しの統一 */
+h2, h3, h4, h5 {
+    color: #e0e0e0 !important;
+    border-bottom-color: #444 !important;
+}
+h3, h4 {
+    color: #00bfff !important; /* アクセントカラー */
+}
+
+/* --- 2. ルール設定 (Config) --- */
+
+/* ピリオド追加エリア */
+#config-builder-ui {
+    padding: 15px;
+}
+
+/* プレイリスト（タイムライン）のプレビューエリア */
+#config-playlist-preview {
+    background: #121212 !important; /* 一段暗くして奥行きを出す */
+    border: 1px solid #333 !important;
+}
+
+/* プレイリスト内のカード */
+.timeline-card {
+    background: #252525 !important;
+    border: 1px solid #444 !important;
+    border-left: 4px solid #00bfff !important; /* シアンのバー */
+}
+.timeline-card.active {
+    background: #000 !important;
+    border: 1px solid #00bfff !important;
+    box-shadow: 0 0 15px rgba(0, 191, 255, 0.3) !important;
+}
+.timeline-card h5 {
+    color: #fff !important;
+}
+
+/* --- 3. デザイン画面 (Design) --- */
+
+/* カラーピッカー周りの調整 */
+.design-group {
+    border-bottom: 1px solid #444 !important;
+}
+/* レイアウト選択などのセレクトボックスを広げる */
+#creator-set-layout {
+    margin-bottom: 15px !important;
+}
+
+/* --- 4. スタジオ画面 (Studio) --- */
+
+/* ON AIR 表示（LEDっぽく） */
+#host-control-view > div:first-child {
+    background: #000 !important;
+    border: 1px solid #333 !important;
+    box-shadow: 0 0 20px rgba(0, 191, 255, 0.2) !important;
+}
+#studio-show-id, #host-room-id {
+    color: #00bfff !important;
+    text-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
+}
+
+/* 操作パネル（パネルアタック・ボム・多答）のコンテナ */
+#host-panel-control-area, 
+#host-bomb-control-area, 
+#host-multi-control-area {
+    background: #1a1a1a !important;
+    border: 1px solid #00bfff !important; /* アクティブな操作盤は青枠 */
+}
+
+/* ステータス文字 */
+#host-status-area {
+    color: #00bfff !important;
+    font-family: monospace;
+    letter-spacing: 0.1em;
+}
+
+/* 再生ボタンや判定ボタン */
+#studio-master-play-btn {
+    background: linear-gradient(135deg, #0055ff 0%, #0033aa 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 10px rgba(0, 85, 255, 0.4) !important;
+}
+#studio-master-play-btn:hover {
+    filter: brightness(1.2);
+}
+
+/* 判定ボタン（正解・不正解） */
+#host-judge-correct-btn { background: #1f1f1f !important; border: 1px solid #00bfff !important; color: #00bfff !important; }
+#host-judge-wrong-btn { background: #1f1f1f !important; border: 1px solid #ff0055 !important; color: #ff0055 !important; }
+#host-judge-correct-btn:hover { background: #00bfff !important; color: #000 !important; }
+#host-judge-wrong-btn:hover { background: #ff0055 !important; color: #fff !important; }
+
+/* --- 5. モニター接続・ログイン画面 (Viewer Login) --- */
+
+#host-login-view, #viewer-login-view, #respondent-view {
+    background: #121212 !important;
+}
+#host-login-view input, #viewer-login-view input, #respondent-view input {
+    background: #000 !important;
+    border: 1px solid #444 !important;
+    font-size: 2em !important;
+    color: #00bfff !important; /* 入力文字を青く光らせる */
+    text-align: center;
+    font-family: monospace;
+}
+#host-login-submit-btn, #viewer-connect-btn, #join-room-btn {
+    background: #1f1f1f !important;
+    border: 1px solid #00bfff !important;
+    color: #00bfff !important;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+#host-login-submit-btn:hover, #viewer-connect-btn:hover, #join-room-btn:hover {
+    background: #00bfff !important;
+    color: #000 !important;
+    box-shadow: 0 0 20px rgba(0, 191, 255, 0.5) !important;
+}
