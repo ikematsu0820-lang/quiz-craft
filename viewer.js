@@ -48,10 +48,9 @@ function startViewer(roomId) {
 }
 
 function updateViewerDisplay(status) {
-    // statusがnullの場合は既存表示を維持しつつモード切替のみ反映
     if(!status && !viewerConfig) return;
     
-    // status未取得なら一度だけ取得して再実行
+    // 初回取得
     if (!status) {
         window.db.ref(`rooms/${viewerRoomId}/status`).once('value', snap => {
             if(snap.exists()) updateViewerDisplay(snap.val());
@@ -67,157 +66,115 @@ function updateViewerDisplay(status) {
     const multiGrid = document.getElementById('viewer-multi-grid');
     const raceArea = document.getElementById('viewer-race-area');
     const rankingArea = document.getElementById('viewer-ranking-area');
-    
-    // ★追加: タイムバーの要素取得
-    const timerArea = document.getElementById('viewer-timer-bar-area');
+    const timerArea = document.getElementById('viewer-timer-bar-area'); // HTMLに無い場合は無視されます
     const timerBar = document.getElementById('viewer-timer-bar');
 
-    // 全エリア一旦リセット
+    // リセット
     panelGrid.classList.add('hidden');
     bombGrid.classList.add('hidden');
     multiGrid.classList.add('hidden');
     rankingArea.innerHTML = '';
+    if(timerArea) timerArea.classList.add('hidden');
     
-    // ★追加: タイムバーのリセット
-    if (timerArea && timerBar) {
-        // 一旦アニメーションを停止して満タンに戻す
-        timerBar.style.transition = 'none';
-        timerBar.style.width = '100%';
-        timerArea.classList.add('hidden'); // 基本は隠す
-    }
-    
-    // レースモードなら常時表示
+    // レースモード
     if(viewerConfig.gameType === 'race') {
         raceArea.classList.remove('hidden');
         updateViewerRace();
-    } else {
+    } else if(raceArea) {
         raceArea.classList.add('hidden');
     }
 
+    // --- ステップごとの表示 ---
     if (status.step === 'standby') {
-        statusDiv.textContent = APP_TEXT.Viewer.Waiting;
-        mainText.innerHTML = '';
+        statusDiv.textContent = "WAITING...";
+        mainText.innerHTML = '<div style="color:#666; font-size:3vh;">司会者が準備中です</div>';
         subText.innerHTML = '';
         
     } else if (status.step === 'question') {
         statusDiv.textContent = `Q${status.qIndex + 1}`;
         
-        // ★追加: タイムアタックモードならバーを動かす
+        // タイムアタックバー
         if (viewerConfig.mode === 'time_attack' && timerArea && timerBar) {
-            timerArea.classList.remove('hidden'); // 表示
-            
-            // サーバーから送られてくる秒数 (host_studio.jsで設定したもの)
+            timerArea.classList.remove('hidden');
             const duration = status.timeLimit || 5; 
-            
-            // 少し待ってからアニメーション開始（DOM反映待ち）
             setTimeout(() => {
-                timerBar.className = 'timer-animate'; // CSSで transition: width linear を定義済みと想定
+                timerBar.className = 'timer-animate';
                 timerBar.style.transition = `width ${duration}s linear`;
                 timerBar.style.width = '0%';
             }, 50);
         }
 
+        // 問題文取得
         window.db.ref(`rooms/${viewerRoomId}/questions/${status.qIndex}`).once('value', snap => {
-            window.db.ref(`rooms/${viewerRoomId}/questions/${status.qIndex}`).once('value', snap => {
             const q = snap.val();
             if(q) {
-                // 1. デザイン設定（色など）があれば反映
+                // デザイン反映（CSS変数）
                 if(q.design) {
                     const r = document.documentElement.style;
                     if(q.design.mainBgColor) r.setProperty('--main-bg-color', q.design.mainBgColor);
                     if(q.design.bgImage) r.setProperty('--bg-image', `url(${q.design.bgImage})`);
                     if(q.design.qTextColor) r.setProperty('--q-text-color', q.design.qTextColor);
                     if(q.design.qBgColor) r.setProperty('--q-bg-color', q.design.qBgColor);
-                    if(q.design.qBorderColor) r.setProperty('--q-border-color', q.design.qBorderColor);
-                    if(q.design.cTextColor) r.setProperty('--c-text-color', q.design.cTextColor);
-                    if(q.design.cBgColor) r.setProperty('--c-bg-color', q.design.cBgColor);
-                    if(q.design.cBorderColor) r.setProperty('--c-border-color', q.design.cBorderColor);
                 }
 
-                // 2. レイアウト構造を作成 (CSSの .layout-xxx .q-area 等に対応させる)
+                // レイアウト構築
                 const layout = q.layout || 'standard';
-                let html = `<div class="viewer-layout-container layout-${layout}">`;
+                let html = `<div class="viewer-layout-container layout-${layout}" style="width:100%; display:flex; flex-direction:column; align-items:center;">`;
                 
-                // 問題文エリア
+                // 問題文
                 html += `<div class="q-area">${q.q}</div>`;
                 
-                // 選択肢エリア (選択式の場合)
+                // 選択肢
                 if(q.type === 'choice') {
                     html += `<div class="c-area">`;
                     q.c.forEach((c, i) => {
-                        html += `<div class="choice-item">
-                                    <span class="choice-prefix">${String.fromCharCode(65+i)}:</span> ${c}
-                                 </div>`;
+                        html += `<div class="choice-item"><span style="color:gold; font-weight:bold; margin-right:10px;">${String.fromCharCode(65+i)}:</span> ${c}</div>`;
                     });
                     html += `</div>`;
                 } 
-                // 並べ替えの場合
                 else if (q.type === 'sort') {
-                    html += `<div class="c-area" style="font-size:0.8em; color:#ccc;">(手元の端末で並べ替えてください)</div>`;
+                    html += `<div style="color:#ccc; margin-top:20px;">(手元で並べ替えてください)</div>`;
                 }
 
-                html += `</div>`; // End container
-                
+                html += `</div>`;
                 mainText.innerHTML = html;
                 subText.innerHTML = '';
                 
-                // 多答表示 (既存ロジック維持)
-                if(q.type === 'multi') {
-                    renderMultiGrid(q, status.multiState);
-                }
-            }
-        });
-                
-                // 多答表示
-                if(q.type === 'multi') {
-                    renderMultiGrid(q, status.multiState);
-                }
+                if(q.type === 'multi') renderMultiGrid(q, status.multiState);
             }
         });
         
     } else if (status.step === 'answer') {
-        statusDiv.textContent = APP_TEXT.Viewer.AnswerCheck;
+        statusDiv.textContent = "ANSWER CHECK";
         window.db.ref(`rooms/${viewerRoomId}/questions/${status.qIndex}`).once('value', snap => {
             const q = snap.val();
             if(q) {
-                mainText.innerHTML = q.q;
-                
+                // 正解表示はシンプルに
                 let ansStr = q.correct;
                 if (Array.isArray(q.correct)) ansStr = q.correct.join(' / ');
-                
                 if(q.type === 'choice') {
                     const idx = q.correctIndex !== undefined ? q.correctIndex : q.correct[0];
                     ansStr = q.c[idx];
-                } else if(q.type === 'sort') {
-                    ansStr = q.c.join(' → ');
-                } else if (q.type === 'multi') {
-                    ansStr = "CHECK SCREEN";
                 }
                 
-                subText.innerHTML = `<div style="color:#ffeb3b; font-weight:bold; font-size:1.5em; margin-top:20px; text-shadow:2px 2px 0 #000;">ANSWER: ${ansStr}</div>`;
-                
-                if(q.type === 'multi') renderMultiGrid(q, status.multiState);
+                mainText.innerHTML = `<div class="q-area" style="opacity:0.5;">${q.q}</div>`;
+                subText.innerHTML = `<div style="color:yellow; font-size:5vh; font-weight:bold; margin-top:20px; text-shadow:0 0 10px orange;">ANSWER: ${ansStr}</div>`;
             }
         });
         
     } else if (status.step === 'panel') {
         statusDiv.textContent = "PANEL ATTACK";
         mainText.innerHTML = '';
-        subText.innerHTML = '';
         renderPanelGrid(status.panels);
         
     } else if (status.step === 'bomb') {
         statusDiv.textContent = "BOMB GAME";
         mainText.innerHTML = '';
-        subText.innerHTML = '';
         renderBombGrid(status.cards);
         
     } else if (status.step === 'ranking') {
         statusDiv.textContent = "RANKING";
-        mainText.innerHTML = '';
-        subText.innerHTML = '';
-        // 簡易ランキング表示（必要に応じて実装）
-        rankingArea.innerHTML = "<div style='color:white; font-size:2em;'>Check Main Screen</div>";
+        mainText.innerHTML = '<div style="font-size:3vh;">(中間順位を表示中)</div>';
     }
 }
 
