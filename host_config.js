@@ -9,13 +9,15 @@ window.onSetSelectChange = function() {
     updateBuilderUI();
 };
 
+/* host_config.js の enterConfigMode 関数周辺を修正 */
+
 function enterConfigMode() {
     window.showView(window.views.config);
     
     const setSelect = document.getElementById('config-set-select');
     const container = document.getElementById('config-builder-ui');
     
-    // UI初期化
+    // セット選択の初期化
     if(setSelect) {
         setSelect.innerHTML = `<option value="">${APP_TEXT.Config.SelectDefault}</option>`;
         setSelect.removeEventListener('change', window.onSetSelectChange);
@@ -23,7 +25,6 @@ function enterConfigMode() {
     }
     
     if(container) {
-        // 初期状態は案内を表示
         container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">セットを選択してください</p>';
     }
     
@@ -31,45 +32,63 @@ function enterConfigMode() {
     document.getElementById('config-final-ranking-chk').checked = true;
 
     loadSetListInConfig();
-    loadSavedProgramsInConfig();
+    
+    // ★変更: プログラムリストを上部のプルダウンに読み込む
+    loadProgramListInDropdown(); 
+    
+    // ★削除: loadSavedProgramsInConfig(); はもう呼びません
+    
     renderConfigPreview();
 }
 
-function loadSetListInConfig() {
-    const select = document.getElementById('config-set-select');
-    if(!select) return;
+// ★新規追加: プログラムをプルダウンに読み込む関数
+function loadProgramListInDropdown() {
+    const select = document.getElementById('config-prog-select');
+    const btn = document.getElementById('config-load-prog-exec-btn');
+    if(!select || !btn) return;
 
-    select.innerHTML = `<option value="">${APP_TEXT.Config.SelectLoading}</option>`;
+    select.innerHTML = `<option value="">Reading...</option>`;
     
-    window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
+    window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
         const data = snap.val();
-        select.innerHTML = `<option value="">${APP_TEXT.Config.SelectDefault}</option>`;
+        select.innerHTML = `<option value="">-- 構成を選択 --</option>`;
+        
         if(data) {
+            // 日付順にソート
+            const items = [];
             Object.keys(data).forEach(key => {
-                const item = data[key];
+                items.push({ key: key, ...data[key] });
+            });
+            items.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+            items.forEach(item => {
                 const opt = document.createElement('option');
-                
-                let typeLabel = "Mix";
-                if(item.questions && item.questions.length > 0) {
-                     const t = item.questions[0].type;
-                     if(t === 'choice') typeLabel = "選択式";
-                     else if(t === 'sort') typeLabel = "並べ替え";
-                     else if(t === 'free_oral') typeLabel = "口頭";
-                     else if(t === 'free_written') typeLabel = "記述";
-                     else if(t === 'multi') typeLabel = "多答";
-                }
-                const firstQ = (item.questions && item.questions.length > 0) ? item.questions[0] : {};
-                const spMode = firstQ.specialMode || 'none';
-                
-                // データをvalueに埋め込む
-                opt.value = JSON.stringify({ q: item.questions, c: item.config || {}, t: item.title, sp: spMode });
-                opt.textContent = `${item.title} [${typeLabel}]` + (spMode !== 'none' ? ` (${spMode})` : '');
+                // valueにデータを丸ごと入れる（簡易実装）
+                opt.value = JSON.stringify(item); 
+                const dateStr = new Date(item.createdAt).toLocaleDateString();
+                opt.textContent = `${item.title} (${dateStr})`;
                 select.appendChild(opt);
             });
-        } else {
-            select.innerHTML = `<option value="">${APP_TEXT.Config.SelectEmpty}</option>`;
         }
     });
+
+    // Loadボタンの動作
+    btn.onclick = () => {
+        const val = select.value;
+        if(!val) return;
+        
+        if(!confirm("この構成を読み込みますか？\n（現在の編集内容は上書きされます）")) return;
+
+        const prog = JSON.parse(val);
+        
+        // データを反映
+        periodPlaylist = prog.playlist || [];
+        document.getElementById('config-program-title').value = prog.title || "";
+        document.getElementById('config-final-ranking-chk').checked = (prog.finalRanking !== false);
+        
+        renderConfigPreview();
+        alert("構成を読み込みました。修正して「保存」または「スタジオへ」進んでください。");
+    };
 }
 
 function updateBuilderUI() {
