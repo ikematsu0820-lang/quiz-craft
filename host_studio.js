@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v57: Territory Game Support)
+ * host_studio.js (v63: Instant Quick Start)
  * =======================================================*/
 
 let currentProgramConfig = { finalRanking: true };
@@ -7,9 +7,18 @@ let buzzWinnerId = null;
 let turnQueue = [];
 let taTimer = null;
 
+// ★追加: クイックスタート用の一時保存変数
+let tempQuickPlaylist = [];
+let isQuickStartMode = false;
+
 function startRoom() {
     studioQuestions = [];
-    periodPlaylist = [];
+    
+    // ★変更: Quickモードじゃない時だけリセットする（データ保持のため）
+    if (!isQuickStartMode) {
+        periodPlaylist = [];
+    }
+    
     currentQIndex = 0;
     currentPeriodIndex = 0;
     currentConfig = { theme: 'light', scoreUnit: 'point', mode: 'normal' };
@@ -30,9 +39,11 @@ function enterHostMode(roomId) {
     document.getElementById('host-room-id').textContent = roomId;
     document.getElementById('studio-show-id').textContent = currentShowId;
     
-    document.getElementById('studio-program-loader').classList.remove('hidden');
+    // 一旦全エリアを隠す
+    document.getElementById('studio-program-loader').classList.add('hidden');
     document.getElementById('studio-timeline-area').classList.add('hidden');
     document.getElementById('control-panel').classList.add('hidden');
+    
     document.getElementById('host-buzz-winner-area').classList.add('hidden');
     document.getElementById('host-manual-judge-area').classList.add('hidden');
     document.getElementById('host-panel-control-area').classList.add('hidden');
@@ -51,6 +62,27 @@ function enterHostMode(roomId) {
         if (currentConfig.mode === 'buzz') identifyBuzzWinner(players);
     });
     setupStudioButtons(roomId);
+
+    // ★★★ ここが修正ポイント：Quickモードなら即座に再生する ★★★
+    if (isQuickStartMode) {
+        // 1. データを復元
+        periodPlaylist = tempQuickPlaylist;
+        
+        // 2. タイムラインを描画（裏で動かすために必要）
+        renderStudioTimeline();
+        
+        // 3. 即座に「再生(Play)」を実行！ → これで2枚目の画像（Ready画面）へ飛びます
+        playPeriod(0);
+        
+        // 4. フラグを戻す
+        isQuickStartMode = false;
+        tempQuickPlaylist = [];
+        
+        window.showToast("🚀 Quick Start Ready!");
+    } else {
+        // 通常モード：ローダーを表示
+        document.getElementById('studio-program-loader').classList.remove('hidden');
+    }
 }
 
 function identifyBuzzWinner(players) {
