@@ -645,3 +645,73 @@ window.enterHostMode = function(roomId) {
         }, 1000); // DB初期化待ちで少しだけ遅延
     }
 };
+
+
+/* =========================================================
+ * Quick Start Logic (Set -> Studio Direct)
+ * =======================================================*/
+
+// ダッシュボードの「Quick Play」ボタンから呼ばれる関数
+window.quickStartSet = function(setData) {
+    if(!setData || !setData.questions) return;
+    
+    // 1. U-NEXT風デザインプリセット（強制注入）
+    const unextDesign = {
+        mainBgColor: "#0a0a0a",
+        bgImage: "",
+        qTextColor: "#ffffff",
+        qBgColor: "rgba(255, 255, 255, 0.05)",
+        qBorderColor: "#00bfff",
+        cTextColor: "#a0a0a0",
+        cBgColor: "transparent",
+        cBorderColor: "#333333"
+    };
+
+    // 2. ルールプリセット自動生成
+    const firstQ = setData.questions[0] || {};
+    let mode = 'normal';
+    let timeLimit = 0;
+
+    if (firstQ.specialMode === 'time_attack') {
+        mode = 'time_attack';
+        timeLimit = 5;
+    }
+
+    const autoConfig = {
+        mode: mode,
+        gameType: 'score',
+        initialStatus: 'revive',
+        eliminationRule: 'none',
+        timeLimit: timeLimit,
+        shuffleChoices: 'off',
+        theme: 'dark',
+        scoreUnit: 'Pt',
+        // 必須項目を埋める
+        normalLimit: 'unlimited',
+        buzzWrongAction: 'next',
+        buzzTime: 0,
+        turnOrder: 'fixed',
+        turnPass: 'ok',
+        bombCount: 10
+    };
+
+    // 3. デザイン結合
+    const readyQuestions = setData.questions.map(q => {
+        if(!q.design) {
+            q.design = unextDesign;
+        }
+        return q;
+    });
+
+    // 4. ★プレイリストを一時変数にセット
+    tempQuickPlaylist = [{
+        title: setData.title || "Quick Play",
+        questions: readyQuestions,
+        config: autoConfig
+    }];
+
+    // 5. フラグを立ててスタジオ起動
+    isQuickStartMode = true; 
+    startRoom(); 
+    // → これにより enterHostMode が呼ばれ、そこで playPeriod(0) が自動発火します
+};
