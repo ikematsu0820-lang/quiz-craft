@@ -277,6 +277,110 @@
 }
 
 /* 5. グリッドの隙間調整（任意） */
+
+/* =========================================================
+ * UI Repair & Unification (U-NEXT Dark Style)
+ * =======================================================*/
+
+/* --- 1. ダッシュボード：ボタンデザインの完全統一 --- */
+#host-dashboard-view button {
+    /* 色のバラつきをリセットしてダークグレーに統一 */
+    background: #1f1f1f !important;
+    color: #e0e0e0 !important;
+    border: 1px solid #444 !important;
+    box-shadow: none !important;
+    
+    /* 文字サイズと形を揃える */
+    font-size: 1.1em !important;
+    font-weight: normal !important;
+    border-radius: 4px !important;
+    height: auto !important;
+    min-height: 80px; /*高さを揃える*/
+    
+    /* 配置調整 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px !important;
+    transition: all 0.3s ease;
+}
+
+/* ホバー時の発光演出（シアンブルー） */
+#host-dashboard-view button:hover {
+    background: #000 !important;
+    color: #00bfff !important;
+    border-color: #00bfff !important;
+    box-shadow: 0 0 15px rgba(0, 191, 255, 0.4) !important;
+    transform: translateY(-2px);
+}
+
+/* 「スタジオ」ボタンだけ少し目立たせる（でもサイズは同じ） */
+#dash-studio-btn {
+    border: 1px solid #0055ff !important;
+    background: linear-gradient(135deg, #1f1f1f 0%, #102040 100%) !important;
+}
+
+/* 「デザイン」ボタンの左側の赤線を消す */
+#dash-design-btn {
+    border-left: 1px solid #444 !important;
+}
+
+
+/* --- 2. 問題作成画面：背景色と文字色の修正 --- */
+
+/* 水色やピンクの背景を強制的にダークグレーに変更 */
+.creator-top-area, 
+div[style*="background:#fff0f5"], /* 新規問題追加エリア */
+div[style*="background:#e6f7ff"]  /* 設定エリア */
+{
+    background: #1f1f1f !important;
+    border: 1px solid #444 !important;
+    color: #e0e0e0 !important;
+}
+
+/* 見出しの文字色を修正（青やピンクから白/シアンへ） */
+h3, h4, h5 {
+    color: #e0e0e0 !important;
+}
+h3[data-text="Creator.HeadingNewQ"],
+h4[data-text="Creator.HeadingSettings"] {
+    color: #00bfff !important; /* シアンで統一 */
+    border-bottom: 1px solid #333;
+    padding-bottom: 10px;
+}
+
+/* --- 3. 入力フォームの修正（白地に白文字の解消） --- */
+select, input[type="text"], input[type="number"] {
+    background-color: #333 !important; /* 背景を濃いグレーに */
+    color: #fff !important;            /* 文字を白に */
+    border: 1px solid #555 !important;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+/* フォーム選択時のフォーカス色 */
+select:focus, input:focus {
+    border-color: #00bfff !important;
+    background-color: #000 !important;
+    outline: none;
+}
+
+/* セット名などのラベル文字が見えにくいのを修正 */
+label {
+    color: #aaa !important;
+    font-weight: bold;
+}
+
+/* ボタン（リストに追加など）のデザイン統一 */
+#add-question-btn, #save-to-cloud-btn, #update-question-btn {
+    background: #0055ff !important; /* 決定ボタンは青 */
+    color: white !important;
+    border: none !important;
+}
+#add-question-btn:hover, #save-to-cloud-btn:hover {
+    background: #00bfff !important;
+    box-shadow: 0 0 10px rgba(0, 191, 255, 0.5) !important;
+}
 #host-dashboard-view > div:nth-child(3) {
     gap: 15px !important; /* ボタン同士の間隔を少し広げる */
 }
