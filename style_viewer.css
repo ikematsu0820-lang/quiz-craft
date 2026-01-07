@@ -247,3 +247,38 @@
 .timer-animate {
     transition: width linear;
 }
+
+/* --- ここから追加 --- */
+
+/* 文字を表示するエリアを画面いっぱいに広げる設定 */
+#viewer-main-text {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 文字サイズや色の基本設定 */
+.q-area {
+    font-size: 5vh;
+    font-weight: bold;
+    color: white;
+    text-align: center;
+    margin-bottom: 20px;
+    width: 90%;
+}
+.c-area {
+    width: 90%;
+}
+.choice-item {
+    font-size: 3vh;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 8px;
+}
+/* --- ここまで --- */
