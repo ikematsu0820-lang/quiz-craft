@@ -277,7 +277,9 @@
 }
 
 /* 5. グリッドの隙間調整（任意） */
-
+#host-dashboard-view > div:nth-child(3) {
+    gap: 15px !important; /* ボタン同士の間隔を少し広げる */
+}
 /* =========================================================
  * UI Repair & Unification (U-NEXT Dark Style)
  * =======================================================*/
@@ -380,7 +382,4 @@ label {
 #add-question-btn:hover, #save-to-cloud-btn:hover {
     background: #00bfff !important;
     box-shadow: 0 0 10px rgba(0, 191, 255, 0.5) !important;
-}
-#host-dashboard-view > div:nth-child(3) {
-    gap: 15px !important; /* ボタン同士の間隔を少し広げる */
 }
