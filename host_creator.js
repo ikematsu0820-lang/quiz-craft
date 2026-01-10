@@ -249,31 +249,72 @@ function renderCreatorForm(type, data = null) {
     }
 }
 
+/* host_creator.js の addChoiceInput 周辺を修正 */
+
+// ★修正: チェックボックスを隠して、ラベルをクリックで正解切り替えにする
 function addChoiceInput(parent, index, text = "", checked = false) {
     if (parent.children.length >= 20) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
+    
     const wrapper = document.createElement('div');
     wrapper.className = 'choice-row';
+    // 行全体をクリックしても正解切り替えできるようにしてもいいが、誤操作防止のためラベルのみにする
+    
+    // 1. 隠しチェックボックス（データ用）
     const chk = document.createElement('input');
     chk.type = 'checkbox';
     chk.className = 'choice-correct-chk';
     chk.checked = checked;
+    chk.style.display = 'none'; // 見えなくする
+
+    // 2. アルファベットラベル（ボタンスタイル）
+    const labelBtn = document.createElement('div');
+    labelBtn.className = 'choice-label-btn';
+    if(checked) labelBtn.classList.add('active'); // 初期状態
+    
+    // クリックでトグル処理
+    labelBtn.onclick = () => {
+        chk.checked = !chk.checked;
+        if(chk.checked) labelBtn.classList.add('active');
+        else labelBtn.classList.remove('active');
+    };
+
+    // 3. テキスト入力
     const inp = document.createElement('input');
     inp.type = 'text';
     inp.className = 'choice-text-input';
     inp.placeholder = 'Choice';
     inp.value = text;
     inp.style.flex = '1';
+
+    // 4. 削除ボタン
     const del = document.createElement('button');
     del.textContent = '×';
-    del.style.background = '#ccc';
-    del.style.color = '#333';
+    del.className = 'btn-mini btn-dark';
     del.style.width = '30px';
-    del.style.padding = '5px';
-    del.onclick = () => parent.removeChild(wrapper);
+    del.style.marginLeft = '5px';
+    del.onclick = () => {
+        parent.removeChild(wrapper);
+        updateChoiceLabels(parent); // 削除後に番号振り直し
+    };
+
     wrapper.appendChild(chk);
+    wrapper.appendChild(labelBtn); // チェックボックスの代わりにラベルを表示
     wrapper.appendChild(inp);
     wrapper.appendChild(del);
     parent.appendChild(wrapper);
+    
+    updateChoiceLabels(parent); // 追加後に番号振り直し
+}
+
+// ★新規追加: 選択肢のアルファベット(A,B,C...)を一括更新する関数
+function updateChoiceLabels(parent) {
+    const rows = parent.querySelectorAll('.choice-row');
+    rows.forEach((row, i) => {
+        const label = row.querySelector('.choice-label-btn');
+        if(label) {
+            label.textContent = String.fromCharCode(65 + i); // A, B, C...
+        }
+    });
 }
 
 function addSortInput(parent, index, text = "") {
