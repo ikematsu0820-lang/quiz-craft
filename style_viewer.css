@@ -239,3 +239,58 @@ body {
     /* ヘッダーの分だけ少し上にずらすと視覚的に真ん中に見えます */
     transform: translateY(-50px); 
 }
+/* --- style_viewer.css 末尾に追加 --- */
+
+/* ★修正: モニター画面の「スマホ化」を解除し、全画面16:9にする設定 */
+
+/* 1. 共通の枠制限（.view）をモニター画面だけ無効化 */
+#viewer-main-view.view {
+    max-width: none !important; /* 600px制限を解除 */
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: #000; /* 余白は黒く */
+    
+    /* 中身をど真ん中に */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 2. コンテンツエリアを強制的に16:9にする */
+#viewer-content {
+    width: 100%;
+    height: 100%;
+    
+    /* 16:9 の比率を計算して最大サイズを制限 */
+    /* 横長すぎる画面なら、高さに合わせて幅を決める */
+    max-width: 177.78vh; /* 16:9 = 1.777... */
+    
+    /* 縦長すぎる画面なら、幅に合わせて高さを決める */
+    max-height: 56.25vw; /* 9:16 = 0.5625 */
+    
+    margin: auto;
+    position: relative;
+    overflow: hidden; /* はみ出し防止 */
+    
+    /* デザイン調整 */
+    box-shadow: 0 0 50px rgba(0,0,0,0.5); /* 映画館のような影 */
+}
+
+/* 3. フォントサイズ等の調整（画面が大きくなるので微調整） */
+#viewer-main-text {
+    width: 100%;
+    height: 100%;
+}
+
+/* 正解オーバーレイの位置調整 */
+#viewer-main-text > div[style*="position:absolute"] {
+    /* 画面中央に配置されるように */
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: auto !important;
+    white-space: nowrap;
+}
