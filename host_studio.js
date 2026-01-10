@@ -76,14 +76,21 @@ App.Studio = {
         const select = document.getElementById('studio-program-select');
         const btn = document.getElementById('studio-load-program-btn');
         
+        // 要素が存在しない場合のガード
+        if (!select || !btn) {
+            console.error("Studio elements not found!");
+            return;
+        }
+
         // 初期状態
-        select.innerHTML = '<option>Loading...</option>';
+        select.innerHTML = '<option value="">読み込み中...</option>';
         select.disabled = true;
         btn.disabled = true;
         
         // IDチェック
         if (!App.State.currentShowId) {
             select.innerHTML = '<option value="">(Error: ID未設定)</option>';
+            console.error("No currentShowId");
             return;
         }
 
@@ -93,35 +100,46 @@ App.Studio = {
             const data = snap.val();
             select.innerHTML = ''; // クリア
             
-            if(data) {
-                // デフォルト選択肢
-                const defaultOpt = document.createElement('option');
-                defaultOpt.value = "";
-                defaultOpt.textContent = "-- プログラムを選択 --";
-                select.appendChild(defaultOpt);
+            // デフォルト選択肢 (常に表示)
+            const defaultOpt = document.createElement('option');
+            defaultOpt.value = "";
+            defaultOpt.textContent = "-- プログラムを選択してください --";
+            select.appendChild(defaultOpt);
 
+            if(data) {
+                console.log("Programs loaded:", data);
                 Object.values(data).forEach(p => {
                     const opt = document.createElement('option');
-                    opt.value = JSON.stringify(p);
-                    opt.textContent = p.title;
-                    select.appendChild(opt);
+                    // 値としてJSON文字列を入れると長くなりすぎる場合があるので、キーで管理する方が安全ですが、今回は既存ロジックに合わせてJSONにします
+                    try {
+                        opt.value = JSON.stringify(p);
+                        opt.textContent = p.title || "(タイトルなし)";
+                        select.appendChild(opt);
+                    } catch (e) {
+                        console.error("JSON Stringify Error:", e);
+                    }
                 });
                 
                 select.disabled = false;
-                
-                // 選択したらボタン有効化
-                select.onchange = () => {
-                    btn.disabled = (select.value === "");
-                };
-                
             } else {
+                console.log("No programs found.");
                 const opt = document.createElement('option');
                 opt.textContent = "(保存されたプログラムがありません)";
+                opt.disabled = true;
                 select.appendChild(opt);
             }
+        }).catch(error => {
+            console.error("Firebase Error:", error);
+            select.innerHTML = '<option value="">(読み込みエラー)</option>';
         });
         
-        // ボタンクリック時の処理（再定義）
+        // 選択変更時のイベント
+        select.onchange = () => {
+            // 空文字以外が選択されたらボタンを有効化
+            btn.disabled = (select.value === "");
+        };
+
+        // ボタンクリック時の処理
         btn.onclick = () => {
             const val = select.value;
             if(!val) return;
@@ -129,18 +147,18 @@ App.Studio = {
                 const prog = JSON.parse(val);
                 App.Data.periodPlaylist = prog.playlist || [];
                 document.getElementById('studio-loader-ui').classList.add('hidden');
-                document.getElementById('studio-program-info').textContent = prog.title;
-                this.renderTimeline();
                 
-                // ★追加: 最初のピリオドを自動選択しない（ユーザーに選ばせる）
-                // タイムラインが表示されるので、そこからSTARTを押させる
+                // 修正: 情報表示エリアがあれば更新
+                const infoEl = document.getElementById('studio-program-info');
+                if (infoEl) infoEl.textContent = prog.title;
+
+                this.renderTimeline();
             } catch(e) {
                 console.error("Parse Error:", e);
-                alert("データの読み込みに失敗しました");
+                alert("データの読み込みに失敗しました。\nもう一度選択し直してください。");
             }
         };
     },
-
     renderTimeline: function() {
         const area = document.getElementById('studio-period-timeline');
         area.innerHTML = '';
