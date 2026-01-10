@@ -584,3 +584,146 @@
     display: flex;
     align-items: center;
 }
+/* --- style_host.css 末尾に追加 --- */
+
+/* 新スタジオレイアウト (Flex Column) */
+.host-studio-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 0 !important; /* viewのpaddingを打ち消し */
+    background: #121212;
+}
+
+/* A. ヘッダーバー */
+.studio-header-bar {
+    background: #1f1f1f;
+    border-bottom: 2px solid #444;
+    padding: 10px 20px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    overflow-x: auto;
+}
+.status-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 60px;
+}
+.status-label {
+    font-size: 0.7em;
+    color: #888;
+    font-weight: bold;
+}
+.status-value {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #eee;
+}
+.text-cyan { color: #00bfff; }
+.text-pink { color: #e94560; }
+.ml-10 { margin-left: 10px; }
+
+/* B. メインエリア (可変) */
+.studio-main-area {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.center-message {
+    text-align: center;
+    width: 100%;
+}
+
+.question-monitor {
+    background: #252525;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.monitor-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+.badge-type {
+    background: #444;
+    color: #ccc;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+}
+.monitor-q-text {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+.monitor-choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.monitor-choice-item {
+    background: #333;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+.monitor-correct {
+    background: rgba(0, 191, 255, 0.1);
+    border: 1px solid #00bfff;
+    padding: 10px;
+    border-radius: 4px;
+    color: #00bfff;
+    font-weight: bold;
+}
+
+/* C. フッター操作エリア */
+.studio-footer-controls {
+    background: #1f1f1f;
+    border-top: 1px solid #444;
+    padding: 15px 20px;
+}
+
+.btn-large-action {
+    height: 60px;
+    font-size: 1.5em;
+    background: linear-gradient(135deg, #0055ff 0%, #0033aa 100%);
+    box-shadow: 0 4px 10px rgba(0, 85, 255, 0.3);
+    margin-bottom: 10px;
+}
+/* フェーズごとの色変化用クラス */
+.action-ready { background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%); color: #000; }
+.action-stop { background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); }
+.action-next { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); }
+
+.sub-controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.btn-judge { height: 50px; font-size: 1.2em; }
+
+.footer-tools {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 5px;
+    border-top: 1px solid #333;
+    padding-top: 5px;
+}
