@@ -1,9 +1,9 @@
 /* =========================================================
- * host_design.js (v68.1: Fix Real Preview Data)
+ * host_design.js (v88: Fixed Aspect Ratio & Scaling)
  * =======================================================*/
 
 App.Design = {
-    currentTarget: null, // { type: 'set'|'prog', key: '...', data: ... }
+    currentTarget: null,
     
     defaults: {
         mainBgColor: "#0a0a0a",
@@ -23,13 +23,15 @@ App.Design = {
         this.bindEvents();
         this.loadTargetList();
         this.setDefaultUI();
+        
+        // 初回描画 & ウィンドウサイズ変更時に再計算
         this.renderPreview();
+        window.addEventListener('resize', () => this.renderPreview());
     },
 
     bindEvents: function() {
         document.getElementById('design-target-load-btn').onclick = () => this.loadTarget();
         
-        // 入力変更時にプレビュー更新
         document.querySelectorAll('#design-view input, #design-view select').forEach(el => {
             if(el.type !== 'file' && el.id !== 'design-target-select') {
                 el.oninput = () => this.renderPreview();
@@ -37,7 +39,7 @@ App.Design = {
             }
         });
 
-        // 背景画像
+        // 背景画像設定
         const imgBtn = document.getElementById('design-bg-image-btn');
         const imgInput = document.getElementById('design-bg-image-file');
         const clearBtn = document.getElementById('design-bg-clear-btn');
@@ -50,7 +52,7 @@ App.Design = {
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     document.getElementById('design-bg-image-data').value = event.target.result;
-                    document.getElementById('design-bg-image-status').textContent = "セット完了";
+                    document.getElementById('design-bg-image-status').textContent = "画像あり";
                     document.getElementById('design-bg-image-status').style.color = "#00ff00";
                     this.renderPreview();
                 };
@@ -82,7 +84,7 @@ App.Design = {
 
         document.getElementById('design-save-btn').onclick = () => this.save();
         document.getElementById('design-reset-btn').onclick = () => {
-            if(confirm("設定を初期値（U-NEXT風）に戻しますか？")) {
+            if(confirm("初期値に戻しますか？")) {
                 this.setDefaultUI();
                 this.renderPreview();
             }
@@ -93,7 +95,6 @@ App.Design = {
         const btn = document.getElementById(btnId);
         const modal = document.getElementById(modalId);
         if(!btn || !modal) return;
-        
         btn.onclick = () => modal.classList.remove('hidden');
         modal.querySelectorAll('.modal-close-btn').forEach(b => b.onclick = () => modal.classList.add('hidden'));
         modal.onclick = (e) => { if(e.target === modal) modal.classList.add('hidden'); };
@@ -225,20 +226,27 @@ App.Design = {
         this.applyToUI(this.defaults, 'standard', 'center');
     },
 
-    // ★修正: プレビュー描画（実データ対応）
+    // ★修正: 1280x720基準での絶対配置プレビュー
     renderPreview: function() {
-        const frame = document.getElementById('design-monitor-preview-content');
-        if(!frame) return;
+        const frame = document.querySelector('.design-preview-frame');
+        const content = document.getElementById('design-monitor-preview-content');
+        if(!frame || !content) return;
+
+        // ★スケーリング計算 (スマホでもPCでも絶対にズレない)
+        const frameWidth = frame.clientWidth;
+        const scale = frameWidth / 1280; // 基準幅1280pxに対する倍率
+        content.style.transform = `scale(${scale})`;
+        content.style.width = "1280px";
+        content.style.height = "720px";
 
         const s = this.collectSettings();
         const d = s.design;
         
-        // 1. 表示するデータ（問題文）を決める
-        let qText = "これはプレビュー用の問題文です。";
+        // 表示データ準備
+        let qText = "これはプレビュー用の問題文です。\\n改行位置の確認用テキストです。";
         let choices = ["選択肢A", "選択肢B", "選択肢C", "選択肢D"];
         let qType = 'choice';
 
-        // A. Design Studioでロード中のデータがあればそれを使う
         if (this.currentTarget && this.currentTarget.data) {
             let qData = null;
             if (this.currentTarget.type === 'set' && this.currentTarget.data.questions?.length > 0) {
@@ -251,10 +259,7 @@ App.Design = {
                 if (qData.c) choices = qData.c;
                 qType = qData.type;
             }
-        }
-        // B. Creator Modeで作っている最中のデータがあればそれを使う
-        else if (App.Data.createdQuestions && App.Data.createdQuestions.length > 0) {
-            // 編集中の問題があればそれ、なければリストの1問目
+        } else if (App.Data.createdQuestions && App.Data.createdQuestions.length > 0) {
             const editingIndex = App.Creator.editingIndex;
             const qData = (editingIndex !== null) ? App.Data.createdQuestions[editingIndex] : App.Data.createdQuestions[0];
             if (qData) {
@@ -264,7 +269,7 @@ App.Design = {
             }
         }
 
-        // 背景スタイル
+        // 背景
         let bgStyle = `background-color: ${d.mainBgColor};`;
         if(d.bgImage) {
             bgStyle += `background-image: url('${d.bgImage}'); background-size: cover; background-position: center;`;
@@ -272,29 +277,58 @@ App.Design = {
             bgStyle += `background-image: radial-gradient(circle at center, #1a1a1a 0%, ${d.mainBgColor} 100%);`;
         }
 
-        // 基本CSS
-        const qStyle = `color:${d.qTextColor}; background:${d.qBgColor}; border:2px solid ${d.qBorderColor}; text-align:${s.align}; padding:20px; border-radius:8px; font-size:1.2em; font-weight:bold; margin-bottom:10px; display:flex; align-items:center; justify-content:${s.align==='center'?'center':(s.align==='right'?'flex-end':'flex-start')}; box-shadow:0 0 15px ${d.qBorderColor}40;`;
-        const cStyle = `color:${d.cTextColor}; background:${d.cBgColor}; border:1px solid ${d.cBorderColor}; padding:10px; border-radius:4px; margin-bottom:5px; display:flex; align-items:center;`;
-        const labelStyle = `background:${d.cBorderColor}; color:#fff; padding:2px 8px; border-radius:3px; margin-right:10px; font-size:0.8em;`;
+        // ★サイズ指定を px 単位に変更 (1280x720基準)
+        const qStyle = `
+            color:${d.qTextColor}; 
+            background:${d.qBgColor}; 
+            border:6px solid ${d.qBorderColor}; 
+            text-align:${s.align}; 
+            padding:30px; 
+            border-radius:15px; 
+            font-size:48px; 
+            font-weight:bold; 
+            line-height:1.4;
+            margin-bottom:20px; 
+            display:flex; 
+            align-items:center; 
+            justify-content:${s.align==='center'?'center':(s.align==='right'?'flex-end':'flex-start')}; 
+            box-shadow:0 0 30px ${d.qBorderColor}40;
+        `;
+        
+        const cStyle = `
+            color:${d.cTextColor}; 
+            background:${d.cBgColor}; 
+            border-bottom:3px solid ${d.cBorderColor}; 
+            padding:15px 20px; 
+            font-size:32px;
+            display:flex; 
+            align-items:center;
+        `;
+        
+        const labelStyle = `
+            color:${d.qBorderColor}; 
+            font-weight:900; 
+            font-size:36px;
+            margin-right:20px; 
+            font-family: monospace;
+        `;
 
         let layoutHtml = '';
 
-        // パターン分岐: フリー回答や記述系は選択肢を出さない
+        // レイアウト分岐
         if (qType === 'free_written' || qType === 'free_oral') {
             layoutHtml = `
-                <div style="padding:40px; box-sizing:border-box; display:flex; flex-direction:column; height:100%; justify-content:center; align-items:center;">
-                    <div style="${qStyle} width:80%; height:50%; font-size:2em;">${qText}</div>
-                    <div style="color:#aaa; margin-top:20px;">[ ${qType==='free_oral'?'口頭回答':'記述式'} ]</div>
+                <div style="padding:60px; box-sizing:border-box; display:flex; flex-direction:column; height:100%; justify-content:center; align-items:center;">
+                    <div style="${qStyle} width:80%; height:50%; font-size:60px;">${qText}</div>
+                    <div style="color:#aaa; margin-top:40px; font-size:30px;">[ ${qType==='free_oral'?'口頭回答':'記述式'} ]</div>
                 </div>
             `;
         } else {
-            // 選択式・並べ替え・多答
             if (s.layout === 'split_list' || s.layout === 'split_grid') {
-                // 左右分割
                 layoutHtml = `
-                    <div style="display:flex; height:100%; gap:15px; padding:20px; box-sizing:border-box;">
+                    <div style="display:flex; height:100%; gap:40px; padding:40px; box-sizing:border-box;">
                         <div style="flex:1; ${qStyle}; margin:0; writing-mode: vertical-rl; text-orientation: upright; justify-content:center;">${qText}</div>
-                        <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+                        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:20px;">
                             ${choices.map((c,i) => `
                                 <div style="${cStyle}">
                                     <span style="${labelStyle}">${String.fromCharCode(65+i)}</span> ${c}
@@ -304,11 +338,11 @@ App.Design = {
                     </div>
                 `;
             } else {
-                // 標準 (上下)
+                // Standard (上下)
                 layoutHtml = `
-                    <div style="padding:20px; box-sizing:border-box; display:flex; flex-direction:column; height:100%; justify-content:center;">
-                        <div style="${qStyle} min-height:100px;">${qText}</div>
-                        <div style="margin-top:10px;">
+                    <div style="padding:50px; box-sizing:border-box; display:flex; flex-direction:column; height:100%; justify-content:center;">
+                        <div style="${qStyle} min-height:200px;">${qText}</div>
+                        <div style="margin-top:20px; display:flex; flex-direction:column; gap:15px;">
                              ${choices.map((c,i) => `
                                 <div style="${cStyle}">
                                     <span style="${labelStyle}">${String.fromCharCode(65+i)}</span> ${c}
@@ -320,7 +354,7 @@ App.Design = {
             }
         }
 
-        frame.innerHTML = `
+        content.innerHTML = `
             <div style="width:100%; height:100%; ${bgStyle} font-family:sans-serif; overflow:hidden;">
                 ${layoutHtml}
             </div>
@@ -328,7 +362,7 @@ App.Design = {
     },
 
     save: function() {
-        if(!this.currentTarget) return alert("編集対象がロードされていません。\n(新規セット作成時はCreator画面で保存時に反映されます)");
+        if(!this.currentTarget) return alert("編集対象がロードされていません。");
 
         const s = this.collectSettings();
         const t = this.currentTarget;
