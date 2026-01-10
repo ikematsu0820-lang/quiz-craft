@@ -74,28 +74,70 @@ App.Studio = {
 
     loadProgramList: function() {
         const select = document.getElementById('studio-program-select');
+        const btn = document.getElementById('studio-load-program-btn');
+        
+        // 初期状態
         select.innerHTML = '<option>Loading...</option>';
+        select.disabled = true;
+        btn.disabled = true;
+        
+        // IDチェック
+        if (!App.State.currentShowId) {
+            select.innerHTML = '<option value="">(Error: ID未設定)</option>';
+            return;
+        }
+
+        console.log("Loading programs for:", App.State.currentShowId);
+
         window.db.ref(`saved_programs/${App.State.currentShowId}`).once('value', snap => {
             const data = snap.val();
-            select.innerHTML = '<option value="">Select Program...</option>';
+            select.innerHTML = ''; // クリア
+            
             if(data) {
+                // デフォルト選択肢
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = "";
+                defaultOpt.textContent = "-- プログラムを選択 --";
+                select.appendChild(defaultOpt);
+
                 Object.values(data).forEach(p => {
                     const opt = document.createElement('option');
                     opt.value = JSON.stringify(p);
                     opt.textContent = p.title;
                     select.appendChild(opt);
                 });
+                
+                select.disabled = false;
+                
+                // 選択したらボタン有効化
+                select.onchange = () => {
+                    btn.disabled = (select.value === "");
+                };
+                
+            } else {
+                const opt = document.createElement('option');
+                opt.textContent = "(保存されたプログラムがありません)";
+                select.appendChild(opt);
             }
         });
         
-        document.getElementById('studio-load-program-btn').onclick = () => {
+        // ボタンクリック時の処理（再定義）
+        btn.onclick = () => {
             const val = select.value;
             if(!val) return;
-            const prog = JSON.parse(val);
-            App.Data.periodPlaylist = prog.playlist || [];
-            document.getElementById('studio-loader-ui').classList.add('hidden');
-            document.getElementById('studio-program-info').textContent = prog.title;
-            this.renderTimeline();
+            try {
+                const prog = JSON.parse(val);
+                App.Data.periodPlaylist = prog.playlist || [];
+                document.getElementById('studio-loader-ui').classList.add('hidden');
+                document.getElementById('studio-program-info').textContent = prog.title;
+                this.renderTimeline();
+                
+                // ★追加: 最初のピリオドを自動選択しない（ユーザーに選ばせる）
+                // タイムラインが表示されるので、そこからSTARTを押させる
+            } catch(e) {
+                console.error("Parse Error:", e);
+                alert("データの読み込みに失敗しました");
+            }
         };
     },
 
