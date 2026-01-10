@@ -502,3 +502,41 @@
     box-shadow: none;
     cursor: not-allowed;
 }
+/* --- style_host.css 末尾に追加 --- */
+
+/* ルームIDを目立たせる黄色 */
+.text-yellow {
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+/* 待機画面の巨大IDボックス */
+.big-room-id-box {
+    background: #000;
+    border: 2px solid #ffd700;
+    padding: 15px 30px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    display: inline-block;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    text-align: center;
+    min-width: 200px;
+}
+
+.big-room-id-box .label {
+    display: block;
+    font-size: 0.9em;
+    color: #aaa;
+    margin-bottom: 5px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.big-room-id-box span[id] {
+    font-size: 3em;
+    font-weight: 900;
+    color: #ffd700;
+    letter-spacing: 5px;
+    font-family: monospace;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+}
