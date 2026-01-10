@@ -632,3 +632,45 @@ h3, h4 {
     display: flex;
     align-items: center;
 }
+/* style_host.css の末尾に追加 */
+
+/* 選択肢の正解指定ボタン（A, B, C...） */
+.choice-label-btn {
+    width: 35px;
+    height: 35px;
+    background: #333;
+    color: #aaa;
+    font-weight: bold;
+    font-size: 1.1em;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 4px;
+    margin-right: 10px;
+    cursor: pointer;
+    border: 2px solid #555;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+/* ホバー時 */
+.choice-label-btn:hover {
+    border-color: #00bfff;
+    color: #fff;
+}
+
+/* 正解として選択された状態（Active） */
+.choice-label-btn.active {
+    background: #00bfff; /* シアン背景 */
+    color: #000;         /* 黒文字 */
+    border-color: #00bfff;
+    box-shadow: 0 0 10px rgba(0, 191, 255, 0.6); /* 光らせる */
+}
+
+/* 入力行のレイアウト調整 */
+.choice-row {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    /* 背景色は style_host.css 既存の設定(#363640)が効くのでそのままでOK */
+}
