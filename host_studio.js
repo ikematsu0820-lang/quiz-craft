@@ -1,33 +1,30 @@
 /* =========================================================
- * host_studio.js (v83: Fix Dropdown & Room Init)
+ * host_studio.js (v85: Click to Copy ID & Fixes)
  * =======================================================*/
 
 App.Studio = {
+    timer: null,
+    buzzWinner: null,
+    isQuick: false,
     currentStepId: 0,
-    soloState: { lives: 3, timeBank: 60 },
     
-// スタジオ起動 (ルームID発行)
+    soloState: { lives: 3, timeBank: 60, challengerIndex: 0 },
+
+    // スタジオ起動 (ルームID発行)
     startRoom: function(isQuick = false) {
+        this.isQuick = isQuick;
         App.Data.studioQuestions = [];
         App.State.currentQIndex = 0;
         App.State.currentPeriodIndex = 0;
         
-        // ランダムな6桁のルームID生成
         const code = Math.random().toString(36).substring(2, 8).toUpperCase();
         App.State.currentRoomId = code;
         
-        // ★修正: 画面のID表示を即座に更新
-        const headerId = document.getElementById('studio-header-room-id');
-        const bigId = document.getElementById('studio-big-room-id');
-        if(headerId) headerId.textContent = code;
-        if(bigId) bigId.textContent = code;
-
-        // DBに部屋を作成
         window.db.ref(`rooms/${code}`).set({
+            questions: [],
             status: { step: 'standby', qIndex: 0 },
             config: { mode: 'normal' },
-            players: {},
-            questions: []
+            players: {}
         }).then(() => {
             console.log("Room Created:", code);
             this.enterHostMode(isQuick);
@@ -37,26 +34,47 @@ App.Studio = {
     enterHostMode: function(isQuick) {
         App.Ui.showView(App.Ui.views.hostControl);
         
-        // ★修正: 念のためID再表示
         const code = App.State.currentRoomId;
-        if(code) {
-            document.getElementById('studio-header-room-id').textContent = code;
-            document.getElementById('studio-big-room-id').textContent = code;
-        }
+        
+        // ★修正: ID表示更新 & クリックでコピー機能
+        const targets = ['studio-header-room-id', 'studio-big-room-id'];
+        targets.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.textContent = code;
+                el.onclick = () => {
+                    navigator.clipboard.writeText(code).then(() => {
+                        App.Ui.showToast("📋 ROOM IDをコピーしました！");
+                        // 視覚フィードバック
+                        const originalText = el.textContent;
+                        el.textContent = "COPIED!";
+                        el.style.color = "#fff";
+                        setTimeout(() => {
+                            el.textContent = originalText;
+                            el.style.color = "";
+                        }, 1000);
+                    }).catch(e => alert("コピー失敗: " + code));
+                };
+            }
+        });
 
-        this.monitorPlayers();
+        // プレイヤー監視
+        window.db.ref(`rooms/${code}/players`).on('value', snap => {
+            const players = snap.val() || {};
+            const count = Object.keys(players).length;
+            document.getElementById('studio-player-count-display').textContent = count;
+            if(App.Data.currentConfig?.mode === 'buzz' && this.currentStepId === 3) {
+                this.checkBuzz(players);
+            }
+        });
 
         if (isQuick && App.Data.periodPlaylist.length > 0) {
-            // クイックスタート: いきなりタイムライン表示
             this.renderTimeline();
             setTimeout(() => this.setupPeriod(0), 500);
         } else {
-            // 通常: プログラム選択画面へ
             document.getElementById('studio-question-panel').classList.add('hidden');
             document.getElementById('studio-standby-panel').classList.remove('hidden');
             document.getElementById('studio-loader-ui').classList.remove('hidden');
-            
-            // ★リスト読み込み
             this.loadProgramList();
         }
     },
@@ -66,10 +84,9 @@ App.Studio = {
         const btn = document.getElementById('studio-load-program-btn');
         const showId = App.State.currentShowId;
 
-        // エラーガード
+        if (!select || !btn) return;
         if (!showId) {
             select.innerHTML = '<option>エラー: ID未設定</option>';
-            alert("番組IDが設定されていません。ダッシュボードに戻ってログインし直してください。");
             return;
         }
 
@@ -78,9 +95,8 @@ App.Studio = {
 
         window.db.ref(`saved_programs/${showId}`).once('value', snap => {
             const data = snap.val();
-            select.innerHTML = ''; // クリア
+            select.innerHTML = '';
             
-            // デフォルト選択肢
             const def = document.createElement('option');
             def.value = "";
             def.textContent = "-- 読み込むプログラムを選択 --";
@@ -90,15 +106,12 @@ App.Studio = {
                 Object.keys(data).forEach(key => {
                     const prog = data[key];
                     const opt = document.createElement('option');
-                    // データ量が多いとvalueに入らないことがあるため、キーをvalueにする手もあるが
-                    // ここでは既存ロジック(JSON)でいくが、エラー時はtry-catch
+                    // ★安全策: データが大きい場合はID管理に切り替えることも検討だが、まずはJSONで
                     try {
                         opt.value = JSON.stringify(prog);
                         opt.textContent = prog.title;
                         select.appendChild(opt);
-                    } catch(e) {
-                        console.error("Data error", e);
-                    }
+                    } catch(e) { console.error(e); }
                 });
                 select.disabled = false;
             } else {
@@ -108,40 +121,19 @@ App.Studio = {
             }
         });
 
-        // 選択したらボタン有効化
-        select.onchange = () => {
-            btn.disabled = (select.value === "");
-        };
+        select.onchange = () => { btn.disabled = (select.value === ""); };
 
-        // 読み込み実行
         btn.onclick = () => {
             const val = select.value;
             if (!val) return;
             try {
                 const prog = JSON.parse(val);
                 App.Data.periodPlaylist = prog.playlist || [];
-                
                 document.getElementById('studio-loader-ui').classList.add('hidden');
                 document.getElementById('studio-program-info').textContent = "Loaded: " + prog.title;
-                
                 this.renderTimeline();
-            } catch(e) {
-                alert("データの読み込みに失敗しました");
-            }
+            } catch(e) { alert("データの読み込みに失敗しました"); }
         };
-    },
-
-    monitorPlayers: function() {
-        window.db.ref(`rooms/${App.State.currentRoomId}/players`).on('value', snap => {
-            const players = snap.val() || {};
-            const count = Object.keys(players).length;
-            document.getElementById('studio-player-count-display').textContent = count;
-            
-            // 早押し判定 (Answerモード時)
-            if(App.Data.currentConfig?.mode === 'buzz' && this.currentStepId === 3) {
-                this.checkBuzz(players);
-            }
-        });
     },
 
     renderTimeline: function() {
@@ -151,6 +143,7 @@ App.Studio = {
             const btn = document.createElement('button');
             btn.className = `btn-block ${i===App.State.currentPeriodIndex ? 'btn-info' : 'btn-dark'}`;
             btn.textContent = `${i+1}. ${item.title} [${item.config.mode}]`;
+            btn.style.textAlign = 'left';
             btn.onclick = () => this.setupPeriod(i);
             area.appendChild(btn);
         });
@@ -165,16 +158,13 @@ App.Studio = {
         App.Data.currentConfig = item.config;
         App.State.currentQIndex = 0;
 
-        // DBにコンフィグと問題をセット
         const roomId = App.State.currentRoomId;
         window.db.ref(`rooms/${roomId}/config`).set(App.Data.currentConfig);
         window.db.ref(`rooms/${roomId}/questions`).set(App.Data.studioQuestions);
         
-        // 画面切り替え
         document.getElementById('studio-standby-panel').classList.add('hidden');
         document.getElementById('studio-question-panel').classList.remove('hidden');
         
-        // Soloモード表示切り替え
         const isSolo = (item.config.mode === 'solo');
         if (isSolo) {
             document.getElementById('studio-solo-info').classList.remove('hidden');
@@ -184,7 +174,7 @@ App.Studio = {
             document.getElementById('studio-solo-info').classList.add('hidden');
         }
 
-        this.setStep(0); // Standbyへ
+        this.setStep(0);
     },
 
     setStep: function(stepId) {
@@ -196,7 +186,6 @@ App.Studio = {
         subControls.classList.add('hidden');
         btnMain.classList.remove('hidden');
 
-        // ヘッダー情報更新
         const steps = ['STANDBY', 'READY', 'QUESTION', 'ANSWERING', 'RESULT', 'ANSWER', 'NEXT'];
         document.getElementById('studio-step-display').textContent = steps[stepId];
         document.getElementById('studio-q-num-display').textContent = `${App.State.currentQIndex + 1}/${App.Data.studioQuestions.length}`;
@@ -226,9 +215,7 @@ App.Studio = {
             case 3: // ANSWERING
                 btnMain.textContent = "STOP / JUDGE";
                 btnMain.classList.add('action-stop');
-                
                 if(App.Data.currentConfig.mode === 'buzz' || App.Data.currentConfig.mode === 'solo') {
-                    // 判定ボタン表示
                     subControls.classList.remove('hidden');
                     btnMain.classList.add('hidden'); 
                 } else {
@@ -241,7 +228,7 @@ App.Studio = {
                 btnMain.onclick = () => this.setStep(5);
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'result', isBuzzActive: false });
                 break;
-            case 5: // ANSWER VIEW
+            case 5: // ANSWER
                 btnMain.textContent = "NEXT QUESTION >>";
                 btnMain.classList.add('action-next');
                 btnMain.onclick = () => this.setStep(6);
@@ -251,7 +238,7 @@ App.Studio = {
             case 6: // NEXT
                 if (App.State.currentQIndex < App.Data.studioQuestions.length - 1) {
                     App.State.currentQIndex++;
-                    this.setStep(0); // 次の問題のStandbyへ
+                    this.setStep(0);
                 } else {
                     alert("Period Complete!");
                 }
@@ -262,8 +249,7 @@ App.Studio = {
     renderQuestionMonitor: function(q) {
         if(!q) return;
         document.getElementById('studio-q-text').textContent = q.q;
-        document.getElementById('studio-q-type-badge').textContent = q.type;
-        
+        document.getElementById('studio-q-type-badge').textContent = q.type.toUpperCase();
         const cContainer = document.getElementById('studio-choices-container');
         cContainer.innerHTML = '';
         if(q.c) {
@@ -278,7 +264,6 @@ App.Studio = {
         document.getElementById('studio-correct-display').classList.add('hidden');
     },
 
-    // --- 判定ロジック ---
     checkBuzz: function(players) {
         if(this.currentStepId !== 3 || this.buzzWinner) return;
         const candidates = Object.entries(players).filter(([_, p]) => p.buzzTime && !p.lastResult).sort((a, b) => a[1].buzzTime - b[1].buzzTime);
@@ -291,16 +276,12 @@ App.Studio = {
             window.db.ref(`rooms/${App.State.currentRoomId}/status`).update({ currentAnswerer: this.buzzWinner, isBuzzActive: false });
         }
     },
-
+    
     judgeBuzz: function(isCorrect) {
-        if (App.Data.currentConfig.mode === 'solo') {
-            this.judgeSolo(isCorrect); return;
-        }
+        if (App.Data.currentConfig.mode === 'solo') { this.judgeSolo(isCorrect); return; }
         if(!this.buzzWinner) return;
-        
         const roomId = App.State.currentRoomId;
         const pts = App.Data.studioQuestions[App.State.currentQIndex].points || 1;
-        
         window.db.ref(`rooms/${roomId}/players/${this.buzzWinner}`).once('value', snap => {
             const p = snap.val();
             if(isCorrect) {
@@ -312,16 +293,13 @@ App.Studio = {
                 snap.ref.update({ lastResult: 'lose', buzzTime: null });
                 this.buzzWinner = null;
                 document.getElementById('studio-sub-info').classList.add('hidden');
-                // 再開
                 window.db.ref(`rooms/${roomId}/status`).update({ currentAnswerer: null, isBuzzActive: true });
             }
         });
     },
 
     judgeSolo: function(isCorrect) {
-        if (isCorrect) {
-            this.setStep(5);
-        } else {
+        if (isCorrect) { this.setStep(5); } else {
             this.soloState.lives--;
             document.getElementById('studio-life-display').textContent = this.soloState.lives;
             if (this.soloState.lives <= 0) alert("GAME OVER");
@@ -341,14 +319,11 @@ App.Studio = {
         });
     },
 
-    toggleAns: function() {
-        document.getElementById('studio-correct-display').classList.toggle('hidden');
-    },
-
+    toggleAns: function() { document.getElementById('studio-correct-display').classList.toggle('hidden'); },
+    
     quickStart: function(setData) {
         const unextDesign = { mainBgColor: "#0a0a0a", qTextColor: "#fff", qBgColor: "rgba(255,255,255,0.05)", qBorderColor: "#00bfff" };
         const questions = (setData.questions||[]).map(q => { if(!q.design) q.design = unextDesign; return q; });
-        
         App.Data.periodPlaylist = [{
             title: setData.title || "Quick Play",
             questions: questions,
