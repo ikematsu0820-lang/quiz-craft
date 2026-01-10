@@ -1,11 +1,10 @@
 /* =========================================================
- * host_core.js (v70: Robust App Initialization)
+ * host_core.js (v71: Fix Navigation Logic)
  * =======================================================*/
 
-// ★ 安全装置: Appがまだ無ければ作る
+// ★ 安全装置
 window.App = window.App || {};
 
-// StateとDataの初期化（既に定義されていればそのまま）
 window.App.State = window.App.State || {
     currentShowId: null,
     currentRoomId: null,
@@ -19,12 +18,10 @@ window.App.Data = window.App.Data || {
     currentConfig: {}
 };
 
-// UI機能の定義
 window.App.Ui = {
     views: {},
     
     showView: function(targetId) {
-        // ビュー要素の再取得（キャッシュが空の場合の保険）
         if (Object.keys(this.views).length === 0) {
             this.cacheViews();
         }
@@ -93,26 +90,21 @@ window.App.Ui = {
     }
 };
 
-// 初期化とイベント設定
 window.App.init = function() {
     this.Ui.cacheViews();
     this.Ui.applyTexts();
     this.bindEvents();
-    
-    // 起動時はメイン画面へ
     this.Ui.showView(this.Ui.views.main);
-    console.log("App Initialized (v70)");
+    console.log("App Initialized (v71)");
 };
 
 window.App.bindEvents = function() {
     const U = this.Ui;
     const V = this.Ui.views;
 
-    // メイン画面
     document.getElementById('main-host-btn')?.addEventListener('click', () => U.showView(V.hostLogin));
     document.getElementById('main-player-btn')?.addEventListener('click', () => U.showView(V.respondent));
 
-    // ログイン
     document.getElementById('host-login-submit-btn')?.addEventListener('click', () => {
         const input = document.getElementById('show-id-input').value.trim().toUpperCase();
         if(!input) { alert(APP_TEXT.Login.AlertEmpty); return; }
@@ -122,31 +114,35 @@ window.App.bindEvents = function() {
         window.App.Dashboard.enter();
     });
 
-    // 戻るボタン共通制御
+    // ★修正: 戻るボタンの賢い制御
     document.querySelectorAll('.header-back-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const isLogout = btn.classList.contains('btn-logout');
-            const isHome = btn.classList.contains('back-to-main');
-            
-            if (isLogout) {
+            // 1. ログアウトボタンは常にホームへ
+            if (btn.classList.contains('btn-logout')) {
                 U.showView(V.main);
                 window.App.State.currentShowId = null;
-            } else if (isHome) {
+                return;
+            }
+
+            // 2. 親画面のIDを取得して判断する
+            const parentView = btn.closest('.view');
+            const pid = parentView ? parentView.id : '';
+
+            // ホームに戻るべき画面: Hostログイン / プレイヤー参加画面
+            if (pid === 'host-login-view' || pid === 'respondent-view') {
                 U.showView(V.main);
-            } else {
+            } 
+            // それ以外（Creator, Config, Design, Studio, ViewerLogin）は全てダッシュボードへ
+            else {
                 window.App.Dashboard.enter();
             }
         });
     });
 
-    // --- ダッシュボードのボタン（ここが動かない原因だった場所） ---
+    // ダッシュボード
     document.getElementById('dash-create-btn')?.addEventListener('click', () => {
-        console.log("Create Button Clicked"); // デバッグ用
-        if(window.App.Creator && window.App.Creator.init) {
-            window.App.Creator.init();
-        } else {
-            alert("エラー: Creatorモジュールが読み込まれていません。\nページをリロードしてみてください。");
-        }
+        if(window.App.Creator && window.App.Creator.init) window.App.Creator.init();
+        else alert("Creator module not loaded");
     });
 
     document.getElementById('dash-config-btn')?.addEventListener('click', () => {
@@ -166,7 +162,6 @@ window.App.bindEvents = function() {
     document.getElementById('dash-viewer-btn')?.addEventListener('click', () => U.showView(V.viewerLogin));
 };
 
-// ダッシュボードロジック
 window.App.Dashboard = {
     enter: function() {
         window.App.Ui.showView(window.App.Ui.views.dashboard);
@@ -259,7 +254,7 @@ window.App.Dashboard = {
     }
 };
 
-// --- 互換性ブリッジ (古いHTMLや他ファイルとの連携用) ---
+// 互換性ブリッジ
 Object.defineProperty(window, 'currentShowId', { get: () => window.App.State.currentShowId, set: (v) => window.App.State.currentShowId = v });
 Object.defineProperty(window, 'currentRoomId', { get: () => window.App.State.currentRoomId, set: (v) => window.App.State.currentRoomId = v });
 Object.defineProperty(window, 'createdQuestions', { get: () => window.App.Data.createdQuestions, set: (v) => window.App.Data.createdQuestions = v });
@@ -267,7 +262,6 @@ Object.defineProperty(window, 'periodPlaylist', { get: () => window.App.Data.per
 Object.defineProperty(window, 'studioQuestions', { get: () => window.App.Data.studioQuestions, set: (v) => window.App.Data.studioQuestions = v });
 Object.defineProperty(window, 'currentConfig', { get: () => window.App.Data.currentConfig, set: (v) => window.App.Data.currentConfig = v });
 
-// 旧関数名のマッピング
 window.initCreatorMode = () => window.App.Creator.init();
 window.loadSetForEditing = (k, i) => window.App.Creator.loadSet(k, i);
 window.enterConfigMode = () => window.App.Config.init();
@@ -278,7 +272,6 @@ window.enterDashboard = () => window.App.Dashboard.enter();
 window.showView = (id) => window.App.Ui.showView(id);
 window.showToast = (msg) => window.App.Ui.showToast(msg);
 
-// 起動
 document.addEventListener('DOMContentLoaded', () => {
     window.App.init();
 });
