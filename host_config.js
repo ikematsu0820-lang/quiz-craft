@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v67: Solo Challenge Config)
+ * host_config.js (v68: Unified Modern UI)
  * =======================================================*/
 
 App.Config = {
@@ -62,6 +62,7 @@ App.Config = {
         this.selectedSetQuestions = data.q || [];
         const conf = data.c || {};
         
+        // ★UI構築：全モードをSoloモード風のグリッドデザインに統一
         let html = `
             <div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>
             <div class="config-item-box">
@@ -72,27 +73,96 @@ App.Config = {
                     <option value="solo" style="color:#00bfff; font-weight:bold;">${APP_TEXT.Config.ModeSolo}</option>
                 </select>
                 
-                <div id="mode-details-normal" class="mode-details hidden mt-10">
-                    <label class="config-label">${APP_TEXT.Config.LabelNormalLimit}</label>
-                    <select id="config-normal-limit" class="btn-block config-select"><option value="one">${APP_TEXT.Config.NormalLimitOne}</option><option value="unlimited">${APP_TEXT.Config.NormalLimitUnlimited}</option></select>
-                    <label class="config-label mt-10">${APP_TEXT.Config.LabelShuffleQ}</label>
-                    <select id="config-shuffle-q" class="btn-block config-select"><option value="off">${APP_TEXT.Config.ShuffleQOff}</option><option value="on">${APP_TEXT.Config.ShuffleQOn}</option></select>
+                <div id="mode-details-normal" class="mode-details hidden mode-settings-box mode-box-normal">
+                    <div class="grid-2-col">
+                        <div>
+                            <label class="config-label">制限時間 (Time Limit)</label>
+                            <div class="flex-center">
+                                <input type="number" id="config-normal-time" class="btn-block" value="0" min="0" placeholder="0=無制限">
+                                <span class="unit-text">秒</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelNormalLimit}</label>
+                            <select id="config-normal-limit" class="btn-block config-select">
+                                <option value="unlimited">${APP_TEXT.Config.NormalLimitUnlimited}</option>
+                                <option value="one">${APP_TEXT.Config.NormalLimitOne}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-2-col mt-10">
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
+                            <select id="config-shuffle-q" class="btn-block config-select">
+                                <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
+                                <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
+                            </select>
+                        </div>
+                        <div></div> 
+                    </div>
                 </div>
                 
-                <div id="mode-details-buzz" class="mode-details hidden mt-10">
-                     <label class="config-label">${APP_TEXT.Config.LabelBuzzWrongAction}</label>
-                     <select id="config-buzz-wrong-action" class="btn-block config-select mb-10"><option value="next">${APP_TEXT.Config.BuzzWrongNext}</option><option value="reset">${APP_TEXT.Config.BuzzWrongReset}</option></select>
-                     <label class="config-label">${APP_TEXT.Config.LabelBuzzTime}</label>
-                     <select id="config-buzz-timer" class="btn-block config-select"><option value="0">${APP_TEXT.Config.BuzzTimeNone}</option><option value="5">${APP_TEXT.Config.BuzzTime5}</option><option value="10">${APP_TEXT.Config.BuzzTime10}</option></select>
+                <div id="mode-details-buzz" class="mode-details hidden mode-settings-box mode-box-buzz">
+                    <div class="grid-2-col">
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelBuzzWrongAction}</label>
+                            <select id="config-buzz-wrong-action" class="btn-block config-select">
+                                <option value="next">${APP_TEXT.Config.BuzzWrongNext}</option>
+                                <option value="reset">${APP_TEXT.Config.BuzzWrongReset}</option>
+                                <option value="end">${APP_TEXT.Config.BuzzWrongEnd}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelBuzzTime}</label>
+                            <select id="config-buzz-timer" class="btn-block config-select">
+                                <option value="0">${APP_TEXT.Config.BuzzTimeNone}</option>
+                                <option value="5">${APP_TEXT.Config.BuzzTime5}</option>
+                                <option value="10">${APP_TEXT.Config.BuzzTime10}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-2-col mt-10">
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
+                            <select id="config-buzz-shuffle" class="btn-block config-select">
+                                <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
+                                <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="mode-details-turn" class="mode-details hidden mt-10">
-                    <label class="config-label">${APP_TEXT.Config.LabelTurnOrder}</label>
-                    <select id="config-turn-order" class="btn-block config-select mb-10"><option value="fixed">${APP_TEXT.Config.TurnOrderFixed}</option><option value="random">${APP_TEXT.Config.TurnOrderRandom}</option></select>
+                <div id="mode-details-turn" class="mode-details hidden mode-settings-box mode-box-turn">
+                    <div class="grid-2-col">
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelTurnOrder}</label>
+                            <select id="config-turn-order" class="btn-block config-select">
+                                <option value="fixed">${APP_TEXT.Config.TurnOrderFixed}</option>
+                                <option value="random">${APP_TEXT.Config.TurnOrderRandom}</option>
+                                <option value="rank">${APP_TEXT.Config.TurnOrderRank}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelTurnPass}</label>
+                            <select id="config-turn-pass" class="btn-block config-select">
+                                <option value="ok">${APP_TEXT.Config.TurnPassOk}</option>
+                                <option value="ng">${APP_TEXT.Config.TurnPassNg}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-2-col mt-10">
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
+                            <select id="config-turn-shuffle" class="btn-block config-select">
+                                <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
+                                <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="mode-details-solo" class="mode-details hidden mt-10" style="background:#1a1a1a; padding:10px; border:1px solid #00bfff; border-radius:5px;">
-                    <div class="grid-2-col gap-10">
+                <div id="mode-details-solo" class="mode-details hidden mode-settings-box mode-box-solo">
+                    <div class="grid-2-col">
                         <div>
                             <label class="config-label">${APP_TEXT.Config.LabelSoloStyle}</label>
                             <select id="config-solo-style" class="btn-block config-select">
@@ -110,10 +180,13 @@ App.Config = {
                         </div>
                     </div>
                     
-                    <div class="grid-2-col gap-10 mt-10">
+                    <div class="grid-2-col mt-10">
                         <div>
                             <label class="config-label">${APP_TEXT.Config.LabelSoloTimeValue}</label>
-                            <input type="number" id="config-solo-time-val" class="btn-block" value="5" min="1">
+                            <div class="flex-center">
+                                <input type="number" id="config-solo-time-val" class="btn-block" value="5" min="1">
+                                <span class="unit-text">秒</span>
+                            </div>
                         </div>
                         <div>
                             <label class="config-label">${APP_TEXT.Config.LabelSoloRecovery}</label>
@@ -126,7 +199,7 @@ App.Config = {
                         </div>
                     </div>
 
-                    <div class="grid-2-col gap-10 mt-10">
+                    <div class="grid-2-col mt-10">
                         <div>
                             <label class="config-label">${APP_TEXT.Config.LabelSoloLife}</label>
                             <select id="config-solo-life" class="btn-block config-select">
@@ -175,7 +248,7 @@ App.Config = {
         document.getElementById('config-add-playlist-btn').onclick = () => this.addPeriod();
         
         const modeSel = document.getElementById('config-mode-select');
-        if(conf.mode) modeSel.value = (conf.mode === 'time_attack') ? 'solo' : conf.mode; // Convert old to new
+        if(conf.mode) modeSel.value = (conf.mode === 'time_attack') ? 'solo' : conf.mode;
         this.updateModeDetails(modeSel.value);
         this.renderQList();
     },
@@ -217,8 +290,13 @@ App.Config = {
         document.querySelectorAll('.q-point-input').forEach(inp => qs[inp.dataset.index].points = parseInt(inp.value));
         document.querySelectorAll('.q-time-input').forEach(inp => qs[inp.dataset.index].timeLimit = parseInt(inp.value));
 
-        const shuffle = document.getElementById('config-shuffle-q')?.value === 'on';
-        if(shuffle) {
+        // シャッフル設定の読み取り（モード別IDに対応）
+        let shuffle = 'off';
+        if(mode === 'normal') shuffle = document.getElementById('config-shuffle-q')?.value;
+        else if(mode === 'buzz') shuffle = document.getElementById('config-buzz-shuffle')?.value;
+        else if(mode === 'turn') shuffle = document.getElementById('config-turn-shuffle')?.value;
+        
+        if(shuffle === 'on') {
             for (let i = qs.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [qs[i], qs[j]] = [qs[j], qs[i]];
@@ -230,9 +308,23 @@ App.Config = {
             mode: mode,
             gameType: document.getElementById('config-game-type').value,
             initialStatus: 'revive',
-            timeLimit: 0, eliminationRule: 'none',
-            buzzWrongAction: document.getElementById('config-buzz-wrong-action')?.value || 'next'
+            timeLimit: 0, 
+            eliminationRule: 'none',
+            buzzWrongAction: document.getElementById('config-buzz-wrong-action')?.value || 'next',
+            buzzTime: parseInt(document.getElementById('config-buzz-timer')?.value) || 0,
+            
+            // 一斉回答の設定
+            normalLimit: document.getElementById('config-normal-limit')?.value || 'unlimited',
+            
+            // 順番回答の設定
+            turnOrder: document.getElementById('config-turn-order')?.value || 'fixed',
+            turnPass: document.getElementById('config-turn-pass')?.value || 'ok'
         };
+
+        // 一斉回答の制限時間設定
+        if (mode === 'normal') {
+            newConfig.timeLimit = parseInt(document.getElementById('config-normal-time')?.value) || 0;
+        }
 
         // Solo Mode Configs
         if (mode === 'solo') {
