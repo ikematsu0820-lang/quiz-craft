@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v79: Explicit No-Limit Button)
+ * host_config.js (v80: "No Limit" Text Display)
  * =======================================================*/
 
 App.Config = {
@@ -62,7 +62,6 @@ App.Config = {
         this.selectedSetQuestions = data.q || [];
         const conf = data.c || {};
         
-        // 形式表示
         let typeDisplay = "不明";
         if(this.selectedSetQuestions.length > 0) {
             const t = this.selectedSetQuestions[0].type;
@@ -81,7 +80,6 @@ App.Config = {
             </div>
         `;
 
-        // モード設定
         html += `<div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>`;
         html += `
             <div class="config-item-box">
@@ -232,7 +230,6 @@ App.Config = {
                 </div>
             </div>`;
 
-        // ルール設定エリア (一括設定 & 個別リスト)
         html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
         html += `
         <div class="config-item-box">
@@ -278,10 +275,8 @@ App.Config = {
 
         container.innerHTML = html;
 
-        // イベント登録
         document.getElementById('config-add-playlist-btn').onclick = () => this.addPeriod();
         
-        // 個別設定のトグル
         document.getElementById('btn-toggle-q-list').onclick = () => {
             const list = document.getElementById('config-questions-list');
             list.classList.toggle('hidden');
@@ -295,15 +290,21 @@ App.Config = {
             }
         };
 
-        // 一括反映ロジック
+        // 一括反映
         document.getElementById('config-bulk-time-btn').onclick = () => {
             const val = document.getElementById('config-bulk-time-input').value;
-            document.querySelectorAll('.q-time-input').forEach(inp => inp.value = val);
+            document.querySelectorAll('.q-time-input').forEach(inp => {
+                inp.value = val;
+                inp.type = "number"; // 数字モードに戻す
+            });
         };
-        // ★追加: 無制限ボタンロジック (0をセット)
+        // ★修正: 無制限設定時、「無制限」と表示する
         document.getElementById('config-bulk-time-inf-btn').onclick = () => {
-            document.querySelectorAll('.q-time-input').forEach(inp => inp.value = 0);
-            App.Ui.showToast("全ての制限時間を「無制限(0)」に設定しました");
+            document.querySelectorAll('.q-time-input').forEach(inp => {
+                inp.type = "text"; // 文字を表示可能にする
+                inp.value = "無制限";
+            });
+            App.Ui.showToast("全ての制限時間を「無制限」に設定しました");
         };
 
         document.getElementById('config-bulk-point-btn').onclick = () => {
@@ -336,6 +337,11 @@ App.Config = {
             row.style.borderBottom = '1px solid #333';
             row.style.padding = '8px 0';
             
+            // ★修正: Timeが0なら「無制限」と表示
+            const isNoLimit = (q.timeLimit === 0 || q.timeLimit === "0");
+            const timeVal = isNoLimit ? "無制限" : q.timeLimit;
+            const inputType = isNoLimit ? "text" : "number";
+
             row.innerHTML = `
                 <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.9em; font-weight:bold; color:#ddd;">
                     Q${i+1}. ${q.q}
@@ -343,7 +349,7 @@ App.Config = {
                 <div style="display:flex; gap:5px; align-items:center;">
                     <div style="display:flex; flex-direction:column; align-items:center;">
                         <span style="font-size:0.6em; color:#aaa;">Time</span>
-                        <input type="number" class="q-time-input" data-index="${i}" value="${q.timeLimit||0}" style="width:40px; text-align:center; padding:5px;">
+                        <input type="${inputType}" class="q-time-input" data-index="${i}" value="${timeVal||0}" style="width:60px; text-align:center; padding:5px; font-size:0.8em;" onfocus="this.type='number'; this.value='';">
                     </div>
                     <div style="display:flex; flex-direction:column; align-items:center;">
                         <span style="font-size:0.6em; color:#0055ff;">Pt</span>
@@ -359,17 +365,24 @@ App.Config = {
         });
     },
 
+    // ... (bulkApply は不要だが互換性のため残す場合はそのままでOK) ...
+
     addPeriod: function() {
         const title = JSON.parse(document.getElementById('config-set-select').value).t;
         const mode = document.getElementById('config-mode-select').value;
         const qs = JSON.parse(JSON.stringify(this.selectedSetQuestions));
         
         document.querySelectorAll('.q-point-input').forEach(inp => qs[inp.dataset.index].points = parseInt(inp.value));
-        document.querySelectorAll('.q-time-input').forEach(inp => qs[inp.dataset.index].timeLimit = parseInt(inp.value));
-        // ★Lossも保存
         document.querySelectorAll('.q-loss-input').forEach(inp => qs[inp.dataset.index].loss = parseInt(inp.value));
+        
+        // ★修正: Timeの保存処理（"無制限"なら0にする）
+        document.querySelectorAll('.q-time-input').forEach(inp => {
+            const val = inp.value;
+            if (val === "無制限") qs[inp.dataset.index].timeLimit = 0;
+            else qs[inp.dataset.index].timeLimit = parseInt(val) || 0;
+        });
 
-        // シャッフル設定
+        // シャッフル
         let shuffle = 'off';
         if(mode === 'normal') shuffle = document.getElementById('config-shuffle-q')?.value;
         else if(mode === 'buzz') shuffle = document.getElementById('config-buzz-shuffle')?.value;
