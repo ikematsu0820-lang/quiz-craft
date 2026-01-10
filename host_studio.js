@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v81: Robust Loading & State Machine)
+ * host_studio.js (v82: ID-Based Loading & Fixes)
  * =======================================================*/
 
 App.Studio = {
@@ -57,7 +57,9 @@ App.Studio = {
             document.getElementById('studio-question-panel').classList.add('hidden');
             document.getElementById('studio-standby-panel').classList.remove('hidden');
             document.getElementById('studio-loader-ui').classList.remove('hidden');
-            this.loadProgramList();
+            
+            // ★修正: 明示的に読み込みを実行
+            setTimeout(() => this.loadProgramList(), 500);
         }
     },
 
@@ -65,78 +67,72 @@ App.Studio = {
         const select = document.getElementById('studio-program-select');
         const btn = document.getElementById('studio-load-program-btn');
         
-        if (!select || !btn) {
-            console.error("Studio elements not found!");
-            return;
-        }
+        if (!select || !btn) return;
 
-        // 初期化
+        // リセット
         select.innerHTML = '<option value="">読み込み中...</option>';
         select.disabled = true;
         btn.disabled = true;
         
         if (!App.State.currentShowId) {
-            select.innerHTML = '<option value="">(Error: ID未設定)</option>';
+            select.innerHTML = '<option value="">エラー: ID未設定 (再ログインしてください)</option>';
             return;
         }
 
-        console.log("Loading programs for:", App.State.currentShowId);
-
+        // データ取得
         window.db.ref(`saved_programs/${App.State.currentShowId}`).once('value', snap => {
             const data = snap.val();
-            select.innerHTML = '';
+            select.innerHTML = ''; 
             
             // デフォルト選択肢
             const defaultOpt = document.createElement('option');
             defaultOpt.value = "";
-            defaultOpt.textContent = "-- プログラムを選択してください --";
+            defaultOpt.textContent = "-- 読み込むプログラムを選択 --";
             select.appendChild(defaultOpt);
 
-            if(data) {
-                console.log("Programs found:", Object.keys(data).length);
-                Object.values(data).forEach(p => {
+            if(data && Object.keys(data).length > 0) {
+                // ★修正: JSON埋め込みをやめ、IDだけをvalueにする
+                Object.keys(data).forEach(key => {
+                    const p = data[key];
                     const opt = document.createElement('option');
-                    try {
-                        opt.value = JSON.stringify(p);
-                        opt.textContent = p.title || "(タイトルなし)";
-                        select.appendChild(opt);
-                    } catch (e) {
-                        console.error("JSON Stringify Error:", e);
-                    }
+                    opt.value = key; // ここはキー(ID)のみ
+                    opt.textContent = p.title || "(タイトルなし)";
+                    select.appendChild(opt);
                 });
+                
                 select.disabled = false;
             } else {
-                console.log("No programs found.");
                 const opt = document.createElement('option');
                 opt.textContent = "(保存されたプログラムがありません)";
-                opt.disabled = true;
                 select.appendChild(opt);
             }
-        }).catch(error => {
-            console.error("Firebase Error:", error);
-            select.innerHTML = '<option value="">(読み込みエラー)</option>';
         });
         
+        // 選択変更時
         select.onchange = () => {
             btn.disabled = (select.value === "");
         };
 
+        // ボタンクリック時 (IDを使ってデータを再取得)
         btn.onclick = () => {
-            const val = select.value;
-            if(!val) return;
-            try {
-                const prog = JSON.parse(val);
-                App.Data.periodPlaylist = prog.playlist || [];
-                document.getElementById('studio-loader-ui').classList.add('hidden');
-                
-                const infoEl = document.getElementById('studio-program-info');
-                if (infoEl) infoEl.textContent = prog.title;
-
-                this.renderTimeline();
-            } catch(e) {
-                console.error("Parse Error:", e);
-                alert("データの読み込みに失敗しました");
-            }
+            const progId = select.value;
+            if(!progId) return;
+            
+            btn.textContent = "Loading...";
+            
+            window.db.ref(`saved_programs/${App.State.currentShowId}/${progId}`).once('value', snap => {
+                const prog = snap.val();
+                if(prog) {
+                    App.Data.periodPlaylist = prog.playlist || [];
+                    document.getElementById('studio-loader-ui').classList.add('hidden');
+                    const infoEl = document.getElementById('studio-program-info');
+                    if (infoEl) infoEl.textContent = prog.title;
+                    this.renderTimeline();
+                } else {
+                    alert("データの読み込みに失敗しました");
+                }
+                btn.textContent = "Set";
+            });
         };
     },
 
