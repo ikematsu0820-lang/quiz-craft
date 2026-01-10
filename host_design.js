@@ -1,11 +1,10 @@
 /* =========================================================
- * host_design.js (v66: Refactored Module)
+ * host_design.js (v68.1: Fix Real Preview Data)
  * =======================================================*/
 
 App.Design = {
     currentTarget: null, // { type: 'set'|'prog', key: '...', data: ... }
     
-    // U-NEXT風デフォルト定義
     defaults: {
         mainBgColor: "#0a0a0a",
         qTextColor: "#ffffff",
@@ -23,17 +22,14 @@ App.Design = {
         this.currentTarget = null;
         this.bindEvents();
         this.loadTargetList();
-        
-        // 初回プレビュー描画
         this.setDefaultUI();
         this.renderPreview();
     },
 
     bindEvents: function() {
-        // ターゲットロード
         document.getElementById('design-target-load-btn').onclick = () => this.loadTarget();
         
-        // 変更検知（すべてのカラーピッカー等）
+        // 入力変更時にプレビュー更新
         document.querySelectorAll('#design-view input, #design-view select').forEach(el => {
             if(el.type !== 'file' && el.id !== 'design-target-select') {
                 el.oninput = () => this.renderPreview();
@@ -41,7 +37,7 @@ App.Design = {
             }
         });
 
-        // 背景画像アップロード
+        // 背景画像
         const imgBtn = document.getElementById('design-bg-image-btn');
         const imgInput = document.getElementById('design-bg-image-file');
         const clearBtn = document.getElementById('design-bg-clear-btn');
@@ -71,12 +67,10 @@ App.Design = {
             };
         }
 
-        // モーダル制御
         this.setupModal('btn-open-text', 'modal-design-text');
         this.setupModal('btn-open-object', 'modal-design-object');
         this.setupModal('btn-open-bg', 'modal-design-bg');
 
-        // 文字配置ボタン
         document.querySelectorAll('.btn-align').forEach(btn => {
             btn.onclick = () => {
                 document.querySelectorAll('.btn-align').forEach(b => b.classList.remove('active'));
@@ -86,7 +80,6 @@ App.Design = {
             };
         });
 
-        // 保存 & リセット
         document.getElementById('design-save-btn').onclick = () => this.save();
         document.getElementById('design-reset-btn').onclick = () => {
             if(confirm("設定を初期値（U-NEXT風）に戻しますか？")) {
@@ -118,7 +111,6 @@ App.Design = {
             const sets = setSnap.val() || {};
             const progs = progSnap.val() || {};
 
-            // グループ化して表示
             const optGroupSet = document.createElement('optgroup');
             optGroupSet.label = "Questions Sets";
             Object.keys(sets).forEach(k => {
@@ -156,19 +148,16 @@ App.Design = {
             
             this.currentTarget = { ...targetInfo, data: data };
             
-            // データからデザイン抽出（最初の問題の設定、またはプレイリスト設定）
             let design = {};
             let layout = 'standard';
             let align = 'center';
 
             if (targetInfo.type === 'set' && data.questions && data.questions.length > 0) {
-                // セットなら1問目のデザインを採用
                 const q = data.questions[0];
                 design = q.design || {};
                 layout = q.layout || 'standard';
                 align = q.align || 'center';
             } else if (targetInfo.type === 'prog' && data.playlist && data.playlist.length > 0) {
-                // プログラムなら最初のピリオドの1問目
                 const q = data.playlist[0].questions?.[0];
                 if(q) {
                     design = q.design || {};
@@ -177,14 +166,12 @@ App.Design = {
                 }
             }
 
-            // UIに反映
             this.applyToUI(design, layout, align);
             App.Ui.showToast(`Loaded: ${data.title}`);
             this.renderPreview();
         });
     },
 
-    // UIの入力値を取得してまとめる
     collectSettings: function() {
         return {
             design: {
@@ -202,7 +189,6 @@ App.Design = {
         };
     },
 
-    // UIに入力値をセットする
     applyToUI: function(design, layout, align) {
         if(!design) design = this.defaults;
         
@@ -227,7 +213,6 @@ App.Design = {
         }
 
         if(layout) document.getElementById('creator-set-layout').value = layout;
-        
         if(align) {
             document.getElementById('creator-set-align').value = align;
             document.querySelectorAll('.btn-align').forEach(b => {
@@ -240,7 +225,7 @@ App.Design = {
         this.applyToUI(this.defaults, 'standard', 'center');
     },
 
-    // プレビュー画面の描画（実際のモニターと同じHTML/CSS構造を作る）
+    // ★修正: プレビュー描画（実データ対応）
     renderPreview: function() {
         const frame = document.getElementById('design-monitor-preview-content');
         if(!frame) return;
@@ -248,52 +233,91 @@ App.Design = {
         const s = this.collectSettings();
         const d = s.design;
         
+        // 1. 表示するデータ（問題文）を決める
+        let qText = "これはプレビュー用の問題文です。";
+        let choices = ["選択肢A", "選択肢B", "選択肢C", "選択肢D"];
+        let qType = 'choice';
+
+        // A. Design Studioでロード中のデータがあればそれを使う
+        if (this.currentTarget && this.currentTarget.data) {
+            let qData = null;
+            if (this.currentTarget.type === 'set' && this.currentTarget.data.questions?.length > 0) {
+                qData = this.currentTarget.data.questions[0];
+            } else if (this.currentTarget.type === 'prog' && this.currentTarget.data.playlist?.[0]?.questions?.length > 0) {
+                qData = this.currentTarget.data.playlist[0].questions[0];
+            }
+            if (qData) {
+                qText = qData.q;
+                if (qData.c) choices = qData.c;
+                qType = qData.type;
+            }
+        }
+        // B. Creator Modeで作っている最中のデータがあればそれを使う
+        else if (App.Data.createdQuestions && App.Data.createdQuestions.length > 0) {
+            // 編集中の問題があればそれ、なければリストの1問目
+            const editingIndex = App.Creator.editingIndex;
+            const qData = (editingIndex !== null) ? App.Data.createdQuestions[editingIndex] : App.Data.createdQuestions[0];
+            if (qData) {
+                qText = qData.q;
+                if (qData.c) choices = qData.c;
+                qType = qData.type;
+            }
+        }
+
         // 背景スタイル
         let bgStyle = `background-color: ${d.mainBgColor};`;
         if(d.bgImage) {
             bgStyle += `background-image: url('${d.bgImage}'); background-size: cover; background-position: center;`;
         } else {
-            // デフォルトのグラデーション
             bgStyle += `background-image: radial-gradient(circle at center, #1a1a1a 0%, ${d.mainBgColor} 100%);`;
         }
 
-        // レイアウトに応じたHTML構築
-        let layoutHtml = '';
+        // 基本CSS
         const qStyle = `color:${d.qTextColor}; background:${d.qBgColor}; border:2px solid ${d.qBorderColor}; text-align:${s.align}; padding:20px; border-radius:8px; font-size:1.2em; font-weight:bold; margin-bottom:10px; display:flex; align-items:center; justify-content:${s.align==='center'?'center':(s.align==='right'?'flex-end':'flex-start')}; box-shadow:0 0 15px ${d.qBorderColor}40;`;
         const cStyle = `color:${d.cTextColor}; background:${d.cBgColor}; border:1px solid ${d.cBorderColor}; padding:10px; border-radius:4px; margin-bottom:5px; display:flex; align-items:center;`;
         const labelStyle = `background:${d.cBorderColor}; color:#fff; padding:2px 8px; border-radius:3px; margin-right:10px; font-size:0.8em;`;
 
-        const dummyQ = "これはプレビュー用の問題文です。";
-        const dummyChoices = ["選択肢A", "選択肢B", "選択肢C", "選択肢D"];
+        let layoutHtml = '';
 
-        if (s.layout === 'split_list' || s.layout === 'split_grid') {
-            // 左右分割レイアウト
+        // パターン分岐: フリー回答や記述系は選択肢を出さない
+        if (qType === 'free_written' || qType === 'free_oral') {
             layoutHtml = `
-                <div style="display:flex; height:100%; gap:15px; padding:20px; box-sizing:border-box;">
-                    <div style="flex:1; ${qStyle}; margin:0;">${dummyQ}</div>
-                    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
-                        ${dummyChoices.map((c,i) => `
-                            <div style="${cStyle}">
-                                <span style="${labelStyle}">${String.fromCharCode(65+i)}</span> ${c}
-                            </div>
-                        `).join('')}
-                    </div>
+                <div style="padding:40px; box-sizing:border-box; display:flex; flex-direction:column; height:100%; justify-content:center; align-items:center;">
+                    <div style="${qStyle} width:80%; height:50%; font-size:2em;">${qText}</div>
+                    <div style="color:#aaa; margin-top:20px;">[ ${qType==='free_oral'?'口頭回答':'記述式'} ]</div>
                 </div>
             `;
         } else {
-            // 標準レイアウト (上下)
-            layoutHtml = `
-                <div style="padding:20px; box-sizing:border-box; display:flex; flex-direction:column; height:100%; justify-content:center;">
-                    <div style="${qStyle} min-height:100px;">${dummyQ}</div>
-                    <div style="margin-top:10px;">
-                         ${dummyChoices.map((c,i) => `
-                            <div style="${cStyle}">
-                                <span style="${labelStyle}">${String.fromCharCode(65+i)}</span> ${c}
-                            </div>
-                        `).join('')}
+            // 選択式・並べ替え・多答
+            if (s.layout === 'split_list' || s.layout === 'split_grid') {
+                // 左右分割
+                layoutHtml = `
+                    <div style="display:flex; height:100%; gap:15px; padding:20px; box-sizing:border-box;">
+                        <div style="flex:1; ${qStyle}; margin:0; writing-mode: vertical-rl; text-orientation: upright; justify-content:center;">${qText}</div>
+                        <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+                            ${choices.map((c,i) => `
+                                <div style="${cStyle}">
+                                    <span style="${labelStyle}">${String.fromCharCode(65+i)}</span> ${c}
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            } else {
+                // 標準 (上下)
+                layoutHtml = `
+                    <div style="padding:20px; box-sizing:border-box; display:flex; flex-direction:column; height:100%; justify-content:center;">
+                        <div style="${qStyle} min-height:100px;">${qText}</div>
+                        <div style="margin-top:10px;">
+                             ${choices.map((c,i) => `
+                                <div style="${cStyle}">
+                                    <span style="${labelStyle}">${String.fromCharCode(65+i)}</span> ${c}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
         }
 
         frame.innerHTML = `
@@ -310,9 +334,7 @@ App.Design = {
         const t = this.currentTarget;
         let promise;
 
-        // DB更新処理
         if (t.type === 'set') {
-            // セット内の全問題のデザインを一括更新
             const questions = t.data.questions.map(q => {
                 q.design = s.design;
                 q.layout = s.layout;
@@ -321,7 +343,6 @@ App.Design = {
             });
             promise = window.db.ref(`saved_sets/${App.State.currentShowId}/${t.key}/questions`).set(questions);
         } else {
-            // プログラム内の全ピリオドの全問題のデザインを一括更新（強力！）
             const playlist = t.data.playlist.map(period => {
                 if(period.questions) {
                     period.questions = period.questions.map(q => {
@@ -342,10 +363,8 @@ App.Design = {
     }
 };
 
-// Global Bindings (他モジュールからのアクセス用)
 window.enterDesignMode = () => App.Design.init();
 window.applyDesignToUI = (d, l, a) => App.Design.applyToUI(d, l, a);
 window.collectDesignSettings = () => App.Design.collectSettings();
 window.resetGlobalSettings = () => App.Design.setDefaultUI();
-// loadDesignSettings は Dashboard で使われるかもしれないので一応
 window.loadDesignSettings = () => {};
