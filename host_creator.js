@@ -1,9 +1,9 @@
 /* =========================================================
- * host_creator.js (v64: Order Changed & Special Mode Removed)
+ * host_creator.js (v65: Sort Labels A-Z & Max 20)
  * =======================================================*/
 
 let editingQuestionIndex = null;
-let currentEditingTitle = ""; 
+let currentEditingTitle = "";
 
 window.initCreatorMode = function() {
     editingSetId = null;
@@ -51,7 +51,7 @@ window.loadSetForEditing = function(key, item) {
             if(document.getElementById('design-c-bg')) document.getElementById('design-c-bg').value = firstQ.design.cBgColor || "#365c75";
             if(document.getElementById('design-c-border')) document.getElementById('design-c-border').value = firstQ.design.cBorderColor || "#ffffff";
         }
-        // ★削除: スペシャルモードの読み込み処理を削除
+        document.getElementById('creator-special-mode').value = firstQ.specialMode || 'none';
     } else {
         resetGlobalSettings();
         typeSelect.disabled = false;
@@ -66,12 +66,11 @@ window.loadSetForEditing = function(key, item) {
 document.addEventListener('DOMContentLoaded', () => {
     const typeSelect = document.getElementById('creator-q-type');
     if(typeSelect) {
-        // ★変更: プルダウンの並び順を変更
         typeSelect.innerHTML = `
-            <option value="free_oral">${APP_TEXT.Creator.TypeFreeOral}</option>
-            <option value="free_written">${APP_TEXT.Creator.TypeFreeWritten}</option>
             <option value="choice">${APP_TEXT.Creator.TypeChoice}</option>
             <option value="sort">${APP_TEXT.Creator.TypeSort}</option>
+            <option value="free_oral">${APP_TEXT.Creator.TypeFreeOral}</option>
+            <option value="free_written">${APP_TEXT.Creator.TypeFreeWritten}</option>
             <option value="multi">${APP_TEXT.Creator.TypeMulti}</option>
         `;
         typeSelect.addEventListener('change', (e) => {
@@ -160,7 +159,8 @@ function resetGlobalSettings() {
         document.getElementById('design-bg-image-data').value = "";
         document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgNoImage;
     }
-    // ★削除: スペシャルモードのリセット処理を削除
+    document.getElementById('creator-special-mode').value = 'none';
+
     if(typeof window.loadDesignSettings === 'function') {
         window.loadDesignSettings();
     }
@@ -302,8 +302,9 @@ function renderCreatorForm(type, data = null) {
     }
 }
 
+// ★上限を20に変更
 function addChoiceInput(parent, index, text = "", checked = false) {
-    if (parent.children.length >= 10) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
+    if (parent.children.length >= 20) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
     const wrapper = document.createElement('div');
     wrapper.className = 'choice-row';
     const chk = document.createElement('input');
@@ -329,31 +330,64 @@ function addChoiceInput(parent, index, text = "", checked = false) {
     parent.appendChild(wrapper);
 }
 
+// ★上限を20に変更 & アイコンをA,B,C...に変更
 function addSortInput(parent, index, text = "") {
-    if (parent.children.length >= 10) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
+    if (parent.children.length >= 20) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
+    
     const wrapper = document.createElement('div');
+    wrapper.className = 'sort-row'; // クラス追加
     wrapper.style.display = 'flex';
     wrapper.style.alignItems = 'center';
     wrapper.style.gap = '5px';
+    
     const num = document.createElement('span');
-    num.textContent = '🔹'; 
+    num.className = 'sort-label'; // クラス追加
+    // スタイル調整（青い文字で見やすく）
+    num.style.fontWeight = 'bold';
+    num.style.color = '#00bfff';
+    num.style.minWidth = '25px';
+    num.style.textAlign = 'center';
+    num.style.fontSize = '1.2em';
+    
     const inp = document.createElement('input');
     inp.type = 'text';
     inp.className = 'sort-text-input';
     inp.placeholder = 'Item';
     inp.value = text;
     inp.style.flex = '1';
+    
     const del = document.createElement('button');
     del.textContent = '×';
     del.style.background = '#ccc';
     del.style.color = '#333';
     del.style.width = '30px';
     del.style.padding = '5px';
-    del.onclick = () => parent.removeChild(wrapper);
+    
+    // ★削除時にラベルを振り直す
+    del.onclick = () => {
+        parent.removeChild(wrapper);
+        updateSortLabels(parent);
+    };
+
     wrapper.appendChild(num);
     wrapper.appendChild(inp);
     wrapper.appendChild(del);
     parent.appendChild(wrapper);
+    
+    // 追加後にラベル更新
+    updateSortLabels(parent);
+}
+
+// ★新規追加: 並べ替えラベル(A,B,C...)の一括更新関数
+function updateSortLabels(parent) {
+    const rows = parent.querySelectorAll('.sort-row');
+    rows.forEach((row, i) => {
+        const label = row.querySelector('.sort-label');
+        if(label) {
+            // A=65
+            label.textContent = String.fromCharCode(65 + i); 
+        }
+    });
 }
 
 function addMultiInput(parent, index, text = "") {
@@ -539,8 +573,7 @@ function saveToCloud() {
     
     const layout = document.getElementById('creator-set-layout').value;
     const align = document.getElementById('creator-set-align').value;
-    // ★変更: スペシャルモードはUI削除により 'none' 固定
-    const specialMode = 'none';
+    const specialMode = document.getElementById('creator-special-mode').value;
     
     const design = {
         mainBgColor: document.getElementById('design-main-bg-color').value,
