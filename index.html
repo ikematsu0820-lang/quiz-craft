@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style_common.css?v=81">
-<link rel="stylesheet" href="style_host.css?v=81">
-<link rel="stylesheet" href="style_player.css?v=81">
-<link rel="stylesheet" href="style_viewer.css?v=81">
+<link rel="stylesheet" href="style_common.css?v=83">
+<link rel="stylesheet" href="style_host.css?v=83">
+<link rel="stylesheet" href="style_player.css?v=83">
+<link rel="stylesheet" href="style_viewer.css?v=83">
 </head>
 <body>
 
@@ -60,7 +60,7 @@
 <div id="design-view" class="view hidden">
     <div class="view-header">
         <h2>デザインスタジオ</h2>
-        <button id="design-back-btn" class="header-back-btn back-to-main">ダッシュボード</button>
+        <button id="design-back-btn" class="header-back-btn">ダッシュボード</button>
     </div>
     <div class="design-preview-area-top">
         <h4 class="preview-label">モニター画面プレビュー</h4>
@@ -147,7 +147,7 @@
 <div id="creator-view" class="view hidden">
     <div class="view-header">
         <h2 data-text="Creator.Title">Creator</h2>
-        <button id="creator-back-btn" class="header-back-btn back-to-main">ダッシュボード</button>
+        <button id="creator-back-btn" class="header-back-btn">ダッシュボード</button>
     </div>
     <div class="panel-section section-blue mb-20">
         <h4 class="panel-title" data-text="Creator.HeadingSettings">Set Settings</h4>
@@ -175,7 +175,7 @@
 <div id="config-view" class="view hidden">
     <div class="view-header">
         <h2 data-text="Config.Title">Rule Settings</h2>
-        <button id="config-header-back-btn" class="header-back-btn back-to-main">ダッシュボード</button>
+        <button id="config-header-back-btn" class="header-back-btn">ダッシュボード</button>
     </div>
     <div class="panel-section section-cyan mb-20">
         <h3 class="panel-title-center" data-text="Config.HeadingAdd">Add Period</h3>
@@ -218,62 +218,48 @@
             <span class="status-label">ROOM ID</span>
             <span id="studio-header-room-id" class="status-value text-yellow">---</span>
         </div>
-        
         <div class="status-item"><span class="status-label">MODE</span><span id="studio-mode-display" class="status-value text-cyan">NORMAL</span></div>
         <div class="status-item"><span class="status-label">Q</span><span id="studio-q-num-display" class="status-value">1/10</span></div>
         <div class="status-item"><span class="status-label">STEP</span><span id="studio-step-display" class="status-value">STANDBY</span></div>
         <div class="status-item"><span class="status-label">PLAYER</span><span id="studio-player-count-display" class="status-value">0</span></div>
-        
         <div id="studio-solo-info" class="status-item hidden">
             <span class="status-label">CHALLENGER</span><span id="studio-challenger-name" class="status-value text-pink">---</span>
             <span class="status-label ml-10">LIFE</span><span id="studio-life-display" class="status-value">3</span>
         </div>
     </div>
-
     <div class="studio-main-area">
         <div id="studio-standby-panel" class="center-message">
             <h3 data-text="Studio.StatusReady">Ready...</h3>
-            
             <div class="big-room-id-box">
                 <span class="label">ROOM ID</span>
                 <span id="studio-big-room-id">------</span>
             </div>
-
             <div id="studio-program-info" class="text-gray mb-20">プログラム未ロード</div>
-            
             <div id="studio-loader-ui" class="panel-section section-blue" style="max-width:400px; margin:0 auto;">
                 <select id="studio-program-select" class="btn-block config-select mb-10"></select>
                 <button id="studio-load-program-btn" class="btn-primary btn-block" data-text="Studio.BtnLoad">Set</button>
             </div>
             <div id="studio-period-timeline" class="timeline-container mt-20"></div>
         </div>
-
         <div id="studio-question-panel" class="question-monitor hidden">
             <div class="monitor-header">
                 <span id="studio-q-type-badge" class="badge-type">CHOICE</span>
                 <span class="monitor-timer hidden" id="studio-timer-display">TIME: 10</span>
             </div>
-            
             <div id="studio-q-text" class="monitor-q-text"></div>
-            
             <div id="studio-choices-container" class="monitor-choices"></div>
-            
             <div id="studio-correct-display" class="monitor-correct hidden">
                 <span class="label">ANSWER:</span> <span id="studio-correct-text"></span>
             </div>
-            
             <div id="studio-sub-info" class="monitor-sub-info hidden"></div>
         </div>
     </div>
-
     <div class="studio-footer-controls">
         <button id="btn-phase-main" class="btn-block btn-large-action">START</button>
-        
         <div id="studio-sub-controls" class="sub-controls-grid hidden">
             <button id="btn-judge-correct" class="btn-success btn-judge">⭕ COR</button>
             <button id="btn-judge-wrong" class="btn-danger btn-judge">❌ WRO</button>
         </div>
-
         <div class="footer-tools">
             <button id="btn-toggle-ans" class="btn-mini btn-dark">正解表示</button>
             <button id="btn-force-next" class="btn-mini btn-dark">Skip Q</button>
@@ -343,7 +329,7 @@
 <div id="viewer-login-view" class="view hidden">
     <div class="view-header">
         <h2 data-text="Viewer.Title">Monitor Connect</h2>
-        <button class="header-back-btn back-to-main">ダッシュボード</button>
+        <button class="header-back-btn">ダッシュボード</button>
     </div>
     <div class="login-form-area">
         <img src="logo.png" alt="Quiz Studio" class="app-logo-small mb-20">
@@ -369,14 +355,14 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=81"></script>
-<script src="host_core.js?v=81"></script>
-<script src="host_design.js?v=81"></script>
-<script src="host_creator.js?v=81"></script>
-<script src="host_config.js?v=81"></script>
-<script src="host_studio.js?v=81"></script>
-<script src="player.js?v=81"></script>
-<script src="viewer.js?v=81"></script>
+<script src="text_config.js?v=83"></script>
+<script src="host_core.js?v=83"></script>
+<script src="host_design.js?v=83"></script>
+<script src="host_creator.js?v=83"></script>
+<script src="host_config.js?v=83"></script>
+<script src="host_studio.js?v=83"></script>
+<script src="player.js?v=83"></script>
+<script src="viewer.js?v=83"></script>
 
 </body>
 </html>
