@@ -36,7 +36,7 @@ const APP_TEXT = {
         
         LabelLayout: "モニターレイアウト", LayoutStandard: "標準 (上:問題 / 下:選択肢)", LayoutSplitList: "左右分割 (右:縦書き問題 / 左:リスト)", LayoutSplitGrid: "左右分割 (右:縦書き問題 / 左:グリッド)", LabelAlign: "文字の配置", AlignLeft: "左揃え", AlignCenter: "中央揃え", AlignRight: "右揃え",
         LabelDesign: "デザイン設定", GroupMain: "全体背景 (Main)", GroupQ: "問題文エリア (Question)", GroupC: "選択肢エリア (Choices)", LabelColorText: "文字", LabelColorBg: "背景", LabelColorBorder: "枠線", BtnSelectImage: "画像を選択", BtnClearImage: "画像解除", MsgImageLoaded: "画像セット中", MsgNoImage: "画像なし (単色背景)",
-        AlertNoQ: "問題文を入力してください", AlertLessChoice: "選択肢は2つ以上必要です", AlertMaxChoice: "選択肢は最大10個までです", AlertNoCorrect: "正解を選んでください", AlertNoTextAns: "正解を入力してください", MsgSavedToast: "保存しました！", MsgAddedToast: "追加しました", MsgUpdatedToast: "更新しました",
+        AlertNoQ: "問題文を入力してください", AlertLessChoice: "選択肢は2つ以上必要です", AlertMaxChoice: "選択肢は最大20個までです", AlertNoCorrect: "正解を選んでください", AlertNoTextAns: "正解を入力してください", MsgSavedToast: "保存しました！", MsgAddedToast: "追加しました", MsgUpdatedToast: "更新しました",
         MsgTypeLocked: "※問題形式は固定されています"
     },
 
