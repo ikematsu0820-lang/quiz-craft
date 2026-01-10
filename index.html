@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style_common.css?v=61">
-<link rel="stylesheet" href="style_host.css?v=61">
-<link rel="stylesheet" href="style_player.css?v=61">
-<link rel="stylesheet" href="style_viewer.css?v=61">
+<link rel="stylesheet" href="style_common.css?v=66">
+<link rel="stylesheet" href="style_host.css?v=66">
+<link rel="stylesheet" href="style_player.css?v=66">
+<link rel="stylesheet" href="style_viewer.css?v=66">
 </head>
 <body>
 
@@ -17,7 +17,6 @@
     <div class="landing-content">
         <div class="landing-logo-area">
             <div class="landing-logo-emoji">💡</div>
-            
             <h1 class="landing-title">Quiz Studio</h1>
             <p class="landing-subtitle">Cloud Edition</p>
         </div>
@@ -33,414 +32,405 @@
     </div>
 </div>
 
-<div id="host-login-view" class="view hidden">
+<div id="host-login-view" class="view hidden center-content-view">
     <div class="view-header">
-        <h2 data-text="Login.Title" style="margin:0;">ID Input</h2>
+        <h2 data-text="Login.Title">ID Input</h2>
         <button class="header-back-btn back-to-main" data-text="Login.BackBtn">Home</button>
     </div>
-    <hr>
-    <div style="text-align:center;">
-        <img src="logo.png" alt="Quiz Studio" class="app-logo-small" style="margin-bottom:20px;">
-        <input type="text" id="show-id-input" placeholder=""
-               style="text-align:center; font-size:1.5em; text-transform:uppercase; margin-bottom:15px;">
+    
+    <div class="login-form-area">
+        <img src="logo.png" alt="Quiz Studio" class="app-logo-small mb-20">
+        <input type="text" id="show-id-input" class="input-large text-uppercase mb-20" placeholder="SHOW ID">
         <button id="host-login-submit-btn" class="btn-primary btn-block" data-text="Login.SubmitBtn">Login</button>
     </div>
 </div>
 
 <div id="host-dashboard-view" class="view hidden">
     <div class="view-header">
-        <h3 style="margin:0;">Show: <span id="dashboard-show-id" style="color:#e91e63;">---</span></h3>
+        <h3>Show: <span id="dashboard-show-id" class="accent-text">---</span></h3>
         <button class="header-back-btn btn-logout back-to-main" data-text="Dashboard.Logout">Logout</button>
     </div>
-    <hr>
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:20px;">
-        <button id="dash-create-btn" class="btn-info" style="height:80px; font-weight:bold; font-size:0.9em;" data-text="Dashboard.BtnCreate">Create</button>
-        <button id="dash-config-btn" class="btn-primary" style="height:80px; font-weight:bold; font-size:0.9em; background-color:#2c3e50;" data-text="Dashboard.BtnConfig">Config</button>
-        <button id="dash-design-btn" class="btn-primary" style="height:80px; font-weight:bold; font-size:0.9em; background-color:#2c5066; border-left:5px solid #d32f2f;">デザイン</button>
+    <div class="dashboard-grid">
+        <button id="dash-create-btn" class="dash-btn" data-text="Dashboard.BtnCreate">Create</button>
+        <button id="dash-config-btn" class="dash-btn" data-text="Dashboard.BtnConfig">Config</button>
+        <button id="dash-design-btn" class="dash-btn">デザイン</button>
 
-        <button id="dash-studio-btn" class="btn-danger" style="grid-column: span 2; height:80px; font-weight:bold; font-size:1.4em;" data-text="Dashboard.BtnStudio">Studio</button>
-        <button id="dash-viewer-btn" class="btn-warning" style="height:80px; font-weight:bold; font-size:0.9em;" data-text="Dashboard.BtnViewer">Monitor</button>
+        <button id="dash-studio-btn" class="dash-btn studio-btn" data-text="Dashboard.BtnStudio">Studio</button>
+        <button id="dash-viewer-btn" class="dash-btn" data-text="Dashboard.BtnViewer">Monitor</button>
     </div>
 
-    <div>
-        <h4 style="border-bottom:2px solid #ddd; padding-bottom:5px;" data-text="Dashboard.SetListTitle">Saved Sets</h4>
-        <div id="dash-set-list" style="max-height:300px; overflow-y:auto; background:#f9f9f9; padding:10px; border-radius:5px;"></div>
+    <div class="dashboard-list-area">
+        <h4 class="section-title" data-text="Dashboard.SetListTitle">Saved Sets</h4>
+        <div id="dash-set-list" class="scroll-list"></div>
     </div>
 </div>
 
 <div id="design-view" class="view hidden">
     <div class="view-header">
-        <h2 style="margin:0;">デザインスタジオ</h2>
+        <h2>デザインスタジオ</h2>
         <button id="design-back-btn" class="header-back-btn back-to-main">ダッシュボード</button>
     </div>
-    <hr>
 
     <div class="design-preview-area-top">
-        <h4 style="margin:0 0 5px 0; color:#aaa; text-align:center; font-size:0.9em;">モニター画面プレビュー</h4>
+        <h4 class="preview-label">モニター画面プレビュー</h4>
         <div class="design-preview-frame">
             <div id="design-monitor-preview-content"></div>
         </div>
-        <p style="text-align:center; font-size:0.8em; color:#666; margin-top:5px;">※実際の表示とは解像度が異なります</p>
+        <p class="preview-note">※実際の表示とは解像度が異なります</p>
     </div>
 
-    <div style="background:#1f1f1f; padding:10px; border:1px solid #00bfff; border-radius:8px; margin-bottom:15px; display:flex; gap:10px; align-items:center;">
-        <div style="flex:1;">
-            <select id="design-target-select" class="btn-block" style="font-size:1em; margin-bottom:0; background:#333; color:#fff; border:1px solid #555; padding:8px;">
+    <div class="design-toolbar">
+        <div class="toolbar-select">
+            <select id="design-target-select" class="btn-block">
                 <option value="">-- 編集対象を選択 --</option>
             </select>
         </div>
-        <button id="design-target-load-btn" class="btn-primary" style="width:80px; padding:8px; font-weight:bold;">Load</button>
+        <button id="design-target-load-btn" class="btn-primary toolbar-btn">Load</button>
     </div>
 
     <div class="design-menu-grid">
         <button id="btn-open-text" class="design-menu-btn">
-            <span style="font-size:2em;">T</span><br>テキスト・配置
+            <span class="menu-icon">T</span><br>テキスト・配置
         </button>
         <button id="btn-open-object" class="design-menu-btn">
-            <span style="font-size:2em;">□</span><br>オブジェクト
+            <span class="menu-icon">□</span><br>オブジェクト
         </button>
         <button id="btn-open-bg" class="design-menu-btn">
-            <span style="font-size:2em;">🖼</span><br>背景
+            <span class="menu-icon">🖼</span><br>背景
         </button>
     </div>
 
-    <div style="display:flex; gap:10px; margin-top:15px;">
-        <button id="design-reset-btn" class="btn-dark" style="flex:1; padding:15px; font-weight:bold;">初期値</button>
-        <button id="design-save-btn" class="btn-success" style="flex:2; padding:15px; font-weight:bold; font-size:1.1em; box-shadow: 0 0 15px rgba(0,255,0,0.3);">保存 (完了)</button>
+    <div class="design-action-row">
+        <button id="design-reset-btn" class="btn-dark">初期値</button>
+        <button id="design-save-btn" class="btn-success">保存 (完了)</button>
     </div>
 
     <div id="modal-design-text" class="design-modal-overlay hidden">
         <div class="design-modal-content">
-            <h3 style="margin-top:0; color:#00bfff; border-bottom:1px solid #444; padding-bottom:10px;">テキスト設定</h3>
-            
+            <h3 class="modal-title">テキスト設定</h3>
             <div class="design-modal-body">
                 <label class="config-label">文字の配置 (Alignment)</label>
-                <div style="display:flex; gap:5px; margin-bottom:20px;">
-                    <button type="button" class="btn-align" data-align="left" style="flex:1;">左揃え</button>
-                    <button type="button" class="btn-align active" data-align="center" style="flex:1;">中央</button>
-                    <button type="button" class="btn-align" data-align="right" style="flex:1;">右揃え</button>
+                <div class="align-btn-group">
+                    <button type="button" class="btn-align" data-align="left">左揃え</button>
+                    <button type="button" class="btn-align active" data-align="center">中央</button>
+                    <button type="button" class="btn-align" data-align="right">右揃え</button>
                 </div>
                 <input type="hidden" id="creator-set-align" value="center">
 
                 <label class="config-label">問題文の文字色</label>
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
-                    <input type="color" id="design-q-text" value="#ffffff" style="height:40px; width:100%;">
-                </div>
+                <input type="color" id="design-q-text" class="color-picker-full">
 
                 <label class="config-label">選択肢の文字色</label>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <input type="color" id="design-c-text" value="#ffffff" style="height:40px; width:100%;">
-                </div>
+                <input type="color" id="design-c-text" class="color-picker-full">
             </div>
-            
-            <button class="btn-block btn-dark modal-close-btn" style="margin-top:20px;">閉じる</button>
+            <button class="btn-block btn-dark modal-close-btn">閉じる</button>
         </div>
     </div>
 
     <div id="modal-design-object" class="design-modal-overlay hidden">
         <div class="design-modal-content">
-            <h3 style="margin-top:0; color:#00bfff; border-bottom:1px solid #444; padding-bottom:10px;">オブジェクト設定</h3>
-            
+            <h3 class="modal-title">オブジェクト設定</h3>
             <div class="design-modal-body">
                 <label class="config-label">モニターレイアウト</label>
-                <select id="creator-set-layout" class="btn-block" style="margin-bottom:20px;">
+                <select id="creator-set-layout" class="btn-block mb-20">
                     <option value="standard">標準 (上下)</option>
                     <option value="split_list">左右分割 (リスト)</option>
                     <option value="split_grid">左右分割 (グリッド)</option>
                 </select>
 
-                <h4 style="margin:10px 0 5px 0; color:#eee;">問題文エリア</h4>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                <h4 class="sub-title">問題文エリア</h4>
+                <div class="grid-2-col">
                     <div>
-                        <label style="font-size:0.8em; color:#aaa;">枠線 (Border)</label>
-                        <input type="color" id="design-q-border" value="#ffffff" style="width:100%; height:40px;">
+                        <label class="mini-label">枠線 (Border)</label>
+                        <input type="color" id="design-q-border" class="color-picker-full">
                     </div>
                     <div>
-                        <label style="font-size:0.8em; color:#aaa;">背景 (Fill)</label>
-                        <input type="color" id="design-q-bg" value="#2c5066" style="width:100%; height:40px;">
+                        <label class="mini-label">背景 (Fill)</label>
+                        <input type="color" id="design-q-bg" class="color-picker-full">
                     </div>
                 </div>
 
-                <h4 style="margin:10px 0 5px 0; color:#eee;">選択肢エリア</h4>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <h4 class="sub-title">選択肢エリア</h4>
+                <div class="grid-2-col">
                     <div>
-                        <label style="font-size:0.8em; color:#aaa;">枠線 (Border)</label>
-                        <input type="color" id="design-c-border" value="#ffffff" style="width:100%; height:40px;">
+                        <label class="mini-label">枠線 (Border)</label>
+                        <input type="color" id="design-c-border" class="color-picker-full">
                     </div>
                     <div>
-                        <label style="font-size:0.8em; color:#aaa;">背景 (Fill)</label>
-                        <input type="color" id="design-c-bg" value="#365c75" style="width:100%; height:40px;">
+                        <label class="mini-label">背景 (Fill)</label>
+                        <input type="color" id="design-c-bg" class="color-picker-full">
                     </div>
                 </div>
             </div>
-
-            <button class="btn-block btn-dark modal-close-btn" style="margin-top:20px;">閉じる</button>
+            <button class="btn-block btn-dark modal-close-btn">閉じる</button>
         </div>
     </div>
 
     <div id="modal-design-bg" class="design-modal-overlay hidden">
         <div class="design-modal-content">
-            <h3 style="margin-top:0; color:#00bfff; border-bottom:1px solid #444; padding-bottom:10px;">背景設定</h3>
-            
+            <h3 class="modal-title">背景設定</h3>
             <div class="design-modal-body">
                 <label class="config-label">背景色 (Main Color)</label>
-                <input type="color" id="design-main-bg-color" value="#222222" style="width:100%; height:50px; margin-bottom:20px; cursor:pointer;">
+                <input type="color" id="design-main-bg-color" class="color-picker-full mb-20">
 
                 <label class="config-label">背景画像 (Image Upload)</label>
-                <div style="background:#333; padding:15px; border-radius:8px; text-align:center;">
+                <div class="image-upload-area">
                     <input type="file" id="design-bg-image-file" accept="image/*" style="display:none;">
-                    <button id="design-bg-image-btn" class="btn-primary" style="margin-bottom:10px;">画像ファイルを選択</button>
+                    <button id="design-bg-image-btn" class="btn-primary mb-10">画像ファイルを選択</button>
                     <br>
-                    <span id="design-bg-image-status" style="font-size:0.8em; color:#aaa;">未選択</span>
-                    <button id="design-bg-clear-btn" class="btn-danger btn-mini" style="display:block; margin:10px auto 0 auto;">画像解除</button>
+                    <span id="design-bg-image-status" class="status-text">未選択</span>
+                    <button id="design-bg-clear-btn" class="btn-danger btn-mini mt-10">画像解除</button>
                 </div>
                 <input type="hidden" id="design-bg-image-data">
             </div>
-
-            <button class="btn-block btn-dark modal-close-btn" style="margin-top:20px;">閉じる</button>
+            <button class="btn-block btn-dark modal-close-btn">閉じる</button>
         </div>
     </div>
 </div>
     
 <div id="creator-view" class="view hidden">
     <div class="view-header">
-        <h2 style="margin:0;" data-text="Creator.Title">Creator</h2>
+        <h2 data-text="Creator.Title">Creator</h2>
         <button id="creator-back-btn" class="header-back-btn back-to-main">ダッシュボード</button>
     </div>
-    <hr>
 
-    <div class="creator-top-area" style="background:#e6f7ff; padding:15px; border-radius:8px; border:2px solid #0055ff; margin-bottom:20px;">
-        <h4 style="margin:0 0 10px 0; color:#0055ff;" data-text="Creator.HeadingSettings">Set Settings</h4>
-        <label style="font-size:0.8em; font-weight:bold;" data-text="Creator.LabelTypeFixed">Fixed Type</label>
-        <select id="creator-q-type" class="btn-block" style="background:#fff; font-weight:bold;"></select>
-        <p id="creator-type-locked-msg" class="creator-locked-msg hidden" style="color:#d00; font-size:0.9em; margin-top:5px; font-weight:bold;" data-text="Creator.MsgTypeLocked">Locked</p>
+    <div class="panel-section section-blue mb-20">
+        <h4 class="panel-title" data-text="Creator.HeadingSettings">Set Settings</h4>
+        <label class="config-label" data-text="Creator.LabelTypeFixed">Fixed Type</label>
+        <select id="creator-q-type" class="btn-block bold-select"></select>
+        <p id="creator-type-locked-msg" class="locked-msg hidden" data-text="Creator.MsgTypeLocked">Locked</p>
     </div>
 
-    <div style="background:#fff0f5; padding:15px; border-radius:8px; border:2px solid #ff69b4; margin-bottom:20px;">
-        <h3 id="creator-form-title" style="margin-top:0; color:#c71585;" data-text="Creator.HeadingNewQ">New Question</h3>
-        <input type="text" id="question-text" class="btn-block" placeholder="" style="margin-bottom:10px;">
-        <div id="creator-form-container" style="margin-bottom:10px;"></div>
-        <button id="add-question-btn" class="btn-primary btn-block" style="margin-top:10px;" data-text="Creator.BtnAdd">Add</button>
-        <div id="update-question-area" class="hidden" style="display:flex; gap:10px; margin-top:10px;">
-            <button id="update-question-btn" class="btn-success" style="flex:1;" data-text="Creator.BtnUpdateQ">Update</button>
-            <button id="cancel-update-btn" class="btn-dark" style="flex:1;" data-text="Creator.BtnCancel">Cancel</button>
+    <div class="panel-section section-pink mb-20">
+        <h3 id="creator-form-title" class="panel-title-large" data-text="Creator.HeadingNewQ">New Question</h3>
+        <input type="text" id="question-text" class="btn-block mb-10" placeholder="">
+        <div id="creator-form-container" class="mb-10"></div>
+        
+        <button id="add-question-btn" class="btn-primary btn-block mt-10" data-text="Creator.BtnAdd">Add</button>
+        
+        <div id="update-question-area" class="hidden grid-2-col gap-10 mt-10">
+            <button id="update-question-btn" class="btn-success" data-text="Creator.BtnUpdateQ">Update</button>
+            <button id="cancel-update-btn" class="btn-dark" data-text="Creator.BtnCancel">Cancel</button>
         </div>
     </div>
 
-<div class="creator-set-settings">
-        <h5 data-text="Creator.ListHeading" style="margin:0 0 5px 0;">List</h5>
-        <div id="q-list" style="background:white; padding:5px; border:1px solid #ddd; min-height:50px; margin-bottom:15px; max-height:300px; overflow-y:auto;"></div>
-
-        <button id="save-to-cloud-btn" class="btn-success btn-block" style="padding:15px; font-weight:bold;" data-text="Creator.BtnSave">Save</button>
+    <div class="creator-set-settings">
+        <h5 data-text="Creator.ListHeading" class="mb-5">List</h5>
+        <div id="q-list" class="scroll-list mb-15"></div>
+        <button id="save-to-cloud-btn" class="btn-success btn-block btn-large" data-text="Creator.BtnSave">Save</button>
     </div>
 </div>
 
 <div id="config-view" class="view hidden">
     <div class="view-header">
-        <h2 style="margin:0;" data-text="Config.Title">Rule Settings</h2>
+        <h2 data-text="Config.Title">Rule Settings</h2>
         <button id="config-header-back-btn" class="header-back-btn back-to-main">ダッシュボード</button>
     </div>
-    <hr>
     
-    <div style="background:#f0f8ff; padding:15px; border:2px solid #87ceeb; border-radius:8px; margin-bottom:20px;">
-        <h3 style="margin:0 0 10px 0; color:#0055ff; font-size:1.1em; text-align:center;" data-text="Config.HeadingAdd">Add Period</h3>
-
-        <div style="margin-bottom:15px;">
+    <div class="panel-section section-cyan mb-20">
+        <h3 class="panel-title-center" data-text="Config.HeadingAdd">Add Period</h3>
+        <div class="mb-15">
             <label class="config-label-large" data-text="Config.LabelSet">Set</label>
-            <select id="config-set-select" class="btn-block config-select" style="font-size:1.1em;"></select>
+            <select id="config-set-select" class="btn-block config-select"></select>
         </div>
-
         <div id="config-builder-ui"></div>
     </div>
 
-    <div style="border-top:2px solid #ddd; padding-top:10px; margin-bottom:20px;">
-        <h4 style="color:#333; margin:0 0 10px 0;" data-text="Config.HeadingList">Playlist</h4>
-        <div id="config-playlist-preview" style="background:#eee; padding:10px; border-radius:5px; min-height:50px;">
-            <p style="text-align:center; color:#999; font-size:0.8em;">まだ追加されていません</p>
+    <div class="config-playlist-area">
+        <h4 class="section-title" data-text="Config.HeadingList">Playlist</h4>
+        <div id="config-playlist-preview" class="scroll-list-dark">
+            <p class="empty-msg">まだ追加されていません</p>
         </div>
         
-        <div style="margin:10px 0; text-align:right;">
-            <label style="font-weight:bold; color:#0055ff; cursor:pointer; background:#e6f0ff; padding:5px 10px; border-radius:4px;">
+        <div class="config-options-row">
+            <label class="checkbox-label">
                 <input type="checkbox" id="config-final-ranking-chk" checked> <span data-text="Config.LabelFinalRank">Final Ranking</span>
             </label>
         </div>
         
-        <div style="display:flex; gap:5px; margin-bottom:15px; margin-top:15px;">
-            <input type="text" id="config-program-title" placeholder="構成名を入力" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:4px;">
-            <button id="config-save-program-btn" class="btn-info" style="flex:0 0 80px; font-weight:bold;" data-text="Config.BtnSaveProg">Save</button>
+        <div class="save-prog-row">
+            <input type="text" id="config-program-title" placeholder="構成名を入力" class="flex-input">
+            <button id="config-save-program-btn" class="btn-info" data-text="Config.BtnSaveProg">Save</button>
         </div>
 
-        <button id="config-open-load-modal-btn" class="btn-primary btn-block" style="padding:15px; font-size:1.2em; background:#2c3e50; border:1px solid #444; margin-bottom:20px;">
+        <button id="config-open-load-modal-btn" class="btn-primary btn-block btn-large mb-20">
             📂 プログラムを編集する
         </button>
     </div>
 
-    <button id="config-go-studio-btn" class="btn-danger btn-block" style="padding:15px; font-weight:bold; font-size:1.2em;" data-text="Config.BtnGoStudio">Go Studio</button>
+    <button id="config-go-studio-btn" class="btn-danger btn-block btn-large" data-text="Config.BtnGoStudio">Go Studio</button>
 
     <div id="config-load-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <h3 style="margin-top:0; color:#00bfff;">編集するプログラムを選択</h3>
-            <p style="font-size:0.9em; color:#aaa; margin-bottom:15px;">※読み込むと現在のリストは上書きされます</p>
+            <h3 class="modal-title">編集するプログラムを選択</h3>
+            <p class="modal-note">※読み込むと現在のリストは上書きされます</p>
             
-            <select id="config-prog-select" class="btn-block config-select" style="font-size:1.1em; margin-bottom:20px;">
+            <select id="config-prog-select" class="btn-block config-select mb-20">
                 <option value="">読み込み中...</option>
             </select>
             
-            <div style="display:flex; gap:10px;">
-                <button id="config-load-prog-exec-btn" class="btn-primary" style="flex:1; padding:15px;">Load</button>
-                <button id="config-modal-close-btn" class="btn-dark" style="flex:1; padding:15px;">Cancel</button>
+            <div class="grid-2-col gap-10">
+                <button id="config-load-prog-exec-btn" class="btn-primary">Load</button>
+                <button id="config-modal-close-btn" class="btn-dark">Cancel</button>
             </div>
         </div>
     </div>
 </div>
+
 <div id="host-control-view" class="view hidden">
-    <div style="background:#111; color:white; padding:10px; border-radius:8px; text-align:center; margin-bottom:10px; border:4px solid gold;">
-        <div style="font-size:0.8em; color:gold;"><span data-text="Studio.OnAir">ON AIR</span> / <span id="studio-show-id">---</span></div>
-        <div id="host-room-id" style="font-size:2em; font-weight:bold; letter-spacing:3px;">---</div>
-        <div style="display:flex; justify-content:space-around; margin-top:5px; font-size:0.9em;">
+    <div class="on-air-display">
+        <div class="on-air-sub"><span data-text="Studio.OnAir">ON AIR</span> / <span id="studio-show-id">---</span></div>
+        <div id="host-room-id" class="room-id-large">---</div>
+        <div class="room-stats">
             <div><span data-text="Studio.LabelPlayer">Player</span>: <span id="host-player-count">0</span></div>
-            <div><span data-text="Studio.LabelAlive">Alive</span>: <span id="host-alive-count" style="color:#00ff00; font-weight:bold;">0</span></div>
+            <div><span data-text="Studio.LabelAlive">Alive</span>: <span id="host-alive-count" class="alive-count">0</span></div>
         </div>
     </div>
 
-    <div id="studio-program-loader" style="background:#e6f0ff; padding:10px; border-radius:5px; margin-bottom:15px; border:2px solid #0055ff;">
-        <h4 style="margin:0 0 5px 0; color:#0055ff; font-size:1em;" data-text="Studio.HeadingLoad">Load</h4>
-        <select id="studio-program-select" style="width:100%; margin-bottom:5px;"></select>
-        <button id="studio-load-program-btn" class="btn-primary" style="width:100%; font-size:0.9em; padding:8px;" data-text="Studio.BtnLoad">Set</button>
+    <div id="studio-program-loader" class="panel-section section-blue mb-15">
+        <h4 class="panel-title" data-text="Studio.HeadingLoad">Load</h4>
+        <select id="studio-program-select" class="btn-block mb-5"></select>
+        <button id="studio-load-program-btn" class="btn-primary btn-block" data-text="Studio.BtnLoad">Set</button>
     </div>
 
-    <div id="host-buzz-winner-area" class="hidden" style="background:#ffeb3b; padding:15px; border-radius:8px; margin-bottom:15px; border:3px solid #ff9800; text-align:center;">
-        <div style="font-size:0.8em; color:#333;" data-text="Studio.MsgBuzzWin">WINNER</div>
-        <div id="host-buzz-winner-name" style="font-size:2em; font-weight:bold; color:#d00;">---</div>
+    <div id="host-buzz-winner-area" class="panel-section section-yellow hidden center-text">
+        <div class="winner-label" data-text="Studio.MsgBuzzWin">WINNER</div>
+        <div id="host-buzz-winner-name" class="winner-name">---</div>
     </div>
 
     <div id="host-kanpe-area" class="kanpe-card hidden">
-        <div style="background:#333; color:#fff; display:inline-block; padding:2px 8px; font-size:0.8em; border-radius:3px; margin-bottom:5px;" data-text="Studio.LabelKanpe">Kanpe</div>
-        <div id="kanpe-question" style="font-weight:bold; font-size:1.1em; margin-bottom:5px;"></div>
-        <div id="kanpe-answer" style="color:#d00; font-weight:bold;"></div>
-        <div id="kanpe-time-limit" style="font-size:0.8em; color:#666; margin-top:5px;"></div>
-        <div id="kanpe-point" style="font-size:0.8em; color:#0055ff; font-weight:bold;"></div>
+        <div class="kanpe-badge" data-text="Studio.LabelKanpe">Kanpe</div>
+        <div id="kanpe-question" class="kanpe-q"></div>
+        <div id="kanpe-answer" class="kanpe-a"></div>
+        <div id="kanpe-time-limit" class="kanpe-meta"></div>
+        <div id="kanpe-point" class="kanpe-meta accent"></div>
     </div>
 
-    <div id="host-status-area" style="text-align:center; margin-bottom:15px; font-weight:bold; color:#666;" data-text="Studio.StatusReady">Ready...</div>
+    <div id="host-status-area" class="studio-status-text" data-text="Studio.StatusReady">Ready...</div>
 
-    <div id="host-panel-control-area" class="hidden" style="margin-bottom:15px; background:#e6f0ff; padding:10px; border:1px solid #0055ff;">
-        <h5 style="margin:0 0 5px 0;" data-text="Studio.LabelPanelControl">Panel Control</h5>
-        <div id="host-panel-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:2px;"></div>
+    <div id="host-panel-control-area" class="control-panel-container hidden">
+        <h5 class="control-title" data-text="Studio.LabelPanelControl">Panel Control</h5>
+        <div id="host-panel-grid" class="control-grid-5"></div>
     </div>
 
-    <div id="host-bomb-control-area" class="hidden" style="margin-bottom:15px; background:#f3e5f5; padding:10px; border:1px solid #9c27b0;">
-        <h5 style="margin:0 0 5px 0;" data-text="Studio.LabelBombControl">Card Control</h5>
-        <div id="host-bomb-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:2px;"></div>
+    <div id="host-bomb-control-area" class="control-panel-container hidden">
+        <h5 class="control-title" data-text="Studio.LabelBombControl">Card Control</h5>
+        <div id="host-bomb-grid" class="control-grid-5"></div>
     </div>
 
-    <div id="host-multi-control-area" class="hidden" style="margin-bottom:15px; background:#fffbe6; padding:10px; border:1px solid #e6b800;">
-        <h5 style="margin:0 0 5px 0;" data-text="Studio.LabelMultiControl">Multi Answer Control</h5>
-        <div id="host-multi-grid" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:5px;"></div>
+    <div id="host-multi-control-area" class="control-panel-container hidden">
+        <h5 class="control-title" data-text="Studio.LabelMultiControl">Multi Answer Control</h5>
+        <div id="host-multi-grid" class="control-grid-2"></div>
     </div>
 
     <div id="studio-timeline-area">
-        <h4 style="color:#333; margin:0 0 10px 0; text-align:center;" data-text="Studio.HeadingList">List</h4>
-        <div id="studio-period-timeline" style="display:flex; flex-direction:column; gap:10px; min-height:50px; margin-bottom:20px;"></div>
-        <div id="studio-footer-controls" style="border-top:1px solid #ddd; padding-top:20px; text-align:center;">
-            <button id="studio-master-play-btn" class="btn-success btn-block" style="padding:15px; font-size:1.2em; box-shadow: 0 4px 0 #218838;" data-text="Studio.BtnMasterPlay">Play</button>
+        <h4 class="section-title" data-text="Studio.HeadingList">List</h4>
+        <div id="studio-period-timeline" class="timeline-container"></div>
+        <div id="studio-footer-controls" class="studio-footer">
+            <button id="studio-master-play-btn" class="btn-success btn-block btn-play" data-text="Studio.BtnMasterPlay">Play</button>
         </div>
     </div>
 
-    <div id="control-panel" class="hidden" style="margin-top:20px; border-top:2px solid #333; padding-top:15px;">
-        <h3 id="current-period-title" style="text-align:center; margin:0 0 10px 0; background:#eee; padding:5px;"></h3>
-        <button id="host-start-btn" class="btn-primary btn-block hidden" style="padding:15px; font-size:1.2em;" data-text="Studio.BtnStart">START</button>
-        <button id="host-start-ta-btn" class="btn-danger btn-block hidden" style="padding:20px; font-size:1.5em; border:4px solid white; box-shadow:0 0 10px red;" data-text="Studio.BtnStartTA">START 5s Loop</button>
+    <div id="control-panel" class="hidden">
+        <h3 id="current-period-title" class="current-title"></h3>
+        
+        <button id="host-start-btn" class="btn-primary btn-block hidden btn-start" data-text="Studio.BtnStart">START</button>
+        <button id="host-start-ta-btn" class="btn-danger btn-block hidden btn-ta-start" data-text="Studio.BtnStartTA">START 5s Loop</button>
+        <button id="host-show-answer-btn" class="btn-danger btn-block hidden" data-text="Studio.BtnAnswer">Answer</button>
 
-        <button id="host-show-answer-btn" class="btn-danger btn-block hidden" style="padding:15px;" data-text="Studio.BtnAnswer">Answer</button>
-
-        <div id="host-manual-judge-area" class="hidden" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
-            <button id="host-judge-correct-btn" class="btn-success" style="padding:20px; font-size:1.2em;" data-text="Studio.BtnCorrect">Correct</button>
-            <button id="host-judge-wrong-btn" class="btn-danger" style="padding:20px; font-size:1.2em;" data-text="Studio.BtnWrong">Wrong</button>
-            <button id="host-judge-pass-btn" class="btn-warning hidden" style="padding:20px; font-size:1.2em;" data-text="Studio.BtnPass">Pass</button>
+        <div id="host-manual-judge-area" class="hidden judge-grid">
+            <button id="host-judge-correct-btn" class="btn-success judge-btn" data-text="Studio.BtnCorrect">Correct</button>
+            <button id="host-judge-wrong-btn" class="btn-danger judge-btn" data-text="Studio.BtnWrong">Wrong</button>
+            <button id="host-judge-pass-btn" class="btn-warning hidden judge-btn" data-text="Studio.BtnPass">Pass</button>
         </div>
 
-        <button id="host-next-btn" class="btn-info btn-block hidden" style="padding:15px;" data-text="Studio.BtnNextQ">Next</button>
+        <button id="host-next-btn" class="btn-info btn-block hidden" data-text="Studio.BtnNextQ">Next</button>
         <hr>
         <button id="host-ranking-btn" class="btn-success btn-block" data-text="Studio.BtnRanking">Ranking</button>
     </div>
-    <button id="host-close-studio-btn" style="background:#555; margin-top:30px;" class="btn-block" data-text="Studio.BtnClose">Close</button>
+    <button id="host-close-studio-btn" class="btn-block btn-dark mt-30" data-text="Studio.BtnClose">Close</button>
 </div>
 
-<div id="ranking-view" class="view hidden" style="text-align:center;">
-    <h2 style="font-family: 'Arial Black', sans-serif; color:#ff0055; text-shadow: 2px 2px 0 #fff; margin-bottom:10px;">RANKING</h2>
+<div id="ranking-view" class="view hidden center-text">
+    <h2 class="ranking-title-main">RANKING</h2>
     <div id="ranking-list" class="ranking-container"></div>
-    <button id="ranking-back-btn" class="btn-primary btn-block" style="margin-top:20px;" data-text="Studio.BtnBackRanking">Back</button>
+    <button id="ranking-back-btn" class="btn-primary btn-block mt-20" data-text="Studio.BtnBackRanking">Back</button>
 </div>
 
-<div id="respondent-view" class="view hidden">
+<div id="respondent-view" class="view hidden center-content-view">
     <div class="view-header">
-        <h2 data-text="Player.TitleEntry" style="margin:0;">Entry</h2>
+        <h2 data-text="Player.TitleEntry">Entry</h2>
         <button class="header-back-btn back-to-main" data-text="Login.BackBtn">Home</button>
     </div>
-    <hr>
-    <div style="text-align:center; padding:20px 0;">
-        <input type="text" id="room-code-input" placeholder="" maxlength="6"
-               style="font-size:1.5em; width:200px; text-align:center; text-transform:uppercase; margin-bottom:20px;">
-        <input type="text" id="player-name-input" placeholder=""
-               style="font-size:1.2em; width:200px; text-align:center; margin-bottom:20px; display:block; margin:0 auto 20px auto;">
+    
+    <div class="login-form-area">
+        <input type="text" id="room-code-input" class="input-large text-uppercase mb-20" placeholder="CODE" maxlength="6">
+        <input type="text" id="player-name-input" class="input-large mb-20" placeholder="NAME">
         <button id="join-room-btn" class="btn-primary btn-block" data-text="Player.BtnJoin">Join</button>
     </div>
 </div>
 
 <div id="player-game-view" class="view hidden">
-    <div id="player-status-bar" style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.9em; padding:5px; background:#eee; border-radius:4px;">
-        <span id="player-name-disp" style="font-weight:bold;" data-text="Player.LabelNameDefault">---</span>
-        <span id="alive-badge" style="background:#00ff00; color:black; padding:2px 6px; border-radius:4px; font-weight:bold;" data-text="Player.BadgeAlive">ALIVE</span>
+    <div id="player-status-bar" class="player-status-bar">
+        <span id="player-name-disp" class="player-name">---</span>
+        <span id="alive-badge" class="alive-badge" data-text="Player.BadgeAlive">ALIVE</span>
     </div>
-    <div id="score-display-area" class="hidden" style="text-align:center; margin-bottom:10px; font-weight:bold; font-size:1.2em; color:#0056b3;">
+    
+    <div id="score-display-area" class="hidden score-area">
         Score: <span id="current-score-value">0</span>
     </div>
-    <div id="player-lobby-msg" style="text-align:center; padding:40px 0;"></div>
-    <div id="player-buzz-area" class="hidden" style="text-align:center; margin-top:20px;">
+    
+    <div id="player-lobby-msg" class="lobby-msg"></div>
+    
+    <div id="player-buzz-area" class="hidden center-text mt-20">
         <button id="player-buzz-btn" class="buzz-btn" data-text="Player.BtnBuzz">PUSH!</button>
     </div>
+    
     <div id="player-quiz-area" class="hidden">
-        <div id="question-text-disp" style="background:#fff; border:2px solid #333; padding:15px; border-radius:8px; font-weight:bold; margin-bottom:15px; min-height:60px;"></div>
+        <div id="question-text-disp" class="player-q-text"></div>
         <div id="player-input-container"></div>
-        <div id="answer-timer-disp" style="text-align:right; font-family:monospace; margin-top:5px; color:#666;"></div>
+        <div id="answer-timer-disp" class="timer-disp"></div>
     </div>
-    <div id="player-oral-done-area" class="hidden" style="text-align:center; margin-top:20px;">
-        <button id="player-oral-done-btn" class="btn-primary btn-block" style="padding:20px; font-size:1.2em;" data-text="Player.BtnAnswered">Answered</button>
+    
+    <div id="player-oral-done-area" class="hidden center-text mt-20">
+        <button id="player-oral-done-btn" class="btn-primary btn-block btn-large" data-text="Player.BtnAnswered">Answered</button>
     </div>
-    <div id="player-wait-msg" class="hidden" style="text-align:center; padding:20px; font-weight:bold;" data-text="Player.MsgAnswered">Answered...</div>
-    <div id="player-result-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1000;">
-        <div id="result-icon" style="font-size:5em; margin-bottom:10px;"></div>
-        <div id="result-text" style="font-size:2em; font-weight:bold;"></div>
-        <div id="result-detail" style="color:#666; margin-top:10px;"></div>
+    
+    <div id="player-wait-msg" class="hidden wait-msg" data-text="Player.MsgAnswered">Answered...</div>
+    
+    <div id="player-result-overlay" class="hidden overlay-result">
+        <div id="result-icon"></div>
+        <div id="result-text"></div>
+        <div id="result-detail"></div>
     </div>
-    <div id="player-ranking-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,50,0.95); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:1100; overflow-y:auto;">
-        <h2 style="color:gold; font-family:'Arial Black'; margin-bottom:10px;" data-text="Player.RankTitle">RANKING</h2>
-        <div style="font-size:1.2em;" data-text="Player.RankYou">You are...</div>
-        <div id="player-my-rank" style="font-size:4em; font-weight:bold; color:gold; margin:5px 0;">---</div>
-        <div id="player-my-score" style="font-size:1.2em; margin-bottom:20px;">---</div>
-        <div style="width:80%; max-width:300px; background:rgba(255,255,255,0.1); padding:10px; border-radius:10px;">
-            <div style="font-size:0.9em; border-bottom:1px solid #666; margin-bottom:5px; padding-bottom:5px;" data-text="Player.RankBoardTitle">Top Leaders</div>
-            <div id="player-leaderboard" style="font-size:0.9em; text-align:left;"></div>
+    
+    <div id="player-ranking-overlay" class="hidden overlay-ranking">
+        <h2 class="rank-title" data-text="Player.RankTitle">RANKING</h2>
+        <div data-text="Player.RankYou">You are...</div>
+        <div id="player-my-rank" class="my-rank">---</div>
+        <div id="player-my-score" class="my-score">---</div>
+        <div class="leaderboard-box">
+            <div class="lb-title" data-text="Player.RankBoardTitle">Top Leaders</div>
+            <div id="player-leaderboard" class="lb-list"></div>
         </div>
     </div>
-    <div id="player-dead-overlay" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); color:white; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:999;">
-        <h1 style="color:gray; font-size:3em;" data-text="Player.MsgDead">GAME OVER</h1>
+    
+    <div id="player-dead-overlay" class="hidden overlay-dead">
+        <h1 class="dead-title" data-text="Player.MsgDead">GAME OVER</h1>
         <p data-text="Player.MsgDeadBody">Dead...</p>
     </div>
 </div>
 
-<div id="viewer-login-view" class="view hidden">
+<div id="viewer-login-view" class="view hidden center-content-view">
     <div class="view-header">
-        <h2 data-text="Viewer.Title" style="margin:0;">Monitor Connect</h2>
+        <h2 data-text="Viewer.Title">Monitor Connect</h2>
         <button class="header-back-btn back-to-main">ダッシュボード</button>
     </div>
-    <hr>
-    <div style="text-align:center;">
-        <img src="logo.png" alt="Quiz Studio" class="app-logo-small" style="margin-bottom:20px;">
-        <input type="text" id="viewer-room-code" placeholder=""
-               style="font-size:1.5em; width:200px; text-align:center; text-transform:uppercase; margin-bottom:20px;">
+    
+    <div class="login-form-area">
+        <img src="logo.png" alt="Quiz Studio" class="app-logo-small mb-20">
+        <input type="text" id="viewer-room-code" class="input-large text-uppercase mb-20" placeholder="CODE">
         <button id="viewer-connect-btn" class="btn-warning btn-block" data-text="Viewer.BtnConnect">Connect</button>
     </div>
 </div>
@@ -464,16 +454,16 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=61"></script>
+<script src="text_config.js?v=66"></script>
 
-<script src="host_core.js?v=61"></script>
-<script src="host_design.js?v=1"></script>
-<script src="host_creator.js?v=61"></script>
+<script src="host_core.js?v=66"></script>
+<script src="host_design.js?v=66"></script>
+<script src="host_creator.js?v=66"></script>
 
-<script src="host_config.js?v=61"></script>
-<script src="host_studio.js?v=61"></script>
-<script src="player.js?v=61"></script>
-<script src="viewer.js?v=61"></script>
+<script src="host_config.js?v=66"></script>
+<script src="host_studio.js?v=66"></script>
+<script src="player.js?v=66"></script>
+<script src="viewer.js?v=66"></script>
 
 </body>
 </html>
