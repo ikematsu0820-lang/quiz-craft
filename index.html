@@ -84,91 +84,125 @@
         <p style="text-align:center; font-size:0.8em; color:#666; margin-top:5px;">※実際の表示とは解像度が異なります</p>
     </div>
 
-    <div style="background:#1f1f1f; padding:15px; border:1px solid #00bfff; border-radius:8px; margin-bottom:20px; box-shadow: 0 0 10px rgba(0, 191, 255, 0.1);">
-        <label style="font-size:1.1em; font-weight:bold; color:#00bfff;">🎨 編集するセット・構成を選択</label>
-        <p style="font-size:0.8em; color:#aaa; margin:5px 0;">※選択すると現在のデザインが読み込まれます。「保存」でそのデータに書き込みます。</p>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <select id="design-target-select" class="btn-block" style="font-size:1.1em; margin-bottom:0; background:#333; color:#fff; border:1px solid #555;">
-                <option value="">-- 選択してください --</option>
+    <div style="background:#1f1f1f; padding:10px; border:1px solid #00bfff; border-radius:8px; margin-bottom:15px; display:flex; gap:10px; align-items:center;">
+        <div style="flex:1;">
+            <select id="design-target-select" class="btn-block" style="font-size:1em; margin-bottom:0; background:#333; color:#fff; border:1px solid #555; padding:8px;">
+                <option value="">-- 編集対象を選択 --</option>
             </select>
-            <button id="design-target-load-btn" class="btn-primary" style="width:100px; font-weight:bold;">Load</button>
+        </div>
+        <button id="design-target-load-btn" class="btn-primary" style="width:80px; padding:8px; font-weight:bold;">Load</button>
+    </div>
+
+    <div class="design-menu-grid">
+        <button id="btn-open-text" class="design-menu-btn">
+            <span style="font-size:2em;">T</span><br>テキスト・配置
+        </button>
+        <button id="btn-open-object" class="design-menu-btn">
+            <span style="font-size:2em;">□</span><br>オブジェクト
+        </button>
+        <button id="btn-open-bg" class="design-menu-btn">
+            <span style="font-size:2em;">🖼</span><br>背景
+        </button>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:15px;">
+        <button id="design-reset-btn" class="btn-dark" style="flex:1; padding:15px; font-weight:bold;">初期値</button>
+        <button id="design-save-btn" class="btn-success" style="flex:2; padding:15px; font-weight:bold; font-size:1.1em; box-shadow: 0 0 15px rgba(0,255,0,0.3);">保存 (完了)</button>
+    </div>
+
+    <div id="modal-design-text" class="design-modal-overlay hidden">
+        <div class="design-modal-content">
+            <h3 style="margin-top:0; color:#00bfff; border-bottom:1px solid #444; padding-bottom:10px;">テキスト設定</h3>
+            
+            <div class="design-modal-body">
+                <label class="config-label">文字の配置 (Alignment)</label>
+                <div style="display:flex; gap:5px; margin-bottom:20px;">
+                    <button type="button" class="btn-align" data-align="left" style="flex:1;">左揃え</button>
+                    <button type="button" class="btn-align active" data-align="center" style="flex:1;">中央</button>
+                    <button type="button" class="btn-align" data-align="right" style="flex:1;">右揃え</button>
+                </div>
+                <input type="hidden" id="creator-set-align" value="center">
+
+                <label class="config-label">問題文の文字色</label>
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+                    <input type="color" id="design-q-text" value="#ffffff" style="height:40px; width:100%;">
+                </div>
+
+                <label class="config-label">選択肢の文字色</label>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="color" id="design-c-text" value="#ffffff" style="height:40px; width:100%;">
+                </div>
+            </div>
+            
+            <button class="btn-block btn-dark modal-close-btn" style="margin-top:20px;">閉じる</button>
         </div>
     </div>
 
-    <div class="design-settings-container">
-        <div style="background:#2d2d34; padding:15px; border-radius:8px; border:1px solid #444; margin-bottom:15px;">
-            <h4 style="margin:0 0 10px 0; color:#00bfff;">レイアウト・配置</h4>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                <div>
-                    <label style="font-size:0.8em; color:#aaa;">スタイル</label>
-                    <select id="creator-set-layout" class="btn-block" style="margin-bottom:0;">
-                        <option value="standard">Standard (上下)</option>
-                        <option value="split_list">Split List (左右)</option>
-                        <option value="split_grid">Split Grid (左右)</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="font-size:0.8em; color:#aaa;">文字揃え</label>
-                    <div style="display:flex; gap:5px;">
-                        <button type="button" class="btn-align" data-align="left" style="flex:1;">左</button>
-                        <button type="button" class="btn-align active" data-align="center" style="flex:1;">中</button>
-                        <button type="button" class="btn-align" data-align="right" style="flex:1;">右</button>
+    <div id="modal-design-object" class="design-modal-overlay hidden">
+        <div class="design-modal-content">
+            <h3 style="margin-top:0; color:#00bfff; border-bottom:1px solid #444; padding-bottom:10px;">オブジェクト設定</h3>
+            
+            <div class="design-modal-body">
+                <label class="config-label">モニターレイアウト</label>
+                <select id="creator-set-layout" class="btn-block" style="margin-bottom:20px;">
+                    <option value="standard">標準 (上下)</option>
+                    <option value="split_list">左右分割 (リスト)</option>
+                    <option value="split_grid">左右分割 (グリッド)</option>
+                </select>
+
+                <h4 style="margin:10px 0 5px 0; color:#eee;">問題文エリア</h4>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                    <div>
+                        <label style="font-size:0.8em; color:#aaa;">枠線 (Border)</label>
+                        <input type="color" id="design-q-border" value="#ffffff" style="width:100%; height:40px;">
                     </div>
-                    <input type="hidden" id="creator-set-align" value="center">
+                    <div>
+                        <label style="font-size:0.8em; color:#aaa;">背景 (Fill)</label>
+                        <input type="color" id="design-q-bg" value="#2c5066" style="width:100%; height:40px;">
+                    </div>
+                </div>
+
+                <h4 style="margin:10px 0 5px 0; color:#eee;">選択肢エリア</h4>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label style="font-size:0.8em; color:#aaa;">枠線 (Border)</label>
+                        <input type="color" id="design-c-border" value="#ffffff" style="width:100%; height:40px;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.8em; color:#aaa;">背景 (Fill)</label>
+                        <input type="color" id="design-c-bg" value="#365c75" style="width:100%; height:40px;">
+                    </div>
                 </div>
             </div>
+
+            <button class="btn-block btn-dark modal-close-btn" style="margin-top:20px;">閉じる</button>
         </div>
+    </div>
 
-        <div style="background:#2d2d34; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #444;">
-            <h4 style="margin:0 0 10px 0; color:#00bfff;">カラー・背景画像</h4>
+    <div id="modal-design-bg" class="design-modal-overlay hidden">
+        <div class="design-modal-content">
+            <h3 style="margin-top:0; color:#00bfff; border-bottom:1px solid #444; padding-bottom:10px;">背景設定</h3>
+            
+            <div class="design-modal-body">
+                <label class="config-label">背景色 (Main Color)</label>
+                <input type="color" id="design-main-bg-color" value="#222222" style="width:100%; height:50px; margin-bottom:20px; cursor:pointer;">
 
-            <div class="design-group" style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed #555;">
-                <label style="font-size:0.9em; font-weight:bold; color:#eee;">全体背景 (Main)</label>
-                <div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
-                    <div>
-                        <label style="font-size:0.7em; color:#aaa;">Color</label>
-                        <input type="color" id="design-main-bg-color" value="#222222" style="height:40px; width:60px; cursor:pointer;">
-                    </div>
-                    <div style="flex:1;">
-                        <label style="font-size:0.7em; color:#aaa;">Image (URL or Upload)</label>
-                        <input type="file" id="design-bg-image-file" accept="image/*" style="display:none;">
-                        <div style="display:flex; gap:5px;">
-                            <button id="design-bg-image-btn" class="btn-dark" style="font-size:0.8em; padding:8px;" >画像選択</button>
-                            <button id="design-bg-clear-btn" class="btn-danger" style="font-size:0.8em; padding:8px;">解除</button>
-                        </div>
-                        <span id="design-bg-image-status" style="font-size:0.7em; color:#00aa00; display:block; margin-top:3px;">画像なし</span>
-                    </div>
+                <label class="config-label">背景画像 (Image Upload)</label>
+                <div style="background:#333; padding:15px; border-radius:8px; text-align:center;">
+                    <input type="file" id="design-bg-image-file" accept="image/*" style="display:none;">
+                    <button id="design-bg-image-btn" class="btn-primary" style="margin-bottom:10px;">画像ファイルを選択</button>
+                    <br>
+                    <span id="design-bg-image-status" style="font-size:0.8em; color:#aaa;">未選択</span>
+                    <button id="design-bg-clear-btn" class="btn-danger btn-mini" style="display:block; margin:10px auto 0 auto;">画像解除</button>
                 </div>
                 <input type="hidden" id="design-bg-image-data">
             </div>
 
-            <div class="design-group" style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed #555;">
-                <label style="font-size:0.9em; font-weight:bold; color:#eee;">問題文エリア (Question)</label>
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-top:5px;">
-                    <div><label style="font-size:0.7em; color:#aaa;">Text</label><input type="color" id="design-q-text" value="#ffffff" style="width:100%; height:35px;"></div>
-                    <div><label style="font-size:0.7em; color:#aaa;">Bg</label><input type="color" id="design-q-bg" value="#2c5066" style="width:100%; height:35px;"></div>
-                    <div><label style="font-size:0.7em; color:#aaa;">Border</label><input type="color" id="design-q-border" value="#ffffff" style="width:100%; height:35px;"></div>
-                </div>
-            </div>
-
-            <div class="design-group">
-                <label style="font-size:0.9em; font-weight:bold; color:#eee;">選択肢エリア (Choices)</label>
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-top:5px;">
-                    <div><label style="font-size:0.7em; color:#aaa;">Text</label><input type="color" id="design-c-text" value="#ffffff" style="width:100%; height:35px;"></div>
-                    <div><label style="font-size:0.7em; color:#aaa;">Bg</label><input type="color" id="design-c-bg" value="#365c75" style="width:100%; height:35px;"></div>
-                    <div><label style="font-size:0.7em; color:#aaa;">Border</label><input type="color" id="design-c-border" value="#ffffff" style="width:100%; height:35px;"></div>
-                </div>
-            </div>
+            <button class="btn-block btn-dark modal-close-btn" style="margin-top:20px;">閉じる</button>
         </div>
     </div>
-
-    <div style="display:flex; gap:10px; margin-top:20px;">
-        <button id="design-reset-btn" class="btn-dark" style="flex:1; padding:15px; font-weight:bold;">初期値に戻す</button>
-        <button id="design-save-btn" class="btn-success" style="flex:2; padding:15px; font-weight:bold; font-size:1.2em; box-shadow: 0 0 15px rgba(0,255,0,0.3);">
-            設定を保存 (完了)
-        </button>
-    </div>
 </div>
+    
 <div id="creator-view" class="view hidden">
     <div class="view-header">
         <h2 style="margin:0;" data-text="Creator.Title">Creator</h2>
