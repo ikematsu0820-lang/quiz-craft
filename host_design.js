@@ -1,5 +1,5 @@
 /* =========================================================
- * host_design.js (v88: Fixed Aspect Ratio & Scaling)
+ * host_design.js (v89: Mobile Center Scaling Fix)
  * =======================================================*/
 
 App.Design = {
@@ -24,8 +24,9 @@ App.Design = {
         this.loadTargetList();
         this.setDefaultUI();
         
-        // 初回描画 & ウィンドウサイズ変更時に再計算
+        // 初回描画（スマホ対策で少し遅らせて再実行）
         this.renderPreview();
+        setTimeout(() => this.renderPreview(), 100);
         window.addEventListener('resize', () => this.renderPreview());
     },
 
@@ -226,23 +227,21 @@ App.Design = {
         this.applyToUI(this.defaults, 'standard', 'center');
     },
 
-    // ★修正: 1280x720基準での絶対配置プレビュー
     renderPreview: function() {
         const frame = document.querySelector('.design-preview-frame');
         const content = document.getElementById('design-monitor-preview-content');
         if(!frame || !content) return;
 
-        // ★スケーリング計算 (スマホでもPCでも絶対にズレない)
+        // ★修正: 中央基準でスケーリング
         const frameWidth = frame.clientWidth;
-        const scale = frameWidth / 1280; // 基準幅1280pxに対する倍率
+        const scale = frameWidth / 1280; 
+        
         content.style.transform = `scale(${scale})`;
-        content.style.width = "1280px";
-        content.style.height = "720px";
-
+        content.style.transformOrigin = "center center"; // ★ど真ん中を基準にする
+        
         const s = this.collectSettings();
         const d = s.design;
         
-        // 表示データ準備
         let qText = "これはプレビュー用の問題文です。\\n改行位置の確認用テキストです。";
         let choices = ["選択肢A", "選択肢B", "選択肢C", "選択肢D"];
         let qType = 'choice';
@@ -269,7 +268,6 @@ App.Design = {
             }
         }
 
-        // 背景
         let bgStyle = `background-color: ${d.mainBgColor};`;
         if(d.bgImage) {
             bgStyle += `background-image: url('${d.bgImage}'); background-size: cover; background-position: center;`;
@@ -277,7 +275,6 @@ App.Design = {
             bgStyle += `background-image: radial-gradient(circle at center, #1a1a1a 0%, ${d.mainBgColor} 100%);`;
         }
 
-        // ★サイズ指定を px 単位に変更 (1280x720基準)
         const qStyle = `
             color:${d.qTextColor}; 
             background:${d.qBgColor}; 
@@ -315,7 +312,6 @@ App.Design = {
 
         let layoutHtml = '';
 
-        // レイアウト分岐
         if (qType === 'free_written' || qType === 'free_oral') {
             layoutHtml = `
                 <div style="padding:60px; box-sizing:border-box; display:flex; flex-direction:column; height:100%; justify-content:center; align-items:center;">
@@ -338,7 +334,6 @@ App.Design = {
                     </div>
                 `;
             } else {
-                // Standard (上下)
                 layoutHtml = `
                     <div style="padding:50px; box-sizing:border-box; display:flex; flex-direction:column; height:100%; justify-content:center;">
                         <div style="${qStyle} min-height:200px;">${qText}</div>
