@@ -311,7 +311,53 @@ function setupLivePreviewListeners() {
         renderDesignPreview();
     };
 }
+/* host_design.js の enterDesignMode 関数内に追記 */
+window.enterDesignMode = function() {
+    setDefaultDesignUI();
+    currentDesignTarget = null;
+    
+    loadDesignTargetList();
+    
+    setupLivePreviewListeners();
+    setupDesignModals(); // ★これを追加！
+    
+    renderDesignPreview();
+    if(window.views && window.views.design) window.showView(window.views.design);
+};
 
+// ★新規追加: ポップアップ制御関数
+function setupDesignModals() {
+    const modals = {
+        text: document.getElementById('modal-design-text'),
+        object: document.getElementById('modal-design-object'),
+        bg: document.getElementById('modal-design-bg')
+    };
+
+    // 開くボタン
+    document.getElementById('btn-open-text').onclick = () => openModal(modals.text);
+    document.getElementById('btn-open-object').onclick = () => openModal(modals.object);
+    document.getElementById('btn-open-bg').onclick = () => openModal(modals.bg);
+
+    // 閉じるボタン (共通クラス)
+    document.querySelectorAll('.modal-close-btn').forEach(btn => {
+        btn.onclick = () => {
+            Object.values(modals).forEach(m => m.classList.add('hidden'));
+        };
+    });
+
+    // 背景クリックで閉じる
+    Object.values(modals).forEach(m => {
+        m.onclick = (e) => {
+            if(e.target === m) m.classList.add('hidden');
+        };
+    });
+
+    function openModal(target) {
+        // 他を閉じてから開く
+        Object.values(modals).forEach(m => m.classList.add('hidden'));
+        target.classList.remove('hidden');
+    }
+}
 // プレビュー描画
 function renderDesignPreview(qData = null) {
     const container = document.getElementById('design-monitor-preview-content');
