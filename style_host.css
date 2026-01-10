@@ -568,9 +568,6 @@ h3, h4 {
     0% { transform: scale(0.8); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
 }
-/* style_host.css の末尾に追加 */
-
-/* style_host.css の末尾に追加（または置換） */
 
 /* --- デザイン画面：上部プレビューレイアウト --- */
 
