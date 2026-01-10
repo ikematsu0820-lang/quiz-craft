@@ -1,18 +1,37 @@
 /* =========================================================
- * style_common.css (v58: Modern Dark Theme)
+ * style_common.css (v66: Refactored & Variables)
  * =======================================================*/
+
+:root {
+    /* --- U-NEXT Style Color Palette --- */
+    --bg-main: #0a0a0a;       /* 全体背景（漆黒） */
+    --bg-panel: #1f1f1f;      /* カード・パネル背景 */
+    --bg-input: #333333;      /* 入力フォーム背景 */
+    
+    --color-cyan: #00bfff;    /* アクセント：シアン */
+    --color-pink: #e94560;    /* アクセント：ピンクレッド */
+    --color-gold: #ffd700;    /* アクセント：ゴールド */
+    --color-text: #e0e0e0;    /* メイン文字色 */
+    --color-text-sub: #aaaaaa; /* サブ文字色 */
+    
+    --border-color: #444444;  /* 枠線 */
+    
+    /* --- Button Gradients --- */
+    --grad-blue: linear-gradient(135deg, #0055ff 0%, #0033aa 100%);
+    --grad-cyan: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%);
+    --grad-orange: linear-gradient(180deg, #ff9966 0%, #ff5e62 100%);
+}
 
 body {
     font-family: "Helvetica Neue", Arial, sans-serif;
     margin: 0;
     padding: 0;
-    /* 背景を深いダークグレーに */
-    background-color: #121212;
-    color: #e0e0e0;
+    background-color: var(--bg-main);
+    color: var(--color-text);
     user-select: none;
 }
 
-/* 画面切り替えの基本 */
+/* --- 画面切り替え (View System) --- */
 .view {
     display: block;
     padding: 20px;
@@ -20,22 +39,21 @@ body {
     max-width: 600px;
     margin: 0 auto;
     min-height: 100vh;
-    /* カードのような浮き上がり感 */
-    background: #1e1e1e;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    background: var(--bg-panel);
     border-left: 1px solid #333;
     border-right: 1px solid #333;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }
 
 .hidden { display: none !important; }
 
-/* ヘッダー */
+/* --- ヘッダー --- */
 .view-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    border-bottom: 2px solid #e94560; /* アクセントのピンクレッド */
+    border-bottom: 2px solid var(--border-color);
     padding-bottom: 10px;
 }
 
@@ -49,13 +67,17 @@ body {
     font-size: 0.9em;
     transition: all 0.2s;
 }
-.header-back-btn:hover { background: #444; color: white; }
+.header-back-btn:hover {
+    background: #444;
+    color: white;
+    border-color: white;
+}
 
-/* ボタン共通設定 */
+/* --- ボタン共通 (Base) --- */
 button {
     cursor: pointer;
     font-family: inherit;
-    transition: transform 0.1s, opacity 0.2s, box-shadow 0.2s;
+    transition: all 0.2s ease;
     border: none;
     outline: none;
 }
@@ -71,21 +93,34 @@ button:active { transform: translateY(2px); opacity: 0.8; }
     text-align: center;
     box-sizing: border-box;
     font-weight: bold;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3); /* 影をつけて立体的に */
+    color: white;
+    background: #333;
+    border: 1px solid var(--border-color);
+}
+.btn-block:hover {
+    filter: brightness(1.1);
 }
 
-/* ★ カラーパレットの刷新（!importantでHTML側の直書きを強制上書き） */
-.btn-primary { background-color: #0f3460 !important; color: white; } /* 深いブルー */
-.btn-success { background-color: #00b894 !important; color: white; } /* ミントグリーン */
-.btn-danger { background-color: #e94560 !important; color: white; } /* ビビッドピンク */
-.btn-warning { background-color: #fce38a !important; color: #333; } /* パステルイエロー */
-.btn-info { background-color: #00cec9 !important; color: #333; } /* シアン */
-.btn-dark { background-color: #636e72 !important; color: white; } /* グレー */
+/* --- カラーボタンバリエーション --- */
+.btn-primary { background-color: #0f3460; border-color: #0f3460; }
+.btn-success { background-color: #00b894; border-color: #00b894; }
+.btn-danger  { background-color: var(--color-pink); border-color: var(--color-pink); }
+.btn-warning { background-color: #fce38a; color: #333; border-color: #fce38a; }
+.btn-info    { background-color: var(--color-cyan); color: #333; border-color: var(--color-cyan); }
+.btn-dark    { background-color: #636e72; border-color: #636e72; }
 
-/* フォーム要素 */
-input[type="text"], input[type="number"], select {
+/* ミニボタン */
+.btn-mini {
+    padding: 4px 8px;
+    font-size: 0.85em;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* --- フォーム要素 --- */
+input[type="text"], input[type="number"], select, textarea {
     padding: 10px;
-    background: #2d2d34; /* 暗い背景 */
+    background: var(--bg-input);
     border: 1px solid #555;
     color: #fff;
     border-radius: 4px;
@@ -93,19 +128,19 @@ input[type="text"], input[type="number"], select {
     box-sizing: border-box;
 }
 input:focus, select:focus {
-    border-color: #0f3460;
-    background: #363640;
+    border-color: var(--color-cyan);
+    background: #000;
     outline: none;
 }
 
-/* ロゴなど */
+/* --- ロゴ --- */
 .app-logo, .app-logo-small {
     display: block;
     margin: 0 auto;
-    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); /* ロゴを少し光らせる */
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
 }
 
-/* トースト通知 */
+/* --- トースト通知 --- */
 #toast-container {
     position: fixed;
     top: 20px;
@@ -117,13 +152,13 @@ input:focus, select:focus {
     pointer-events: none;
 }
 .toast-msg {
-    background: rgba(15, 52, 96, 0.95); /* 青系の透過背景 */
+    background: rgba(15, 52, 96, 0.95);
     color: white;
     padding: 12px 20px;
     border-radius: 4px;
     margin-bottom: 10px;
     text-align: center;
-    border: 1px solid #e94560;
+    border: 1px solid var(--color-cyan);
     box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     animation: fadeOut 3s forwards;
 }
@@ -133,133 +168,13 @@ input:focus, select:focus {
     80% { opacity: 1; }
     100% { opacity: 0; }
 }
-/* style_common.css の一番下に追加してください */
 
-/* =========================================================
- * Modern Landing Page Design (Target UI)
- * =======================================================*/
-
-/* 1. 全体背景：深い紫〜紺色のグラデーション */
+/* --- ランディングページ (Landing View) --- */
 .landing-view {
-    background: radial-gradient(circle at top center, #2b1055 0%, #000000 100%) !important;
-    border: none !important;
-    box-shadow: none !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    /* 画面全体に広げる場合 */
-    min-height: 100vh;
-}
-
-.landing-content {
-    width: 100%;
-    max-width: 400px;
-    text-align: center;
-    padding: 20px;
-}
-
-/* 2. ロゴ周り：発光演出 */
-.landing-logo-img {
-    width: 120px;
-    margin: 0 auto 10px auto;
-    /* 白く光らせるドロップシャドウ */
-    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.6)); 
-    animation: floatLogo 3s ease-in-out infinite alternate;
-}
-
-@keyframes floatLogo {
-    0% { transform: translateY(0); }
-    100% { transform: translateY(-10px); }
-}
-
-.landing-title {
-    color: #fff;
-    font-family: 'Arial Black', sans-serif;
-    font-size: 2.5em;
-    margin: 0;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-    letter-spacing: 1px;
-}
-
-.landing-subtitle {
-    color: #a0a0ff;
-    font-size: 1em;
-    margin: 5px 0 40px 0;
-    font-weight: bold;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    opacity: 0.8;
-}
-
-/* 3. ボタンエリア */
-.landing-btn-area {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-/* 共通ボタン設定：丸みのある立体ボタン */
-.landing-btn {
-    width: 100%;
-    padding: 18px;
-    border-radius: 50px; /* 完全に丸く */
+    /* 背景: 深い紫〜黒のグラデーション */
+    background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
     border: none;
-    font-size: 1.3em;
-    font-weight: bold;
-    color: white;
-    cursor: pointer;
-    position: relative;
-    transition: transform 0.1s, box-shadow 0.1s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
-}
-
-.landing-btn:active {
-    transform: translateY(4px); /* 押したときに沈む */
-    box-shadow: 0 0 0 rgba(0,0,0,0) !important; /* 影を消す */
-}
-
-.btn-icon {
-    font-size: 1.1em;
-}
-
-/* 【Hostボタン】オレンジ〜ピンクのグラデーション */
-.btn-host-modern {
-    /* グラデーション */
-    background: linear-gradient(180deg, #ff9966 0%, #ff5e62 100%);
-    /* 立体的な影（下の濃い色） */
-    box-shadow: 0 6px 0 #c24e2e, 0 15px 20px rgba(0,0,0,0.4);
-}
-.btn-host-modern:hover {
-    background: linear-gradient(180deg, #ffaa77 0%, #ff6e72 100%);
-    filter: brightness(1.1);
-}
-
-/* 【Playerボタン】シアン〜ブルーのグラデーション */
-.btn-player-modern {
-    /* グラデーション */
-    background: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%);
-    /* 立体的な影 */
-    box-shadow: 0 6px 0 #2a7a7d, 0 15px 20px rgba(0,0,0,0.4);
-}
-.btn-player-modern:hover {
-    background: linear-gradient(180deg, #5fbefe 0%, #10fefe 100%);
-    filter: brightness(1.1);
-}
-/* style_common.css の一番下に追加してください */
-
-/* =========================================================
- * Modern Landing Page Design (画像なしでもOK版)
- * =======================================================*/
-
-/* 1. 全体背景：深い紫〜黒のグラデーション */
-.landing-view {
-    background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%) !important;
-    border: none !important;
-    box-shadow: none !important;
+    box-shadow: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -269,19 +184,16 @@ input:focus, select:focus {
 
 .landing-content {
     width: 100%;
-    max-width: 350px; /* スマホで見やすい幅に */
+    max-width: 350px;
     text-align: center;
 }
 
-/* 2. ロゴ周り：電球アイコンの発光演出 */
 .landing-logo-emoji {
     font-size: 80px;
     margin-bottom: 0;
-    /* 電球っぽく白と黄色で光らせる */
     text-shadow: 0 0 30px rgba(255, 255, 100, 0.8), 0 0 60px rgba(255, 165, 0, 0.6);
     animation: floatLogo 3s ease-in-out infinite alternate;
 }
-
 @keyframes floatLogo {
     0% { transform: translateY(0) scale(1); filter: brightness(1); }
     100% { transform: translateY(-10px) scale(1.05); filter: brightness(1.2); }
@@ -289,79 +201,58 @@ input:focus, select:focus {
 
 .landing-title {
     color: #fff;
-    font-family: 'Arial Black', sans-serif; /* 太いフォント */
-    font-size: 2.5em !important;
-    margin: 10px 0 0 0 !important;
+    font-family: 'Arial Black', sans-serif;
+    font-size: 2.5em;
+    margin: 10px 0 0 0;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
     letter-spacing: 1px;
 }
 
 .landing-subtitle {
-    color: #a0a0ff !important;
-    font-size: 1em !important;
-    margin: 5px 0 50px 0 !important;
+    color: #a0a0ff;
+    font-size: 1em;
+    margin: 5px 0 50px 0;
     font-weight: bold;
     letter-spacing: 2px;
     opacity: 0.7;
 }
 
-/* 3. ボタンエリア */
 .landing-btn-area {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-/* 共通ボタン設定：丸みのある立体ボタン */
 .landing-btn {
     width: 100%;
-    padding: 18px !important;
-    border-radius: 50px !important; /* 完全に丸く */
-    border: none !important;
-    font-size: 1.2em !important;
-    font-weight: bold !important;
-    color: white !important;
-    cursor: pointer;
+    padding: 18px;
+    border-radius: 50px;
+    border: none;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: white;
     position: relative;
-    transition: transform 0.1s, box-shadow 0.1s;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 15px;
     text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
-    /* 既存スタイルの上書き */
-    box-shadow: none; 
-    margin: 0 !important;
+    margin: 0;
 }
-
 .landing-btn:active {
-    transform: translateY(4px); /* 押したときに沈む */
+    transform: translateY(4px);
 }
+.btn-icon { font-size: 1.2em; }
 
-.btn-icon {
-    font-size: 1.2em;
-}
-
-/* 【Hostボタン】オレンジ〜ピンク (ターゲット画像風) */
+/* ターゲット風ボタン */
 .btn-host-modern {
-    background: linear-gradient(180deg, #ff9966 0%, #ff5e62 100%) !important;
-    box-shadow: 0 6px 0 #c24e2e, 0 15px 20px rgba(0,0,0,0.4) !important;
+    background: var(--grad-orange);
+    box-shadow: 0 6px 0 #c24e2e, 0 15px 20px rgba(0,0,0,0.4);
 }
-.btn-host-modern:hover {
-    filter: brightness(1.1);
-}
-.btn-host-modern:active {
-    box-shadow: 0 0 0 #c24e2e, 0 0 0 rgba(0,0,0,0) !important;
-}
+.btn-host-modern:active { box-shadow: 0 0 0 #c24e2e; }
 
-/* 【Playerボタン】シアン〜ブルー (ターゲット画像風) */
 .btn-player-modern {
-    background: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%) !important;
-    box-shadow: 0 6px 0 #2a7a7d, 0 15px 20px rgba(0,0,0,0.4) !important;
+    background: var(--grad-cyan);
+    box-shadow: 0 6px 0 #2a7a7d, 0 15px 20px rgba(0,0,0,0.4);
 }
-.btn-player-modern:hover {
-    filter: brightness(1.1);
-}
-.btn-player-modern:active {
-    box-shadow: 0 0 0 #2a7a7d, 0 0 0 rgba(0,0,0,0) !important;
-}
+.btn-player-modern:active { box-shadow: 0 0 0 #2a7a7d; }
