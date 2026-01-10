@@ -1,520 +1,351 @@
 /* =========================================================
- * host_design.js (v5.2: Full Feature / Fixed Preview Logic)
+ * host_design.js (v66: Refactored Module)
  * =======================================================*/
 
-let currentDesignTarget = null; // { type: 'set'|'prog', key: '...', data: ... }
-
-// --- デザインモード開始 ---
-window.enterDesignMode = function() {
-    setDefaultDesignUI();
-    currentDesignTarget = null;
+App.Design = {
+    currentTarget: null, // { type: 'set'|'prog', key: '...', data: ... }
     
-    // ターゲットリストの読み込み
-    loadDesignTargetList();
-    
-    // イベントリスナー設定
-    setupLivePreviewListeners();
-    setupDesignModals(); // ポップアップ設定
-    
-    // 初回描画（少し遅延させてDOM安定後に実行）
-    setTimeout(() => renderDesignPreview(), 100);
-    
-    if(window.views && window.views.design) window.showView(window.views.design);
-};
+    // U-NEXT風デフォルト定義
+    defaults: {
+        mainBgColor: "#0a0a0a",
+        qTextColor: "#ffffff",
+        qBgColor: "rgba(255, 255, 255, 0.05)",
+        qBorderColor: "#00bfff",
+        cTextColor: "#a0a0a0",
+        cBgColor: "transparent",
+        cBorderColor: "#333333",
+        align: "center",
+        layout: "standard"
+    },
 
-// --- 編集対象リストの読み込み ---
-function loadDesignTargetList() {
-    const select = document.getElementById('design-target-select');
-    const btn = document.getElementById('design-target-load-btn');
-    if(!select || !btn) return;
-
-    select.innerHTML = `<option value="">Loading...</option>`;
-
-    Promise.all([
-        window.db.ref(`saved_sets/${currentShowId}`).once('value'),
-        window.db.ref(`saved_programs/${currentShowId}`).once('value')
-    ]).then(([setSnap, progSnap]) => {
-        select.innerHTML = `<option value="">-- 編集対象を選択 --</option>`;
+    init: function() {
+        App.Ui.showView(App.Ui.views.design);
+        this.currentTarget = null;
+        this.bindEvents();
+        this.loadTargetList();
         
-        const sets = setSnap.val() || {};
-        const progs = progSnap.val() || {};
+        // 初回プレビュー描画
+        this.setDefaultUI();
+        this.renderPreview();
+    },
+
+    bindEvents: function() {
+        // ターゲットロード
+        document.getElementById('design-target-load-btn').onclick = () => this.loadTarget();
         
-        // セット一覧
-        Object.keys(sets).forEach(key => {
-            const item = sets[key];
-            const opt = document.createElement('option');
-            opt.value = JSON.stringify({ type: 'set', key: key, title: item.title });
-            opt.textContent = `[SET] ${item.title}`;
-            select.appendChild(opt);
+        // 変更検知（すべてのカラーピッカー等）
+        document.querySelectorAll('#design-view input, #design-view select').forEach(el => {
+            if(el.type !== 'file' && el.id !== 'design-target-select') {
+                el.oninput = () => this.renderPreview();
+                el.onchange = () => this.renderPreview();
+            }
         });
 
-        // プログラム一覧
-        Object.keys(progs).forEach(key => {
-            const item = progs[key];
-            const opt = document.createElement('option');
-            opt.value = JSON.stringify({ type: 'prog', key: key, title: item.title });
-            opt.textContent = `[PROG] ${item.title}`;
-            select.appendChild(opt);
+        // 背景画像アップロード
+        const imgBtn = document.getElementById('design-bg-image-btn');
+        const imgInput = document.getElementById('design-bg-image-file');
+        const clearBtn = document.getElementById('design-bg-clear-btn');
+        
+        if(imgBtn && imgInput) {
+            imgBtn.onclick = () => imgInput.click();
+            imgInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    document.getElementById('design-bg-image-data').value = event.target.result;
+                    document.getElementById('design-bg-image-status').textContent = "セット完了";
+                    document.getElementById('design-bg-image-status').style.color = "#00ff00";
+                    this.renderPreview();
+                };
+                reader.readAsDataURL(file);
+            };
+        }
+        if(clearBtn) {
+            clearBtn.onclick = () => {
+                document.getElementById('design-bg-image-data').value = "";
+                document.getElementById('design-bg-image-status').textContent = "未選択";
+                document.getElementById('design-bg-image-status').style.color = "#aaa";
+                imgInput.value = "";
+                this.renderPreview();
+            };
+        }
+
+        // モーダル制御
+        this.setupModal('btn-open-text', 'modal-design-text');
+        this.setupModal('btn-open-object', 'modal-design-object');
+        this.setupModal('btn-open-bg', 'modal-design-bg');
+
+        // 文字配置ボタン
+        document.querySelectorAll('.btn-align').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.btn-align').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('creator-set-align').value = btn.dataset.align;
+                this.renderPreview();
+            };
         });
-    });
 
-    // Loadボタン動作
-    btn.onclick = () => {
-        const val = select.value;
-        if(!val) { alert("対象を選択してください"); return; }
+        // 保存 & リセット
+        document.getElementById('design-save-btn').onclick = () => this.save();
+        document.getElementById('design-reset-btn').onclick = () => {
+            if(confirm("設定を初期値（U-NEXT風）に戻しますか？")) {
+                this.setDefaultUI();
+                this.renderPreview();
+            }
+        };
+    },
+
+    setupModal: function(btnId, modalId) {
+        const btn = document.getElementById(btnId);
+        const modal = document.getElementById(modalId);
+        if(!btn || !modal) return;
         
-        const target = JSON.parse(val);
-        loadTargetDesign(target);
-    };
-}
+        btn.onclick = () => modal.classList.remove('hidden');
+        modal.querySelectorAll('.modal-close-btn').forEach(b => b.onclick = () => modal.classList.add('hidden'));
+        modal.onclick = (e) => { if(e.target === modal) modal.classList.add('hidden'); };
+    },
 
-// --- 選択したターゲットの読み込み ---
-function loadTargetDesign(target) {
-    let path = "";
-    if (target.type === 'set') path = `saved_sets/${currentShowId}/${target.key}`;
-    else path = `saved_programs/${currentShowId}/${target.key}`;
+    loadTargetList: function() {
+        const select = document.getElementById('design-target-select');
+        select.innerHTML = '<option>Loading...</option>';
 
-    window.db.ref(path).once('value', snap => {
-        const data = snap.val();
-        if(!data) { alert("データが見つかりません"); return; }
+        Promise.all([
+            window.db.ref(`saved_sets/${App.State.currentShowId}`).once('value'),
+            window.db.ref(`saved_programs/${App.State.currentShowId}`).once('value')
+        ]).then(([setSnap, progSnap]) => {
+            select.innerHTML = '<option value="">-- 編集対象を選択 --</option>';
+            const sets = setSnap.val() || {};
+            const progs = progSnap.val() || {};
 
-        // データ保持
-        currentDesignTarget = { ...target, data: data };
+            // グループ化して表示
+            const optGroupSet = document.createElement('optgroup');
+            optGroupSet.label = "Questions Sets";
+            Object.keys(sets).forEach(k => {
+                const opt = document.createElement('option');
+                opt.value = JSON.stringify({ type: 'set', key: k });
+                opt.textContent = sets[k].title;
+                optGroupSet.appendChild(opt);
+            });
+            select.appendChild(optGroupSet);
+
+            const optGroupProg = document.createElement('optgroup');
+            optGroupProg.label = "Programs";
+            Object.keys(progs).forEach(k => {
+                const opt = document.createElement('option');
+                opt.value = JSON.stringify({ type: 'prog', key: k });
+                opt.textContent = progs[k].title;
+                optGroupProg.appendChild(opt);
+            });
+            select.appendChild(optGroupProg);
+        });
+    },
+
+    loadTarget: function() {
+        const val = document.getElementById('design-target-select').value;
+        if(!val) return alert("対象を選択してください");
         
-        // デザイン情報の抽出
-        let d = null;
-        let layout = 'standard';
-        let align = 'center';
-        let previewQ = null;
+        const targetInfo = JSON.parse(val);
+        const path = targetInfo.type === 'set' 
+            ? `saved_sets/${App.State.currentShowId}/${targetInfo.key}` 
+            : `saved_programs/${App.State.currentShowId}/${targetInfo.key}`;
 
-        // セットかプログラムかによってデータの取り出し方を変える
-        if (target.type === 'set' && data.questions && data.questions.length > 0) {
-            const q = data.questions[0];
-            d = q.design;
-            layout = q.layout || 'standard';
-            align = q.align || 'center';
-            previewQ = q; 
-        } else if (target.type === 'prog' && data.playlist && data.playlist.length > 0) {
-            const pl = data.playlist[0];
-            if(pl.questions && pl.questions.length > 0) {
-                const q = pl.questions[0];
-                d = q.design;
+        window.db.ref(path).once('value', snap => {
+            const data = snap.val();
+            if(!data) return alert("データが見つかりません");
+            
+            this.currentTarget = { ...targetInfo, data: data };
+            
+            // データからデザイン抽出（最初の問題の設定、またはプレイリスト設定）
+            let design = {};
+            let layout = 'standard';
+            let align = 'center';
+
+            if (targetInfo.type === 'set' && data.questions && data.questions.length > 0) {
+                // セットなら1問目のデザインを採用
+                const q = data.questions[0];
+                design = q.design || {};
                 layout = q.layout || 'standard';
                 align = q.align || 'center';
-                previewQ = q;
-            }
-        }
-
-        // UIに適用
-        if(d) {
-            applyDesignToUI(d, layout, align);
-        } else {
-            // デザイン情報がない場合は初期値（ただしレイアウト等は維持したいので注意）
-            // ここでは一旦リセットする
-            setDefaultDesignUI(); 
-        }
-        
-        // プレビュー更新（実データを使って）
-        renderDesignPreview(previewQ);
-        
-        if(window.showToast) window.showToast(`「${data.title}」を読み込みました`);
-    });
-}
-
-// --- 保存処理 ---
-function saveDesignSettings() {
-    if(!currentDesignTarget) {
-        if(!confirm("編集対象が選択されていません。\nグローバル設定（新規作成時のデフォルト）として保存しますか？")) return;
-        // グローバル保存
-        const path = `show_settings/${currentShowId}/design`;
-        const data = collectDesignSettings();
-        window.db.ref(path).set(data).then(() => {
-            if(window.showToast) window.showToast("デフォルト設定を保存しました");
-        });
-        return;
-    }
-
-    const designData = collectDesignSettings(); 
-    
-    const updates = {};
-    const d = designData.design;
-    const l = designData.layout;
-    const a = designData.align;
-
-    if (currentDesignTarget.type === 'set') {
-        const questions = currentDesignTarget.data.questions || [];
-        questions.forEach((q, i) => {
-            updates[`questions/${i}/design`] = d;
-            updates[`questions/${i}/layout`] = l;
-            updates[`questions/${i}/align`] = a;
-        });
-        
-        const basePath = `saved_sets/${currentShowId}/${currentDesignTarget.key}`;
-        window.db.ref(basePath).update(updates).then(() => {
-            if(window.showToast) window.showToast(`セット「${currentDesignTarget.data.title}」のデザインを更新・完了しました！`);
-        });
-
-    } else {
-        const playlist = currentDesignTarget.data.playlist || [];
-        playlist.forEach((period, pIdx) => {
-            if(period.questions) {
-                period.questions.forEach((q, qIdx) => {
-                    updates[`playlist/${pIdx}/questions/${qIdx}/design`] = d;
-                    updates[`playlist/${pIdx}/questions/${qIdx}/layout`] = l;
-                    updates[`playlist/${pIdx}/questions/${qIdx}/align`] = a;
-                });
-            }
-        });
-
-        const basePath = `saved_programs/${currentShowId}/${currentDesignTarget.key}`;
-        window.db.ref(basePath).update(updates).then(() => {
-            if(window.showToast) window.showToast(`構成「${currentDesignTarget.data.title}」のデザインを更新・完了しました！`);
-        });
-    }
-}
-
-// --- ポップアップモーダルの設定 ---
-function setupDesignModals() {
-    const modals = {
-        text: document.getElementById('modal-design-text'),
-        object: document.getElementById('modal-design-object'),
-        bg: document.getElementById('modal-design-bg')
-    };
-
-    const btnText = document.getElementById('btn-open-text');
-    const btnObj = document.getElementById('btn-open-object');
-    const btnBg = document.getElementById('btn-open-bg');
-
-    if(btnText) btnText.onclick = () => openModal(modals.text);
-    if(btnObj) btnObj.onclick = () => openModal(modals.object);
-    if(btnBg) btnBg.onclick = () => openModal(modals.bg);
-
-    // 閉じるボタン
-    document.querySelectorAll('.modal-close-btn').forEach(btn => {
-        btn.onclick = () => {
-            Object.values(modals).forEach(m => { if(m) m.classList.add('hidden'); });
-        };
-    });
-
-    // 背景クリックで閉じる
-    Object.values(modals).forEach(m => {
-        if(m) {
-            m.onclick = (e) => {
-                if(e.target === m) m.classList.add('hidden');
-            };
-        }
-    });
-
-    function openModal(target) {
-        if(!target) return;
-        Object.values(modals).forEach(m => { if(m) m.classList.add('hidden'); });
-        target.classList.remove('hidden');
-    }
-}
-
-// --- プレビュー描画（パターン分岐対応・堅牢化版） ---
-function renderDesignPreview(qData = null) {
-    const container = document.getElementById('design-monitor-preview-content');
-    if(!container) return;
-
-    try {
-        // スケール計算 (親枠の幅に合わせて縮小)
-        const frame = document.querySelector('.design-preview-frame');
-        if(frame) {
-            // 親枠がない場合の0除算ガード
-            const width = frame.clientWidth || 300;
-            const scale = width / 1920;
-            container.style.transform = `scale(${scale})`;
-        }
-
-        // 現在の設定値を取得
-        const setting = collectDesignSettings();
-        if(!setting) return; // エラーガード
-        
-        const d = setting.design;
-        const layout = setting.layout || 'standard';
-        const align = setting.align || 'center';
-
-        // プレビュー用のダミーデータ（デフォルト）
-        let qType = 'choice';
-        let qText = "これは問題文のプレビューです。";
-        let choices = ["選択肢 A", "選択肢 B", "選択肢 C", "選択肢 D"];
-        
-        // 読み込み済みデータのキャッシュがあればそれを使う（引数がない場合）
-        if(!qData && currentDesignTarget && currentDesignTarget.data) {
-            if(currentDesignTarget.type === 'set' && currentDesignTarget.data.questions && currentDesignTarget.data.questions.length > 0) {
-                qData = currentDesignTarget.data.questions[0];
-            } else if (currentDesignTarget.type === 'prog' && currentDesignTarget.data.playlist && currentDesignTarget.data.playlist.length > 0) {
-                 const pl = currentDesignTarget.data.playlist[0];
-                 if(pl.questions && pl.questions.length > 0) qData = pl.questions[0];
-            }
-        }
-
-        // データを適用
-        if(qData) {
-            qType = qData.type || 'choice';
-            qText = qData.q || "問題文";
-            if(qData.c) choices = qData.c;
-        }
-
-        // 背景
-        container.style.backgroundColor = d.mainBgColor;
-        if(d.bgImage) {
-            container.style.backgroundImage = `url(${d.bgImage})`;
-            container.style.backgroundSize = "cover";
-            container.style.backgroundPosition = "center";
-        } else {
-            // デフォルトグラデーション (黒系の場合のみ適用)
-            if(d.mainBgColor === '#0a0a0a' || d.mainBgColor === '#222222') {
-                 container.style.backgroundImage = "radial-gradient(circle at center, #1a1a1a 0%, #000000 100%)";
-            } else {
-                 container.style.backgroundImage = "none";
-            }
-        }
-
-        // 基本スタイル定義
-        const qStyleBase = `
-            color: ${d.qTextColor}; background: ${d.qBgColor}; border: 6px solid ${d.qBorderColor};
-            ${align === 'left' ? 'text-align:left;' : align === 'right' ? 'text-align:right;' : 'text-align:center;'}
-        `;
-        const cStyle = `color: ${d.cTextColor}; background: ${d.cBgColor}; border-bottom-color: ${d.cBorderColor};`;
-        const pStyle = `color: ${d.qBorderColor}; margin-right: 30px; font-weight:900;`;
-
-        let html = '';
-
-        // ★★★ パターン分岐 ★★★
-        
-        // パターン1: フリー回答 (口頭/記述) -> 真ん中にドカンと表示
-        if (qType === 'free_oral' || qType === 'free_written') {
-            
-            container.style.display = 'flex';
-            container.style.flexDirection = 'column';
-            container.style.justifyContent = 'center';
-            container.style.alignItems = 'center';
-
-            const singleBoxStyle = `
-                ${qStyleBase}
-                width: 80%;
-                height: 60%;
-                display: flex;
-                align-items: center;
-                justify-content: ${align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'};
-                font-size: 100px;
-                font-weight: bold;
-                border-radius: 20px;
-                padding: 50px;
-                box-sizing: border-box;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            `;
-            
-            html += `<div style="${singleBoxStyle}">${qText}</div>`;
-            let typeLabel = (qType === 'free_oral') ? "フリー（口頭回答）" : "フリー（記述式）";
-            html += `<div style="color:#aaa; font-size:30px; margin-top:20px;">[ ${typeLabel} ]</div>`;
-
-        } 
-        // パターン2: 選択式・並べ替え・多答 -> 分割レイアウト
-        else {
-            // 標準レイアウト用スタイル
-            const qStyleStandard = `
-                ${qStyleBase}
-                ${layout === 'standard' ? 'border-left-width: 30px;' : ''}
-            `;
-
-            if (layout === 'standard') {
-                container.style.flexDirection = 'column';
-                container.style.justifyContent = 'center';
-                container.style.alignItems = 'center';
-
-                html += `<div class="preview-q-area" style="${qStyleStandard}">${qText}</div>`;
-                html += `<div class="preview-c-area">`;
-                choices.forEach((c, i) => {
-                    html += `<div class="preview-choice-item" style="${cStyle}"><span style="${pStyle}">${String.fromCharCode(65+i)}</span> ${c}</div>`;
-                });
-                html += `</div>`;
-                
-            } else if (layout === 'split_list' || layout === 'split_grid') {
-                container.style.flexDirection = 'row-reverse';
-                container.style.justifyContent = 'center';
-                container.style.alignItems = 'center';
-
-                const qStyleVert = `
-                    color: ${d.qTextColor}; background: ${d.qBgColor}; border: 6px solid ${d.qBorderColor};
-                    writing-mode: vertical-rl; text-orientation: upright;
-                    width: 400px; height: 900px; display:flex; align-items:center; justify-content:center;
-                    font-size: 70px; font-weight:bold; margin-left: 50px; border-radius:15px;
-                `;
-                html += `<div style="${qStyleVert}">${qText}</div>`;
-                
-                html += `<div class="preview-c-area" style="width:50%;">`;
-                choices.forEach((c, i) => {
-                    html += `<div class="preview-choice-item" style="${cStyle}"><span style="${pStyle}">${String.fromCharCode(65+i)}</span> ${c}</div>`;
-                });
-                html += `</div>`;
-            }
-        }
-
-        container.innerHTML = html;
-
-    } catch (e) {
-        console.error("Preview Render Error:", e);
-        container.innerHTML = `<div style="color:white; font-size:50px;">Preview Error</div>`;
-    }
-}
-
-// リサイズ追従
-window.addEventListener('resize', () => renderDesignPreview());
-
-
-/* --- 既存のヘルパー関数群（必須） --- */
-
-function setDefaultDesignUI() {
-    const layoutEl = document.getElementById('creator-set-layout');
-    if(layoutEl) layoutEl.value = 'standard';
-    updateAlignUI('center');
-    
-    const mainBg = document.getElementById('design-main-bg-color');
-    if(mainBg) mainBg.value = "#222222";
-    
-    const bgData = document.getElementById('design-bg-image-data');
-    if(bgData) bgData.value = "";
-    
-    const bgStatus = document.getElementById('design-bg-image-status');
-    if(bgStatus) {
-         bgStatus.textContent = "未選択";
-         bgStatus.style.color = "#aaa";
-    }
-
-    const qText = document.getElementById('design-q-text');
-    if(qText) qText.value = "#ffffff";
-    const qBg = document.getElementById('design-q-bg');
-    if(qBg) qBg.value = "#2c5066";
-    const qBorder = document.getElementById('design-q-border');
-    if(qBorder) qBorder.value = "#ffffff";
-    
-    const cText = document.getElementById('design-c-text');
-    if(cText) cText.value = "#ffffff";
-    const cBg = document.getElementById('design-c-bg');
-    if(cBg) cBg.value = "#365c75";
-    const cBorder = document.getElementById('design-c-border');
-    if(cBorder) cBorder.value = "#ffffff";
-}
-
-function updateAlignUI(align) {
-    document.getElementById('creator-set-align').value = align;
-    document.querySelectorAll('.btn-align').forEach(btn => {
-        if(btn.getAttribute('data-align') === align) btn.classList.add('active');
-        else btn.classList.remove('active');
-    });
-}
-
-function collectDesignSettings() {
-    // 要素がない場合はデフォルト値を返すガード
-    const getVal = (id, def) => document.getElementById(id) ? document.getElementById(id).value : def;
-
-    return {
-        layout: getVal('creator-set-layout', 'standard'),
-        align: getVal('creator-set-align', 'center'),
-        design: {
-            mainBgColor: getVal('design-main-bg-color', '#222222'),
-            bgImage: getVal('design-bg-image-data', ''),
-            qTextColor: getVal('design-q-text', '#ffffff'),
-            qBgColor: getVal('design-q-bg', '#2c5066'),
-            qBorderColor: getVal('design-q-border', '#ffffff'),
-            cTextColor: getVal('design-c-text', '#ffffff'),
-            cBgColor: getVal('design-c-bg', '#365c75'),
-            cBorderColor: getVal('design-c-border', '#ffffff')
-        }
-    };
-}
-
-function applyDesignToUI(d, layout, align) {
-    const layoutEl = document.getElementById('creator-set-layout');
-    if(layoutEl) layoutEl.value = layout;
-    updateAlignUI(align);
-    
-    if(document.getElementById('design-main-bg-color')) document.getElementById('design-main-bg-color').value = d.mainBgColor || "#222222";
-    if(document.getElementById('design-bg-image-data')) document.getElementById('design-bg-image-data').value = d.bgImage || "";
-    const bgStatus = document.getElementById('design-bg-image-status');
-    if(bgStatus) {
-        if(d.bgImage) {
-            bgStatus.textContent = "画像あり (適用済)";
-            bgStatus.style.color = "#00aa00";
-        } else {
-            bgStatus.textContent = "未選択";
-            bgStatus.style.color = "#aaa";
-        }
-    }
-
-    if(document.getElementById('design-q-text')) document.getElementById('design-q-text').value = d.qTextColor || "#ffffff";
-    if(document.getElementById('design-q-bg')) document.getElementById('design-q-bg').value = d.qBgColor || "#2c5066";
-    if(document.getElementById('design-q-border')) document.getElementById('design-q-border').value = d.qBorderColor || "#ffffff";
-
-    if(document.getElementById('design-c-text')) document.getElementById('design-c-text').value = d.cTextColor || "#ffffff";
-    if(document.getElementById('design-c-bg')) document.getElementById('design-c-bg').value = d.cBgColor || "#365c75";
-    if(document.getElementById('design-c-border')) document.getElementById('design-c-border').value = d.cBorderColor || "#ffffff";
-}
-
-function setupLivePreviewListeners() {
-    const ids = [
-        'creator-set-layout', 'design-main-bg-color', 'design-bg-image-data',
-        'design-q-text', 'design-q-bg', 'design-q-border',
-        'design-c-text', 'design-c-bg', 'design-c-border'
-    ];
-    ids.forEach(id => {
-        const el = document.getElementById(id);
-        if(el) {
-            el.addEventListener('input', () => renderDesignPreview());
-            el.addEventListener('change', () => renderDesignPreview());
-        }
-    });
-    document.querySelectorAll('.btn-align').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-             updateAlignUI(e.target.getAttribute('data-align'));
-             renderDesignPreview();
-        });
-    });
-    
-    const clearBtn = document.getElementById('design-bg-clear-btn');
-    if(clearBtn) {
-        clearBtn.addEventListener('click', () => {
-            document.getElementById('design-bg-image-data').value = "";
-            const bgStatus = document.getElementById('design-bg-image-status');
-            if(bgStatus) {
-                bgStatus.textContent = "未選択";
-                bgStatus.style.color = "#aaa";
-            }
-            renderDesignPreview();
-        });
-    }
-    
-    const imgBtn = document.getElementById('design-bg-image-btn');
-    const imgInput = document.getElementById('design-bg-image-file');
-    if(imgBtn && imgInput) {
-        imgBtn.onclick = () => imgInput.click();
-        imgInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const dataUrl = event.target.result;
-                document.getElementById('design-bg-image-data').value = dataUrl;
-                const bgStatus = document.getElementById('design-bg-image-status');
-                if(bgStatus) {
-                     bgStatus.textContent = "画像セット中";
-                     bgStatus.style.color = "#00aa00";
+            } else if (targetInfo.type === 'prog' && data.playlist && data.playlist.length > 0) {
+                // プログラムなら最初のピリオドの1問目
+                const q = data.playlist[0].questions?.[0];
+                if(q) {
+                    design = q.design || {};
+                    layout = q.layout || 'standard';
+                    align = q.align || 'center';
                 }
-                renderDesignPreview();
-            };
-            reader.readAsDataURL(file);
+            }
+
+            // UIに反映
+            this.applyToUI(design, layout, align);
+            App.Ui.showToast(`Loaded: ${data.title}`);
+            this.renderPreview();
+        });
+    },
+
+    // UIの入力値を取得してまとめる
+    collectSettings: function() {
+        return {
+            design: {
+                mainBgColor: document.getElementById('design-main-bg-color').value,
+                bgImage: document.getElementById('design-bg-image-data').value,
+                qTextColor: document.getElementById('design-q-text').value,
+                qBgColor: document.getElementById('design-q-bg').value,
+                qBorderColor: document.getElementById('design-q-border').value,
+                cTextColor: document.getElementById('design-c-text').value,
+                cBgColor: document.getElementById('design-c-bg').value,
+                cBorderColor: document.getElementById('design-c-border').value
+            },
+            layout: document.getElementById('creator-set-layout').value,
+            align: document.getElementById('creator-set-align').value
         };
+    },
+
+    // UIに入力値をセットする
+    applyToUI: function(design, layout, align) {
+        if(!design) design = this.defaults;
+        
+        const setVal = (id, val) => { 
+            const el = document.getElementById(id); 
+            if(el) el.value = val || this.defaults[id.replace('design-', '').replace('main-bg-color','mainBgColor').replace('q-text','qTextColor').replace('q-bg','qBgColor').replace('q-border','qBorderColor').replace('c-text','cTextColor').replace('c-bg','cBgColor').replace('c-border','cBorderColor')]; 
+        };
+
+        setVal('design-main-bg-color', design.mainBgColor);
+        setVal('design-q-text', design.qTextColor);
+        setVal('design-q-bg', design.qBgColor);
+        setVal('design-q-border', design.qBorderColor);
+        setVal('design-c-text', design.cTextColor);
+        setVal('design-c-bg', design.cBgColor);
+        setVal('design-c-border', design.cBorderColor);
+        
+        document.getElementById('design-bg-image-data').value = design.bgImage || "";
+        const status = document.getElementById('design-bg-image-status');
+        if(status) {
+            status.textContent = design.bgImage ? "画像あり" : "未選択";
+            status.style.color = design.bgImage ? "#00ff00" : "#aaa";
+        }
+
+        if(layout) document.getElementById('creator-set-layout').value = layout;
+        
+        if(align) {
+            document.getElementById('creator-set-align').value = align;
+            document.querySelectorAll('.btn-align').forEach(b => {
+                b.classList.toggle('active', b.dataset.align === align);
+            });
+        }
+    },
+
+    setDefaultUI: function() {
+        this.applyToUI(this.defaults, 'standard', 'center');
+    },
+
+    // プレビュー画面の描画（実際のモニターと同じHTML/CSS構造を作る）
+    renderPreview: function() {
+        const frame = document.getElementById('design-monitor-preview-content');
+        if(!frame) return;
+
+        const s = this.collectSettings();
+        const d = s.design;
+        
+        // 背景スタイル
+        let bgStyle = `background-color: ${d.mainBgColor};`;
+        if(d.bgImage) {
+            bgStyle += `background-image: url('${d.bgImage}'); background-size: cover; background-position: center;`;
+        } else {
+            // デフォルトのグラデーション
+            bgStyle += `background-image: radial-gradient(circle at center, #1a1a1a 0%, ${d.mainBgColor} 100%);`;
+        }
+
+        // レイアウトに応じたHTML構築
+        let layoutHtml = '';
+        const qStyle = `color:${d.qTextColor}; background:${d.qBgColor}; border:2px solid ${d.qBorderColor}; text-align:${s.align}; padding:20px; border-radius:8px; font-size:1.2em; font-weight:bold; margin-bottom:10px; display:flex; align-items:center; justify-content:${s.align==='center'?'center':(s.align==='right'?'flex-end':'flex-start')}; box-shadow:0 0 15px ${d.qBorderColor}40;`;
+        const cStyle = `color:${d.cTextColor}; background:${d.cBgColor}; border:1px solid ${d.cBorderColor}; padding:10px; border-radius:4px; margin-bottom:5px; display:flex; align-items:center;`;
+        const labelStyle = `background:${d.cBorderColor}; color:#fff; padding:2px 8px; border-radius:3px; margin-right:10px; font-size:0.8em;`;
+
+        const dummyQ = "これはプレビュー用の問題文です。";
+        const dummyChoices = ["選択肢A", "選択肢B", "選択肢C", "選択肢D"];
+
+        if (s.layout === 'split_list' || s.layout === 'split_grid') {
+            // 左右分割レイアウト
+            layoutHtml = `
+                <div style="display:flex; height:100%; gap:15px; padding:20px; box-sizing:border-box;">
+                    <div style="flex:1; ${qStyle}; margin:0;">${dummyQ}</div>
+                    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+                        ${dummyChoices.map((c,i) => `
+                            <div style="${cStyle}">
+                                <span style="${labelStyle}">${String.fromCharCode(65+i)}</span> ${c}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } else {
+            // 標準レイアウト (上下)
+            layoutHtml = `
+                <div style="padding:20px; box-sizing:border-box; display:flex; flex-direction:column; height:100%; justify-content:center;">
+                    <div style="${qStyle} min-height:100px;">${dummyQ}</div>
+                    <div style="margin-top:10px;">
+                         ${dummyChoices.map((c,i) => `
+                            <div style="${cStyle}">
+                                <span style="${labelStyle}">${String.fromCharCode(65+i)}</span> ${c}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        frame.innerHTML = `
+            <div style="width:100%; height:100%; ${bgStyle} font-family:sans-serif; overflow:hidden;">
+                ${layoutHtml}
+            </div>
+        `;
+    },
+
+    save: function() {
+        if(!this.currentTarget) return alert("編集対象がロードされていません。\n(新規セット作成時はCreator画面で保存時に反映されます)");
+
+        const s = this.collectSettings();
+        const t = this.currentTarget;
+        let promise;
+
+        // DB更新処理
+        if (t.type === 'set') {
+            // セット内の全問題のデザインを一括更新
+            const questions = t.data.questions.map(q => {
+                q.design = s.design;
+                q.layout = s.layout;
+                q.align = s.align;
+                return q;
+            });
+            promise = window.db.ref(`saved_sets/${App.State.currentShowId}/${t.key}/questions`).set(questions);
+        } else {
+            // プログラム内の全ピリオドの全問題のデザインを一括更新（強力！）
+            const playlist = t.data.playlist.map(period => {
+                if(period.questions) {
+                    period.questions = period.questions.map(q => {
+                        q.design = s.design;
+                        q.layout = s.layout;
+                        q.align = s.align;
+                        return q;
+                    });
+                }
+                return period;
+            });
+            promise = window.db.ref(`saved_programs/${App.State.currentShowId}/${t.key}/playlist`).set(playlist);
+        }
+
+        promise.then(() => {
+            App.Ui.showToast("デザインを保存しました！");
+        });
     }
+};
 
-    const saveBtn = document.getElementById('design-save-btn');
-    if(saveBtn) saveBtn.onclick = saveDesignSettings;
-
-    const resetBtn = document.getElementById('design-reset-btn');
-    if(resetBtn) resetBtn.onclick = () => {
-        setDefaultDesignUI();
-        renderDesignPreview();
-    };
-}
+// Global Bindings (他モジュールからのアクセス用)
+window.enterDesignMode = () => App.Design.init();
+window.applyDesignToUI = (d, l, a) => App.Design.applyToUI(d, l, a);
+window.collectDesignSettings = () => App.Design.collectSettings();
+window.resetGlobalSettings = () => App.Design.setDefaultUI();
+// loadDesignSettings は Dashboard で使われるかもしれないので一応
+window.loadDesignSettings = () => {};
