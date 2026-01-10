@@ -1,13 +1,11 @@
 /* =========================================================
- * host_creator.js (v66: Refactored Module)
+ * host_creator.js (v66.1: Fix Select Options)
  * =======================================================*/
 
 App.Creator = {
-    // 編集中のインデックス
     editingIndex: null,
     editingTitle: "",
 
-    // 初期化 (Dashボタンから呼ばれる)
     init: function() {
         this.editingIndex = null;
         this.editingTitle = "";
@@ -17,14 +15,16 @@ App.Creator = {
         const btnSave = document.getElementById('save-to-cloud-btn');
         if(btnSave) btnSave.textContent = APP_TEXT.Creator.BtnSave;
 
-        // デザイン設定のリセット (host_design.jsの関数利用)
+        // デザイン設定のリセット
         if(window.resetGlobalSettings) window.resetGlobalSettings();
+
+        // ★修正: 出題形式の選択肢を生成
+        this.setupTypeSelect();
 
         this.resetForm();
         this.renderList();
         App.Ui.showView(App.Ui.views.creator);
 
-        // タイプ選択のロック解除
         const typeSelect = document.getElementById('creator-q-type');
         if(typeSelect) {
             typeSelect.disabled = false;
@@ -33,7 +33,31 @@ App.Creator = {
         }
     },
 
-    // 既存セットの読み込み (DashのEditボタンから)
+    // ★追加: セレクトボックスの選択肢生成
+    setupTypeSelect: function() {
+        const sel = document.getElementById('creator-q-type');
+        if(!sel || sel.options.length > 0) return; // 既に生成済みならスキップ
+
+        const opts = [
+            { v: 'choice', t: APP_TEXT.Creator.TypeChoice },
+            { v: 'sort', t: APP_TEXT.Creator.TypeSort },
+            { v: 'free_oral', t: APP_TEXT.Creator.TypeFreeOral },
+            { v: 'free_written', t: APP_TEXT.Creator.TypeFreeWritten },
+            { v: 'multi', t: APP_TEXT.Creator.TypeMulti }
+        ];
+        opts.forEach(o => {
+            const el = document.createElement('option');
+            el.value = o.v;
+            el.textContent = o.t;
+            sel.appendChild(el);
+        });
+        
+        // イベント再登録
+        sel.onchange = (e) => {
+            if(App.Data.createdQuestions.length === 0) this.renderForm(e.target.value);
+        };
+    },
+
     loadSet: function(key, item) {
         App.State.editingSetId = key;
         this.editingTitle = item.title || "";
@@ -42,9 +66,10 @@ App.Creator = {
         const btnSave = document.getElementById('save-to-cloud-btn');
         if(btnSave) btnSave.textContent = APP_TEXT.Creator.BtnUpdate;
 
+        // 選択肢生成を確実に行う
+        this.setupTypeSelect();
+
         const typeSelect = document.getElementById('creator-q-type');
-        
-        // 1問目があれば設定をロック
         if(App.Data.createdQuestions.length > 0) {
             const firstQ = App.Data.createdQuestions[0];
             typeSelect.value = firstQ.type;
@@ -54,7 +79,6 @@ App.Creator = {
             if(document.getElementById('creator-set-layout')) document.getElementById('creator-set-layout').value = firstQ.layout || 'standard';
             if(window.updateAlignUI) window.updateAlignUI(firstQ.align || 'center');
             
-            // デザイン適用 (host_design.js)
             if(window.applyDesignToUI && firstQ.design) {
                 window.applyDesignToUI(firstQ.design, firstQ.layout, firstQ.align);
             }
@@ -68,7 +92,6 @@ App.Creator = {
         App.Ui.showView(App.Ui.views.creator);
     },
 
-    // フォームのリセット
     resetForm: function() {
         this.editingIndex = null;
         document.getElementById('creator-form-title').textContent = APP_TEXT.Creator.HeadingNewQ;
@@ -80,16 +103,14 @@ App.Creator = {
         this.renderForm(type);
     },
 
-    // フォーム描画 (Typeに応じて切り替え)
     renderForm: function(type, data = null) {
         const container = document.getElementById('creator-form-container');
         if(!container) return; 
         container.innerHTML = ''; 
 
-        // --- 選択式 (Choice) ---
         if (type === 'choice') {
             const isMulti = data ? data.multi : false;
-            container.innerHTML = `<label class="mb-10 block"><input type="checkbox" id="opt-multi-select" ${isMulti?'checked':''}> ${APP_TEXT.Creator.OptMulti}</label>`;
+            container.innerHTML = `<label class="mb-10 block pointer"><input type="checkbox" id="opt-multi-select" ${isMulti?'checked':''}> ${APP_TEXT.Creator.OptMulti}</label>`;
             
             const choicesDiv = document.createElement('div');
             choicesDiv.id = 'creator-choices-list';
@@ -101,13 +122,12 @@ App.Creator = {
 
             this.createAddBtn(container, APP_TEXT.Creator.BtnAddChoice, () => this.addChoiceInput(choicesDiv));
         } 
-        // --- 並べ替え (Sort) ---
         else if (type === 'sort') {
             const initVal = data ? data.initialOrder : 'random';
             container.innerHTML = `
                 <p class="text-sm text-gray mb-5">${APP_TEXT.Creator.DescSort}</p>
                 <label class="text-sm bold">${APP_TEXT.Creator.LabelSortInitial}</label>
-                <select id="sort-initial-order" class="mb-10"><option value="random" ${initVal==='random'?'selected':''}>${APP_TEXT.Creator.SortInitialRandom}</option><option value="fixed" ${initVal==='fixed'?'selected':''}>${APP_TEXT.Creator.SortInitialFixed}</option></select>
+                <select id="sort-initial-order" class="mb-10 config-select btn-block"><option value="random" ${initVal==='random'?'selected':''}>${APP_TEXT.Creator.SortInitialRandom}</option><option value="fixed" ${initVal==='fixed'?'selected':''}>${APP_TEXT.Creator.SortInitialFixed}</option></select>
             `;
             const sortDiv = document.createElement('div');
             sortDiv.className = 'flex-col gap-5';
@@ -118,7 +138,6 @@ App.Creator = {
 
             this.createAddBtn(container, APP_TEXT.Creator.BtnAddSort, () => this.addSortInput(sortDiv));
         }
-        // --- 記述 (Free) ---
         else if (type === 'free_written' || type === 'free_oral') {
             container.innerHTML = `<p class="text-sm text-gray mb-5">${APP_TEXT.Creator.DescText}</p>`;
             const input = document.createElement('input');
@@ -127,7 +146,6 @@ App.Creator = {
             if (data && data.correct) input.value = data.correct.join(', ');
             container.appendChild(input);
         }
-        // --- 多答 (Multi) ---
         else if (type === 'multi') {
             container.innerHTML = `<p class="text-sm text-gray mb-5">${APP_TEXT.Creator.DescMulti}</p>`;
             const multiDiv = document.createElement('div');
@@ -141,7 +159,6 @@ App.Creator = {
         }
     },
 
-    // 選択肢入力行の追加
     addChoiceInput: function(parent, index, text="", checked=false) {
         if (parent.children.length >= 20) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
         const row = document.createElement('div');
@@ -151,12 +168,9 @@ App.Creator = {
             <input type="checkbox" class="choice-correct-chk" style="display:none;" ${checked?'checked':''}>
             <div class="choice-label-btn ${checked?'active':''}" onclick="this.previousElementSibling.click(); this.classList.toggle('active');">A</div>
             <input type="text" class="choice-text-input flex-1" placeholder="Choice" value="${text}">
-            <button class="btn-mini btn-dark w-30" onclick="this.parentElement.remove(); App.Creator.updateLabels(this.parentElement.parentElement);">×</button>
+            <button class="btn-mini btn-dark w-30">×</button>
         `;
-        // 削除ボタンのonclickイベントはinnerHTMLだとthis参照が難しいので後付け推奨だが、今回は簡便に
-        const delBtn = row.querySelector('button');
-        delBtn.onclick = () => { row.remove(); this.updateLabels(parent); };
-        
+        row.querySelector('button').onclick = () => { row.remove(); this.updateLabels(parent); };
         parent.appendChild(row);
         this.updateLabels(parent);
     },
@@ -200,7 +214,6 @@ App.Creator = {
         parent.querySelectorAll('.sort-label').forEach((el, i) => el.textContent = String.fromCharCode(65 + i));
     },
 
-    // フォームからデータ収集
     getData: function() {
         const qText = document.getElementById('question-text').value.trim();
         if(!qText) { alert(APP_TEXT.Creator.AlertNoQ); return null; }
@@ -235,7 +248,6 @@ App.Creator = {
         return newQ;
     },
 
-    // アクション
     add: function() {
         const q = this.getData();
         if(q) {
@@ -243,7 +255,6 @@ App.Creator = {
             this.resetForm();
             this.renderList();
             App.Ui.showToast(APP_TEXT.Creator.MsgAddedToast);
-            // ロック
             document.getElementById('creator-q-type').disabled = true;
             document.getElementById('creator-type-locked-msg').classList.remove('hidden');
         }
@@ -317,7 +328,6 @@ App.Creator = {
         const title = prompt("セット名を入力:", this.editingTitle);
         if(!title) return;
 
-        // デザイン・レイアウト収集
         const layout = document.getElementById('creator-set-layout').value;
         const align = document.getElementById('creator-set-align').value;
         const design = window.collectDesignSettings ? window.collectDesignSettings().design : {};
@@ -343,14 +353,9 @@ App.Creator = {
     }
 };
 
-// Global Bindings (HTMLのonclick互換性維持)
 window.initCreatorMode = () => App.Creator.init();
 window.loadSetForEditing = (k, i) => App.Creator.loadSet(k, i);
-// イベントリスナー登録
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('creator-q-type')?.addEventListener('change', (e) => {
-        if(App.Data.createdQuestions.length===0) App.Creator.renderForm(e.target.value);
-    });
     document.getElementById('add-question-btn')?.addEventListener('click', () => App.Creator.add());
     document.getElementById('update-question-btn')?.addEventListener('click', () => App.Creator.update());
     document.getElementById('cancel-update-btn')?.addEventListener('click', () => App.Creator.resetForm());
