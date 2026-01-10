@@ -1,5 +1,5 @@
 /* =========================================================
- * host_design.js (v3.1: Fix & Top Preview)
+ * host_design.js (v5: Full Feature / Modal & Pattern Switch)
  * =======================================================*/
 
 let currentDesignTarget = null; // { type: 'set'|'prog', key: '...', data: ... }
@@ -14,6 +14,9 @@ window.enterDesignMode = function() {
     
     // イベントリスナー設定
     setupLivePreviewListeners();
+    setupDesignModals(); // ポップアップ設定
+    
+    // 初回描画
     renderDesignPreview();
     
     if(window.views && window.views.design) window.showView(window.views.design);
@@ -31,7 +34,7 @@ function loadDesignTargetList() {
         window.db.ref(`saved_sets/${currentShowId}`).once('value'),
         window.db.ref(`saved_programs/${currentShowId}`).once('value')
     ]).then(([setSnap, progSnap]) => {
-        select.innerHTML = `<option value="">-- 編集するセットを選択 --</option>`;
+        select.innerHTML = `<option value="">-- 編集対象を選択 --</option>`;
         
         const sets = setSnap.val() || {};
         const progs = progSnap.val() || {};
@@ -84,7 +87,7 @@ function loadTargetDesign(target) {
         let align = 'center';
 
         // プレビュー用に問題文を1つ取得
-        let previewQ = { q: "Sample Question", c: ["Choice A","Choice B","Choice C","Choice D"] };
+        let previewQ = null;
 
         if (target.type === 'set' && data.questions && data.questions.length > 0) {
             const q = data.questions[0];
@@ -169,6 +172,46 @@ function saveDesignSettings() {
     }
 }
 
+// ポップアップモーダルの設定
+function setupDesignModals() {
+    const modals = {
+        text: document.getElementById('modal-design-text'),
+        object: document.getElementById('modal-design-object'),
+        bg: document.getElementById('modal-design-bg')
+    };
+
+    // ボタンが存在しない場合はスキップ（エラー回避）
+    const btnText = document.getElementById('btn-open-text');
+    const btnObj = document.getElementById('btn-open-object');
+    const btnBg = document.getElementById('btn-open-bg');
+
+    if(btnText) btnText.onclick = () => openModal(modals.text);
+    if(btnObj) btnObj.onclick = () => openModal(modals.object);
+    if(btnBg) btnBg.onclick = () => openModal(modals.bg);
+
+    // 閉じるボタン
+    document.querySelectorAll('.modal-close-btn').forEach(btn => {
+        btn.onclick = () => {
+            Object.values(modals).forEach(m => { if(m) m.classList.add('hidden'); });
+        };
+    });
+
+    // 背景クリックで閉じる
+    Object.values(modals).forEach(m => {
+        if(m) {
+            m.onclick = (e) => {
+                if(e.target === m) m.classList.add('hidden');
+            };
+        }
+    });
+
+    function openModal(target) {
+        if(!target) return;
+        Object.values(modals).forEach(m => { if(m) m.classList.add('hidden'); });
+        target.classList.remove('hidden');
+    }
+}
+
 /* --- ヘルパー関数 --- */
 
 function setDefaultDesignUI() {
@@ -184,8 +227,8 @@ function setDefaultDesignUI() {
     
     const bgStatus = document.getElementById('design-bg-image-status');
     if(bgStatus) {
-         bgStatus.textContent = "画像なし";
-         bgStatus.style.color = "#666";
+         bgStatus.textContent = "未選択";
+         bgStatus.style.color = "#aaa";
     }
 
     const qText = document.getElementById('design-q-text');
@@ -229,14 +272,22 @@ function collectDesignSettings() {
 }
 
 function applyDesignToUI(d, layout, align) {
-    document.getElementById('creator-set-layout').value = layout;
+    const layoutEl = document.getElementById('creator-set-layout');
+    if(layoutEl) layoutEl.value = layout;
     updateAlignUI(align);
     
     document.getElementById('design-main-bg-color').value = d.mainBgColor || "#222222";
     document.getElementById('design-bg-image-data').value = d.bgImage || "";
     const bgStatus = document.getElementById('design-bg-image-status');
-    if(d.bgImage) { bgStatus.textContent = "画像あり"; bgStatus.style.color = "#00aa00"; }
-    else { bgStatus.textContent = "画像なし"; bgStatus.style.color = "#666"; }
+    if(bgStatus) {
+        if(d.bgImage) {
+            bgStatus.textContent = "画像あり (適用済)";
+            bgStatus.style.color = "#00aa00";
+        } else {
+            bgStatus.textContent = "未選択";
+            bgStatus.style.color = "#aaa";
+        }
+    }
 
     document.getElementById('design-q-text').value = d.qTextColor || "#ffffff";
     document.getElementById('design-q-bg').value = d.qBgColor || "#2c5066";
@@ -273,8 +324,8 @@ function setupLivePreviewListeners() {
             document.getElementById('design-bg-image-data').value = "";
             const bgStatus = document.getElementById('design-bg-image-status');
             if(bgStatus) {
-                bgStatus.textContent = "画像なし";
-                bgStatus.style.color = "#666";
+                bgStatus.textContent = "未選択";
+                bgStatus.style.color = "#aaa";
             }
             renderDesignPreview();
         });
@@ -293,7 +344,7 @@ function setupLivePreviewListeners() {
                 document.getElementById('design-bg-image-data').value = dataUrl;
                 const bgStatus = document.getElementById('design-bg-image-status');
                 if(bgStatus) {
-                     bgStatus.textContent = "画像あり (適用済)";
+                     bgStatus.textContent = "画像セット中";
                      bgStatus.style.color = "#00aa00";
                 }
                 renderDesignPreview();
@@ -303,7 +354,7 @@ function setupLivePreviewListeners() {
     }
 
     const saveBtn = document.getElementById('design-save-btn');
-    if(saveBtn) saveBtn.onclick = saveDesignSettings; // リスナー重複防止のためonclick使用
+    if(saveBtn) saveBtn.onclick = saveDesignSettings;
 
     const resetBtn = document.getElementById('design-reset-btn');
     if(resetBtn) resetBtn.onclick = () => {
@@ -311,71 +362,30 @@ function setupLivePreviewListeners() {
         renderDesignPreview();
     };
 }
-/* host_design.js の enterDesignMode 関数内に追記 */
-window.enterDesignMode = function() {
-    setDefaultDesignUI();
-    currentDesignTarget = null;
-    
-    loadDesignTargetList();
-    
-    setupLivePreviewListeners();
-    setupDesignModals(); // ★これを追加！
-    
-    renderDesignPreview();
-    if(window.views && window.views.design) window.showView(window.views.design);
-};
 
-// ★新規追加: ポップアップ制御関数
-function setupDesignModals() {
-    const modals = {
-        text: document.getElementById('modal-design-text'),
-        object: document.getElementById('modal-design-object'),
-        bg: document.getElementById('modal-design-bg')
-    };
-
-    // 開くボタン
-    document.getElementById('btn-open-text').onclick = () => openModal(modals.text);
-    document.getElementById('btn-open-object').onclick = () => openModal(modals.object);
-    document.getElementById('btn-open-bg').onclick = () => openModal(modals.bg);
-
-    // 閉じるボタン (共通クラス)
-    document.querySelectorAll('.modal-close-btn').forEach(btn => {
-        btn.onclick = () => {
-            Object.values(modals).forEach(m => m.classList.add('hidden'));
-        };
-    });
-
-    // 背景クリックで閉じる
-    Object.values(modals).forEach(m => {
-        m.onclick = (e) => {
-            if(e.target === m) m.classList.add('hidden');
-        };
-    });
-
-    function openModal(target) {
-        // 他を閉じてから開く
-        Object.values(modals).forEach(m => m.classList.add('hidden'));
-        target.classList.remove('hidden');
-    }
-}
-// プレビュー描画
+// プレビュー描画（パターン分岐対応版）
 function renderDesignPreview(qData = null) {
     const container = document.getElementById('design-monitor-preview-content');
     if(!container) return;
 
+    // スケール計算 (親枠の幅に合わせて縮小)
     const frame = document.querySelector('.design-preview-frame');
     if(frame) {
         const scale = frame.clientWidth / 1920;
         container.style.transform = `scale(${scale})`;
     }
 
+    // 現在の設定値を取得
     const d = collectDesignSettings().design;
     const layout = document.getElementById('creator-set-layout').value;
     const align = document.getElementById('creator-set-align').value;
 
+    // プレビュー用のダミーデータ
+    let qType = 'choice';
     let qText = "これは問題文のプレビューです。";
     let choices = ["選択肢 A", "選択肢 B", "選択肢 C", "選択肢 D"];
     
+    // 読み込み済みデータのキャッシュがあればそれを使う
     if(!qData && currentDesignTarget && currentDesignTarget.data) {
         if(currentDesignTarget.type === 'set' && currentDesignTarget.data.questions && currentDesignTarget.data.questions.length > 0) {
             qData = currentDesignTarget.data.questions[0];
@@ -386,10 +396,12 @@ function renderDesignPreview(qData = null) {
     }
 
     if(qData) {
+        qType = qData.type || 'choice';
         qText = qData.q;
         if(qData.c) choices = qData.c;
     }
 
+    // 背景
     container.style.backgroundColor = d.mainBgColor;
     if(d.bgImage) {
         container.style.backgroundImage = `url(${d.bgImage})`;
@@ -403,39 +415,89 @@ function renderDesignPreview(qData = null) {
         }
     }
 
-    const qStyle = `
+    // 基本スタイル定義
+    const qStyleBase = `
         color: ${d.qTextColor}; background: ${d.qBgColor}; border: 6px solid ${d.qBorderColor};
         ${align === 'left' ? 'text-align:left;' : align === 'right' ? 'text-align:right;' : 'text-align:center;'}
-        ${layout === 'standard' ? 'border-left-width: 30px;' : ''}
     `;
     const cStyle = `color: ${d.cTextColor}; background: ${d.cBgColor}; border-bottom-color: ${d.cBorderColor};`;
     const pStyle = `color: ${d.qBorderColor}; margin-right: 30px; font-weight:900;`;
 
     let html = '';
+
+    // ★★★ パターン分岐 ★★★
     
-    if (layout === 'standard') {
+    // パターン1: フリー回答 (口頭/記述) -> 真ん中にドカンと表示
+    if (qType === 'free_oral' || qType === 'free_written') {
+        
+        container.style.display = 'flex';
         container.style.flexDirection = 'column';
-        html += `<div class="preview-q-area" style="${qStyle}">${qText}</div>`;
-        html += `<div class="preview-c-area">`;
-        choices.forEach((c, i) => {
-            html += `<div class="preview-choice-item" style="${cStyle}"><span style="${pStyle}">${String.fromCharCode(65+i)}</span> ${c}</div>`;
-        });
-        html += `</div>`;
-    } else if (layout === 'split_list' || layout === 'split_grid') {
-        container.style.flexDirection = 'row-reverse';
-        const qStyleVert = `
-            color: ${d.qTextColor}; background: ${d.qBgColor}; border: 6px solid ${d.qBorderColor};
-            writing-mode: vertical-rl; text-orientation: upright;
-            width: 400px; height: 900px; display:flex; align-items:center; justify-content:center;
-            font-size: 70px; font-weight:bold; margin-left: 50px; border-radius:15px;
+        container.style.justifyContent = 'center';
+        container.style.alignItems = 'center';
+
+        const singleBoxStyle = `
+            ${qStyleBase}
+            width: 80%;
+            height: 60%;
+            display: flex;
+            align-items: center;
+            justify-content: ${align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'};
+            font-size: 100px;
+            font-weight: bold;
+            border-radius: 20px;
+            padding: 50px;
+            box-sizing: border-box;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         `;
-        html += `<div style="${qStyleVert}">${qText}</div>`;
-        html += `<div class="preview-c-area" style="width:50%;">`;
-        choices.forEach((c, i) => {
-            html += `<div class="preview-choice-item" style="${cStyle}"><span style="${pStyle}">${String.fromCharCode(65+i)}</span> ${c}</div>`;
-        });
-        html += `</div>`;
+        
+        html += `<div style="${singleBoxStyle}">${qText}</div>`;
+        let typeLabel = (qType === 'free_oral') ? "フリー（口頭回答）" : "フリー（記述式）";
+        html += `<div style="color:#aaa; font-size:30px; margin-top:20px;">[ ${typeLabel} ]</div>`;
+
+    } 
+    // パターン2: 選択式・並べ替え・多答 -> 分割レイアウト
+    else {
+        // 標準レイアウト用スタイル
+        const qStyleStandard = `
+            ${qStyleBase}
+            ${layout === 'standard' ? 'border-left-width: 30px;' : ''}
+        `;
+
+        if (layout === 'standard') {
+            container.style.flexDirection = 'column';
+            container.style.justifyContent = 'center';
+            container.style.alignItems = 'center';
+
+            html += `<div class="preview-q-area" style="${qStyleStandard}">${qText}</div>`;
+            html += `<div class="preview-c-area">`;
+            choices.forEach((c, i) => {
+                html += `<div class="preview-choice-item" style="${cStyle}"><span style="${pStyle}">${String.fromCharCode(65+i)}</span> ${c}</div>`;
+            });
+            html += `</div>`;
+            
+        } else if (layout === 'split_list' || layout === 'split_grid') {
+            container.style.flexDirection = 'row-reverse';
+            container.style.justifyContent = 'center';
+            container.style.alignItems = 'center';
+
+            const qStyleVert = `
+                color: ${d.qTextColor}; background: ${d.qBgColor}; border: 6px solid ${d.qBorderColor};
+                writing-mode: vertical-rl; text-orientation: upright;
+                width: 400px; height: 900px; display:flex; align-items:center; justify-content:center;
+                font-size: 70px; font-weight:bold; margin-left: 50px; border-radius:15px;
+            `;
+            html += `<div style="${qStyleVert}">${qText}</div>`;
+            
+            html += `<div class="preview-c-area" style="width:50%;">`;
+            choices.forEach((c, i) => {
+                html += `<div class="preview-choice-item" style="${cStyle}"><span style="${pStyle}">${String.fromCharCode(65+i)}</span> ${c}</div>`;
+            });
+            html += `</div>`;
+        }
     }
 
     container.innerHTML = html;
 }
+
+// リサイズ追従
+window.addEventListener('resize', () => renderDesignPreview());
