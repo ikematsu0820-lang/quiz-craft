@@ -1,22 +1,20 @@
 /* =========================================================
- * style_common.css (v66: Refactored & Variables)
+ * style_common.css (v66.1: Layout Fixes)
  * =======================================================*/
 
 :root {
-    /* --- U-NEXT Style Color Palette --- */
-    --bg-main: #0a0a0a;       /* 全体背景（漆黒） */
-    --bg-panel: #1f1f1f;      /* カード・パネル背景 */
-    --bg-input: #333333;      /* 入力フォーム背景 */
+    --bg-main: #0a0a0a;
+    --bg-panel: #1f1f1f;
+    --bg-input: #333333;
     
-    --color-cyan: #00bfff;    /* アクセント：シアン */
-    --color-pink: #e94560;    /* アクセント：ピンクレッド */
-    --color-gold: #ffd700;    /* アクセント：ゴールド */
-    --color-text: #e0e0e0;    /* メイン文字色 */
-    --color-text-sub: #aaaaaa; /* サブ文字色 */
+    --color-cyan: #00bfff;
+    --color-pink: #e94560;
+    --color-gold: #ffd700;
+    --color-text: #e0e0e0;
+    --color-text-sub: #aaaaaa;
     
-    --border-color: #444444;  /* 枠線 */
+    --border-color: #444444;
     
-    /* --- Button Gradients --- */
     --grad-blue: linear-gradient(135deg, #0055ff 0%, #0033aa 100%);
     --grad-cyan: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%);
     --grad-orange: linear-gradient(180deg, #ff9966 0%, #ff5e62 100%);
@@ -31,7 +29,6 @@ body {
     user-select: none;
 }
 
-/* --- 画面切り替え (View System) --- */
 .view {
     display: block;
     padding: 20px;
@@ -47,25 +44,27 @@ body {
 
 .hidden { display: none !important; }
 
-/* --- ヘッダー --- */
+/* --- ②・⑤ ヘッダー位置修正 --- */
 .view-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
     border-bottom: 2px solid var(--border-color);
-    padding-bottom: 10px;
+    padding: 10px 5px; /* 上下左右に少し余白を持たせる */
+    min-height: 40px;
 }
 
 .header-back-btn {
     background: #333;
     color: #ccc;
     border: 1px solid #555;
-    padding: 5px 15px;
+    padding: 6px 15px; /* 少し大きくして押しやすく */
     border-radius: 4px;
     cursor: pointer;
     font-size: 0.9em;
     transition: all 0.2s;
+    white-space: nowrap; /* 折り返し防止 */
 }
 .header-back-btn:hover {
     background: #444;
@@ -73,7 +72,13 @@ body {
     border-color: white;
 }
 
-/* --- ボタン共通 (Base) --- */
+/* タイトルの余白調整 */
+.view-header h2, .view-header h3 {
+    margin: 0;
+    line-height: 1.2;
+}
+
+/* --- ボタン共通 --- */
 button {
     cursor: pointer;
     font-family: inherit;
@@ -97,11 +102,8 @@ button:active { transform: translateY(2px); opacity: 0.8; }
     background: #333;
     border: 1px solid var(--border-color);
 }
-.btn-block:hover {
-    filter: brightness(1.1);
-}
+.btn-block:hover { filter: brightness(1.1); }
 
-/* --- カラーボタンバリエーション --- */
 .btn-primary { background-color: #0f3460; border-color: #0f3460; }
 .btn-success { background-color: #00b894; border-color: #00b894; }
 .btn-danger  { background-color: var(--color-pink); border-color: var(--color-pink); }
@@ -109,7 +111,6 @@ button:active { transform: translateY(2px); opacity: 0.8; }
 .btn-info    { background-color: var(--color-cyan); color: #333; border-color: var(--color-cyan); }
 .btn-dark    { background-color: #636e72; border-color: #636e72; }
 
-/* ミニボタン */
 .btn-mini {
     padding: 4px 8px;
     font-size: 0.85em;
@@ -133,34 +134,22 @@ input:focus, select:focus {
     outline: none;
 }
 
-/* --- ロゴ --- */
+/* --- その他 --- */
 .app-logo, .app-logo-small {
     display: block;
     margin: 0 auto;
     filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
 }
 
-/* --- トースト通知 --- */
 #toast-container {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 9999;
-    width: 90%;
-    max-width: 400px;
-    pointer-events: none;
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 9999; width: 90%; max-width: 400px; pointer-events: none;
 }
 .toast-msg {
     background: rgba(15, 52, 96, 0.95);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 4px;
-    margin-bottom: 10px;
-    text-align: center;
-    border: 1px solid var(--color-cyan);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    animation: fadeOut 3s forwards;
+    color: white; padding: 12px 20px; border-radius: 4px;
+    margin-bottom: 10px; text-align: center; border: 1px solid var(--color-cyan);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5); animation: fadeOut 3s forwards;
 }
 @keyframes fadeOut {
     0% { opacity: 0; transform: translateY(-20px); }
@@ -169,28 +158,15 @@ input:focus, select:focus {
     100% { opacity: 0; }
 }
 
-/* --- ランディングページ (Landing View) --- */
+/* --- Landing Page --- */
 .landing-view {
-    /* 背景: 深い紫〜黒のグラデーション */
     background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
-    border: none;
-    box-shadow: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 20px;
+    border: none; box-shadow: none; display: flex; align-items: center;
+    justify-content: center; min-height: 100vh; padding: 20px;
 }
-
-.landing-content {
-    width: 100%;
-    max-width: 350px;
-    text-align: center;
-}
-
+.landing-content { width: 100%; max-width: 350px; text-align: center; }
 .landing-logo-emoji {
-    font-size: 80px;
-    margin-bottom: 0;
+    font-size: 80px; margin-bottom: 0;
     text-shadow: 0 0 30px rgba(255, 255, 100, 0.8), 0 0 60px rgba(255, 165, 0, 0.6);
     animation: floatLogo 3s ease-in-out infinite alternate;
 }
@@ -198,59 +174,27 @@ input:focus, select:focus {
     0% { transform: translateY(0) scale(1); filter: brightness(1); }
     100% { transform: translateY(-10px) scale(1.05); filter: brightness(1.2); }
 }
-
 .landing-title {
-    color: #fff;
-    font-family: 'Arial Black', sans-serif;
-    font-size: 2.5em;
-    margin: 10px 0 0 0;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-    letter-spacing: 1px;
+    color: #fff; font-family: 'Arial Black', sans-serif; font-size: 2.5em;
+    margin: 10px 0 0 0; text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); letter-spacing: 1px;
 }
-
 .landing-subtitle {
-    color: #a0a0ff;
-    font-size: 1em;
-    margin: 5px 0 50px 0;
-    font-weight: bold;
-    letter-spacing: 2px;
-    opacity: 0.7;
+    color: #a0a0ff; font-size: 1em; margin: 5px 0 50px 0;
+    font-weight: bold; letter-spacing: 2px; opacity: 0.7;
 }
-
-.landing-btn-area {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
+.landing-btn-area { display: flex; flex-direction: column; gap: 20px; }
 .landing-btn {
-    width: 100%;
-    padding: 18px;
-    border-radius: 50px;
-    border: none;
-    font-size: 1.2em;
-    font-weight: bold;
-    color: white;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 15px;
-    text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
-    margin: 0;
+    width: 100%; padding: 18px; border-radius: 50px; border: none;
+    font-size: 1.2em; font-weight: bold; color: white; position: relative;
+    display: flex; align-items: center; justify-content: center; gap: 15px;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.2); margin: 0;
 }
-.landing-btn:active {
-    transform: translateY(4px);
-}
-.btn-icon { font-size: 1.2em; }
-
-/* ターゲット風ボタン */
+.landing-btn:active { transform: translateY(4px); }
 .btn-host-modern {
     background: var(--grad-orange);
     box-shadow: 0 6px 0 #c24e2e, 0 15px 20px rgba(0,0,0,0.4);
 }
 .btn-host-modern:active { box-shadow: 0 0 0 #c24e2e; }
-
 .btn-player-modern {
     background: var(--grad-cyan);
     box-shadow: 0 6px 0 #2a7a7d, 0 15px 20px rgba(0,0,0,0.4);
