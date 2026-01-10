@@ -1,797 +1,271 @@
 /* =========================================================
- * host_config.js (v57: Final Config Logic)
+ * host_config.js (v66: Refactored Module)
  * =======================================================*/
 
-let selectedSetQuestions = [];
+App.Config = {
+    selectedSetQuestions: [],
 
-// イベントリスナー用関数定義
-window.onSetSelectChange = function() {
-    updateBuilderUI();
-};
-
-/* host_config.js の enterConfigMode 関数周辺を修正 */
-
-function enterConfigMode() {
-    window.showView(window.views.config);
-    
-    const setSelect = document.getElementById('config-set-select');
-    const container = document.getElementById('config-builder-ui');
-    
-    // セット選択の初期化
-    if(setSelect) {
-        setSelect.innerHTML = `<option value="">${APP_TEXT.Config.SelectDefault}</option>`;
-        setSelect.removeEventListener('change', window.onSetSelectChange);
-        setSelect.addEventListener('change', window.onSetSelectChange);
-    }
-    
-    if(container) {
-        container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">セットを選択してください</p>';
-    }
-    
-    document.getElementById('config-program-title').value = '';
-    document.getElementById('config-final-ranking-chk').checked = true;
-
-    loadSetListInConfig();
-    
-    // プログラムリストの読み込み（ポップアップ内）
-    loadProgramListInDropdown(); 
-    
-    renderConfigPreview();
-
-    // ★追加: ポップアップ制御
-    const modal = document.getElementById('config-load-modal');
-    const openBtn = document.getElementById('config-open-load-modal-btn');
-    const closeBtn = document.getElementById('config-modal-close-btn');
-
-    if(openBtn) {
-        openBtn.onclick = () => {
-            modal.classList.remove('hidden');
-            // 開くたびに最新リストを再取得しても良い
-            loadProgramListInDropdown();
-        };
-    }
-    if(closeBtn) {
-        closeBtn.onclick = () => {
-            modal.classList.add('hidden');
-        };
-    }
-}
-
-// プログラム読み込み関数（ポップアップ対応版）
-function loadProgramListInDropdown() {
-    const select = document.getElementById('config-prog-select');
-    const btn = document.getElementById('config-load-prog-exec-btn');
-    const modal = document.getElementById('config-load-modal'); // モーダル取得
-    
-    if(!select || !btn) return;
-
-    select.innerHTML = `<option value="">Reading...</option>`;
-    
-    if(!currentShowId) {
-        select.innerHTML = `<option value="">(ID未設定)</option>`;
-        return;
-    }
-
-    window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
-        const data = snap.val();
-        select.innerHTML = `<option value="">-- 構成を選択 --</option>`;
+    init: function() {
+        App.Ui.showView(App.Ui.views.config);
         
-        if(data) {
-            const items = [];
-            Object.keys(data).forEach(key => {
-                items.push({ key: key, ...data[key] });
-            });
-            items.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-            items.forEach(item => {
-                const opt = document.createElement('option');
-                opt.value = JSON.stringify(item); 
-                const dateStr = new Date(item.createdAt).toLocaleDateString();
-                opt.textContent = `${item.title} (${dateStr})`;
-                select.appendChild(opt);
-            });
-        } else {
-            select.innerHTML = `<option value="">(保存データなし)</option>`;
+        const setSelect = document.getElementById('config-set-select');
+        const container = document.getElementById('config-builder-ui');
+        
+        if(setSelect) {
+            setSelect.innerHTML = `<option value="">${APP_TEXT.Config.SelectDefault}</option>`;
+            // イベント重複防止のための再生成テクニック
+            const newSelect = setSelect.cloneNode(true);
+            setSelect.parentNode.replaceChild(newSelect, setSelect);
+            newSelect.addEventListener('change', () => this.updateBuilderUI());
         }
-    });
-
-    // Loadボタンの動作
-    btn.onclick = () => {
-        const val = select.value;
-        if(!val) return;
         
-        if(!confirm("この構成を読み込みますか？\n（現在の編集内容は上書きされます）")) return;
+        if(container) container.innerHTML = '<p class="text-center text-gray p-20">セットを選択してください</p>';
+        document.getElementById('config-program-title').value = '';
+        document.getElementById('config-final-ranking-chk').checked = true;
 
-        const prog = JSON.parse(val);
-        
-        // データを反映
-        periodPlaylist = prog.playlist || [];
-        document.getElementById('config-program-title').value = prog.title || "";
-        document.getElementById('config-final-ranking-chk').checked = (prog.finalRanking !== false);
-        
-        renderConfigPreview();
-        
-        // ★追加: 読み込み完了したらモーダルを閉じる
-        if(modal) modal.classList.add('hidden');
-        
-        alert("構成を読み込みました。");
-    };
-}
+        this.loadSetList();
+        this.renderPreview();
+        this.setupModal();
+    },
 
-function updateBuilderUI() {
-    const container = document.getElementById('config-builder-ui');
-    const select = document.getElementById('config-set-select');
-    
-    if (!container || !select) return;
+    loadSetList: function() {
+        const select = document.getElementById('config-set-select');
+        if(!select) return;
+        select.innerHTML = `<option value="">Loading...</option>`;
+        if(!App.State.currentShowId) return;
 
-    if (!select.value) {
-        selectedSetQuestions = [];
-        container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">セットを選択してください</p>';
-        return;
-    }
+        window.db.ref(`saved_sets/${App.State.currentShowId}`).once('value', snap => {
+            const data = snap.val();
+            select.innerHTML = `<option value="">${APP_TEXT.Config.SelectDefault}</option>`;
+            if(data) {
+                const items = Object.keys(data).map(k => ({...data[k], key: k})).sort((a,b)=>b.createdAt-a.createdAt);
+                items.forEach(item => {
+                    const opt = document.createElement('option');
+                    // データ互換性確保
+                    const val = { t: item.title, q: item.questions, c: item.config, sp: item.questions?.[0]?.specialMode||'none' };
+                    opt.value = JSON.stringify(val);
+                    opt.textContent = `${item.title} (${new Date(item.createdAt).toLocaleDateString()})`;
+                    select.appendChild(opt);
+                });
+            }
+        });
+    },
 
-    const setData = JSON.parse(select.value);
-    selectedSetQuestions = setData.q || [];
-    const config = setData.c || {};
-    const spMode = setData.sp || 'none';
-
-    let html = '';
-
-    // 1. 回答モード (Panel/Bomb削除)
-    html += `<div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>`;
-    html += `
-    <div class="config-item-box">
-        <select id="config-mode-select" class="btn-block config-select highlight-select">
-            <option value="normal" ${config.mode === 'normal' ? 'selected' : ''}>${APP_TEXT.Config.ModeNormal}</option>
-            <option value="buzz" ${config.mode === 'buzz' ? 'selected' : ''}>${APP_TEXT.Config.ModeBuzz}</option>
-            <option value="turn" ${config.mode === 'turn' ? 'selected' : ''}>${APP_TEXT.Config.ModeTurn}</option>
-            <option value="time_attack" ${config.mode === 'time_attack' ? 'selected' : ''} style="color:red;">${APP_TEXT.Config.ModeTimeAttack}</option>
-        </select>
-        <p id="config-mode-locked-msg" class="hidden" style="color:#d00; font-size:0.8em; margin-top:5px; font-weight:bold;">${APP_TEXT.Config.MsgLockedMode}</p>
-
-        <div id="mode-details-normal" class="mode-details hidden" style="margin-top:15px;">
-            <label class="config-label">${APP_TEXT.Config.LabelNormalLimit}</label>
-            <select id="config-normal-limit" class="btn-block config-select">
-                <option value="one">${APP_TEXT.Config.NormalLimitOne}</option>
-                <option value="unlimited">${APP_TEXT.Config.NormalLimitUnlimited}</option>
-            </select>
-            <div style="margin-top:10px;">
-                <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
-                <select id="config-shuffle-q" class="btn-block config-select">
-                    <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
-                    <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
-                </select>
-            </div>
-        </div>
-
-        <div id="mode-details-buzz" class="mode-details hidden" style="margin-top:15px;">
-            <label class="config-label">${APP_TEXT.Config.LabelBuzzWrongAction}</label>
-            <select id="config-buzz-wrong-action" class="btn-block config-select" style="margin-bottom:10px;">
-                <option value="next">${APP_TEXT.Config.BuzzWrongNext}</option>
-                <option value="reset">${APP_TEXT.Config.BuzzWrongReset}</option>
-                <option value="end">${APP_TEXT.Config.BuzzWrongEnd}</option>
-            </select>
-            <label class="config-label">${APP_TEXT.Config.LabelBuzzTime}</label>
-            <select id="config-buzz-timer" class="btn-block config-select" style="margin-bottom:10px;">
-                <option value="0">${APP_TEXT.Config.BuzzTimeNone}</option>
-                <option value="3">${APP_TEXT.Config.BuzzTime3}</option>
-                <option value="5">${APP_TEXT.Config.BuzzTime5}</option>
-                <option value="10">${APP_TEXT.Config.BuzzTime10}</option>
-            </select>
-            <div style="margin-top:10px;">
-                <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
-                <select id="config-buzz-shuffle" class="btn-block config-select">
-                    <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
-                    <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
-                </select>
-            </div>
-        </div>
-
-        <div id="mode-details-turn" class="mode-details hidden" style="margin-top:15px;">
-            <label class="config-label">${APP_TEXT.Config.LabelTurnOrder}</label>
-            <select id="config-turn-order" class="btn-block config-select" style="margin-bottom:10px;">
-                <option value="fixed">${APP_TEXT.Config.TurnOrderFixed}</option>
-                <option value="random">${APP_TEXT.Config.TurnOrderRandom}</option>
-                <option value="rank">${APP_TEXT.Config.TurnOrderRank}</option>
-            </select>
-            <label class="config-label">${APP_TEXT.Config.LabelTurnPass}</label>
-            <select id="config-turn-pass" class="btn-block config-select">
-                <option value="ok">${APP_TEXT.Config.TurnPassOk}</option>
-                <option value="ng">${APP_TEXT.Config.TurnPassNg}</option>
-            </select>
-            <div style="margin-top:10px;">
-                <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
-                <select id="config-turn-shuffle" class="btn-block config-select">
-                    <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
-                    <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
-                </select>
-            </div>
-        </div>
-        
-        <div id="mode-details-time_attack" class="mode-details hidden" style="margin-top:15px; background:#fff5e6; padding:10px; border-radius:5px;">
-            <p style="font-size:0.9em; margin:0; color:#d32f2f; font-weight:bold;">
-                ※Time Shock: 5 sec/Q (Auto Advance)
-            </p>
-        </div>
-    </div>`;
-
-    // 2. ルール設定 (ゲームタイプ & 脱落 & 時間)
-    html += `<div id="config-rule-section">`;
-    html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
-    
-    // ゲームタイプ (得点 vs 陣取り)
-    html += `
-    <div class="config-item-box">
-        <label class="config-label-large">${APP_TEXT.Config.LabelGameType}</label>
-        <select id="config-game-type" class="btn-block config-select" style="font-size:1.1em; margin-bottom:10px;">
-            <option value="score">${APP_TEXT.Config.GameTypeScore}</option>
-            <option value="territory">${APP_TEXT.Config.GameTypeTerritory}</option>
-        </select>
-    </div>`;
-
-    // カスタムスコア (時間含む)
-    html += `
-    <div class="config-item-box">
-        <h5 style="margin:0 0 10px 0;">${APP_TEXT.Config.HeadingCustomScore}</h5>
-        
-        <div style="display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:10px; margin-bottom:10px; background:#f9f9f9; padding:5px; font-size:0.8em;">
-            <div>
-                <span style="color:#333; font-weight:bold;">${APP_TEXT.Config.LabelBulkTime}</span>
-                <input type="number" id="config-bulk-time-input" value="0" min="0" style="width:40px; text-align:center; margin:0 5px;">
-                <button id="config-bulk-time-btn" class="btn-mini" style="background:#333; color:white;">${APP_TEXT.Config.BtnReflect}</button>
-            </div>
-            <div>
-                <span style="color:#0055ff; font-weight:bold;">${APP_TEXT.Config.LabelBulkPt}</span>
-                <input type="number" id="config-bulk-point-input" value="1" min="1" style="width:40px; text-align:center; margin:0 5px;">
-                <button id="config-bulk-point-btn" class="btn-mini" style="background:#0055ff; color:white;">${APP_TEXT.Config.BtnReflect}</button>
-            </div>
-            <div>
-                <span style="color:#d00; font-weight:bold;">${APP_TEXT.Config.LabelBulkLoss}</span>
-                <input type="number" id="config-bulk-loss-input" value="0" min="0" style="width:40px; text-align:center; margin:0 5px;">
-                <button id="config-bulk-loss-btn" class="btn-mini" style="background:#d00; color:white;">${APP_TEXT.Config.BtnReflect}</button>
-            </div>
-        </div>
-
-        <div id="config-questions-list" style="font-size:0.9em; max-height:300px; overflow-y:auto; border:1px solid #eee; padding:5px;"></div>
-    </div>`;
-
-    // 脱落条件
-    html += `
-    <div class="config-item-box">
-        <label class="config-label-large">${APP_TEXT.Config.LabelElim}</label>
-        <select id="config-elimination-rule" class="btn-block config-select" style="font-size:1.1em; margin-bottom:10px;">
-            <option value="none" ${config.eliminationRule === 'none' ? 'selected' : ''}>${APP_TEXT.Config.RuleNone}</option>
-            <option value="wrong_only" ${config.eliminationRule === 'wrong_only' ? 'selected' : ''}>${APP_TEXT.Config.RuleWrong}</option>
-            <option value="wrong_and_slowest" ${config.eliminationRule === 'wrong_and_slowest' ? 'selected' : ''}>${APP_TEXT.Config.RuleSlow}</option>
-        </select>
-        <div id="config-elimination-count-area" class="hidden" style="display:flex; align-items:center; gap:10px; background:#fff0f5; padding:10px; border-radius:5px;">
-            <span style="font-weight:bold; color:#d00;">${APP_TEXT.Config.LabelElimCount}</span>
-            <input type="number" id="config-elimination-count" value="${config.eliminationCount || 1}" min="1" style="width:60px; text-align:center; padding:5px; border:1px solid #d00; border-radius:4px;">
-            <span>${APP_TEXT.Config.LabelElimCountSuffix}</span>
-        </div>
-    </div>`;
-    
-    html += `</div>`; // End rule section
-
-    // 追加ボタン
-    html += `<button id="config-add-playlist-btn" class="btn-block" style="background:#0055ff; color:white; font-weight:bold; padding:15px; border:none; border-radius:8px; box-shadow:0 4px 8px rgba(0,85,255,0.3); font-size:1.1em; margin-top:20px;">${APP_TEXT.Config.BtnAddList}</button>`;
-
-    container.innerHTML = html;
-
-    // イベントリスナー
-    const modeSel = document.getElementById('config-mode-select');
-    if(modeSel) modeSel.addEventListener('change', (e) => updateModeDetails(e.target.value));
-    
-    const elimSel = document.getElementById('config-elimination-rule');
-    if(elimSel) elimSel.addEventListener('change', updateEliminationUI);
-    
-    const addBtn = document.getElementById('config-add-playlist-btn');
-    if(addBtn) addBtn.addEventListener('click', addPeriodToPlaylist);
-
-    document.getElementById('config-bulk-time-btn')?.addEventListener('click', () => {
-        const val = document.getElementById('config-bulk-time-input').value;
-        document.querySelectorAll('.q-time-input').forEach(inp => inp.value = val);
-    });
-    document.getElementById('config-bulk-point-btn')?.addEventListener('click', () => {
-        const val = document.getElementById('config-bulk-point-input').value;
-        document.querySelectorAll('.q-point-input').forEach(inp => inp.value = val);
-    });
-    document.getElementById('config-bulk-loss-btn')?.addEventListener('click', () => {
-        const val = document.getElementById('config-bulk-loss-input').value;
-        document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = val);
-    });
-
-    if(modeSel) updateModeDetails(modeSel.value);
-    updateEliminationUI();
-    renderQuestionsListUI(selectedSetQuestions);
-    applySpecialModeLock(spMode);
-}
-
-function renderQuestionsListUI(questions) {
-    const list = document.getElementById('config-questions-list');
-    if(!list) return;
-    
-    list.innerHTML = '';
-    questions.forEach((q, i) => {
-        const div = document.createElement('div');
-        div.style.display = 'flex';
-        div.style.alignItems = 'center';
-        div.style.marginBottom = '5px';
-        div.style.borderBottom = '1px solid #eee';
-        div.style.paddingBottom = '5px';
-        
-        const pts = q.points !== undefined ? q.points : 1;
-        const loss = q.loss !== undefined ? q.loss : 0;
-        const time = q.timeLimit !== undefined ? q.timeLimit : 0;
-
-        div.innerHTML = `
-            <div style="flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-weight:bold; font-size:0.9em; margin-right:5px;">
-                Q${i+1}. ${q.q}
-            </div>
-            <div style="display:flex; align-items:center; gap:3px;">
-                <span style="font-size:0.7em; color:#333;">${APP_TEXT.Config.LabelHeaderTime}</span>
-                <input type="number" class="q-time-input" data-index="${i}" value="${time}" min="0" style="width:40px; text-align:center; padding:3px; border:1px solid #333; border-radius:3px;">
-                
-                <span style="font-size:0.7em; color:#0055ff; margin-left:3px;">${APP_TEXT.Config.LabelHeaderPt}</span>
-                <input type="number" class="q-point-input" data-index="${i}" value="${pts}" min="1" style="width:30px; text-align:center; padding:3px; border:1px solid #0055ff; border-radius:3px; font-weight:bold;">
-                
-                <span style="font-size:0.7em; color:#d00; margin-left:3px;">${APP_TEXT.Config.LabelHeaderLoss}</span>
-                <input type="number" class="q-loss-input" data-index="${i}" value="${loss}" min="0" style="width:30px; text-align:center; padding:3px; border:1px solid #d00; border-radius:3px; font-weight:bold;">
-            </div>
-        `;
-        list.appendChild(div);
-    });
-}
-
-function applySpecialModeLock(spMode) {
-    const modeSelect = document.getElementById('config-mode-select');
-    const lockMsg = document.getElementById('config-mode-locked-msg');
-    const ruleSec = document.getElementById('config-rule-section');
-    
-    if(!modeSelect) return;
-
-    if (spMode === 'time_attack') {
-        modeSelect.value = 'time_attack';
-        modeSelect.disabled = true;
-        lockMsg.classList.remove('hidden');
-        ruleSec.style.display = 'none'; 
-        updateModeDetails('time_attack');
-    } else if (spMode === 'panel_attack') {
-        // パネルアタック指定の場合、ゲームタイプを陣取りに固定
-        const gameType = document.getElementById('config-game-type');
-        if(gameType) {
-            gameType.value = 'territory';
-            gameType.disabled = true;
-        }
-        unlockConfig();
-    } else {
-        unlockConfig();
-    }
-}
-
-function unlockConfig() {
-    const modeSelect = document.getElementById('config-mode-select');
-    const lockMsg = document.getElementById('config-mode-locked-msg');
-    const ruleSec = document.getElementById('config-rule-section');
-    const gameType = document.getElementById('config-game-type');
-    
-    if(!modeSelect) return;
-
-    modeSelect.disabled = false;
-    lockMsg.classList.add('hidden');
-    ruleSec.style.display = 'block';
-    if(gameType) gameType.disabled = false;
-    
-    updateModeDetails(modeSelect.value);
-}
-
-function updateModeDetails(mode) {
-    document.querySelectorAll('.mode-details').forEach(el => el.classList.add('hidden'));
-    
-    if (mode === 'normal') document.getElementById('mode-details-normal')?.classList.remove('hidden');
-    else if (mode === 'buzz') document.getElementById('mode-details-buzz')?.classList.remove('hidden');
-    else if (mode === 'turn') document.getElementById('mode-details-turn')?.classList.remove('hidden');
-    else if (mode === 'time_attack') document.getElementById('mode-details-time_attack')?.classList.remove('hidden');
-}
-
-function updateEliminationUI() {
-    const rule = document.getElementById('config-elimination-rule').value;
-    const countArea = document.getElementById('config-elimination-count-area');
-    if (rule === 'wrong_and_slowest') countArea?.classList.remove('hidden');
-    else countArea?.classList.add('hidden');
-}
-
-function addPeriodToPlaylist() {
-    const select = document.getElementById('config-set-select');
-    const mode = document.getElementById('config-mode-select').value;
-
-    if(!select.value) { alert(APP_TEXT.Config.AlertNoSet); return; }
-    
-    let questionsWithPoints = [];
-    let title = "New Period";
-    
-    if (select.value) {
-        const data = JSON.parse(select.value);
-        title = data.t;
-        questionsWithPoints = JSON.parse(JSON.stringify(data.q || []));
-        
-        const pointInputs = document.querySelectorAll('.q-point-input');
-        const lossInputs = document.querySelectorAll('.q-loss-input');
-        const timeInputs = document.querySelectorAll('.q-time-input');
-        
-        if (pointInputs.length > 0) {
-            pointInputs.forEach(input => {
-                const idx = parseInt(input.getAttribute('data-index'));
-                if (questionsWithPoints[idx]) questionsWithPoints[idx].points = parseInt(input.value) || 1;
-            });
-            lossInputs.forEach(input => {
-                const idx = parseInt(input.getAttribute('data-index'));
-                if (questionsWithPoints[idx]) questionsWithPoints[idx].loss = parseInt(input.value) || 0;
-            });
-            timeInputs.forEach(input => {
-                const idx = parseInt(input.getAttribute('data-index'));
-                if (questionsWithPoints[idx]) questionsWithPoints[idx].timeLimit = parseInt(input.value) || 0;
-            });
-        }
-    }
-
-    let initialStatus = 'revive'; 
-    let passCount = 5;
-    let intermediateRanking = false; 
-
-    let elimCount = 1;
-    if (document.getElementById('config-elimination-rule').value === 'wrong_and_slowest') {
-        elimCount = parseInt(document.getElementById('config-elimination-count').value) || 1;
-    }
-
-    const gameType = document.getElementById('config-game-type').value;
-    
-    let shuffle = 'off';
-    if (mode === 'normal') shuffle = document.getElementById('config-shuffle-q').value;
-    else if (mode === 'buzz') shuffle = document.getElementById('config-buzz-shuffle').value;
-    else if (mode === 'turn') shuffle = document.getElementById('config-turn-shuffle').value;
-    
-    if(shuffle === 'on') {
-        for (let i = questionsWithPoints.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [questionsWithPoints[i], questionsWithPoints[j]] = [questionsWithPoints[j], questionsWithPoints[i]];
-        }
-    }
-
-    const newConfig = {
-        initialStatus: 'revive', passCount: 5, intermediateRanking: false,
-        eliminationRule: document.getElementById('config-elimination-rule').value,
-        eliminationCount: elimCount,
-        lossPoint: 0, scoreUnit: 'point', theme: 'light',
-        timeLimit: 0, 
-        mode: mode,
-        gameType: gameType,
-        
-        normalLimit: document.getElementById('config-normal-limit')?.value || 'unlimited',
-        buzzWrongAction: document.getElementById('config-buzz-wrong-action')?.value || 'next',
-        buzzTime: parseInt(document.getElementById('config-buzz-timer')?.value) || 0,
-        turnOrder: document.getElementById('config-turn-order')?.value || 'fixed',
-        turnPass: document.getElementById('config-turn-pass')?.value || 'ok',
-        
-        shuffleChoices: 'off',
-        bombCount: 10,
-        bombTarget: 'bomb1'
-    };
-    
-    periodPlaylist.push({
-        title: title,
-        questions: questionsWithPoints,
-        config: newConfig
-    });
-    
-    renderConfigPreview();
-    updateBuilderUI();
-}
-
-function renderConfigPreview() {
-    const container = document.getElementById('config-playlist-preview');
-    if(!container) return;
-    container.innerHTML = '';
-    
-    if(periodPlaylist.length === 0) {
-        container.innerHTML = `<p style="text-align:center; color:#999; font-size:0.8em;">${APP_TEXT.Config.AlertEmptyList}</p>`;
-        return;
-    }
-    
-    periodPlaylist.forEach((item, index) => {
-        // ▼▼▼ 修正点1: Inter-Period 設定の復活 ▼▼▼
-        if (index > 0) {
-            const arrowDiv = document.createElement('div');
-            arrowDiv.className = 'playlist-arrow-container';
-            arrowDiv.innerHTML = '<div class="playlist-arrow"></div>';
-            container.appendChild(arrowDiv);
-            
-            const settingDiv = document.createElement('div');
-            settingDiv.className = 'playlist-inter-setting';
-            
-            // 設定値を読み出し（デフォルトは revive: 全員復活）
-            const currentStatus = item.config.initialStatus || 'revive';
-            
-            settingDiv.innerHTML = `
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <label style="font-size:0.8em; font-weight:bold; color:#b8860b;">${APP_TEXT.Config.InterHeading || "Inter-Period:"}</label>
-                    <select onchange="updateInterPeriod(${index}, this.value)" class="inter-status-select" style="padding:5px;">
-                        <option value="revive" ${currentStatus === 'revive' ? 'selected' : ''}>${APP_TEXT.Config.StatusRevive}</option>
-                        <option value="continue" ${currentStatus === 'continue' ? 'selected' : ''}>${APP_TEXT.Config.StatusContinue}</option>
-                        <option value="ranking" ${currentStatus === 'ranking' ? 'selected' : ''}>${APP_TEXT.Config.StatusRanking}</option>
-                    </select>
-                </div>
-            `;
-            container.appendChild(settingDiv);
-        }
-        // ▲▲▲ 修正点1 終了 ▲▲▲
-
-        const div = document.createElement('div');
-        div.className = 'timeline-card';
-        div.style.marginBottom = "0"; 
-        
-        let modeLabel = item.config.mode.toUpperCase();
-        if(item.config.gameType === 'territory') modeLabel += " (PANEL)";
-
-        // ▼▼▼ 修正点2: Editボタンの追加 ▼▼▼
-        div.innerHTML = `
-            <div style="flex:1;">
-                <div style="font-weight:bold; font-size:1.1em;">${index+1}. ${item.title}</div>
-                <div style="font-size:0.8em; color:#666;">
-                    [${modeLabel}] ${item.questions.length}Q
-                </div>
-            </div>
-            <div style="display:flex; gap:5px; align-items:center;">
-                <button class="btn-mini" style="background:#2c3e50; color:white; padding:5px 10px;" onclick="editPlaylistItem(${index})">Edit</button>
-                <button class="delete-btn" onclick="removeFromPlaylist(${index})">Del</button>
-            </div>
-        `;
-        // ▲▲▲ 修正点2 終了 ▲▲▲
-        container.appendChild(div);
-    });
-}
-    
-window.removeFromPlaylist = function(index) {
-    periodPlaylist.splice(index, 1);
-    renderConfigPreview();
-};
-
-function loadSavedProgramsInConfig() {
-    const listEl = document.getElementById('config-saved-programs-list');
-    if(!listEl) return;
-    listEl.innerHTML = `<p style="text-align:center;">${APP_TEXT.Config.SelectLoading}</p>`;
-
-    window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
-        const data = snap.val();
-        listEl.innerHTML = '';
-        if(!data) {
-            listEl.innerHTML = `<p style="text-align:center; color:#999;">${APP_TEXT.Config.SelectEmpty}</p>`;
+    updateBuilderUI: function() {
+        const container = document.getElementById('config-builder-ui');
+        const select = document.getElementById('config-set-select');
+        if(!select.value) {
+            this.selectedSetQuestions = [];
+            container.innerHTML = '<p class="text-center text-gray p-20">セットを選択してください</p>';
             return;
         }
-        Object.keys(data).forEach(key => {
-            const item = data[key];
-            const div = document.createElement('div');
-            div.className = 'set-item';
-            div.innerHTML = `
-                <div>
-                    <span style="font-weight:bold;">${item.title}</span>
-                    <div style="font-size:0.8em; color:#666;">
-                        ${new Date(item.createdAt).toLocaleDateString()} / ${item.playlist ? item.playlist.length : 0} Periods
-                    </div>
+
+        const data = JSON.parse(select.value);
+        this.selectedSetQuestions = data.q || [];
+        const conf = data.c || {};
+        
+        // UI構築 (簡略化のためinnerHTML使用)
+        let html = `
+            <div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>
+            <div class="config-item-box">
+                <select id="config-mode-select" class="btn-block config-select highlight-select" onchange="App.Config.updateModeDetails(this.value)">
+                    <option value="normal">${APP_TEXT.Config.ModeNormal}</option>
+                    <option value="buzz">${APP_TEXT.Config.ModeBuzz}</option>
+                    <option value="turn">${APP_TEXT.Config.ModeTurn}</option>
+                    <option value="time_attack" style="color:red;">${APP_TEXT.Config.ModeTimeAttack}</option>
+                </select>
+                <div id="mode-details-normal" class="mode-details hidden mt-10">
+                    <label class="config-label">${APP_TEXT.Config.LabelNormalLimit}</label>
+                    <select id="config-normal-limit" class="btn-block config-select"><option value="one">${APP_TEXT.Config.NormalLimitOne}</option><option value="unlimited">${APP_TEXT.Config.NormalLimitUnlimited}</option></select>
+                    <label class="config-label mt-10">${APP_TEXT.Config.LabelShuffleQ}</label>
+                    <select id="config-shuffle-q" class="btn-block config-select"><option value="off">${APP_TEXT.Config.ShuffleQOff}</option><option value="on">${APP_TEXT.Config.ShuffleQOn}</option></select>
+                </div>
+                <div id="mode-details-buzz" class="mode-details hidden mt-10"><p class="text-sm">※早押し設定 (不正解時処理・時間制限)</p></div>
+                <div id="mode-details-turn" class="mode-details hidden mt-10"><p class="text-sm">※ターン設定 (順番・パス)</p></div>
+                <div id="mode-details-time_attack" class="mode-details hidden mt-10 p-10 bg-yellow"><p class="text-sm text-red bold">※Time Shock: 5 sec/Q</p></div>
+            </div>
+
+            <div class="config-section-title mt-20">${APP_TEXT.Config.LabelRule}</div>
+            <div class="config-item-box">
+                <label class="config-label-large">${APP_TEXT.Config.LabelGameType}</label>
+                <select id="config-game-type" class="btn-block config-select mb-10">
+                    <option value="score">${APP_TEXT.Config.GameTypeScore}</option>
+                    <option value="territory">${APP_TEXT.Config.GameTypeTerritory}</option>
+                </select>
+                
+                <h5 class="mb-10">${APP_TEXT.Config.HeadingCustomScore}</h5>
+                <div id="config-questions-list" class="scroll-list" style="height:150px;"></div>
+            </div>
+
+            <button id="config-add-playlist-btn" class="btn-success btn-block btn-large mt-20">${APP_TEXT.Config.BtnAddList}</button>
+        `;
+        container.innerHTML = html;
+
+        // イベント再登録
+        document.getElementById('config-add-playlist-btn').onclick = () => this.addPeriod();
+        
+        // 初期値反映
+        const modeSel = document.getElementById('config-mode-select');
+        if(conf.mode) modeSel.value = conf.mode;
+        this.updateModeDetails(modeSel.value);
+        this.renderQList();
+        
+        // スペシャルモードロック
+        if(data.sp === 'time_attack') {
+            modeSel.value = 'time_attack'; modeSel.disabled = true;
+            this.updateModeDetails('time_attack');
+        }
+    },
+
+    updateModeDetails: function(mode) {
+        document.querySelectorAll('.mode-details').forEach(e => e.classList.add('hidden'));
+        const el = document.getElementById(`mode-details-${mode}`);
+        if(el) el.classList.remove('hidden');
+    },
+
+    renderQList: function() {
+        const list = document.getElementById('config-questions-list');
+        list.innerHTML = '';
+        this.selectedSetQuestions.forEach((q, i) => {
+            const row = document.createElement('div');
+            row.className = 'flex-center border-b p-5';
+            row.innerHTML = `
+                <div class="flex-1 text-sm bold truncate mr-5">Q${i+1}. ${q.q}</div>
+                <div class="flex gap-5 text-xs">
+                    Time <input type="number" class="q-time-input w-30" data-index="${i}" value="${q.timeLimit||0}">
+                    Pt <input type="number" class="q-point-input w-30" data-index="${i}" value="${q.points||1}">
                 </div>
             `;
-            const btnArea = document.createElement('div');
-            btnArea.style.display = 'flex';
-            btnArea.style.gap = '5px';
+            list.appendChild(row);
+        });
+    },
 
-            const loadBtn = document.createElement('button');
-            loadBtn.textContent = APP_TEXT.Config.BtnLoadProg;
-            loadBtn.className = 'btn-mini';
-            loadBtn.style.backgroundColor = '#0055ff';
-            loadBtn.style.color = 'white';
-            loadBtn.onclick = () => {
-                if(confirm(APP_TEXT.Config.MsgConfirmLoadProg)) {
-                    periodPlaylist = item.playlist || [];
-                    document.getElementById('config-final-ranking-chk').checked = (item.finalRanking !== false);
-                    document.getElementById('config-program-title').value = item.title;
-                    renderConfigPreview();
-                    alert("Loaded.");
-                }
-            };
+    addPeriod: function() {
+        const title = JSON.parse(document.getElementById('config-set-select').value).t;
+        const mode = document.getElementById('config-mode-select').value;
+        const qs = JSON.parse(JSON.stringify(this.selectedSetQuestions));
+        
+        // 入力値反映
+        document.querySelectorAll('.q-point-input').forEach(inp => qs[inp.dataset.index].points = parseInt(inp.value));
+        document.querySelectorAll('.q-time-input').forEach(inp => qs[inp.dataset.index].timeLimit = parseInt(inp.value));
 
-            const delBtn = document.createElement('button');
-            delBtn.className = 'delete-btn';
-            delBtn.textContent = APP_TEXT.Config.BtnDelProg;
-            delBtn.onclick = () => {
-                if(confirm(APP_TEXT.Config.MsgConfirmDelProg)) {
-                    window.db.ref(`saved_programs/${currentShowId}/${key}`).remove()
-                    .then(() => {
-                        div.remove();
+        // シャッフル
+        const shuffle = document.getElementById('config-shuffle-q')?.value === 'on';
+        if(shuffle) {
+            for (let i = qs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [qs[i], qs[j]] = [qs[j], qs[i]];
+            }
+        }
+
+        App.Data.periodPlaylist.push({
+            title: title,
+            questions: qs,
+            config: {
+                mode: mode,
+                gameType: document.getElementById('config-game-type').value,
+                initialStatus: 'revive',
+                // 詳細設定は省略（デフォルト値）
+                timeLimit: 0, eliminationRule: 'none'
+            }
+        });
+        this.renderPreview();
+    },
+
+    renderPreview: function() {
+        const list = document.getElementById('config-playlist-preview');
+        list.innerHTML = '';
+        if(App.Data.periodPlaylist.length === 0) {
+            list.innerHTML = `<p class="empty-msg">${APP_TEXT.Config.AlertEmptyList}</p>`;
+            return;
+        }
+        App.Data.periodPlaylist.forEach((item, i) => {
+            const div = document.createElement('div');
+            div.className = 'timeline-card';
+            div.innerHTML = `
+                <div class="flex-1">
+                    <div class="bold">${i+1}. ${item.title}</div>
+                    <div class="text-sm text-gray">[${item.config.mode.toUpperCase()}] ${item.questions.length}Q</div>
+                </div>
+                <button class="delete-btn btn-mini" onclick="App.Config.remove(${i})">Del</button>
+            `;
+            list.appendChild(div);
+        });
+    },
+
+    remove: function(i) {
+        App.Data.periodPlaylist.splice(i, 1);
+        this.renderPreview();
+    },
+
+    saveProgram: function() {
+        const title = document.getElementById('config-program-title').value.trim();
+        if(!title) return alert(APP_TEXT.Config.AlertNoTitle);
+        
+        const data = {
+            title: title,
+            playlist: App.Data.periodPlaylist,
+            finalRanking: document.getElementById('config-final-ranking-chk').checked,
+            createdAt: firebase.database.ServerValue.TIMESTAMP
+        };
+        
+        window.db.ref(`saved_programs/${App.State.currentShowId}`).push(data).then(() => {
+            App.Ui.showToast(APP_TEXT.Config.MsgSaved);
+            App.Data.periodPlaylist = [];
+            this.renderPreview();
+        });
+    },
+
+    // プログラム読込モーダル設定
+    setupModal: function() {
+        document.getElementById('config-open-load-modal-btn').onclick = () => {
+            const sel = document.getElementById('config-prog-select');
+            sel.innerHTML = '<option>Loading...</option>';
+            document.getElementById('config-load-modal').classList.remove('hidden');
+            
+            window.db.ref(`saved_programs/${App.State.currentShowId}`).once('value', snap => {
+                sel.innerHTML = '<option value="">-- Select --</option>';
+                const data = snap.val();
+                if(data) {
+                    Object.values(data).forEach(d => {
+                        const opt = document.createElement('option');
+                        opt.value = JSON.stringify(d);
+                        opt.textContent = d.title;
+                        sel.appendChild(opt);
                     });
                 }
-            };
-
-            btnArea.appendChild(loadBtn);
-            btnArea.appendChild(delBtn);
-            div.appendChild(btnArea);
-            listEl.appendChild(div);
-        });
-    });
-}
-
-function saveProgramToCloud() {
-    if(periodPlaylist.length === 0) {
-        alert(APP_TEXT.Config.AlertEmptyList);
-        return;
-    }
-    const titleInput = document.getElementById('config-program-title');
-    const title = titleInput.value.trim();
-    if(!title) {
-        alert(APP_TEXT.Config.AlertNoTitle);
-        return;
-    }
-    const finalRanking = document.getElementById('config-final-ranking-chk').checked;
-    const cleanPlaylist = JSON.parse(JSON.stringify(periodPlaylist));
-    const saveObj = {
-        title: title,
-        playlist: cleanPlaylist, 
-        finalRanking: finalRanking,
-        createdAt: firebase.database.ServerValue.TIMESTAMP
-    };
-    window.db.ref(`saved_programs/${currentShowId}`).push(saveObj)
-    .then(() => {
-        window.showToast(APP_TEXT.Config.MsgSaved);
-        titleInput.value = '';
-        periodPlaylist = []; 
-        renderConfigPreview();
-        loadSavedProgramsInConfig(); 
-    })
-    .catch(err => alert("Error: " + err.message));
-}
-
-window.updateInterPeriod = function(index, val) {
-    if(periodPlaylist[index]) {
-        periodPlaylist[index].config.initialStatus = val;
+            });
+        };
+        
+        document.getElementById('config-load-prog-exec-btn').onclick = () => {
+            const val = document.getElementById('config-prog-select').value;
+            if(!val) return;
+            const prog = JSON.parse(val);
+            App.Data.periodPlaylist = prog.playlist;
+            document.getElementById('config-program-title').value = prog.title;
+            this.renderPreview();
+            document.getElementById('config-load-modal').classList.add('hidden');
+        };
+        
+        document.getElementById('config-modal-close-btn').onclick = () => {
+            document.getElementById('config-load-modal').classList.add('hidden');
+        };
+    },
+    
+    // 外部からのロード (Dash用)
+    loadExternal: function(progData) {
+        if(!confirm("Load this program?")) return;
+        App.Data.periodPlaylist = JSON.parse(JSON.stringify(progData.playlist));
+        App.Ui.showView(App.Ui.views.config);
+        document.getElementById('config-program-title').value = progData.title;
+        this.renderPreview();
+        // SetListなどは遅延ロード
+        setTimeout(() => this.loadSetList(), 500);
     }
 };
 
-// リストの「Edit」ボタンを押した時に呼ばれる関数
-window.editPlaylistItem = function(index) {
-    const item = periodPlaylist[index];
-    if(!item) return;
-
-    if(!confirm("このセットを編集エリアに読み込みますか？\n（現在のリストからは一度削除されます）")) return;
-
-    // 1. データをビルダー変数に戻す
-    selectedSetQuestions = JSON.parse(JSON.stringify(item.questions)); // 深いコピー
-    
-    // 2. 画面の入力欄に設定を反映
-    const c = item.config;
-    
-    // 基本設定
-    if(document.getElementById('config-mode-select')) document.getElementById('config-mode-select').value = c.mode;
-    if(document.getElementById('config-game-type')) document.getElementById('config-game-type').value = c.gameType || 'score';
-    if(document.getElementById('config-elimination-rule')) document.getElementById('config-elimination-rule').value = c.eliminationRule;
-    if(document.getElementById('config-elimination-count')) document.getElementById('config-elimination-count').value = c.eliminationCount || 1;
-    
-    // モード別詳細
-    if(c.mode === 'normal') {
-        if(document.getElementById('config-normal-limit')) document.getElementById('config-normal-limit').value = c.normalLimit;
-        if(document.getElementById('config-shuffle-q')) document.getElementById('config-shuffle-q').value = c.shuffleChoices || 'off'; // ※名前揺れ注意
-    } else if (c.mode === 'buzz') {
-        if(document.getElementById('config-buzz-wrong-action')) document.getElementById('config-buzz-wrong-action').value = c.buzzWrongAction;
-        if(document.getElementById('config-buzz-timer')) document.getElementById('config-buzz-timer').value = c.buzzTime;
-    }
-    
-    // 3. UIの表示更新
-    updateModeDetails(c.mode);
-    updateEliminationUI();
-    renderQuestionsListUI(selectedSetQuestions);
-    
-    // 4. リストから削除して再描画
-    removeFromPlaylist(index);
-    
-    // 5. 上部にスクロールして案内
-    document.getElementById('config-view').scrollIntoView({behavior: "smooth"});
-    alert("設定を読み込みました。修正して「リストに追加」を押してください。");
-};
-/* host_config.js の一番下に追加 */
-
-// ダッシュボードからプログラムを読み込むための関数
-window.loadProgramToConfig = function(progData) {
-    if(!confirm("このプログラム構成を読み込んで編集画面を開きますか？")) return;
-    
-    // データをセット
-    periodPlaylist = JSON.parse(JSON.stringify(progData.playlist || []));
-    
-    // 画面遷移
-    window.showView(window.views.config);
-    
-    // UI初期化・反映
-    const setSelect = document.getElementById('config-set-select');
-    if(setSelect) setSelect.value = ""; // 選択状態リセット
-    document.getElementById('config-builder-ui').innerHTML = '<p style="text-align:center; color:#666; padding:20px;">セットを選択してください</p>';
-    
-    // プログラム設定の復元
-    const titleInput = document.getElementById('config-program-title');
-    if(titleInput) titleInput.value = progData.title || "";
-    
-    const rankChk = document.getElementById('config-final-ranking-chk');
-    if(rankChk) rankChk.checked = (progData.finalRanking !== false);
-    
-    // リスト描画
-    loadSetListInConfig(); // セット選択肢は読み込んでおく
-    renderConfigPreview(); // プレイリスト描画
-    
-    alert("プログラムを読み込みました。");
-};
-
-/* host_config.js の一番下に追加してください */
-
-window.loadProgramToConfigOnDash = function(progData) {
-    if(!confirm("このプログラムを読み込んで編集しますか？")) return;
-    
-    // 構成リスト(periodPlaylist)をセット
-    periodPlaylist = JSON.parse(JSON.stringify(progData.playlist || []));
-    
-    // 画面切り替え
-    window.showView(window.views.config);
-    
-    // UIの反映
-    if(document.getElementById('config-program-title')) {
-        document.getElementById('config-program-title').value = progData.title || "";
-    }
-    if(document.getElementById('config-final-ranking-chk')) {
-        document.getElementById('config-final-ranking-chk').checked = (progData.finalRanking !== false);
-    }
-    
-    // リストの再描画
-    renderConfigPreview();
-    alert("プログラムを読み込みました。");
-};
-
-/* host_config.js に以下を追加してください */
-
-// ★不足していた関数を追加: セットリストを読み込む
-function loadSetListInConfig() {
-    const select = document.getElementById('config-set-select');
-    if(!select) return;
-
-    // 一旦リセット
-    select.innerHTML = `<option value="">Loading...</option>`;
-
-    if (!currentShowId) {
-         select.innerHTML = `<option value="">(ID未設定)</option>`;
-         return;
-    }
-
-    window.db.ref(`saved_sets/${currentShowId}`).once('value', snap => {
-        const data = snap.val();
-        select.innerHTML = `<option value="">${APP_TEXT.Config.SelectDefault || "-- セットを選択 --"}</option>`;
-
-        if(data) {
-             // 新しい順にソート
-             const items = [];
-             Object.keys(data).forEach(key => {
-                 items.push({ key: key, ...data[key] });
-             });
-             items.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-             items.forEach(item => {
-                 const opt = document.createElement('option');
-                 // 読み込み側が期待する形式(t, q, c)に合わせてデータを整形してvalueに入れる
-                 const compatibleData = {
-                     t: item.title,
-                     q: item.questions, // host_creator.jsで保存されたデータ
-                     c: item.config,
-                     sp: (item.questions && item.questions.length > 0) ? item.questions[0].specialMode : 'none'
-                 };
-                 
-                 opt.value = JSON.stringify(compatibleData);
-                 const dateStr = new Date(item.createdAt).toLocaleDateString();
-                 opt.textContent = `${item.title} (${dateStr})`;
-                 select.appendChild(opt);
-             });
-        }
-    });
-}
+// Global Bindings
+window.enterConfigMode = () => App.Config.init();
+window.loadProgramToConfigOnDash = (d) => App.Config.loadExternal(d);
+document.getElementById('config-save-program-btn')?.addEventListener('click', () => App.Config.saveProgram());
+document.getElementById('config-go-studio-btn')?.addEventListener('click', () => { App.Config.saveProgram(); window.startRoom(); });
