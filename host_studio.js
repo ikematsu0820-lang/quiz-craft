@@ -6,7 +6,7 @@ App.Studio = {
     currentStepId: 0,
     soloState: { lives: 3, timeBank: 60 },
     
-    // スタジオ起動 (ルームID発行)
+// スタジオ起動 (ルームID発行)
     startRoom: function(isQuick = false) {
         App.Data.studioQuestions = [];
         App.State.currentQIndex = 0;
@@ -16,6 +16,12 @@ App.Studio = {
         const code = Math.random().toString(36).substring(2, 8).toUpperCase();
         App.State.currentRoomId = code;
         
+        // ★修正: 画面のID表示を即座に更新
+        const headerId = document.getElementById('studio-header-room-id');
+        const bigId = document.getElementById('studio-big-room-id');
+        if(headerId) headerId.textContent = code;
+        if(bigId) bigId.textContent = code;
+
         // DBに部屋を作成
         window.db.ref(`rooms/${code}`).set({
             status: { step: 'standby', qIndex: 0 },
@@ -31,10 +37,13 @@ App.Studio = {
     enterHostMode: function(isQuick) {
         App.Ui.showView(App.Ui.views.hostControl);
         
-        // ルームID表示があれば更新 (HTMLにID表示部があれば)
-        // document.getElementById('room-id-display').textContent = App.State.currentRoomId; 
+        // ★修正: 念のためID再表示
+        const code = App.State.currentRoomId;
+        if(code) {
+            document.getElementById('studio-header-room-id').textContent = code;
+            document.getElementById('studio-big-room-id').textContent = code;
+        }
 
-        // プレイヤー人数監視開始
         this.monitorPlayers();
 
         if (isQuick && App.Data.periodPlaylist.length > 0) {
