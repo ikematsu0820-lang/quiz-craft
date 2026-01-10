@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v85: Click to Copy ID & Fixes)
+ * host_studio.js (v91: Auto Sequence & Start Button)
  * =======================================================*/
 
 App.Studio = {
@@ -10,7 +10,7 @@ App.Studio = {
     
     soloState: { lives: 3, timeBank: 60, challengerIndex: 0 },
 
-    // スタジオ起動 (ルームID発行)
+    // --- スタジオ起動 ---
     startRoom: function(isQuick = false) {
         this.isQuick = isQuick;
         App.Data.studioQuestions = [];
@@ -33,10 +33,9 @@ App.Studio = {
 
     enterHostMode: function(isQuick) {
         App.Ui.showView(App.Ui.views.hostControl);
-        
         const code = App.State.currentRoomId;
         
-        // ★修正: ID表示更新 & クリックでコピー機能
+        // ID表示 & コピー機能
         const targets = ['studio-header-room-id', 'studio-big-room-id'];
         targets.forEach(id => {
             const el = document.getElementById(id);
@@ -45,15 +44,7 @@ App.Studio = {
                 el.onclick = () => {
                     navigator.clipboard.writeText(code).then(() => {
                         App.Ui.showToast("📋 ROOM IDをコピーしました！");
-                        // 視覚フィードバック
-                        const originalText = el.textContent;
-                        el.textContent = "COPIED!";
-                        el.style.color = "#fff";
-                        setTimeout(() => {
-                            el.textContent = originalText;
-                            el.style.color = "";
-                        }, 1000);
-                    }).catch(e => alert("コピー失敗: " + code));
+                    });
                 };
             }
         });
@@ -69,12 +60,19 @@ App.Studio = {
         });
 
         if (isQuick && App.Data.periodPlaylist.length > 0) {
+            // Quick Start
             this.renderTimeline();
             setTimeout(() => this.setupPeriod(0), 500);
         } else {
+            // 通常モード: 読み込み待機
             document.getElementById('studio-question-panel').classList.add('hidden');
             document.getElementById('studio-standby-panel').classList.remove('hidden');
             document.getElementById('studio-loader-ui').classList.remove('hidden');
+            
+            // ★修正: スタートボタンを初期状態では隠すか無効化
+            const btnMain = document.getElementById('btn-phase-main');
+            btnMain.classList.add('hidden');
+            
             this.loadProgramList();
         }
     },
@@ -85,10 +83,7 @@ App.Studio = {
         const showId = App.State.currentShowId;
 
         if (!select || !btn) return;
-        if (!showId) {
-            select.innerHTML = '<option>エラー: ID未設定</option>';
-            return;
-        }
+        if (!showId) { select.innerHTML = '<option>エラー: ID未設定</option>'; return; }
 
         select.innerHTML = '<option>Loading...</option>';
         btn.disabled = true;
@@ -106,7 +101,6 @@ App.Studio = {
                 Object.keys(data).forEach(key => {
                     const prog = data[key];
                     const opt = document.createElement('option');
-                    // ★安全策: データが大きい場合はID管理に切り替えることも検討だが、まずはJSONで
                     try {
                         opt.value = JSON.stringify(prog);
                         opt.textContent = prog.title;
@@ -131,7 +125,18 @@ App.Studio = {
                 App.Data.periodPlaylist = prog.playlist || [];
                 document.getElementById('studio-loader-ui').classList.add('hidden');
                 document.getElementById('studio-program-info').textContent = "Loaded: " + prog.title;
+                
                 this.renderTimeline();
+
+                // ★修正: 読み込み完了後、フッターの巨大ボタンを「番組開始」にして表示
+                const btnMain = document.getElementById('btn-phase-main');
+                btnMain.textContent = "番組を開始 (START PROGRAM)";
+                btnMain.classList.remove('hidden');
+                btnMain.className = 'btn-block btn-large-action action-ready'; // 黄色っぽくして目立たせる
+                
+                // クリックで最初のセット(0番目)を開始
+                btnMain.onclick = () => this.setupPeriod(0);
+
             } catch(e) { alert("データの読み込みに失敗しました"); }
         };
     },
@@ -141,9 +146,12 @@ App.Studio = {
         area.innerHTML = '';
         App.Data.periodPlaylist.forEach((item, i) => {
             const btn = document.createElement('button');
-            btn.className = `btn-block ${i===App.State.currentPeriodIndex ? 'btn-info' : 'btn-dark'}`;
+            // 現在のピリオドを強調
+            const isActive = (i === App.State.currentPeriodIndex);
+            btn.className = `btn-block ${isActive ? 'btn-info' : 'btn-dark'}`;
             btn.textContent = `${i+1}. ${item.title} [${item.config.mode}]`;
             btn.style.textAlign = 'left';
+            // リストからも飛べるようにしておく
             btn.onclick = () => this.setupPeriod(i);
             area.appendChild(btn);
         });
@@ -158,13 +166,19 @@ App.Studio = {
         App.Data.currentConfig = item.config;
         App.State.currentQIndex = 0;
 
+        // DB同期
         const roomId = App.State.currentRoomId;
         window.db.ref(`rooms/${roomId}/config`).set(App.Data.currentConfig);
         window.db.ref(`rooms/${roomId}/questions`).set(App.Data.studioQuestions);
         
+        // 画面切り替え
         document.getElementById('studio-standby-panel').classList.add('hidden');
         document.getElementById('studio-question-panel').classList.remove('hidden');
         
+        // タイムラインの再描画（現在のピリオド色を変えるため）
+        this.renderTimeline();
+
+        // Solo初期化
         const isSolo = (item.config.mode === 'solo');
         if (isSolo) {
             document.getElementById('studio-solo-info').classList.remove('hidden');
@@ -174,7 +188,7 @@ App.Studio = {
             document.getElementById('studio-solo-info').classList.add('hidden');
         }
 
-        this.setStep(0);
+        this.setStep(0); // 各ピリオドのStandbyへ
     },
 
     setStep: function(stepId) {
@@ -196,7 +210,7 @@ App.Studio = {
 
         switch(stepId) {
             case 0: // STANDBY
-                btnMain.textContent = "GAME START";
+                btnMain.textContent = `Q${App.State.currentQIndex + 1} START`;
                 btnMain.onclick = () => this.setStep(1);
                 this.renderQuestionMonitor(q);
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: App.State.currentQIndex });
@@ -206,6 +220,7 @@ App.Studio = {
                 btnMain.classList.add('action-ready');
                 btnMain.onclick = () => this.setStep(2);
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'ready' });
+                // setTimeout(() => this.setStep(2), 3000); // 自動進行入れたい場合
                 break;
             case 2: // QUESTION
                 btnMain.textContent = "OPEN QUESTION";
@@ -235,21 +250,48 @@ App.Studio = {
                 document.getElementById('studio-correct-display').classList.remove('hidden');
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
                 break;
-            case 6: // NEXT
-                if (App.State.currentQIndex < App.Data.studioQuestions.length - 1) {
-                    App.State.currentQIndex++;
-                    this.setStep(0);
-                } else {
-                    alert("Period Complete!");
-                }
+            case 6: // NEXT (次の問題 or 次のピリオド)
+                this.goNext();
                 break;
+        }
+    },
+
+    goNext: function() {
+        // 次の問題があるか？
+        if (App.State.currentQIndex < App.Data.studioQuestions.length - 1) {
+            App.State.currentQIndex++;
+            this.setStep(0);
+        } else {
+            // ★修正: ピリオド終了時の処理
+            const nextIdx = App.State.currentPeriodIndex + 1;
+            if (nextIdx < App.Data.periodPlaylist.length) {
+                // 次のピリオドへ自動移行
+                if(confirm("このセットは終了です。次のセットへ進みますか？")) {
+                    this.setupPeriod(nextIdx);
+                } else {
+                    // キャンセルなら待機画面に戻る
+                    document.getElementById('studio-question-panel').classList.add('hidden');
+                    document.getElementById('studio-standby-panel').classList.remove('hidden');
+                    // スタートボタンを復活
+                    const btn = document.getElementById('btn-phase-main');
+                    btn.textContent = `次のセットを開始 (${App.Data.periodPlaylist[nextIdx].title})`;
+                    btn.classList.remove('hidden');
+                    btn.className = 'btn-block btn-large-action action-ready';
+                    btn.onclick = () => this.setupPeriod(nextIdx);
+                }
+            } else {
+                alert("全てのプログラムが終了しました！");
+                document.getElementById('studio-question-panel').classList.add('hidden');
+                document.getElementById('studio-standby-panel').classList.remove('hidden');
+                document.getElementById('btn-phase-main').classList.add('hidden');
+            }
         }
     },
 
     renderQuestionMonitor: function(q) {
         if(!q) return;
         document.getElementById('studio-q-text').textContent = q.q;
-        document.getElementById('studio-q-type-badge').textContent = q.type.toUpperCase();
+        document.getElementById('studio-q-type-badge').textContent = q.type;
         const cContainer = document.getElementById('studio-choices-container');
         cContainer.innerHTML = '';
         if(q.c) {
