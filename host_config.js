@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v69.1: Show Set Type Info)
+ * host_config.js (v78: Bulk Loss & Toggle Details)
  * =======================================================*/
 
 App.Config = {
@@ -62,26 +62,26 @@ App.Config = {
         this.selectedSetQuestions = data.q || [];
         const conf = data.c || {};
         
-        // --- ★追加: 出題形式の判定と表示 ---
+        // 形式表示
         let typeDisplay = "不明";
         if(this.selectedSetQuestions.length > 0) {
             const t = this.selectedSetQuestions[0].type;
-            if(t === 'choice') typeDisplay = APP_TEXT.Creator.TypeChoice; // 選択式
-            else if(t === 'sort') typeDisplay = APP_TEXT.Creator.TypeSort; // 並べ替え
-            else if(t === 'free_oral') typeDisplay = APP_TEXT.Creator.TypeFreeOral; // 口頭
-            else if(t === 'free_written') typeDisplay = APP_TEXT.Creator.TypeFreeWritten; // 記述
-            else if(t === 'multi') typeDisplay = APP_TEXT.Creator.TypeMulti; // 多答
+            if(t === 'choice') typeDisplay = APP_TEXT.Creator.TypeChoice;
+            else if(t === 'sort') typeDisplay = APP_TEXT.Creator.TypeSort;
+            else if(t === 'free_oral') typeDisplay = APP_TEXT.Creator.TypeFreeOral;
+            else if(t === 'free_written') typeDisplay = APP_TEXT.Creator.TypeFreeWritten;
+            else if(t === 'multi') typeDisplay = APP_TEXT.Creator.TypeMulti;
         }
 
         let html = `
-            <div style="background:#252525; padding:12px; border-radius:6px; border:1px solid #444; border-left:4px solid #aaa; margin-bottom:20px; display:flex; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.2);">
+            <div style="background:#252525; padding:12px; border-radius:6px; border:1px solid #444; border-left:4px solid #aaa; margin-bottom:20px; display:flex; align-items:center;">
                 <div style="color:#aaa; font-size:0.9em; font-weight:bold; margin-right:10px;">収録形式:</div>
-                <div style="color:#fff; font-weight:bold; font-size:1.1em; letter-spacing:1px;">${typeDisplay}</div>
+                <div style="color:#fff; font-weight:bold; font-size:1.1em;">${typeDisplay}</div>
                 <div style="color:#666; font-size:0.8em; margin-left:auto; font-family:monospace;">全${this.selectedSetQuestions.length}問</div>
             </div>
         `;
-        // ------------------------------------
 
+        // モード設定
         html += `<div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>`;
         html += `
             <div class="config-item-box">
@@ -92,7 +92,7 @@ App.Config = {
                     <option value="solo" style="color:#00bfff; font-weight:bold;">${APP_TEXT.Config.ModeSolo}</option>
                 </select>
                 
-                <div id="mode-details-normal" class="mode-details hidden mode-settings-box mode-box-normal">
+                <div id="mode-details-normal" class="mode-details hidden mt-10">
                     <div class="grid-2-col">
                         <div>
                             <label class="config-label">制限時間 (Time Limit)</label>
@@ -109,19 +109,16 @@ App.Config = {
                             </select>
                         </div>
                     </div>
-                    <div class="grid-2-col mt-10">
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
-                            <select id="config-shuffle-q" class="btn-block config-select">
-                                <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
-                                <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
-                            </select>
-                        </div>
-                        <div></div> 
+                    <div class="mt-10">
+                        <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
+                        <select id="config-shuffle-q" class="btn-block config-select">
+                            <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
+                            <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
+                        </select>
                     </div>
                 </div>
                 
-                <div id="mode-details-buzz" class="mode-details hidden mode-settings-box mode-box-buzz">
+                <div id="mode-details-buzz" class="mode-details hidden mt-10">
                     <div class="grid-2-col">
                         <div>
                             <label class="config-label">${APP_TEXT.Config.LabelBuzzWrongAction}</label>
@@ -140,18 +137,16 @@ App.Config = {
                             </select>
                         </div>
                     </div>
-                    <div class="grid-2-col mt-10">
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
-                            <select id="config-buzz-shuffle" class="btn-block config-select">
-                                <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
-                                <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
-                            </select>
-                        </div>
+                    <div class="mt-10">
+                        <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
+                        <select id="config-buzz-shuffle" class="btn-block config-select">
+                            <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
+                            <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
+                        </select>
                     </div>
                 </div>
 
-                <div id="mode-details-turn" class="mode-details hidden mode-settings-box mode-box-turn">
+                <div id="mode-details-turn" class="mode-details hidden mt-10">
                     <div class="grid-2-col">
                         <div>
                             <label class="config-label">${APP_TEXT.Config.LabelTurnOrder}</label>
@@ -169,18 +164,16 @@ App.Config = {
                             </select>
                         </div>
                     </div>
-                    <div class="grid-2-col mt-10">
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
-                            <select id="config-turn-shuffle" class="btn-block config-select">
-                                <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
-                                <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
-                            </select>
-                        </div>
+                    <div class="mt-10">
+                        <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
+                        <select id="config-turn-shuffle" class="btn-block config-select">
+                            <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
+                            <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
+                        </select>
                     </div>
                 </div>
 
-                <div id="mode-details-solo" class="mode-details hidden mode-settings-box mode-box-solo">
+                <div id="mode-details-solo" class="mode-details hidden mt-10">
                     <div class="grid-2-col">
                         <div>
                             <label class="config-label">${APP_TEXT.Config.LabelSoloStyle}</label>
@@ -237,34 +230,83 @@ App.Config = {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div>`;
 
-            <div class="config-section-title mt-20">${APP_TEXT.Config.LabelRule}</div>
-            <div class="config-item-box">
-                <label class="config-label-large">${APP_TEXT.Config.LabelGameType}</label>
-                <select id="config-game-type" class="btn-block config-select mb-10">
-                    <option value="score">${APP_TEXT.Config.GameTypeScore}</option>
-                    <option value="territory">${APP_TEXT.Config.GameTypeTerritory}</option>
-                </select>
-                
-                <h5 class="mb-10">${APP_TEXT.Config.HeadingCustomScore}</h5>
-                
-                <div class="flex gap-5 mb-10 text-xs items-center bg-gray p-5">
-                    <span class="bold">一括:</span>
-                    <input type="number" id="bulk-time" class="w-40 text-center" placeholder="Time" value="0">
-                    <button class="btn-mini btn-dark" onclick="App.Config.bulkApply('time')">反映</button>
-                    <input type="number" id="bulk-point" class="w-40 text-center" placeholder="Pt" value="1">
-                    <button class="btn-mini btn-info" onclick="App.Config.bulkApply('point')">反映</button>
+        // ルール設定エリア (一括設定 & 個別リスト)
+        html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
+        html += `
+        <div class="config-item-box">
+            <label class="config-label-large">${APP_TEXT.Config.LabelGameType}</label>
+            <select id="config-game-type" class="btn-block config-select mb-10">
+                <option value="score">${APP_TEXT.Config.GameTypeScore}</option>
+                <option value="territory">${APP_TEXT.Config.GameTypeTerritory}</option>
+            </select>
+            
+            <h5 style="margin:10px 0 5px 0;">${APP_TEXT.Config.HeadingCustomScore}</h5>
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px; background:#222; padding:10px; border-radius:6px; border:1px solid #444;">
+                <div>
+                    <label class="config-label" style="font-size:0.8em; color:#aaa;">${APP_TEXT.Config.LabelBulkTime}</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="number" id="config-bulk-time-input" value="0" min="0" style="width:100%; text-align:center;">
+                        <button id="config-bulk-time-btn" class="btn-mini btn-dark">SET</button>
+                    </div>
                 </div>
-
-                <div id="config-questions-list" class="scroll-list" style="height:150px;"></div>
+                <div>
+                    <label class="config-label" style="font-size:0.8em; color:#0055ff;">${APP_TEXT.Config.LabelBulkPt}</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="number" id="config-bulk-point-input" value="1" min="1" style="width:100%; text-align:center; color:#0055ff; font-weight:bold;">
+                        <button id="config-bulk-point-btn" class="btn-mini btn-primary">SET</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="config-label" style="font-size:0.8em; color:#d00;">${APP_TEXT.Config.LabelBulkLoss}</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="number" id="config-bulk-loss-input" value="0" min="0" style="width:100%; text-align:center; color:#d00; font-weight:bold;">
+                        <button id="config-bulk-loss-btn" class="btn-mini btn-danger">SET</button>
+                    </div>
+                </div>
             </div>
 
-            <button id="config-add-playlist-btn" class="btn-success btn-block btn-large mt-20">${APP_TEXT.Config.BtnAddList}</button>
-        `;
+            <button id="btn-toggle-q-list" class="btn-block btn-dark" style="margin-bottom:10px;">▼ 個別で設定する (全${this.selectedSetQuestions.length}問)</button>
+
+            <div id="config-questions-list" class="hidden scroll-list" style="height:200px; border:1px solid #333; padding:5px; background:#1a1a1a;"></div>
+        </div>`;
+
+        html += `<button id="config-add-playlist-btn" class="btn-success btn-block btn-large mt-20">${APP_TEXT.Config.BtnAddList}</button>`;
+
         container.innerHTML = html;
 
+        // イベント登録
         document.getElementById('config-add-playlist-btn').onclick = () => this.addPeriod();
+        
+        // ★個別設定のトグル
+        document.getElementById('btn-toggle-q-list').onclick = () => {
+            const list = document.getElementById('config-questions-list');
+            list.classList.toggle('hidden');
+            const btn = document.getElementById('btn-toggle-q-list');
+            if (list.classList.contains('hidden')) {
+                btn.textContent = `▼ 個別で設定する (全${this.selectedSetQuestions.length}問)`;
+                btn.style.background = "#636e72";
+            } else {
+                btn.textContent = `▲ リストを閉じる`;
+                btn.style.background = "#444";
+            }
+        };
+
+        // ★一括反映ロジック
+        document.getElementById('config-bulk-time-btn').onclick = () => {
+            const val = document.getElementById('config-bulk-time-input').value;
+            document.querySelectorAll('.q-time-input').forEach(inp => inp.value = val);
+        };
+        document.getElementById('config-bulk-point-btn').onclick = () => {
+            const val = document.getElementById('config-bulk-point-input').value;
+            document.querySelectorAll('.q-point-input').forEach(inp => inp.value = val);
+        };
+        document.getElementById('config-bulk-loss-btn').onclick = () => {
+            const val = document.getElementById('config-bulk-loss-input').value;
+            document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = val);
+        };
         
         const modeSel = document.getElementById('config-mode-select');
         if(conf.mode) modeSel.value = (conf.mode === 'time_attack') ? 'solo' : conf.mode;
@@ -284,11 +326,26 @@ App.Config = {
         this.selectedSetQuestions.forEach((q, i) => {
             const row = document.createElement('div');
             row.className = 'flex-center border-b p-5';
+            row.style.borderBottom = '1px solid #333';
+            row.style.padding = '8px 0';
+            
             row.innerHTML = `
-                <div class="flex-1 text-sm bold truncate mr-5">Q${i+1}. ${q.q}</div>
-                <div class="flex gap-5 text-xs items-center">
-                    Time <input type="number" class="q-time-input w-40 text-center" data-index="${i}" value="${q.timeLimit||0}">
-                    Pt <input type="number" class="q-point-input w-40 text-center" data-index="${i}" value="${q.points||1}">
+                <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.9em; font-weight:bold; color:#ddd;">
+                    Q${i+1}. ${q.q}
+                </div>
+                <div style="display:flex; gap:5px; align-items:center;">
+                    <div style="display:flex; flex-direction:column; align-items:center;">
+                        <span style="font-size:0.6em; color:#aaa;">Time</span>
+                        <input type="number" class="q-time-input" data-index="${i}" value="${q.timeLimit||0}" style="width:40px; text-align:center; padding:5px;">
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:center;">
+                        <span style="font-size:0.6em; color:#0055ff;">Pt</span>
+                        <input type="number" class="q-point-input" data-index="${i}" value="${q.points||1}" style="width:40px; text-align:center; color:#0055ff; font-weight:bold; padding:5px;">
+                    </div>
+                    <div style="display:flex; flex-direction:column; align-items:center;">
+                        <span style="font-size:0.6em; color:#d00;">Loss</span>
+                        <input type="number" class="q-loss-input" data-index="${i}" value="${q.loss||0}" style="width:40px; text-align:center; color:#d00; font-weight:bold; padding:5px;">
+                    </div>
                 </div>
             `;
             list.appendChild(row);
@@ -296,9 +353,11 @@ App.Config = {
     },
 
     bulkApply: function(type) {
-        const val = document.getElementById(type === 'time' ? 'bulk-time' : 'bulk-point').value;
-        const selector = type === 'time' ? '.q-time-input' : '.q-point-input';
-        document.querySelectorAll(selector).forEach(inp => inp.value = val);
+        // ボタンイベント内で定義しているので、この関数は基本使われないが互換性のため残す
+        const idMap = { time: 'config-bulk-time-input', point: 'config-bulk-point-input', loss: 'config-bulk-loss-input' };
+        const classMap = { time: '.q-time-input', point: '.q-point-input', loss: '.q-loss-input' };
+        const val = document.getElementById(idMap[type]).value;
+        document.querySelectorAll(classMap[type]).forEach(inp => inp.value = val);
     },
 
     addPeriod: function() {
@@ -308,7 +367,10 @@ App.Config = {
         
         document.querySelectorAll('.q-point-input').forEach(inp => qs[inp.dataset.index].points = parseInt(inp.value));
         document.querySelectorAll('.q-time-input').forEach(inp => qs[inp.dataset.index].timeLimit = parseInt(inp.value));
+        // ★Lossも保存
+        document.querySelectorAll('.q-loss-input').forEach(inp => qs[inp.dataset.index].loss = parseInt(inp.value));
 
+        // シャッフル設定
         let shuffle = 'off';
         if(mode === 'normal') shuffle = document.getElementById('config-shuffle-q')?.value;
         else if(mode === 'buzz') shuffle = document.getElementById('config-buzz-shuffle')?.value;
