@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v66.1: Restore Bulk & Individual)
+ * host_config.js (v67: Solo Challenge Config)
  * =======================================================*/
 
 App.Config = {
@@ -69,19 +69,82 @@ App.Config = {
                     <option value="normal">${APP_TEXT.Config.ModeNormal}</option>
                     <option value="buzz">${APP_TEXT.Config.ModeBuzz}</option>
                     <option value="turn">${APP_TEXT.Config.ModeTurn}</option>
-                    <option value="time_attack" style="color:red;">${APP_TEXT.Config.ModeTimeAttack}</option>
+                    <option value="solo" style="color:#00bfff; font-weight:bold;">${APP_TEXT.Config.ModeSolo}</option>
                 </select>
+                
                 <div id="mode-details-normal" class="mode-details hidden mt-10">
                     <label class="config-label">${APP_TEXT.Config.LabelNormalLimit}</label>
                     <select id="config-normal-limit" class="btn-block config-select"><option value="one">${APP_TEXT.Config.NormalLimitOne}</option><option value="unlimited">${APP_TEXT.Config.NormalLimitUnlimited}</option></select>
                     <label class="config-label mt-10">${APP_TEXT.Config.LabelShuffleQ}</label>
                     <select id="config-shuffle-q" class="btn-block config-select"><option value="off">${APP_TEXT.Config.ShuffleQOff}</option><option value="on">${APP_TEXT.Config.ShuffleQOn}</option></select>
                 </div>
+                
                 <div id="mode-details-buzz" class="mode-details hidden mt-10">
-                     <label class="config-label">不正解時の処理</label>
-                     <select id="config-buzz-wrong-action" class="btn-block config-select"><option value="next">次の回答者へ</option><option value="reset">全員リセット</option></select>
+                     <label class="config-label">${APP_TEXT.Config.LabelBuzzWrongAction}</label>
+                     <select id="config-buzz-wrong-action" class="btn-block config-select mb-10"><option value="next">${APP_TEXT.Config.BuzzWrongNext}</option><option value="reset">${APP_TEXT.Config.BuzzWrongReset}</option></select>
+                     <label class="config-label">${APP_TEXT.Config.LabelBuzzTime}</label>
+                     <select id="config-buzz-timer" class="btn-block config-select"><option value="0">${APP_TEXT.Config.BuzzTimeNone}</option><option value="5">${APP_TEXT.Config.BuzzTime5}</option><option value="10">${APP_TEXT.Config.BuzzTime10}</option></select>
                 </div>
-                <div id="mode-details-time_attack" class="mode-details hidden mt-10 p-10 bg-yellow"><p class="text-sm text-red bold">※Time Shock: 5 sec/Q</p></div>
+
+                <div id="mode-details-turn" class="mode-details hidden mt-10">
+                    <label class="config-label">${APP_TEXT.Config.LabelTurnOrder}</label>
+                    <select id="config-turn-order" class="btn-block config-select mb-10"><option value="fixed">${APP_TEXT.Config.TurnOrderFixed}</option><option value="random">${APP_TEXT.Config.TurnOrderRandom}</option></select>
+                </div>
+
+                <div id="mode-details-solo" class="mode-details hidden mt-10" style="background:#1a1a1a; padding:10px; border:1px solid #00bfff; border-radius:5px;">
+                    <div class="grid-2-col gap-10">
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelSoloStyle}</label>
+                            <select id="config-solo-style" class="btn-block config-select">
+                                <option value="manual">${APP_TEXT.Config.SoloStyleManual}</option>
+                                <option value="correct">${APP_TEXT.Config.SoloStyleCorrect}</option>
+                                <option value="auto">${APP_TEXT.Config.SoloStyleAuto}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelSoloTimeType}</label>
+                            <select id="config-solo-time-type" class="btn-block config-select">
+                                <option value="per_q">${APP_TEXT.Config.SoloTimePerQ}</option>
+                                <option value="total">${APP_TEXT.Config.SoloTimeTotal}</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid-2-col gap-10 mt-10">
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelSoloTimeValue}</label>
+                            <input type="number" id="config-solo-time-val" class="btn-block" value="5" min="1">
+                        </div>
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelSoloRecovery}</label>
+                            <select id="config-solo-recovery" class="btn-block config-select">
+                                <option value="none">${APP_TEXT.Config.SoloRecoveryNone}</option>
+                                <option value="1">+1s</option>
+                                <option value="3">+3s</option>
+                                <option value="5">+5s</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid-2-col gap-10 mt-10">
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelSoloLife}</label>
+                            <select id="config-solo-life" class="btn-block config-select">
+                                <option value="0">${APP_TEXT.Config.SoloLifeSudden}</option>
+                                <option value="2">2 Lives</option>
+                                <option value="3">3 Lives</option>
+                                <option value="5">5 Lives</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelSoloRetire}</label>
+                            <select id="config-solo-retire" class="btn-block config-select">
+                                <option value="off">${APP_TEXT.Config.SoloRetireOff}</option>
+                                <option value="on">${APP_TEXT.Config.SoloRetireOn}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="config-section-title mt-20">${APP_TEXT.Config.LabelRule}</div>
@@ -98,7 +161,6 @@ App.Config = {
                     <span class="bold">一括:</span>
                     <input type="number" id="bulk-time" class="w-40 text-center" placeholder="Time" value="0">
                     <button class="btn-mini btn-dark" onclick="App.Config.bulkApply('time')">反映</button>
-                    
                     <input type="number" id="bulk-point" class="w-40 text-center" placeholder="Pt" value="1">
                     <button class="btn-mini btn-info" onclick="App.Config.bulkApply('point')">反映</button>
                 </div>
@@ -113,14 +175,9 @@ App.Config = {
         document.getElementById('config-add-playlist-btn').onclick = () => this.addPeriod();
         
         const modeSel = document.getElementById('config-mode-select');
-        if(conf.mode) modeSel.value = conf.mode;
+        if(conf.mode) modeSel.value = (conf.mode === 'time_attack') ? 'solo' : conf.mode; // Convert old to new
         this.updateModeDetails(modeSel.value);
         this.renderQList();
-        
-        if(data.sp === 'time_attack') {
-            modeSel.value = 'time_attack'; modeSel.disabled = true;
-            this.updateModeDetails('time_attack');
-        }
     },
 
     updateModeDetails: function(mode) {
@@ -135,7 +192,6 @@ App.Config = {
         this.selectedSetQuestions.forEach((q, i) => {
             const row = document.createElement('div');
             row.className = 'flex-center border-b p-5';
-            // ③ 個別調整用の入力欄
             row.innerHTML = `
                 <div class="flex-1 text-sm bold truncate mr-5">Q${i+1}. ${q.q}</div>
                 <div class="flex gap-5 text-xs items-center">
@@ -147,7 +203,6 @@ App.Config = {
         });
     },
 
-    // ③ 一括反映機能
     bulkApply: function(type) {
         const val = document.getElementById(type === 'time' ? 'bulk-time' : 'bulk-point').value;
         const selector = type === 'time' ? '.q-time-input' : '.q-point-input';
@@ -170,16 +225,29 @@ App.Config = {
             }
         }
 
+        // 基本Config
+        const newConfig = {
+            mode: mode,
+            gameType: document.getElementById('config-game-type').value,
+            initialStatus: 'revive',
+            timeLimit: 0, eliminationRule: 'none',
+            buzzWrongAction: document.getElementById('config-buzz-wrong-action')?.value || 'next'
+        };
+
+        // Solo Mode Configs
+        if (mode === 'solo') {
+            newConfig.soloStyle = document.getElementById('config-solo-style').value;
+            newConfig.soloTimeType = document.getElementById('config-solo-time-type').value;
+            newConfig.soloTimeVal = parseInt(document.getElementById('config-solo-time-val').value) || 5;
+            newConfig.soloLife = parseInt(document.getElementById('config-solo-life').value) || 0;
+            newConfig.soloRetire = document.getElementById('config-solo-retire').value;
+            newConfig.soloRecovery = parseInt(document.getElementById('config-solo-recovery').value) || 0;
+        }
+
         App.Data.periodPlaylist.push({
             title: title,
             questions: qs,
-            config: {
-                mode: mode,
-                gameType: document.getElementById('config-game-type').value,
-                initialStatus: 'revive',
-                timeLimit: 0, eliminationRule: 'none',
-                buzzWrongAction: document.getElementById('config-buzz-wrong-action')?.value || 'next'
-            }
+            config: newConfig
         });
         this.renderPreview();
     },
