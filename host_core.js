@@ -1,12 +1,14 @@
 /* =========================================================
- * host_core.js (v71: Fix Navigation Logic)
+ * host_core.js (v77: Session Persistence)
  * =======================================================*/
 
-// ★ 安全装置
 window.App = window.App || {};
 
+// ★修正: セッションストレージからIDを復元する
+const savedShowId = sessionStorage.getItem('qs_show_id');
+
 window.App.State = window.App.State || {
-    currentShowId: null,
+    currentShowId: savedShowId || null, // 復元
     currentRoomId: null,
     isHost: false
 };
@@ -22,20 +24,12 @@ window.App.Ui = {
     views: {},
     
     showView: function(targetId) {
-        if (Object.keys(this.views).length === 0) {
-            this.cacheViews();
-        }
-
-        Object.values(this.views).forEach(el => {
-            if(el) el.classList.add('hidden');
-        });
-        
+        if (Object.keys(this.views).length === 0) this.cacheViews();
+        Object.values(this.views).forEach(el => { if(el) el.classList.add('hidden'); });
         const target = typeof targetId === 'string' ? document.getElementById(targetId) : targetId;
         if(target) {
             target.classList.remove('hidden');
             window.scrollTo(0, 0);
-        } else {
-            console.error("Target view not found:", targetId);
         }
     },
 
@@ -64,7 +58,7 @@ window.App.Ui = {
             keys.forEach(k => { if(val) val = val[k]; });
             if(val) el.textContent = val;
         });
-        
+        // Placeholder map... (省略せず記述)
         const phMap = {
             'show-id-input': APP_TEXT.Login.Placeholder,
             'question-text': APP_TEXT.Creator.PlaceholderQ,
@@ -94,8 +88,16 @@ window.App.init = function() {
     this.Ui.cacheViews();
     this.Ui.applyTexts();
     this.bindEvents();
-    this.Ui.showView(this.Ui.views.main);
-    console.log("App Initialized (v71)");
+    
+    // ★修正: IDがあればダッシュボードへ直行、なければメインへ
+    if (window.App.State.currentShowId) {
+        console.log("Session restored:", window.App.State.currentShowId);
+        window.App.Dashboard.enter();
+    } else {
+        this.Ui.showView(this.Ui.views.main);
+    }
+    
+    console.log("App Initialized (v77)");
 };
 
 window.App.bindEvents = function() {
@@ -110,62 +112,50 @@ window.App.bindEvents = function() {
         if(!input) { alert(APP_TEXT.Login.AlertEmpty); return; }
         if(!/^[A-Z0-9_-]+$/.test(input)) { alert(APP_TEXT.Login.AlertError); return; }
         
+        // ★保存
         window.App.State.currentShowId = input;
+        sessionStorage.setItem('qs_show_id', input);
+        
         window.App.Dashboard.enter();
     });
 
-    // ★修正: 戻るボタンの賢い制御
     document.querySelectorAll('.header-back-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // 1. ログアウトボタンは常にホームへ
             if (btn.classList.contains('btn-logout')) {
-                U.showView(V.main);
+                // ★ログアウト時は消去
+                sessionStorage.removeItem('qs_show_id');
                 window.App.State.currentShowId = null;
-                return;
-            }
-
-            // 2. 親画面のIDを取得して判断する
-            const parentView = btn.closest('.view');
-            const pid = parentView ? parentView.id : '';
-
-            // ホームに戻るべき画面: Hostログイン / プレイヤー参加画面
-            if (pid === 'host-login-view' || pid === 'respondent-view') {
                 U.showView(V.main);
-            } 
-            // それ以外（Creator, Config, Design, Studio, ViewerLogin）は全てダッシュボードへ
-            else {
+            } else if (btn.classList.contains('back-to-main')) {
+                // ログイン画面などから戻る場合
+                U.showView(V.main);
+            } else {
                 window.App.Dashboard.enter();
             }
         });
     });
 
-    // ダッシュボード
     document.getElementById('dash-create-btn')?.addEventListener('click', () => {
         if(window.App.Creator && window.App.Creator.init) window.App.Creator.init();
-        else alert("Creator module not loaded");
     });
-
     document.getElementById('dash-config-btn')?.addEventListener('click', () => {
         window.App.Data.periodPlaylist = [];
         if(window.App.Config && window.App.Config.init) window.App.Config.init();
     });
-    
     document.getElementById('dash-design-btn')?.addEventListener('click', () => {
         if(window.App.Design && window.App.Design.init) window.App.Design.init();
-        else U.showView(V.design);
     });
-
     document.getElementById('dash-studio-btn')?.addEventListener('click', () => {
         if(window.App.Studio && window.App.Studio.startRoom) window.App.Studio.startRoom();
     });
-    
     document.getElementById('dash-viewer-btn')?.addEventListener('click', () => U.showView(V.viewerLogin));
 };
 
 window.App.Dashboard = {
     enter: function() {
         window.App.Ui.showView(window.App.Ui.views.dashboard);
-        document.getElementById('dashboard-show-id').textContent = window.App.State.currentShowId;
+        const idEl = document.getElementById('dashboard-show-id');
+        if(idEl) idEl.textContent = window.App.State.currentShowId;
         this.loadItems();
     },
     
@@ -175,6 +165,10 @@ window.App.Dashboard = {
         
         listEl.innerHTML = `<p style="text-align:center;">${APP_TEXT.Config.SelectLoading}</p>`;
         const showId = window.App.State.currentShowId;
+        if(!showId) {
+             listEl.innerHTML = `<p style="text-align:center;">ID Error (Please Relogin)</p>`;
+             return;
+        }
 
         Promise.all([
             window.db.ref(`saved_sets/${showId}`).once('value'),
