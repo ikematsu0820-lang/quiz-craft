@@ -1,10 +1,8 @@
 /* =========================================================
- * host_core.js (v66: Centralized App Namespace)
+ * host_core.js (v66.1: Button Binding Fix)
  * =======================================================*/
 
-// ★名前空間の定義（アプリの全状態をここで管理）
 window.App = {
-    // 状態管理 (State)
     State: {
         currentShowId: null,
         currentRoomId: null,
@@ -14,38 +12,29 @@ window.App = {
         isHost: false
     },
     
-    // データ保持 (Data)
     Data: {
-        createdQuestions: [], // Creator用
-        periodPlaylist: [],   // Config/Studio用
-        studioQuestions: [],  // Studio実行用
-        currentConfig: {}     // 現在のルール設定
+        createdQuestions: [],
+        periodPlaylist: [],
+        studioQuestions: [],
+        currentConfig: {}
     },
 
-    // UI操作 (View/Text)
     Ui: {
-        views: {}, // DOM要素のキャッシュ
+        views: {},
         
-        // 画面切り替え
         showView: function(targetId) {
-            // 全ビューを隠す
             Object.values(this.views).forEach(el => {
                 if(el) el.classList.add('hidden');
             });
-            // ターゲットを表示
             const target = typeof targetId === 'string' ? document.getElementById(targetId) : targetId;
             if(target) {
                 target.classList.remove('hidden');
-                // 画面遷移時にスクロールをトップへ
                 window.scrollTo(0, 0);
             }
         },
 
-        // テキスト一括適用 (text_config.js対応)
         applyTexts: function() {
             if(typeof APP_TEXT === 'undefined') return;
-            
-            // data-text属性を持つ要素を更新
             document.querySelectorAll('[data-text]').forEach(el => {
                 const keys = el.getAttribute('data-text').split('.');
                 let val = APP_TEXT;
@@ -53,7 +42,6 @@ window.App = {
                 if(val) el.textContent = val;
             });
 
-            // プレースホルダーの更新マップ
             const phMap = {
                 'show-id-input': APP_TEXT.Login.Placeholder,
                 'quiz-set-title': APP_TEXT.Creator.PlaceholderSetName,
@@ -69,7 +57,6 @@ window.App = {
             }
         },
 
-        // トースト通知
         showToast: function(msg) {
             const container = document.getElementById('toast-container');
             if(!container) return;
@@ -81,9 +68,7 @@ window.App = {
         }
     },
 
-    // アプリ初期化 (Entry Point)
     init: function() {
-        // 1. ビュー要素のキャッシュ
         this.Ui.views = {
             main: document.getElementById('main-view'),
             hostLogin: document.getElementById('host-login-view'),
@@ -99,28 +84,20 @@ window.App = {
             viewerMain: document.getElementById('viewer-main-view')
         };
 
-        // 2. テキスト適用
         this.Ui.applyTexts();
-
-        // 3. イベントリスナー登録
         this.bindEvents();
-
-        // 4. 初期表示
         this.Ui.showView(this.Ui.views.main);
         
-        console.log("App Initialized (v66)");
+        console.log("App Initialized (v66.1)");
     },
 
-    // イベントバインディング
     bindEvents: function() {
         const U = this.Ui;
         const V = U.views;
 
-        // メイン画面遷移
         document.getElementById('main-host-btn')?.addEventListener('click', () => U.showView(V.hostLogin));
         document.getElementById('main-player-btn')?.addEventListener('click', () => U.showView(V.respondent));
 
-        // ホストログイン
         document.getElementById('host-login-submit-btn')?.addEventListener('click', () => {
             const input = document.getElementById('show-id-input').value.trim().toUpperCase();
             if(!input) { alert(APP_TEXT.Login.AlertEmpty); return; }
@@ -130,12 +107,10 @@ window.App = {
             this.Dashboard.enter();
         });
 
-        // 戻るボタンの共通制御
         document.querySelectorAll('.header-back-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const isLogout = btn.classList.contains('btn-logout');
                 const isHome = btn.classList.contains('back-to-main');
-                const isDash = e.target.closest('#design-view, #creator-view, #config-view, #viewer-login-view');
                 
                 if (isLogout) {
                     U.showView(V.main);
@@ -143,38 +118,37 @@ window.App = {
                 } else if (isHome) {
                     U.showView(V.main);
                 } else {
-                    // 基本はダッシュボードに戻る
                     this.Dashboard.enter();
                 }
             });
         });
 
-        // ダッシュボード機能
         document.getElementById('dash-create-btn')?.addEventListener('click', () => {
             if(window.initCreatorMode) window.initCreatorMode();
         });
         document.getElementById('dash-config-btn')?.addEventListener('click', () => {
-            App.Data.periodPlaylist = []; // Reset
+            App.Data.periodPlaylist = [];
             if(window.enterConfigMode) window.enterConfigMode();
         });
+        
+        // ④ デザインボタンの修正
         document.getElementById('dash-design-btn')?.addEventListener('click', () => {
             if(window.enterDesignMode) window.enterDesignMode();
-            else U.showView(V.design);
+            else if(V.design) U.showView(V.design);
+            else alert("デザイン機能の読み込みに失敗しました");
         });
+
         document.getElementById('dash-studio-btn')?.addEventListener('click', () => {
             if(window.startRoom) window.startRoom();
         });
         document.getElementById('dash-viewer-btn')?.addEventListener('click', () => U.showView(V.viewerLogin));
     },
 
-    // ダッシュボードロジック
     Dashboard: {
         enter: function() {
             App.Ui.showView(App.Ui.views.dashboard);
             document.getElementById('dashboard-show-id').textContent = App.State.currentShowId;
             this.loadItems();
-            
-            // デザイン設定のロード（もしあれば）
             if(window.loadDesignSettings) window.loadDesignSettings();
         },
 
@@ -193,11 +167,9 @@ window.App = {
                 const progs = progSnap.val() || {};
                 
                 let items = [];
-                // 統合リスト作成
                 Object.keys(sets).forEach(k => items.push({ type: 'set', key: k, data: sets[k], date: sets[k].createdAt || 0 }));
                 Object.keys(progs).forEach(k => items.push({ type: 'prog', key: k, data: progs[k], date: progs[k].createdAt || 0 }));
                 
-                // 日付順ソート
                 items.sort((a, b) => b.date - a.date);
 
                 listEl.innerHTML = '';
@@ -206,7 +178,9 @@ window.App = {
                     return;
                 }
 
+                this._cache = {};
                 items.forEach(item => {
+                    this._cache[item.key] = item.data;
                     const el = this.createListItem(item);
                     listEl.appendChild(el);
                 });
@@ -233,10 +207,6 @@ window.App = {
                     <button class="btn-mini btn-dark" onclick="window.loadSetForEditing('${item.key}', App.Dashboard.getCachedItem('${item.key}'))">Edit</button>
                     <button class="delete-btn btn-mini" onclick="App.Dashboard.deleteItem('saved_sets', '${item.key}')">Del</button>
                 `;
-                // ※キャッシュ用にデータを一時保存
-                this._cache = this._cache || {};
-                this._cache[item.key] = d;
-
             } else {
                 labelHtml = `<span class="badge-prog">PROG</span> ${d.title}`;
                 metaHtml = `${dateStr} / ${d.playlist ? d.playlist.length : 0} Periods`;
@@ -245,7 +215,6 @@ window.App = {
                     <button class="btn-mini btn-danger" onclick="window.loadProgramToConfigOnDash(App.Dashboard.getCachedItem('${item.key}'))">Load</button>
                     <button class="delete-btn btn-mini" onclick="App.Dashboard.deleteItem('saved_programs', '${item.key}')">Del</button>
                 `;
-                this._cache[item.key] = d;
             }
 
             div.innerHTML = `
@@ -276,50 +245,19 @@ window.App = {
     }
 };
 
-// -------------------------------------------------------------
-// LEGACY BRIDGE (互換性維持のためのブリッジ)
-// -------------------------------------------------------------
-// 他のファイル(host_studio.jsなど)はまだグローバル変数を参照しているため、
-// Getter/Setterを使ってApp.Stateと同期させます。
-// ※リファクタリングが進んだら削除します。
-
-Object.defineProperty(window, 'currentShowId', {
-    get: () => App.State.currentShowId,
-    set: (v) => App.State.currentShowId = v
-});
-Object.defineProperty(window, 'currentRoomId', {
-    get: () => App.State.currentRoomId,
-    set: (v) => App.State.currentRoomId = v
-});
-Object.defineProperty(window, 'createdQuestions', {
-    get: () => App.Data.createdQuestions,
-    set: (v) => App.Data.createdQuestions = v
-});
-Object.defineProperty(window, 'periodPlaylist', {
-    get: () => App.Data.periodPlaylist,
-    set: (v) => App.Data.periodPlaylist = v
-});
-Object.defineProperty(window, 'studioQuestions', {
-    get: () => App.Data.studioQuestions,
-    set: (v) => App.Data.studioQuestions = v
-});
-Object.defineProperty(window, 'currentConfig', {
-    get: () => App.Data.currentConfig,
-    set: (v) => App.Data.currentConfig = v
-});
-// 簡易変数は直接マッピング（同期ズレに注意）
+Object.defineProperty(window, 'currentShowId', { get: () => App.State.currentShowId, set: (v) => App.State.currentShowId = v });
+Object.defineProperty(window, 'currentRoomId', { get: () => App.State.currentRoomId, set: (v) => App.State.currentRoomId = v });
+Object.defineProperty(window, 'createdQuestions', { get: () => App.Data.createdQuestions, set: (v) => App.Data.createdQuestions = v });
+Object.defineProperty(window, 'periodPlaylist', { get: () => App.Data.periodPlaylist, set: (v) => App.Data.periodPlaylist = v });
+Object.defineProperty(window, 'studioQuestions', { get: () => App.Data.studioQuestions, set: (v) => App.Data.studioQuestions = v });
+Object.defineProperty(window, 'currentConfig', { get: () => App.Data.currentConfig, set: (v) => App.Data.currentConfig = v });
 window.editingSetId = null; 
 window.currentPeriodIndex = -1;
 window.currentQIndex = 0;
-
-// 旧関数名のエイリアス
 window.showView = App.Ui.showView.bind(App.Ui);
 window.showToast = App.Ui.showToast.bind(App.Ui);
 window.enterDashboard = App.Dashboard.enter.bind(App.Dashboard);
 
-// -------------------------------------------------------------
-// 起動処理
-// -------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
     App.init();
 });
