@@ -570,33 +570,26 @@ h3, h4 {
 }
 /* style_host.css の末尾に追加 */
 
-/* --- デザイン画面：左右分割レイアウト --- */
-.design-layout-wrapper {
-    display: flex;
-    flex-wrap: wrap; /* スマホでは縦並び */
-    gap: 20px;
-    align-items: flex-start;
-}
+/* style_host.css の末尾に追加（または置換） */
 
-.design-settings-area {
-    flex: 1;
-    min-width: 300px; /* ある程度の幅を確保 */
-}
+/* --- デザイン画面：上部プレビューレイアウト --- */
 
-.design-preview-area {
-    flex: 1;
-    min-width: 300px;
-    position: sticky;
-    top: 20px; /* スクロールしてもついてくる */
+/* プレビューエリア（上部に配置） */
+.design-preview-area-top {
+    width: 100%;
+    margin-bottom: 20px;
     background: #111;
     padding: 15px;
     border-radius: 8px;
     border: 1px solid #444;
+    box-sizing: border-box;
 }
 
 /* プレビュー枠（16:9） */
 .design-preview-frame {
     width: 100%;
+    max-width: 500px; /* 大きくなりすぎないように制限 */
+    margin: 0 auto;   /* 中央寄せ */
     aspect-ratio: 16 / 9;
     background: #000;
     border: 2px solid #333;
@@ -606,12 +599,11 @@ h3, h4 {
     box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }
 
-/* プレビューの中身（縮小して全体を表示） */
+/* プレビューの中身（1920x1080を縮小して全体を表示） */
 #design-monitor-preview-content {
     width: 1920px;  /* 仮想フルHDサイズ */
     height: 1080px;
     transform-origin: top left;
-    /* CSS変数かJSでscaleを制御するが、簡易的に fit させる */
     position: absolute;
     top: 0;
     left: 0;
@@ -626,7 +618,7 @@ h3, h4 {
     width: 80%;
     margin-bottom: 50px;
     padding: 40px;
-    font-size: 80px; /* 1920px基準なので大きく */
+    font-size: 80px; /* 1920px基準 */
     font-weight: bold;
     border-radius: 10px;
 }
