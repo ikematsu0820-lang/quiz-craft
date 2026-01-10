@@ -159,21 +159,73 @@ App.Creator = {
         }
     },
 
-    addChoiceInput: function(parent, index, text="", checked=false) {
-        if (parent.children.length >= 20) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
-        const row = document.createElement('div');
-        row.className = 'choice-row flex-center gap-5 p-5';
+   function addChoiceInput(parent, index, text = "", checked = false) {
+    if (parent.children.length >= 20) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
+    
+    const wrapper = document.createElement('div');
+    wrapper.className = 'choice-row';
+    // CSSでレイアウト調整済み
+    
+    // 1. 隠しチェックボックス（データ用）
+    // 見た目は消しますが、機能として残します
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.className = 'choice-correct-chk';
+    chk.checked = checked;
+    chk.style.display = 'none'; // ★ここ重要：画面から隠す
+
+    // 2. アルファベットラベル（これをボタン化する）
+    const labelBtn = document.createElement('div');
+    labelBtn.className = 'choice-label-btn';
+    if(checked) labelBtn.classList.add('active'); // 初期状態が正解なら色をつける
+    
+    // ★クリックで正解/不正解を切り替える処理
+    labelBtn.onclick = () => {
+        chk.checked = !chk.checked; // チェック状態を反転
         
-        row.innerHTML = `
-            <input type="checkbox" class="choice-correct-chk" style="display:none;" ${checked?'checked':''}>
-            <div class="choice-label-btn ${checked?'active':''}" onclick="this.previousElementSibling.click(); this.classList.toggle('active');">A</div>
-            <input type="text" class="choice-text-input flex-1" placeholder="Choice" value="${text}">
-            <button class="btn-mini btn-dark w-30">×</button>
-        `;
-        row.querySelector('button').onclick = () => { row.remove(); this.updateLabels(parent); };
-        parent.appendChild(row);
-        this.updateLabels(parent);
-    },
+        // 見た目の切り替え
+        if(chk.checked) labelBtn.classList.add('active');
+        else labelBtn.classList.remove('active');
+    };
+
+    // 3. テキスト入力
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'choice-text-input';
+    inp.placeholder = 'Choice';
+    inp.value = text;
+    inp.style.flex = '1'; // 横幅いっぱいに
+
+    // 4. 削除ボタン
+    const del = document.createElement('button');
+    del.textContent = '×';
+    del.className = 'btn-mini btn-dark';
+    del.style.width = '30px';
+    del.style.marginLeft = '5px';
+    del.onclick = () => {
+        parent.removeChild(wrapper);
+        updateChoiceLabels(parent); // 削除後にA,B,C...を振り直し
+    };
+
+    wrapper.appendChild(chk);
+    wrapper.appendChild(labelBtn); // チェックボックスの代わりにラベルを表示
+    wrapper.appendChild(inp);
+    wrapper.appendChild(del);
+    parent.appendChild(wrapper);
+    
+    updateChoiceLabels(parent); // 追加後にA,B,C...を振り直し
+}
+
+// （もし無ければ）アルファベットの一括更新関数
+function updateChoiceLabels(parent) {
+    const rows = parent.querySelectorAll('.choice-row');
+    rows.forEach((row, i) => {
+        const label = row.querySelector('.choice-label-btn');
+        if(label) {
+            label.textContent = String.fromCharCode(65 + i); // A, B, C...
+        }
+    });
+}
 
     addSortInput: function(parent, index, text="") {
         const row = document.createElement('div');
