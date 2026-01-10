@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v66: Refactored Module)
+ * host_config.js (v66.1: Restore Bulk & Individual)
  * =======================================================*/
 
 App.Config = {
@@ -13,7 +13,6 @@ App.Config = {
         
         if(setSelect) {
             setSelect.innerHTML = `<option value="">${APP_TEXT.Config.SelectDefault}</option>`;
-            // イベント重複防止のための再生成テクニック
             const newSelect = setSelect.cloneNode(true);
             setSelect.parentNode.replaceChild(newSelect, setSelect);
             newSelect.addEventListener('change', () => this.updateBuilderUI());
@@ -41,7 +40,6 @@ App.Config = {
                 const items = Object.keys(data).map(k => ({...data[k], key: k})).sort((a,b)=>b.createdAt-a.createdAt);
                 items.forEach(item => {
                     const opt = document.createElement('option');
-                    // データ互換性確保
                     const val = { t: item.title, q: item.questions, c: item.config, sp: item.questions?.[0]?.specialMode||'none' };
                     opt.value = JSON.stringify(val);
                     opt.textContent = `${item.title} (${new Date(item.createdAt).toLocaleDateString()})`;
@@ -64,7 +62,6 @@ App.Config = {
         this.selectedSetQuestions = data.q || [];
         const conf = data.c || {};
         
-        // UI構築 (簡略化のためinnerHTML使用)
         let html = `
             <div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>
             <div class="config-item-box">
@@ -80,8 +77,10 @@ App.Config = {
                     <label class="config-label mt-10">${APP_TEXT.Config.LabelShuffleQ}</label>
                     <select id="config-shuffle-q" class="btn-block config-select"><option value="off">${APP_TEXT.Config.ShuffleQOff}</option><option value="on">${APP_TEXT.Config.ShuffleQOn}</option></select>
                 </div>
-                <div id="mode-details-buzz" class="mode-details hidden mt-10"><p class="text-sm">※早押し設定 (不正解時処理・時間制限)</p></div>
-                <div id="mode-details-turn" class="mode-details hidden mt-10"><p class="text-sm">※ターン設定 (順番・パス)</p></div>
+                <div id="mode-details-buzz" class="mode-details hidden mt-10">
+                     <label class="config-label">不正解時の処理</label>
+                     <select id="config-buzz-wrong-action" class="btn-block config-select"><option value="next">次の回答者へ</option><option value="reset">全員リセット</option></select>
+                </div>
                 <div id="mode-details-time_attack" class="mode-details hidden mt-10 p-10 bg-yellow"><p class="text-sm text-red bold">※Time Shock: 5 sec/Q</p></div>
             </div>
 
@@ -94,6 +93,16 @@ App.Config = {
                 </select>
                 
                 <h5 class="mb-10">${APP_TEXT.Config.HeadingCustomScore}</h5>
+                
+                <div class="flex gap-5 mb-10 text-xs items-center bg-gray p-5">
+                    <span class="bold">一括:</span>
+                    <input type="number" id="bulk-time" class="w-40 text-center" placeholder="Time" value="0">
+                    <button class="btn-mini btn-dark" onclick="App.Config.bulkApply('time')">反映</button>
+                    
+                    <input type="number" id="bulk-point" class="w-40 text-center" placeholder="Pt" value="1">
+                    <button class="btn-mini btn-info" onclick="App.Config.bulkApply('point')">反映</button>
+                </div>
+
                 <div id="config-questions-list" class="scroll-list" style="height:150px;"></div>
             </div>
 
@@ -101,16 +110,13 @@ App.Config = {
         `;
         container.innerHTML = html;
 
-        // イベント再登録
         document.getElementById('config-add-playlist-btn').onclick = () => this.addPeriod();
         
-        // 初期値反映
         const modeSel = document.getElementById('config-mode-select');
         if(conf.mode) modeSel.value = conf.mode;
         this.updateModeDetails(modeSel.value);
         this.renderQList();
         
-        // スペシャルモードロック
         if(data.sp === 'time_attack') {
             modeSel.value = 'time_attack'; modeSel.disabled = true;
             this.updateModeDetails('time_attack');
@@ -129,15 +135,23 @@ App.Config = {
         this.selectedSetQuestions.forEach((q, i) => {
             const row = document.createElement('div');
             row.className = 'flex-center border-b p-5';
+            // ③ 個別調整用の入力欄
             row.innerHTML = `
                 <div class="flex-1 text-sm bold truncate mr-5">Q${i+1}. ${q.q}</div>
-                <div class="flex gap-5 text-xs">
-                    Time <input type="number" class="q-time-input w-30" data-index="${i}" value="${q.timeLimit||0}">
-                    Pt <input type="number" class="q-point-input w-30" data-index="${i}" value="${q.points||1}">
+                <div class="flex gap-5 text-xs items-center">
+                    Time <input type="number" class="q-time-input w-40 text-center" data-index="${i}" value="${q.timeLimit||0}">
+                    Pt <input type="number" class="q-point-input w-40 text-center" data-index="${i}" value="${q.points||1}">
                 </div>
             `;
             list.appendChild(row);
         });
+    },
+
+    // ③ 一括反映機能
+    bulkApply: function(type) {
+        const val = document.getElementById(type === 'time' ? 'bulk-time' : 'bulk-point').value;
+        const selector = type === 'time' ? '.q-time-input' : '.q-point-input';
+        document.querySelectorAll(selector).forEach(inp => inp.value = val);
     },
 
     addPeriod: function() {
@@ -145,11 +159,9 @@ App.Config = {
         const mode = document.getElementById('config-mode-select').value;
         const qs = JSON.parse(JSON.stringify(this.selectedSetQuestions));
         
-        // 入力値反映
         document.querySelectorAll('.q-point-input').forEach(inp => qs[inp.dataset.index].points = parseInt(inp.value));
         document.querySelectorAll('.q-time-input').forEach(inp => qs[inp.dataset.index].timeLimit = parseInt(inp.value));
 
-        // シャッフル
         const shuffle = document.getElementById('config-shuffle-q')?.value === 'on';
         if(shuffle) {
             for (let i = qs.length - 1; i > 0; i--) {
@@ -165,8 +177,8 @@ App.Config = {
                 mode: mode,
                 gameType: document.getElementById('config-game-type').value,
                 initialStatus: 'revive',
-                // 詳細設定は省略（デフォルト値）
-                timeLimit: 0, eliminationRule: 'none'
+                timeLimit: 0, eliminationRule: 'none',
+                buzzWrongAction: document.getElementById('config-buzz-wrong-action')?.value || 'next'
             }
         });
         this.renderPreview();
@@ -216,7 +228,6 @@ App.Config = {
         });
     },
 
-    // プログラム読込モーダル設定
     setupModal: function() {
         document.getElementById('config-open-load-modal-btn').onclick = () => {
             const sel = document.getElementById('config-prog-select');
@@ -252,19 +263,16 @@ App.Config = {
         };
     },
     
-    // 外部からのロード (Dash用)
     loadExternal: function(progData) {
         if(!confirm("Load this program?")) return;
         App.Data.periodPlaylist = JSON.parse(JSON.stringify(progData.playlist));
         App.Ui.showView(App.Ui.views.config);
         document.getElementById('config-program-title').value = progData.title;
         this.renderPreview();
-        // SetListなどは遅延ロード
         setTimeout(() => this.loadSetList(), 500);
     }
 };
 
-// Global Bindings
 window.enterConfigMode = () => App.Config.init();
 window.loadProgramToConfigOnDash = (d) => App.Config.loadExternal(d);
 document.getElementById('config-save-program-btn')?.addEventListener('click', () => App.Config.saveProgram());
