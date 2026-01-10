@@ -33,28 +33,50 @@ function enterConfigMode() {
 
     loadSetListInConfig();
     
-    // ★変更: プログラムリストを上部のプルダウンに読み込む
+    // プログラムリストの読み込み（ポップアップ内）
     loadProgramListInDropdown(); 
     
-    // ★削除: loadSavedProgramsInConfig(); はもう呼びません
-    
     renderConfigPreview();
+
+    // ★追加: ポップアップ制御
+    const modal = document.getElementById('config-load-modal');
+    const openBtn = document.getElementById('config-open-load-modal-btn');
+    const closeBtn = document.getElementById('config-modal-close-btn');
+
+    if(openBtn) {
+        openBtn.onclick = () => {
+            modal.classList.remove('hidden');
+            // 開くたびに最新リストを再取得しても良い
+            loadProgramListInDropdown();
+        };
+    }
+    if(closeBtn) {
+        closeBtn.onclick = () => {
+            modal.classList.add('hidden');
+        };
+    }
 }
 
-// ★新規追加: プログラムをプルダウンに読み込む関数
+// プログラム読み込み関数（ポップアップ対応版）
 function loadProgramListInDropdown() {
     const select = document.getElementById('config-prog-select');
     const btn = document.getElementById('config-load-prog-exec-btn');
+    const modal = document.getElementById('config-load-modal'); // モーダル取得
+    
     if(!select || !btn) return;
 
     select.innerHTML = `<option value="">Reading...</option>`;
     
+    if(!currentShowId) {
+        select.innerHTML = `<option value="">(ID未設定)</option>`;
+        return;
+    }
+
     window.db.ref(`saved_programs/${currentShowId}`).once('value', snap => {
         const data = snap.val();
         select.innerHTML = `<option value="">-- 構成を選択 --</option>`;
         
         if(data) {
-            // 日付順にソート
             const items = [];
             Object.keys(data).forEach(key => {
                 items.push({ key: key, ...data[key] });
@@ -63,12 +85,13 @@ function loadProgramListInDropdown() {
 
             items.forEach(item => {
                 const opt = document.createElement('option');
-                // valueにデータを丸ごと入れる（簡易実装）
                 opt.value = JSON.stringify(item); 
                 const dateStr = new Date(item.createdAt).toLocaleDateString();
                 opt.textContent = `${item.title} (${dateStr})`;
                 select.appendChild(opt);
             });
+        } else {
+            select.innerHTML = `<option value="">(保存データなし)</option>`;
         }
     });
 
@@ -87,7 +110,11 @@ function loadProgramListInDropdown() {
         document.getElementById('config-final-ranking-chk').checked = (prog.finalRanking !== false);
         
         renderConfigPreview();
-        alert("構成を読み込みました。修正して「保存」または「スタジオへ」進んでください。");
+        
+        // ★追加: 読み込み完了したらモーダルを閉じる
+        if(modal) modal.classList.add('hidden');
+        
+        alert("構成を読み込みました。");
     };
 }
 
