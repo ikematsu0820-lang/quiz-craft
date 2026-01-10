@@ -278,78 +278,76 @@
     </div>
 </div>
 
-<div id="host-control-view" class="view hidden">
-    <div class="on-air-display">
-        <div class="on-air-sub"><span data-text="Studio.OnAir">ON AIR</span> / <span id="studio-show-id">---</span></div>
-        <div id="host-room-id" class="room-id-large">---</div>
-        <div class="room-stats">
-            <div><span data-text="Studio.LabelPlayer">Player</span>: <span id="host-player-count">0</span></div>
-            <div><span data-text="Studio.LabelAlive">Alive</span>: <span id="host-alive-count" class="alive-count">0</span></div>
+<div id="host-control-view" class="view hidden host-studio-layout">
+    <div class="studio-header-bar">
+        <div class="status-item">
+            <span class="status-label">MODE</span>
+            <span id="studio-mode-display" class="status-value text-cyan">NORMAL</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">Q</span>
+            <span id="studio-q-num-display" class="status-value">1/10</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">STEP</span>
+            <span id="studio-step-display" class="status-value">STANDBY</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">PLAYER</span>
+            <span id="studio-player-count-display" class="status-value">0</span>
+        </div>
+        <div id="studio-solo-info" class="status-item hidden">
+            <span class="status-label">CHALLENGER</span>
+            <span id="studio-challenger-name" class="status-value text-pink">---</span>
+            <span class="status-label ml-10">LIFE</span>
+            <span id="studio-life-display" class="status-value">3</span>
         </div>
     </div>
 
-    <div id="studio-program-loader" class="panel-section section-blue mb-15">
-        <h4 class="panel-title" data-text="Studio.HeadingLoad">Load</h4>
-        <select id="studio-program-select" class="btn-block mb-5"></select>
-        <button id="studio-load-program-btn" class="btn-primary btn-block" data-text="Studio.BtnLoad">Set</button>
-    </div>
+    <div class="studio-main-area">
+        <div id="studio-standby-panel" class="center-message">
+            <h3 data-text="Studio.StatusReady">Ready...</h3>
+            <div id="studio-program-info" class="text-gray mb-20">プログラム未ロード</div>
+            
+            <div id="studio-loader-ui" class="panel-section section-blue" style="max-width:400px; margin:0 auto;">
+                <select id="studio-program-select" class="btn-block mb-10"></select>
+                <button id="studio-load-program-btn" class="btn-primary btn-block" data-text="Studio.BtnLoad">Set</button>
+            </div>
+            <div id="studio-period-timeline" class="timeline-container mt-20"></div>
+        </div>
 
-    <div id="host-buzz-winner-area" class="panel-section section-yellow hidden center-text">
-        <div class="winner-label" data-text="Studio.MsgBuzzWin">WINNER</div>
-        <div id="host-buzz-winner-name" class="winner-name">---</div>
-    </div>
-
-    <div id="host-kanpe-area" class="kanpe-card hidden">
-        <div class="kanpe-badge" data-text="Studio.LabelKanpe">Kanpe</div>
-        <div id="kanpe-question" class="kanpe-q"></div>
-        <div id="kanpe-answer" class="kanpe-a"></div>
-        <div id="kanpe-time-limit" class="kanpe-meta"></div>
-        <div id="kanpe-point" class="kanpe-meta accent"></div>
-    </div>
-
-    <div id="host-status-area" class="studio-status-text" data-text="Studio.StatusReady">Ready...</div>
-
-    <div id="host-panel-control-area" class="control-panel-container hidden">
-        <h5 class="control-title" data-text="Studio.LabelPanelControl">Panel Control</h5>
-        <div id="host-panel-grid" class="control-grid-5"></div>
-    </div>
-
-    <div id="host-bomb-control-area" class="control-panel-container hidden">
-        <h5 class="control-title" data-text="Studio.LabelBombControl">Card Control</h5>
-        <div id="host-bomb-grid" class="control-grid-5"></div>
-    </div>
-
-    <div id="host-multi-control-area" class="control-panel-container hidden">
-        <h5 class="control-title" data-text="Studio.LabelMultiControl">Multi Answer Control</h5>
-        <div id="host-multi-grid" class="control-grid-2"></div>
-    </div>
-
-    <div id="studio-timeline-area">
-        <h4 class="section-title" data-text="Studio.HeadingList">List</h4>
-        <div id="studio-period-timeline" class="timeline-container"></div>
-        <div id="studio-footer-controls" class="studio-footer">
-            <button id="studio-master-play-btn" class="btn-success btn-block btn-play" data-text="Studio.BtnMasterPlay">Play</button>
+        <div id="studio-question-panel" class="question-monitor hidden">
+            <div class="monitor-header">
+                <span id="studio-q-type-badge" class="badge-type">CHOICE</span>
+                <span class="monitor-timer hidden" id="studio-timer-display">TIME: 10</span>
+            </div>
+            
+            <div id="studio-q-text" class="monitor-q-text">問題文がここに表示されます</div>
+            
+            <div id="studio-choices-container" class="monitor-choices"></div>
+            
+            <div id="studio-correct-display" class="monitor-correct hidden">
+                <span class="label">ANSWER:</span> <span id="studio-correct-text">正解</span>
+            </div>
+            
+            <div id="studio-sub-info" class="monitor-sub-info hidden"></div>
         </div>
     </div>
 
-    <div id="control-panel" class="hidden">
-        <h3 id="current-period-title" class="current-title"></h3>
+    <div class="studio-footer-controls">
+        <button id="btn-phase-main" class="btn-block btn-large-action">START</button>
         
-        <button id="host-start-btn" class="btn-primary btn-block hidden btn-start" data-text="Studio.BtnStart">START</button>
-        <button id="host-start-ta-btn" class="btn-danger btn-block hidden btn-ta-start" data-text="Studio.BtnStartTA">START 5s Loop</button>
-        <button id="host-show-answer-btn" class="btn-danger btn-block hidden" data-text="Studio.BtnAnswer">Answer</button>
-
-        <div id="host-manual-judge-area" class="hidden judge-grid">
-            <button id="host-judge-correct-btn" class="btn-success judge-btn" data-text="Studio.BtnCorrect">Correct</button>
-            <button id="host-judge-wrong-btn" class="btn-danger judge-btn" data-text="Studio.BtnWrong">Wrong</button>
-            <button id="host-judge-pass-btn" class="btn-warning hidden judge-btn" data-text="Studio.BtnPass">Pass</button>
+        <div id="studio-sub-controls" class="sub-controls-grid hidden">
+            <button id="btn-judge-correct" class="btn-success btn-judge">⭕ COR</button>
+            <button id="btn-judge-wrong" class="btn-danger btn-judge">❌ WRO</button>
         </div>
 
-        <button id="host-next-btn" class="btn-info btn-block hidden" data-text="Studio.BtnNextQ">Next</button>
-        <hr>
-        <button id="host-ranking-btn" class="btn-success btn-block" data-text="Studio.BtnRanking">Ranking</button>
+        <div class="footer-tools">
+            <button id="btn-toggle-ans" class="btn-mini btn-dark">正解表示</button>
+            <button id="btn-force-next" class="btn-mini btn-dark">Skip Q</button>
+            <button id="host-close-studio-btn" class="btn-mini btn-dark" data-text="Studio.BtnClose">Close</button>
+        </div>
     </div>
-    <button id="host-close-studio-btn" class="btn-block btn-dark mt-30" data-text="Studio.BtnClose">Close</button>
 </div>
 
 <div id="ranking-view" class="view hidden center-text">
