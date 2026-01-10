@@ -615,3 +615,31 @@
     font-family: monospace;
     text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
 }
+/* --- style_host.css 末尾に追加 --- */
+
+/* デザインプレビューの外枠 (16:9を強制維持) */
+.design-preview-frame {
+    width: 100%;
+    max-width: 800px; /* PCでの最大幅 */
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border: 2px solid #333;
+    overflow: hidden; /* はみ出し防止 */
+    position: relative;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    margin: 0 auto;
+}
+
+/* 内部のコンテンツ (基準サイズ 1280x720 で固定) */
+/* これをJSで縮小(scale)して表示させる */
+#design-monitor-preview-content {
+    width: 1280px;  /* 絶対固定 */
+    height: 720px;  /* 絶対固定 */
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: top left; /* 左上基準で縮小 */
+    background-color: #000;
+    overflow: hidden;
+}
+
