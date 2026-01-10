@@ -1,10 +1,10 @@
 /* =========================================================
- * host_design.js (v5: Full Feature / Modal & Pattern Switch)
+ * host_design.js (v5.2: Full Feature / Fixed Preview Logic)
  * =======================================================*/
 
 let currentDesignTarget = null; // { type: 'set'|'prog', key: '...', data: ... }
 
-// デザインモード開始
+// --- デザインモード開始 ---
 window.enterDesignMode = function() {
     setDefaultDesignUI();
     currentDesignTarget = null;
@@ -16,13 +16,13 @@ window.enterDesignMode = function() {
     setupLivePreviewListeners();
     setupDesignModals(); // ポップアップ設定
     
-    // 初回描画
-    renderDesignPreview();
+    // 初回描画（少し遅延させてDOM安定後に実行）
+    setTimeout(() => renderDesignPreview(), 100);
     
     if(window.views && window.views.design) window.showView(window.views.design);
 };
 
-// 編集対象リストの読み込み
+// --- 編集対象リストの読み込み ---
 function loadDesignTargetList() {
     const select = document.getElementById('design-target-select');
     const btn = document.getElementById('design-target-load-btn');
@@ -68,7 +68,7 @@ function loadDesignTargetList() {
     };
 }
 
-// 選択したターゲットのデザイン（と問題データ）を読み込む
+// --- 選択したターゲットの読み込み ---
 function loadTargetDesign(target) {
     let path = "";
     if (target.type === 'set') path = `saved_sets/${currentShowId}/${target.key}`;
@@ -85,10 +85,9 @@ function loadTargetDesign(target) {
         let d = null;
         let layout = 'standard';
         let align = 'center';
-
-        // プレビュー用に問題文を1つ取得
         let previewQ = null;
 
+        // セットかプログラムかによってデータの取り出し方を変える
         if (target.type === 'set' && data.questions && data.questions.length > 0) {
             const q = data.questions[0];
             d = q.design;
@@ -110,7 +109,9 @@ function loadTargetDesign(target) {
         if(d) {
             applyDesignToUI(d, layout, align);
         } else {
-            setDefaultDesignUI(); // なければ初期値
+            // デザイン情報がない場合は初期値（ただしレイアウト等は維持したいので注意）
+            // ここでは一旦リセットする
+            setDefaultDesignUI(); 
         }
         
         // プレビュー更新（実データを使って）
@@ -120,7 +121,7 @@ function loadTargetDesign(target) {
     });
 }
 
-// 保存処理
+// --- 保存処理 ---
 function saveDesignSettings() {
     if(!currentDesignTarget) {
         if(!confirm("編集対象が選択されていません。\nグローバル設定（新規作成時のデフォルト）として保存しますか？")) return;
@@ -172,7 +173,7 @@ function saveDesignSettings() {
     }
 }
 
-// ポップアップモーダルの設定
+// --- ポップアップモーダルの設定 ---
 function setupDesignModals() {
     const modals = {
         text: document.getElementById('modal-design-text'),
@@ -180,7 +181,6 @@ function setupDesignModals() {
         bg: document.getElementById('modal-design-bg')
     };
 
-    // ボタンが存在しない場合はスキップ（エラー回避）
     const btnText = document.getElementById('btn-open-text');
     const btnObj = document.getElementById('btn-open-object');
     const btnBg = document.getElementById('btn-open-bg');
@@ -212,7 +212,160 @@ function setupDesignModals() {
     }
 }
 
-/* --- ヘルパー関数 --- */
+// --- プレビュー描画（パターン分岐対応・堅牢化版） ---
+function renderDesignPreview(qData = null) {
+    const container = document.getElementById('design-monitor-preview-content');
+    if(!container) return;
+
+    try {
+        // スケール計算 (親枠の幅に合わせて縮小)
+        const frame = document.querySelector('.design-preview-frame');
+        if(frame) {
+            // 親枠がない場合の0除算ガード
+            const width = frame.clientWidth || 300;
+            const scale = width / 1920;
+            container.style.transform = `scale(${scale})`;
+        }
+
+        // 現在の設定値を取得
+        const setting = collectDesignSettings();
+        if(!setting) return; // エラーガード
+        
+        const d = setting.design;
+        const layout = setting.layout || 'standard';
+        const align = setting.align || 'center';
+
+        // プレビュー用のダミーデータ（デフォルト）
+        let qType = 'choice';
+        let qText = "これは問題文のプレビューです。";
+        let choices = ["選択肢 A", "選択肢 B", "選択肢 C", "選択肢 D"];
+        
+        // 読み込み済みデータのキャッシュがあればそれを使う（引数がない場合）
+        if(!qData && currentDesignTarget && currentDesignTarget.data) {
+            if(currentDesignTarget.type === 'set' && currentDesignTarget.data.questions && currentDesignTarget.data.questions.length > 0) {
+                qData = currentDesignTarget.data.questions[0];
+            } else if (currentDesignTarget.type === 'prog' && currentDesignTarget.data.playlist && currentDesignTarget.data.playlist.length > 0) {
+                 const pl = currentDesignTarget.data.playlist[0];
+                 if(pl.questions && pl.questions.length > 0) qData = pl.questions[0];
+            }
+        }
+
+        // データを適用
+        if(qData) {
+            qType = qData.type || 'choice';
+            qText = qData.q || "問題文";
+            if(qData.c) choices = qData.c;
+        }
+
+        // 背景
+        container.style.backgroundColor = d.mainBgColor;
+        if(d.bgImage) {
+            container.style.backgroundImage = `url(${d.bgImage})`;
+            container.style.backgroundSize = "cover";
+            container.style.backgroundPosition = "center";
+        } else {
+            // デフォルトグラデーション (黒系の場合のみ適用)
+            if(d.mainBgColor === '#0a0a0a' || d.mainBgColor === '#222222') {
+                 container.style.backgroundImage = "radial-gradient(circle at center, #1a1a1a 0%, #000000 100%)";
+            } else {
+                 container.style.backgroundImage = "none";
+            }
+        }
+
+        // 基本スタイル定義
+        const qStyleBase = `
+            color: ${d.qTextColor}; background: ${d.qBgColor}; border: 6px solid ${d.qBorderColor};
+            ${align === 'left' ? 'text-align:left;' : align === 'right' ? 'text-align:right;' : 'text-align:center;'}
+        `;
+        const cStyle = `color: ${d.cTextColor}; background: ${d.cBgColor}; border-bottom-color: ${d.cBorderColor};`;
+        const pStyle = `color: ${d.qBorderColor}; margin-right: 30px; font-weight:900;`;
+
+        let html = '';
+
+        // ★★★ パターン分岐 ★★★
+        
+        // パターン1: フリー回答 (口頭/記述) -> 真ん中にドカンと表示
+        if (qType === 'free_oral' || qType === 'free_written') {
+            
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.justifyContent = 'center';
+            container.style.alignItems = 'center';
+
+            const singleBoxStyle = `
+                ${qStyleBase}
+                width: 80%;
+                height: 60%;
+                display: flex;
+                align-items: center;
+                justify-content: ${align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'};
+                font-size: 100px;
+                font-weight: bold;
+                border-radius: 20px;
+                padding: 50px;
+                box-sizing: border-box;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            `;
+            
+            html += `<div style="${singleBoxStyle}">${qText}</div>`;
+            let typeLabel = (qType === 'free_oral') ? "フリー（口頭回答）" : "フリー（記述式）";
+            html += `<div style="color:#aaa; font-size:30px; margin-top:20px;">[ ${typeLabel} ]</div>`;
+
+        } 
+        // パターン2: 選択式・並べ替え・多答 -> 分割レイアウト
+        else {
+            // 標準レイアウト用スタイル
+            const qStyleStandard = `
+                ${qStyleBase}
+                ${layout === 'standard' ? 'border-left-width: 30px;' : ''}
+            `;
+
+            if (layout === 'standard') {
+                container.style.flexDirection = 'column';
+                container.style.justifyContent = 'center';
+                container.style.alignItems = 'center';
+
+                html += `<div class="preview-q-area" style="${qStyleStandard}">${qText}</div>`;
+                html += `<div class="preview-c-area">`;
+                choices.forEach((c, i) => {
+                    html += `<div class="preview-choice-item" style="${cStyle}"><span style="${pStyle}">${String.fromCharCode(65+i)}</span> ${c}</div>`;
+                });
+                html += `</div>`;
+                
+            } else if (layout === 'split_list' || layout === 'split_grid') {
+                container.style.flexDirection = 'row-reverse';
+                container.style.justifyContent = 'center';
+                container.style.alignItems = 'center';
+
+                const qStyleVert = `
+                    color: ${d.qTextColor}; background: ${d.qBgColor}; border: 6px solid ${d.qBorderColor};
+                    writing-mode: vertical-rl; text-orientation: upright;
+                    width: 400px; height: 900px; display:flex; align-items:center; justify-content:center;
+                    font-size: 70px; font-weight:bold; margin-left: 50px; border-radius:15px;
+                `;
+                html += `<div style="${qStyleVert}">${qText}</div>`;
+                
+                html += `<div class="preview-c-area" style="width:50%;">`;
+                choices.forEach((c, i) => {
+                    html += `<div class="preview-choice-item" style="${cStyle}"><span style="${pStyle}">${String.fromCharCode(65+i)}</span> ${c}</div>`;
+                });
+                html += `</div>`;
+            }
+        }
+
+        container.innerHTML = html;
+
+    } catch (e) {
+        console.error("Preview Render Error:", e);
+        container.innerHTML = `<div style="color:white; font-size:50px;">Preview Error</div>`;
+    }
+}
+
+// リサイズ追従
+window.addEventListener('resize', () => renderDesignPreview());
+
+
+/* --- 既存のヘルパー関数群（必須） --- */
 
 function setDefaultDesignUI() {
     const layoutEl = document.getElementById('creator-set-layout');
@@ -255,18 +408,21 @@ function updateAlignUI(align) {
 }
 
 function collectDesignSettings() {
+    // 要素がない場合はデフォルト値を返すガード
+    const getVal = (id, def) => document.getElementById(id) ? document.getElementById(id).value : def;
+
     return {
-        layout: document.getElementById('creator-set-layout').value,
-        align: document.getElementById('creator-set-align').value,
+        layout: getVal('creator-set-layout', 'standard'),
+        align: getVal('creator-set-align', 'center'),
         design: {
-            mainBgColor: document.getElementById('design-main-bg-color').value,
-            bgImage: document.getElementById('design-bg-image-data').value,
-            qTextColor: document.getElementById('design-q-text').value,
-            qBgColor: document.getElementById('design-q-bg').value,
-            qBorderColor: document.getElementById('design-q-border').value,
-            cTextColor: document.getElementById('design-c-text').value,
-            cBgColor: document.getElementById('design-c-bg').value,
-            cBorderColor: document.getElementById('design-c-border').value
+            mainBgColor: getVal('design-main-bg-color', '#222222'),
+            bgImage: getVal('design-bg-image-data', ''),
+            qTextColor: getVal('design-q-text', '#ffffff'),
+            qBgColor: getVal('design-q-bg', '#2c5066'),
+            qBorderColor: getVal('design-q-border', '#ffffff'),
+            cTextColor: getVal('design-c-text', '#ffffff'),
+            cBgColor: getVal('design-c-bg', '#365c75'),
+            cBorderColor: getVal('design-c-border', '#ffffff')
         }
     };
 }
@@ -276,8 +432,8 @@ function applyDesignToUI(d, layout, align) {
     if(layoutEl) layoutEl.value = layout;
     updateAlignUI(align);
     
-    document.getElementById('design-main-bg-color').value = d.mainBgColor || "#222222";
-    document.getElementById('design-bg-image-data').value = d.bgImage || "";
+    if(document.getElementById('design-main-bg-color')) document.getElementById('design-main-bg-color').value = d.mainBgColor || "#222222";
+    if(document.getElementById('design-bg-image-data')) document.getElementById('design-bg-image-data').value = d.bgImage || "";
     const bgStatus = document.getElementById('design-bg-image-status');
     if(bgStatus) {
         if(d.bgImage) {
@@ -289,13 +445,13 @@ function applyDesignToUI(d, layout, align) {
         }
     }
 
-    document.getElementById('design-q-text').value = d.qTextColor || "#ffffff";
-    document.getElementById('design-q-bg').value = d.qBgColor || "#2c5066";
-    document.getElementById('design-q-border').value = d.qBorderColor || "#ffffff";
+    if(document.getElementById('design-q-text')) document.getElementById('design-q-text').value = d.qTextColor || "#ffffff";
+    if(document.getElementById('design-q-bg')) document.getElementById('design-q-bg').value = d.qBgColor || "#2c5066";
+    if(document.getElementById('design-q-border')) document.getElementById('design-q-border').value = d.qBorderColor || "#ffffff";
 
-    document.getElementById('design-c-text').value = d.cTextColor || "#ffffff";
-    document.getElementById('design-c-bg').value = d.cBgColor || "#365c75";
-    document.getElementById('design-c-border').value = d.cBorderColor || "#ffffff";
+    if(document.getElementById('design-c-text')) document.getElementById('design-c-text').value = d.cTextColor || "#ffffff";
+    if(document.getElementById('design-c-bg')) document.getElementById('design-c-bg').value = d.cBgColor || "#365c75";
+    if(document.getElementById('design-c-border')) document.getElementById('design-c-border').value = d.cBorderColor || "#ffffff";
 }
 
 function setupLivePreviewListeners() {
@@ -362,142 +518,3 @@ function setupLivePreviewListeners() {
         renderDesignPreview();
     };
 }
-
-// プレビュー描画（パターン分岐対応版）
-function renderDesignPreview(qData = null) {
-    const container = document.getElementById('design-monitor-preview-content');
-    if(!container) return;
-
-    // スケール計算 (親枠の幅に合わせて縮小)
-    const frame = document.querySelector('.design-preview-frame');
-    if(frame) {
-        const scale = frame.clientWidth / 1920;
-        container.style.transform = `scale(${scale})`;
-    }
-
-    // 現在の設定値を取得
-    const d = collectDesignSettings().design;
-    const layout = document.getElementById('creator-set-layout').value;
-    const align = document.getElementById('creator-set-align').value;
-
-    // プレビュー用のダミーデータ
-    let qType = 'choice';
-    let qText = "これは問題文のプレビューです。";
-    let choices = ["選択肢 A", "選択肢 B", "選択肢 C", "選択肢 D"];
-    
-    // 読み込み済みデータのキャッシュがあればそれを使う
-    if(!qData && currentDesignTarget && currentDesignTarget.data) {
-        if(currentDesignTarget.type === 'set' && currentDesignTarget.data.questions && currentDesignTarget.data.questions.length > 0) {
-            qData = currentDesignTarget.data.questions[0];
-        } else if (currentDesignTarget.type === 'prog' && currentDesignTarget.data.playlist && currentDesignTarget.data.playlist.length > 0) {
-             const pl = currentDesignTarget.data.playlist[0];
-             if(pl.questions && pl.questions.length > 0) qData = pl.questions[0];
-        }
-    }
-
-    if(qData) {
-        qType = qData.type || 'choice';
-        qText = qData.q;
-        if(qData.c) choices = qData.c;
-    }
-
-    // 背景
-    container.style.backgroundColor = d.mainBgColor;
-    if(d.bgImage) {
-        container.style.backgroundImage = `url(${d.bgImage})`;
-        container.style.backgroundSize = "cover";
-        container.style.backgroundPosition = "center";
-    } else {
-        if(d.mainBgColor === '#0a0a0a' || d.mainBgColor === '#222222') {
-             container.style.backgroundImage = "radial-gradient(circle at center, #1a1a1a 0%, #000000 100%)";
-        } else {
-             container.style.backgroundImage = "none";
-        }
-    }
-
-    // 基本スタイル定義
-    const qStyleBase = `
-        color: ${d.qTextColor}; background: ${d.qBgColor}; border: 6px solid ${d.qBorderColor};
-        ${align === 'left' ? 'text-align:left;' : align === 'right' ? 'text-align:right;' : 'text-align:center;'}
-    `;
-    const cStyle = `color: ${d.cTextColor}; background: ${d.cBgColor}; border-bottom-color: ${d.cBorderColor};`;
-    const pStyle = `color: ${d.qBorderColor}; margin-right: 30px; font-weight:900;`;
-
-    let html = '';
-
-    // ★★★ パターン分岐 ★★★
-    
-    // パターン1: フリー回答 (口頭/記述) -> 真ん中にドカンと表示
-    if (qType === 'free_oral' || qType === 'free_written') {
-        
-        container.style.display = 'flex';
-        container.style.flexDirection = 'column';
-        container.style.justifyContent = 'center';
-        container.style.alignItems = 'center';
-
-        const singleBoxStyle = `
-            ${qStyleBase}
-            width: 80%;
-            height: 60%;
-            display: flex;
-            align-items: center;
-            justify-content: ${align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center'};
-            font-size: 100px;
-            font-weight: bold;
-            border-radius: 20px;
-            padding: 50px;
-            box-sizing: border-box;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        `;
-        
-        html += `<div style="${singleBoxStyle}">${qText}</div>`;
-        let typeLabel = (qType === 'free_oral') ? "フリー（口頭回答）" : "フリー（記述式）";
-        html += `<div style="color:#aaa; font-size:30px; margin-top:20px;">[ ${typeLabel} ]</div>`;
-
-    } 
-    // パターン2: 選択式・並べ替え・多答 -> 分割レイアウト
-    else {
-        // 標準レイアウト用スタイル
-        const qStyleStandard = `
-            ${qStyleBase}
-            ${layout === 'standard' ? 'border-left-width: 30px;' : ''}
-        `;
-
-        if (layout === 'standard') {
-            container.style.flexDirection = 'column';
-            container.style.justifyContent = 'center';
-            container.style.alignItems = 'center';
-
-            html += `<div class="preview-q-area" style="${qStyleStandard}">${qText}</div>`;
-            html += `<div class="preview-c-area">`;
-            choices.forEach((c, i) => {
-                html += `<div class="preview-choice-item" style="${cStyle}"><span style="${pStyle}">${String.fromCharCode(65+i)}</span> ${c}</div>`;
-            });
-            html += `</div>`;
-            
-        } else if (layout === 'split_list' || layout === 'split_grid') {
-            container.style.flexDirection = 'row-reverse';
-            container.style.justifyContent = 'center';
-            container.style.alignItems = 'center';
-
-            const qStyleVert = `
-                color: ${d.qTextColor}; background: ${d.qBgColor}; border: 6px solid ${d.qBorderColor};
-                writing-mode: vertical-rl; text-orientation: upright;
-                width: 400px; height: 900px; display:flex; align-items:center; justify-content:center;
-                font-size: 70px; font-weight:bold; margin-left: 50px; border-radius:15px;
-            `;
-            html += `<div style="${qStyleVert}">${qText}</div>`;
-            
-            html += `<div class="preview-c-area" style="width:50%;">`;
-            choices.forEach((c, i) => {
-                html += `<div class="preview-choice-item" style="${cStyle}"><span style="${pStyle}">${String.fromCharCode(65+i)}</span> ${c}</div>`;
-            });
-            html += `</div>`;
-        }
-    }
-
-    container.innerHTML = html;
-}
-
-// リサイズ追従
-window.addEventListener('resize', () => renderDesignPreview());
