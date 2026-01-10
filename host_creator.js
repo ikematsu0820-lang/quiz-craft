@@ -218,4 +218,366 @@ function renderCreatorForm(type, data = null) {
             for(let i=0; i<4; i++) addChoiceInput(choicesDiv, i);
         }
 
-        const add
+        const addBtn = document.createElement('button');
+        addBtn.textContent = APP_TEXT.Creator.BtnAddChoice;
+        addBtn.className = 'btn-info';
+        addBtn.style.marginTop = '10px';
+        addBtn.style.padding = '5px';
+        addBtn.onclick = () => addChoiceInput(choicesDiv);
+        container.appendChild(addBtn);
+
+    } else if (type === 'sort') {
+        const optDiv = document.createElement('div');
+        optDiv.style.marginBottom = '10px';
+        const initVal = data ? data.initialOrder : 'random';
+        optDiv.innerHTML = `
+            <p style="font-size:0.8em; color:#666; margin:0 0 5px 0;">${APP_TEXT.Creator.DescSort}</p>
+            <label style="font-size:0.8em; font-weight:bold;">${APP_TEXT.Creator.LabelSortInitial}</label>
+            <select id="sort-initial-order" style="padding:5px; font-size:0.9em;">
+                <option value="random" ${initVal==='random'?'selected':''}>${APP_TEXT.Creator.SortInitialRandom}</option>
+                <option value="fixed" ${initVal==='fixed'?'selected':''}>${APP_TEXT.Creator.SortInitialFixed}</option>
+            </select>
+        `;
+        container.appendChild(optDiv);
+
+        const sortDiv = document.createElement('div');
+        sortDiv.id = 'creator-sort-list';
+        sortDiv.style.display = 'flex';
+        sortDiv.style.flexDirection = 'column';
+        sortDiv.style.gap = '5px';
+        container.appendChild(sortDiv);
+
+        if (data) {
+            data.c.forEach((itemText, i) => addSortInput(sortDiv, i, itemText));
+        } else {
+            for(let i=0; i<4; i++) addSortInput(sortDiv, i);
+        }
+
+        const addBtn = document.createElement('button');
+        addBtn.textContent = APP_TEXT.Creator.BtnAddSort;
+        addBtn.className = 'btn-info';
+        addBtn.style.marginTop = '10px';
+        addBtn.style.padding = '5px';
+        addBtn.onclick = () => addSortInput(sortDiv);
+        container.appendChild(addBtn);
+
+    } else if (type === 'free_written' || type === 'free_oral') {
+        const optDiv = document.createElement('div');
+        optDiv.style.marginBottom = '10px';
+        optDiv.innerHTML = `<p style="font-size:0.8em; color:#666; margin:5px 0;">${APP_TEXT.Creator.DescText}</p>`;
+        container.appendChild(optDiv);
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = 'creator-text-answer';
+        input.className = 'btn-block';
+        input.placeholder = 'e.g. Apple, Ringot, APPL';
+        if (data && data.correct) input.value = data.correct.join(', ');
+        container.appendChild(input);
+
+    } else if (type === 'multi') {
+        const optDiv = document.createElement('div');
+        optDiv.innerHTML = `<p style="font-size:0.8em; color:#666; margin:0 0 5px 0;">${APP_TEXT.Creator.DescMulti}</p>`;
+        container.appendChild(optDiv);
+
+        const multiDiv = document.createElement('div');
+        multiDiv.id = 'creator-multi-list';
+        multiDiv.style.display = 'grid';
+        multiDiv.style.gap = '5px';
+        container.appendChild(multiDiv);
+
+        if (data) {
+            data.c.forEach((text, i) => addMultiInput(multiDiv, i, text));
+        } else {
+            for(let i=0; i<5; i++) addMultiInput(multiDiv, i);
+        }
+
+        const addBtn = document.createElement('button');
+        addBtn.textContent = APP_TEXT.Creator.BtnAddMulti;
+        addBtn.className = 'btn-info';
+        addBtn.style.marginTop = '10px';
+        addBtn.style.padding = '5px';
+        addBtn.onclick = () => addMultiInput(multiDiv);
+        container.appendChild(addBtn);
+    }
+}
+
+function addChoiceInput(parent, index, text = "", checked = false) {
+    if (parent.children.length >= 10) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
+    const wrapper = document.createElement('div');
+    wrapper.className = 'choice-row';
+    const chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.className = 'choice-correct-chk';
+    chk.checked = checked;
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'choice-text-input';
+    inp.placeholder = 'Choice';
+    inp.value = text;
+    inp.style.flex = '1';
+    const del = document.createElement('button');
+    del.textContent = '×';
+    del.style.background = '#ccc';
+    del.style.color = '#333';
+    del.style.width = '30px';
+    del.style.padding = '5px';
+    del.onclick = () => parent.removeChild(wrapper);
+    wrapper.appendChild(chk);
+    wrapper.appendChild(inp);
+    wrapper.appendChild(del);
+    parent.appendChild(wrapper);
+}
+
+function addSortInput(parent, index, text = "") {
+    if (parent.children.length >= 10) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.alignItems = 'center';
+    wrapper.style.gap = '5px';
+    const num = document.createElement('span');
+    num.textContent = '🔹'; 
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'sort-text-input';
+    inp.placeholder = 'Item';
+    inp.value = text;
+    inp.style.flex = '1';
+    const del = document.createElement('button');
+    del.textContent = '×';
+    del.style.background = '#ccc';
+    del.style.color = '#333';
+    del.style.width = '30px';
+    del.style.padding = '5px';
+    del.onclick = () => parent.removeChild(wrapper);
+    wrapper.appendChild(num);
+    wrapper.appendChild(inp);
+    wrapper.appendChild(del);
+    parent.appendChild(wrapper);
+}
+
+function addMultiInput(parent, index, text = "") {
+    if (parent.children.length >= 20) { alert("Max 20 answers"); return; }
+    const wrapper = document.createElement('div');
+    wrapper.style.display = 'flex';
+    wrapper.style.alignItems = 'center';
+    wrapper.style.gap = '5px';
+    const num = document.createElement('span');
+    num.textContent = '✅'; 
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'multi-text-input';
+    inp.placeholder = 'Answer';
+    inp.value = text;
+    inp.style.flex = '1';
+    const del = document.createElement('button');
+    del.textContent = '×';
+    del.style.background = '#ccc';
+    del.style.color = '#333';
+    del.style.width = '30px';
+    del.style.padding = '5px';
+    del.onclick = () => parent.removeChild(wrapper);
+    wrapper.appendChild(num);
+    wrapper.appendChild(inp);
+    wrapper.appendChild(del);
+    parent.appendChild(wrapper);
+}
+
+function getQuestionDataFromForm() {
+    const qText = document.getElementById('question-text').value.trim();
+    if(!qText) { alert(APP_TEXT.Creator.AlertNoQ); return null; }
+
+    const type = document.getElementById('creator-q-type').value;
+    let newQ = { q: qText, type: type, points: 1, loss: 0 };
+
+    if (type === 'choice') {
+        const rows = document.querySelectorAll('.choice-row');
+        const options = [];
+        const correct = [];
+        rows.forEach((row, idx) => {
+            const text = row.querySelector('.choice-text-input').value.trim();
+            const isChk = row.querySelector('.choice-correct-chk').checked;
+            if(text) {
+                options.push(text);
+                if(isChk) correct.push(options.length - 1);
+            }
+        });
+        if (options.length < 2) { alert(APP_TEXT.Creator.AlertLessChoice); return null; }
+        if (correct.length === 0) { alert(APP_TEXT.Creator.AlertNoCorrect); return null; }
+        newQ.c = options; 
+        newQ.correct = correct;
+        newQ.correctIndex = correct[0];
+        newQ.multi = document.getElementById('opt-multi-select').checked;
+        newQ.partial = false;
+
+    } else if (type === 'sort') {
+        const inputs = document.querySelectorAll('.sort-text-input');
+        const options = [];
+        inputs.forEach(inp => { if(inp.value.trim()) options.push(inp.value.trim()); });
+        if(options.length < 2) { alert(APP_TEXT.Creator.AlertLessChoice); return null; }
+        newQ.c = options; 
+        newQ.correct = options.map((_, i) => i);
+        newQ.initialOrder = document.getElementById('sort-initial-order').value;
+
+    } else if (type === 'free_written' || type === 'free_oral') {
+        const ansText = document.getElementById('creator-text-answer').value.trim();
+        if (type === 'free_written' && !ansText) { alert(APP_TEXT.Creator.AlertNoTextAns); return null; }
+        const answers = ansText ? ansText.split(',').map(s => s.trim()).filter(s => s) : [];
+        newQ.correct = answers; 
+
+    } else if (type === 'multi') {
+        const inputs = document.querySelectorAll('.multi-text-input');
+        const options = [];
+        inputs.forEach(inp => { if(inp.value.trim()) options.push(inp.value.trim()); });
+        if(options.length < 1) { alert("At least 1 answer required"); return null; }
+        newQ.c = options;
+        newQ.correct = options; 
+    }
+    return newQ;
+}
+
+function addQuestion() {
+    const q = getQuestionDataFromForm();
+    if(q) {
+        createdQuestions.push(q);
+        resetForm();
+        renderQuestionList();
+        window.showToast(APP_TEXT.Creator.MsgAddedToast);
+        
+        document.getElementById('creator-q-type').disabled = true;
+        document.getElementById('creator-type-locked-msg').classList.remove('hidden');
+    }
+}
+
+function updateQuestion() {
+    if(editingQuestionIndex === null) return;
+    const q = getQuestionDataFromForm();
+    if(q) {
+        createdQuestions[editingQuestionIndex] = { ...createdQuestions[editingQuestionIndex], ...q };
+        resetForm();
+        renderQuestionList();
+        window.showToast(APP_TEXT.Creator.MsgUpdatedToast);
+    }
+}
+
+function editQuestion(index) {
+    editingQuestionIndex = index;
+    const q = createdQuestions[index];
+    
+    document.getElementById('creator-form-title').textContent = APP_TEXT.Creator.HeadingEditQ;
+    document.getElementById('add-question-btn').classList.add('hidden');
+    document.getElementById('update-question-area').classList.remove('hidden');
+    
+    document.getElementById('question-text').value = q.q;
+    renderCreatorForm(q.type, q);
+    
+    document.getElementById('creator-view').scrollIntoView({behavior: "smooth"});
+}
+
+function moveQuestion(index, direction) {
+    if (direction === -1 && index > 0) {
+        [createdQuestions[index], createdQuestions[index - 1]] = [createdQuestions[index - 1], createdQuestions[index]];
+    } else if (direction === 1 && index < createdQuestions.length - 1) {
+        [createdQuestions[index], createdQuestions[index + 1]] = [createdQuestions[index + 1], createdQuestions[index]];
+    }
+    renderQuestionList();
+}
+
+function deleteQuestion(index) {
+    if(confirm(APP_TEXT.Dashboard.DeleteConfirm)) {
+        createdQuestions.splice(index, 1);
+        if(editingQuestionIndex === index) resetForm();
+        else if(editingQuestionIndex > index) editingQuestionIndex--;
+        renderQuestionList();
+        
+        if(createdQuestions.length === 0) {
+            document.getElementById('creator-q-type').disabled = false;
+            document.getElementById('creator-type-locked-msg').classList.add('hidden');
+            renderCreatorForm(document.getElementById('creator-q-type').value);
+        }
+    }
+}
+
+function renderQuestionList() {
+    const list = document.getElementById('q-list');
+    list.innerHTML = '';
+    createdQuestions.forEach((q, index) => {
+        const div = document.createElement('div');
+        div.className = 'q-list-item';
+        
+        let typeIcon = '🔳';
+        if(q.type === 'sort') typeIcon = '🔢';
+        if(q.type === 'free_oral') typeIcon = '🗣';
+        if(q.type === 'free_written') typeIcon = '✍️';
+        if(q.type === 'multi') typeIcon = '📚';
+        
+        div.innerHTML = `
+            <div class="q-list-content">
+                ${typeIcon} <b>Q${index + 1}.</b> ${q.q}
+            </div>
+            <div class="q-list-actions">
+                <button class="btn-mini btn-move" onclick="moveQuestion(${index}, -1)">↑</button>
+                <button class="btn-mini btn-move" onclick="moveQuestion(${index}, 1)">↓</button>
+                <button class="btn-mini btn-edit" onclick="editQuestion(${index})">Edit</button>
+                <button class="btn-mini btn-del" onclick="deleteQuestion(${index})">×</button>
+            </div>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function saveToCloud() {
+    if(createdQuestions.length === 0) { alert('No questions'); return; }
+    
+    const inputTitle = prompt("セット名を入力してください:", currentEditingTitle);
+    if(inputTitle === null) return; 
+    if(!inputTitle.trim()) {
+        alert("セット名は必須です！");
+        return;
+    }
+    const title = inputTitle.trim();
+    
+    const layout = document.getElementById('creator-set-layout').value;
+    const align = document.getElementById('creator-set-align').value;
+    // ★変更: スペシャルモードはUI削除により 'none' 固定
+    const specialMode = 'none';
+    
+    const design = {
+        mainBgColor: document.getElementById('design-main-bg-color').value,
+        bgImage: document.getElementById('design-bg-image-data').value,
+        qTextColor: document.getElementById('design-q-text').value,
+        qBgColor: document.getElementById('design-q-bg').value,
+        qBorderColor: document.getElementById('design-q-border').value,
+        cTextColor: document.getElementById('design-c-text').value,
+        cBgColor: document.getElementById('design-c-bg').value,
+        cBorderColor: document.getElementById('design-c-border').value
+    };
+
+    createdQuestions.forEach(q => {
+        q.layout = layout;
+        q.align = align;
+        q.design = design;
+        q.specialMode = specialMode;
+    });
+
+    const defaultConf = { eliminationRule: 'none', scoreUnit: 'point', theme: 'light' };
+    const saveData = {
+        title: title,
+        config: defaultConf,
+        questions: createdQuestions,
+        createdAt: firebase.database.ServerValue.TIMESTAMP
+    };
+    if (editingSetId) {
+        window.db.ref(`saved_sets/${currentShowId}/${editingSetId}`).update(saveData)
+        .then(() => { 
+            window.showToast(APP_TEXT.Creator.MsgSavedToast);
+            enterDashboard(); 
+        });
+    } else {
+        window.db.ref(`saved_sets/${currentShowId}`).push(saveData)
+        .then(() => { 
+            window.showToast(APP_TEXT.Creator.MsgSavedToast);
+            enterDashboard(); 
+        });
+    }
+}
