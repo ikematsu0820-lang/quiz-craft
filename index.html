@@ -1,343 +1,375 @@
-/* =========================================================
- * host_studio.js (v84: Click to Copy ID)
- * =======================================================*/
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Studio</title>
+<link rel="stylesheet" href="style_common.css?v=86">
+<link rel="stylesheet" href="style_host.css?v=86">
+<link rel="stylesheet" href="style_player.css?v=86">
+<link rel="stylesheet" href="style_viewer.css?v=86">
+</head>
+<body>
 
-App.Studio = {
-    currentStepId: 0,
-    soloState: { lives: 3, timeBank: 60 },
+<div id="toast-container"></div>
+
+<div id="main-view" class="view landing-view">
+    <div class="landing-content">
+        <div class="landing-logo-area">
+            <div class="landing-logo-emoji">💡</div>
+            <h1 class="landing-title">Quiz Studio</h1>
+            <p class="landing-subtitle">Cloud Edition</p>
+        </div>
+        <div class="landing-btn-area">
+            <button id="main-host-btn" class="landing-btn btn-host-modern"><span class="btn-icon">✏️</span> クイズを作る</button>
+            <button id="main-player-btn" class="landing-btn btn-player-modern"><span class="btn-icon">✔</span> クイズに答える</button>
+        </div>
+    </div>
+</div>
+
+<div id="host-login-view" class="view hidden center-content-view">
+    <div class="view-header">
+        <h2 data-text="Login.Title">ID Input</h2>
+        <button class="header-back-btn back-to-main" data-text="Login.BackBtn">Home</button>
+    </div>
+    <div class="login-form-area">
+        <img src="logo.png" alt="Quiz Studio" class="app-logo-small mb-20">
+        <input type="text" id="show-id-input" class="input-large text-uppercase mb-20" placeholder="SHOW ID">
+        <button id="host-login-submit-btn" class="btn-primary btn-block" data-text="Login.SubmitBtn">Login</button>
+    </div>
+</div>
+
+<div id="host-dashboard-view" class="view hidden">
+    <div class="view-header">
+        <h3>Show: <span id="dashboard-show-id" class="accent-text">---</span></h3>
+        <button class="header-back-btn btn-logout back-to-main" data-text="Dashboard.Logout">Logout</button>
+    </div>
+    <div class="dashboard-grid">
+        <button id="dash-create-btn" class="dash-btn" data-text="Dashboard.BtnCreate">Create</button>
+        <button id="dash-config-btn" class="dash-btn" data-text="Dashboard.BtnConfig">Config</button>
+        <button id="dash-design-btn" class="dash-btn">デザイン</button>
+        <button id="dash-studio-btn" class="dash-btn studio-btn" data-text="Dashboard.BtnStudio">Studio</button>
+        <button id="dash-viewer-btn" class="dash-btn" data-text="Dashboard.BtnViewer">Monitor</button>
+    </div>
+    <div class="dashboard-list-area">
+        <h4 class="section-title" data-text="Dashboard.SetListTitle">Saved Sets</h4>
+        <div id="dash-set-list" class="scroll-list"></div>
+    </div>
+</div>
+
+<div id="design-view" class="view hidden">
+    <div class="view-header">
+        <h2>デザインスタジオ</h2>
+        <button id="design-back-btn" class="header-back-btn">ダッシュボード</button>
+    </div>
+    <div class="design-preview-area-top">
+        <h4 class="preview-label">モニター画面プレビュー</h4>
+        <div class="design-preview-frame">
+            <div id="design-monitor-preview-content"></div>
+        </div>
+        <p class="preview-note">※実際の表示とは解像度が異なります</p>
+    </div>
+    <div class="design-toolbar">
+        <div class="toolbar-select">
+            <select id="design-target-select" class="btn-block"><option value="">-- 編集対象を選択 --</option></select>
+        </div>
+        <button id="design-target-load-btn" class="btn-primary toolbar-btn">Load</button>
+    </div>
+    <div class="design-menu-grid">
+        <button id="btn-open-text" class="design-menu-btn"><span class="menu-icon">T</span><br>テキスト・配置</button>
+        <button id="btn-open-object" class="design-menu-btn"><span class="menu-icon">□</span><br>オブジェクト</button>
+        <button id="btn-open-bg" class="design-menu-btn"><span class="menu-icon">🖼</span><br>背景</button>
+    </div>
+    <div class="design-action-row">
+        <button id="design-reset-btn" class="btn-dark">初期値</button>
+        <button id="design-save-btn" class="btn-success">保存 (完了)</button>
+    </div>
     
-    // スタジオ起動 (ルームID発行)
-    startRoom: function(isQuick = false) {
-        App.Data.studioQuestions = [];
-        App.State.currentQIndex = 0;
-        App.State.currentPeriodIndex = 0;
-        
-        const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-        App.State.currentRoomId = code;
-        
-        window.db.ref(`rooms/${code}`).set({
-            status: { step: 'standby', qIndex: 0 },
-            config: { mode: 'normal' },
-            players: {},
-            questions: []
-        }).then(() => {
-            console.log("Room Created:", code);
-            this.enterHostMode(isQuick);
-        });
-    },
+    <div id="modal-design-text" class="design-modal-overlay hidden">
+        <div class="design-modal-content">
+            <h3 class="modal-title">テキスト設定</h3>
+            <div class="design-modal-body">
+                <label class="config-label">文字の配置</label>
+                <div class="align-btn-group">
+                    <button type="button" class="btn-align" data-align="left">左揃え</button>
+                    <button type="button" class="btn-align active" data-align="center">中央</button>
+                    <button type="button" class="btn-align" data-align="right">右揃え</button>
+                </div>
+                <input type="hidden" id="creator-set-align" value="center">
+                <label class="config-label">問題文の文字色</label><input type="color" id="design-q-text" class="color-picker-full">
+                <label class="config-label">選択肢の文字色</label><input type="color" id="design-c-text" class="color-picker-full">
+            </div>
+            <button class="btn-block btn-dark modal-close-btn">閉じる</button>
+        </div>
+    </div>
+    <div id="modal-design-object" class="design-modal-overlay hidden">
+        <div class="design-modal-content">
+            <h3 class="modal-title">オブジェクト設定</h3>
+            <div class="design-modal-body">
+                <label class="config-label">モニターレイアウト</label>
+                <select id="creator-set-layout" class="btn-block mb-20">
+                    <option value="standard">標準 (上下)</option>
+                    <option value="split_list">左右分割 (リスト)</option>
+                    <option value="split_grid">左右分割 (グリッド)</option>
+                </select>
+                <h4 class="sub-title">問題文エリア</h4>
+                <div class="grid-2-col">
+                    <div><label class="mini-label">枠線</label><input type="color" id="design-q-border" class="color-picker-full"></div>
+                    <div><label class="mini-label">背景</label><input type="color" id="design-q-bg" class="color-picker-full"></div>
+                </div>
+                <h4 class="sub-title">選択肢エリア</h4>
+                <div class="grid-2-col">
+                    <div><label class="mini-label">枠線</label><input type="color" id="design-c-border" class="color-picker-full"></div>
+                    <div><label class="mini-label">背景</label><input type="color" id="design-c-bg" class="color-picker-full"></div>
+                </div>
+            </div>
+            <button class="btn-block btn-dark modal-close-btn">閉じる</button>
+        </div>
+    </div>
+    <div id="modal-design-bg" class="design-modal-overlay hidden">
+        <div class="design-modal-content">
+            <h3 class="modal-title">背景設定</h3>
+            <div class="design-modal-body">
+                <label class="config-label">背景色</label><input type="color" id="design-main-bg-color" class="color-picker-full mb-20">
+                <label class="config-label">背景画像</label>
+                <div class="image-upload-area">
+                    <input type="file" id="design-bg-image-file" accept="image/*" style="display:none;">
+                    <button id="design-bg-image-btn" class="btn-primary mb-10">画像ファイルを選択</button><br>
+                    <span id="design-bg-image-status" class="status-text">未選択</span>
+                    <button id="design-bg-clear-btn" class="btn-danger btn-mini mt-10">画像解除</button>
+                </div>
+                <input type="hidden" id="design-bg-image-data">
+            </div>
+            <button class="btn-block btn-dark modal-close-btn">閉じる</button>
+        </div>
+    </div>
+</div>
 
-    enterHostMode: function(isQuick) {
-        App.Ui.showView(App.Ui.views.hostControl);
-        
-        const code = App.State.currentRoomId;
-        
-        // ★修正: ID表示更新 & クリックでコピー機能を追加
-        const targets = ['studio-header-room-id', 'studio-big-room-id'];
-        targets.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) {
-                el.textContent = code;
-                el.title = "クリックしてコピー"; // ツールチップ
-                
-                // クリックイベント
-                el.onclick = () => {
-                    navigator.clipboard.writeText(code).then(() => {
-                        App.Ui.showToast("📋 ROOM IDをコピーしました！");
-                        
-                        // 視覚的フィードバック（一瞬白くする）
-                        const originalColor = el.style.color;
-                        el.style.color = "#fff";
-                        setTimeout(() => el.style.color = originalColor, 200);
-                    }).catch(err => {
-                        alert("コピーに失敗しました: " + code);
-                    });
-                };
-            }
-        });
+<div id="creator-view" class="view hidden">
+    <div class="view-header">
+        <h2 data-text="Creator.Title">Creator</h2>
+        <button id="creator-back-btn" class="header-back-btn">ダッシュボード</button>
+    </div>
+    <div class="panel-section section-blue mb-20">
+        <h4 class="panel-title" data-text="Creator.HeadingSettings">Set Settings</h4>
+        <label class="config-label" data-text="Creator.LabelTypeFixed">Fixed Type</label>
+        <select id="creator-q-type" class="btn-block bold-select"></select>
+        <p id="creator-type-locked-msg" class="locked-msg hidden" data-text="Creator.MsgTypeLocked">Locked</p>
+    </div>
+    <div class="panel-section section-pink mb-20">
+        <h3 id="creator-form-title" class="panel-title-large" data-text="Creator.HeadingNewQ">New Question</h3>
+        <input type="text" id="question-text" class="btn-block mb-10" placeholder="">
+        <div id="creator-form-container" class="mb-10"></div>
+        <button id="add-question-btn" class="btn-primary btn-block mt-10" data-text="Creator.BtnAdd">Add</button>
+        <div id="update-question-area" class="hidden grid-2-col gap-10 mt-10">
+            <button id="update-question-btn" class="btn-success" data-text="Creator.BtnUpdateQ">Update</button>
+            <button id="cancel-update-btn" class="btn-dark" data-text="Creator.BtnCancel">Cancel</button>
+        </div>
+    </div>
+    <div class="creator-set-settings">
+        <h5 data-text="Creator.ListHeading" class="mb-5">List</h5>
+        <div id="q-list" class="scroll-list mb-15"></div>
+        <button id="save-to-cloud-btn" class="btn-success btn-block btn-large" data-text="Creator.BtnSave">Save</button>
+    </div>
+</div>
 
-        this.monitorPlayers();
+<div id="config-view" class="view hidden">
+    <div class="view-header">
+        <h2 data-text="Config.Title">Rule Settings</h2>
+        <button id="config-header-back-btn" class="header-back-btn">ダッシュボード</button>
+    </div>
+    <div class="panel-section section-cyan mb-20">
+        <h3 class="panel-title-center" data-text="Config.HeadingAdd">Add Period</h3>
+        <div class="mb-15">
+            <label class="config-label-large" data-text="Config.LabelSet">Set</label>
+            <select id="config-set-select" class="btn-block config-select"></select>
+        </div>
+        <div id="config-builder-ui"></div>
+    </div>
+    <div class="config-playlist-area">
+        <h4 class="section-title" data-text="Config.HeadingList">Playlist</h4>
+        <div id="config-playlist-preview" class="scroll-list-dark"><p class="empty-msg">まだ追加されていません</p></div>
+        <div class="config-options-row">
+            <label class="checkbox-label"><input type="checkbox" id="config-final-ranking-chk" checked> <span data-text="Config.LabelFinalRank">Final Ranking</span></label>
+        </div>
+        <div class="save-prog-row">
+            <input type="text" id="config-program-title" placeholder="構成名を入力" class="flex-input">
+            <button id="config-save-program-btn" class="btn-info" data-text="Config.BtnSaveProg">Save</button>
+        </div>
+        <button id="config-open-load-modal-btn" class="btn-primary btn-block btn-large mb-20">📂 プログラムを編集する</button>
+    </div>
+    <button id="config-go-studio-btn" class="btn-danger btn-block btn-large" data-text="Config.BtnGoStudio">Go Studio</button>
+    
+    <div id="config-load-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="modal-title">編集するプログラムを選択</h3>
+            <p class="modal-note">※読み込むと現在のリストは上書きされます</p>
+            <select id="config-prog-select" class="btn-block config-select mb-20"><option value="">読み込み中...</option></select>
+            <div class="grid-2-col gap-10">
+                <button id="config-load-prog-exec-btn" class="btn-primary">Load</button>
+                <button id="config-modal-close-btn" class="btn-dark">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-        if (isQuick && App.Data.periodPlaylist.length > 0) {
-            this.renderTimeline();
-            setTimeout(() => this.setupPeriod(0), 500);
-        } else {
-            document.getElementById('studio-question-panel').classList.add('hidden');
-            document.getElementById('studio-standby-panel').classList.remove('hidden');
-            document.getElementById('studio-loader-ui').classList.remove('hidden');
-            this.loadProgramList();
-        }
-    },
+<div id="host-control-view" class="view hidden host-studio-layout">
+    <div class="studio-header-bar">
+        <div class="status-item">
+            <span class="status-label">ROOM ID</span>
+            <span id="studio-header-room-id" class="status-value text-yellow" title="クリックしてコピー">---</span>
+        </div>
+        <div class="status-item"><span class="status-label">MODE</span><span id="studio-mode-display" class="status-value text-cyan">NORMAL</span></div>
+        <div class="status-item"><span class="status-label">Q</span><span id="studio-q-num-display" class="status-value">1/10</span></div>
+        <div class="status-item"><span class="status-label">STEP</span><span id="studio-step-display" class="status-value">STANDBY</span></div>
+        <div class="status-item"><span class="status-label">PLAYER</span><span id="studio-player-count-display" class="status-value">0</span></div>
+        <div id="studio-solo-info" class="status-item hidden">
+            <span class="status-label">CHALLENGER</span><span id="studio-challenger-name" class="status-value text-pink">---</span>
+            <span class="status-label ml-10">LIFE</span><span id="studio-life-display" class="status-value">3</span>
+        </div>
+        <button id="host-close-studio-btn" class="header-back-btn" style="margin-left: auto;">ダッシュボード</button>
+    </div>
 
-    loadProgramList: function() {
-        const select = document.getElementById('studio-program-select');
-        const btn = document.getElementById('studio-load-program-btn');
-        const showId = App.State.currentShowId;
-
-        if (!showId) {
-            select.innerHTML = '<option>エラー: ID未設定</option>';
-            return;
-        }
-
-        select.innerHTML = '<option>Loading...</option>';
-        btn.disabled = true;
-
-        window.db.ref(`saved_programs/${showId}`).once('value', snap => {
-            const data = snap.val();
-            select.innerHTML = '';
+    <div class="studio-main-area">
+        <div id="studio-standby-panel" class="center-message">
+            <h3 data-text="Studio.StatusReady">Ready...</h3>
             
-            const def = document.createElement('option');
-            def.value = "";
-            def.textContent = "-- 読み込むプログラムを選択 --";
-            select.appendChild(def);
+            <div class="big-room-id-box">
+                <span class="label">ROOM ID (Click to Copy)</span>
+                <span id="studio-big-room-id" title="クリックしてコピー">------</span>
+            </div>
 
-            if (data) {
-                Object.keys(data).forEach(key => {
-                    const prog = data[key];
-                    const opt = document.createElement('option');
-                    try {
-                        opt.value = JSON.stringify(prog);
-                        opt.textContent = prog.title;
-                        select.appendChild(opt);
-                    } catch(e) { console.error(e); }
-                });
-                select.disabled = false;
-            } else {
-                const opt = document.createElement('option');
-                opt.textContent = "(保存されたプログラムがありません)";
-                select.appendChild(opt);
-            }
-        });
-
-        select.onchange = () => { btn.disabled = (select.value === ""); };
-
-        btn.onclick = () => {
-            const val = select.value;
-            if (!val) return;
-            try {
-                const prog = JSON.parse(val);
-                App.Data.periodPlaylist = prog.playlist || [];
-                document.getElementById('studio-loader-ui').classList.add('hidden');
-                document.getElementById('studio-program-info').textContent = "Loaded: " + prog.title;
-                this.renderTimeline();
-            } catch(e) { alert("データの読み込みに失敗しました"); }
-        };
-    },
-
-    monitorPlayers: function() {
-        window.db.ref(`rooms/${App.State.currentRoomId}/players`).on('value', snap => {
-            const players = snap.val() || {};
-            const count = Object.keys(players).length;
-            document.getElementById('studio-player-count-display').textContent = count;
+            <div id="studio-program-info" class="text-gray mb-20">プログラム未ロード</div>
             
-            if(App.Data.currentConfig?.mode === 'buzz' && this.currentStepId === 3) {
-                this.checkBuzz(players);
-            }
-        });
-    },
+            <div id="studio-loader-ui" class="panel-section section-blue" style="max-width:400px; margin:0 auto;">
+                <select id="studio-program-select" class="btn-block config-select mb-10"></select>
+                <button id="studio-load-program-btn" class="btn-primary btn-block" data-text="Studio.BtnLoad">Set</button>
+            </div>
+            <div id="studio-period-timeline" class="timeline-container mt-20"></div>
+        </div>
 
-    renderTimeline: function() {
-        const area = document.getElementById('studio-period-timeline');
-        area.innerHTML = '';
-        App.Data.periodPlaylist.forEach((item, i) => {
-            const btn = document.createElement('button');
-            btn.className = `btn-block ${i===App.State.currentPeriodIndex ? 'btn-info' : 'btn-dark'}`;
-            btn.textContent = `${i+1}. ${item.title} [${item.config.mode}]`;
-            btn.onclick = () => this.setupPeriod(i);
-            area.appendChild(btn);
-        });
-    },
+        <div id="studio-question-panel" class="question-monitor hidden">
+            <div class="monitor-header">
+                <span id="studio-q-type-badge" class="badge-type">CHOICE</span>
+                <span class="monitor-timer hidden" id="studio-timer-display">TIME: 10</span>
+            </div>
+            <div id="studio-q-text" class="monitor-q-text"></div>
+            <div id="studio-choices-container" class="monitor-choices"></div>
+            <div id="studio-correct-display" class="monitor-correct hidden">
+                <span class="label">ANSWER:</span> <span id="studio-correct-text"></span>
+            </div>
+            <div id="studio-sub-info" class="monitor-sub-info hidden"></div>
+        </div>
+    </div>
 
-    setupPeriod: function(index) {
-        const item = App.Data.periodPlaylist[index];
-        if(!item) return;
+    <div class="studio-footer-controls">
+        <button id="btn-phase-main" class="btn-block btn-large-action">START</button>
+        <div id="studio-sub-controls" class="sub-controls-grid hidden">
+            <button id="btn-judge-correct" class="btn-success btn-judge">⭕ COR</button>
+            <button id="btn-judge-wrong" class="btn-danger btn-judge">❌ WRO</button>
+        </div>
+        <div class="footer-tools">
+            <button id="btn-toggle-ans" class="btn-mini btn-dark">正解表示</button>
+            <button id="btn-force-next" class="btn-mini btn-dark">Skip Q</button>
+        </div>
+    </div>
+</div>
 
-        App.State.currentPeriodIndex = index;
-        App.Data.studioQuestions = item.questions;
-        App.Data.currentConfig = item.config;
-        App.State.currentQIndex = 0;
+<div id="ranking-view" class="view hidden center-text">
+    <h2 class="ranking-title-main">RANKING</h2>
+    <div id="ranking-list" class="ranking-container"></div>
+    <button id="ranking-back-btn" class="btn-primary btn-block mt-20" data-text="Studio.BtnBackRanking">Back</button>
+</div>
 
-        const roomId = App.State.currentRoomId;
-        window.db.ref(`rooms/${roomId}/config`).set(App.Data.currentConfig);
-        window.db.ref(`rooms/${roomId}/questions`).set(App.Data.studioQuestions);
-        
-        document.getElementById('studio-standby-panel').classList.add('hidden');
-        document.getElementById('studio-question-panel').classList.remove('hidden');
-        
-        const isSolo = (item.config.mode === 'solo');
-        if (isSolo) {
-            document.getElementById('studio-solo-info').classList.remove('hidden');
-            this.soloState.lives = item.config.soloLife || 3;
-            document.getElementById('studio-life-display').textContent = this.soloState.lives;
-        } else {
-            document.getElementById('studio-solo-info').classList.add('hidden');
-        }
+<div id="respondent-view" class="view hidden center-content-view">
+    <div class="view-header">
+        <h2 data-text="Player.TitleEntry">Entry</h2>
+        <button class="header-back-btn back-to-main" data-text="Login.BackBtn">Home</button>
+    </div>
+    <div class="login-form-area">
+        <input type="text" id="room-code-input" class="input-large text-uppercase mb-20" placeholder="CODE" maxlength="6">
+        <input type="text" id="player-name-input" class="input-large mb-20" placeholder="NAME">
+        <button id="join-room-btn" class="btn-primary btn-block" data-text="Player.BtnJoin">Join</button>
+    </div>
+</div>
 
-        this.setStep(0);
-    },
+<div id="player-game-view" class="view hidden">
+    <div id="player-status-bar" class="player-status-bar">
+        <span id="player-name-disp" class="player-name">---</span>
+        <span id="alive-badge" class="alive-badge" data-text="Player.BadgeAlive">ALIVE</span>
+    </div>
+    <div id="score-display-area" class="hidden score-area">Score: <span id="current-score-value">0</span></div>
+    <div id="player-lobby-msg" class="lobby-msg"></div>
+    <div id="player-buzz-area" class="hidden center-text mt-20">
+        <button id="player-buzz-btn" class="buzz-btn" data-text="Player.BtnBuzz">PUSH!</button>
+    </div>
+    <div id="player-quiz-area" class="hidden">
+        <div id="question-text-disp" class="player-q-text"></div>
+        <div id="player-input-container"></div>
+        <div id="answer-timer-disp" class="timer-disp"></div>
+    </div>
+    <div id="player-oral-done-area" class="hidden center-text mt-20">
+        <button id="player-oral-done-btn" class="btn-primary btn-block btn-large" data-text="Player.BtnAnswered">Answered</button>
+    </div>
+    <div id="player-wait-msg" class="hidden wait-msg" data-text="Player.MsgAnswered">Answered...</div>
+    <div id="player-result-overlay" class="hidden overlay-result">
+        <div id="result-icon"></div>
+        <div id="result-text"></div>
+        <div id="result-detail"></div>
+    </div>
+    <div id="player-ranking-overlay" class="hidden overlay-ranking">
+        <h2 class="rank-title" data-text="Player.RankTitle">RANKING</h2>
+        <div data-text="Player.RankYou">You are...</div>
+        <div id="player-my-rank" class="my-rank">---</div>
+        <div id="player-my-score" class="my-score">---</div>
+        <div class="leaderboard-box">
+            <div class="lb-title" data-text="Player.RankBoardTitle">Top Leaders</div>
+            <div id="player-leaderboard" class="lb-list"></div>
+        </div>
+    </div>
+    <div id="player-dead-overlay" class="hidden overlay-dead">
+        <h1 class="dead-title" data-text="Player.MsgDead">GAME OVER</h1>
+        <p data-text="Player.MsgDeadBody">Dead...</p>
+    </div>
+</div>
 
-    setStep: function(stepId) {
-        this.currentStepId = stepId;
-        const btnMain = document.getElementById('btn-phase-main');
-        const subControls = document.getElementById('studio-sub-controls');
-        
-        btnMain.className = 'btn-block btn-large-action';
-        subControls.classList.add('hidden');
-        btnMain.classList.remove('hidden');
+<div id="viewer-login-view" class="view hidden">
+    <div class="view-header">
+        <h2 data-text="Viewer.Title">Monitor Connect</h2>
+        <button class="header-back-btn">ダッシュボード</button>
+    </div>
+    <div class="login-form-area">
+        <img src="logo.png" alt="Quiz Studio" class="app-logo-small mb-20">
+        <input type="text" id="viewer-room-code" class="input-large text-uppercase mb-20" placeholder="CODE">
+        <button id="viewer-connect-btn" class="btn-warning btn-block" data-text="Viewer.BtnConnect">Connect</button>
+    </div>
+</div>
 
-        const steps = ['STANDBY', 'READY', 'QUESTION', 'ANSWERING', 'RESULT', 'ANSWER', 'NEXT'];
-        document.getElementById('studio-step-display').textContent = steps[stepId];
-        document.getElementById('studio-q-num-display').textContent = `${App.State.currentQIndex + 1}/${App.Data.studioQuestions.length}`;
-        document.getElementById('studio-mode-display').textContent = App.Data.currentConfig.mode.toUpperCase();
+<div id="viewer-main-view" class="view hidden">
+    <div id="viewer-content">
+        <div id="viewer-status"></div>
+        <div id="viewer-main-text"></div>
+        <div id="viewer-panel-grid" class="hidden"></div>
+        <div id="viewer-bomb-grid" class="hidden"></div>
+        <div id="viewer-multi-grid" class="hidden"></div>
+        <div id="viewer-sub-text"></div>
+        <div id="viewer-ranking-area"></div>
+        <div id="viewer-race-area" class="hidden"></div>
+        <div id="viewer-timer-bar-area" class="hidden"><div id="viewer-timer-bar"></div></div>
+    </div>
+</div>
 
-        const q = App.Data.studioQuestions[App.State.currentQIndex];
-        const roomId = App.State.currentRoomId;
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<script src="firebase.js"></script>
+<script src="text_config.js?v=86"></script>
+<script src="host_core.js?v=86"></script>
+<script src="host_design.js?v=86"></script>
+<script src="host_creator.js?v=86"></script>
+<script src="host_config.js?v=86"></script>
+<script src="host_studio.js?v=86"></script>
+<script src="player.js?v=86"></script>
+<script src="viewer.js?v=86"></script>
 
-        switch(stepId) {
-            case 0: // STANDBY
-                btnMain.textContent = "GAME START";
-                btnMain.onclick = () => this.setStep(1);
-                this.renderQuestionMonitor(q);
-                window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: App.State.currentQIndex });
-                break;
-            case 1: // READY
-                btnMain.textContent = "SKIP READY";
-                btnMain.classList.add('action-ready');
-                btnMain.onclick = () => this.setStep(2);
-                window.db.ref(`rooms/${roomId}/status`).update({ step: 'ready' });
-                break;
-            case 2: // QUESTION
-                btnMain.textContent = "OPEN QUESTION";
-                btnMain.onclick = () => this.setStep(3);
-                window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', startTime: firebase.database.ServerValue.TIMESTAMP });
-                break;
-            case 3: // ANSWERING
-                btnMain.textContent = "STOP / JUDGE";
-                btnMain.classList.add('action-stop');
-                if(App.Data.currentConfig.mode === 'buzz' || App.Data.currentConfig.mode === 'solo') {
-                    subControls.classList.remove('hidden');
-                    btnMain.classList.add('hidden'); 
-                } else {
-                    btnMain.onclick = () => { this.judgeSimultaneous(); this.setStep(4); };
-                }
-                window.db.ref(`rooms/${roomId}/status`).update({ step: 'answering', isBuzzActive: (App.Data.currentConfig.mode === 'buzz') });
-                break;
-            case 4: // RESULT
-                btnMain.textContent = "SHOW ANSWER";
-                btnMain.onclick = () => this.setStep(5);
-                window.db.ref(`rooms/${roomId}/status`).update({ step: 'result', isBuzzActive: false });
-                break;
-            case 5: // ANSWER
-                btnMain.textContent = "NEXT QUESTION >>";
-                btnMain.classList.add('action-next');
-                btnMain.onclick = () => this.setStep(6);
-                document.getElementById('studio-correct-display').classList.remove('hidden');
-                window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
-                break;
-            case 6: // NEXT
-                if (App.State.currentQIndex < App.Data.studioQuestions.length - 1) {
-                    App.State.currentQIndex++;
-                    this.setStep(0);
-                } else {
-                    alert("Period Complete!");
-                }
-                break;
-        }
-    },
-
-    renderQuestionMonitor: function(q) {
-        if(!q) return;
-        document.getElementById('studio-q-text').textContent = q.q;
-        document.getElementById('studio-q-type-badge').textContent = q.type;
-        const cContainer = document.getElementById('studio-choices-container');
-        cContainer.innerHTML = '';
-        if(q.c) {
-            q.c.forEach((c, i) => {
-                const div = document.createElement('div');
-                div.className = 'monitor-choice-item';
-                div.textContent = `${String.fromCharCode(65+i)}. ${c}`;
-                cContainer.appendChild(div);
-            });
-        }
-        document.getElementById('studio-correct-text').textContent = Array.isArray(q.correct) ? "Multi" : (q.c ? q.c[q.correct] : q.correct);
-        document.getElementById('studio-correct-display').classList.add('hidden');
-    },
-
-    checkBuzz: function(players) {
-        if(this.currentStepId !== 3 || this.buzzWinner) return;
-        const candidates = Object.entries(players).filter(([_, p]) => p.buzzTime && !p.lastResult).sort((a, b) => a[1].buzzTime - b[1].buzzTime);
-        if(candidates.length > 0) {
-            this.buzzWinner = candidates[0][0];
-            const name = candidates[0][1].name;
-            const info = document.getElementById('studio-sub-info');
-            info.classList.remove('hidden');
-            info.innerHTML = `<span style="color:orange; font-weight:bold;">BUZZ: ${name}</span>`;
-            window.db.ref(`rooms/${App.State.currentRoomId}/status`).update({ currentAnswerer: this.buzzWinner, isBuzzActive: false });
-        }
-    },
-    
-    judgeBuzz: function(isCorrect) {
-        if (App.Data.currentConfig.mode === 'solo') { this.judgeSolo(isCorrect); return; }
-        if(!this.buzzWinner) return;
-        const roomId = App.State.currentRoomId;
-        const pts = App.Data.studioQuestions[App.State.currentQIndex].points || 1;
-        window.db.ref(`rooms/${roomId}/players/${this.buzzWinner}`).once('value', snap => {
-            const p = snap.val();
-            if(isCorrect) {
-                snap.ref.update({ periodScore: (p.periodScore||0) + pts, lastResult: 'win' });
-                this.buzzWinner = null;
-                document.getElementById('studio-sub-info').classList.add('hidden');
-                this.setStep(4);
-            } else {
-                snap.ref.update({ lastResult: 'lose', buzzTime: null });
-                this.buzzWinner = null;
-                document.getElementById('studio-sub-info').classList.add('hidden');
-                window.db.ref(`rooms/${roomId}/status`).update({ currentAnswerer: null, isBuzzActive: true });
-            }
-        });
-    },
-
-    judgeSolo: function(isCorrect) {
-        if (isCorrect) { this.setStep(5); } else {
-            this.soloState.lives--;
-            document.getElementById('studio-life-display').textContent = this.soloState.lives;
-            if (this.soloState.lives <= 0) alert("GAME OVER");
-        }
-    },
-
-    judgeSimultaneous: function() {
-        const q = App.Data.studioQuestions[App.State.currentQIndex];
-        window.db.ref(`rooms/${App.State.currentRoomId}/players`).once('value', snap => {
-            snap.forEach(pSnap => {
-                const p = pSnap.val();
-                let isCor = false;
-                if(q.type === 'choice' && p.lastAnswer == q.correct) isCor = true;
-                if(isCor) pSnap.ref.update({ periodScore: (p.periodScore||0) + 1, lastResult: 'win' });
-                else pSnap.ref.update({ lastResult: 'lose' });
-            });
-        });
-    },
-
-    toggleAns: function() { document.getElementById('studio-correct-display').classList.toggle('hidden'); },
-    
-    quickStart: function(setData) {
-        const unextDesign = { mainBgColor: "#0a0a0a", qTextColor: "#fff", qBgColor: "rgba(255,255,255,0.05)", qBorderColor: "#00bfff" };
-        const questions = (setData.questions||[]).map(q => { if(!q.design) q.design = unextDesign; return q; });
-        App.Data.periodPlaylist = [{
-            title: setData.title || "Quick Play",
-            questions: questions,
-            config: { mode: 'normal', gameType: 'score', theme: 'dark' }
-        }];
-        this.startRoom(true); 
-    }
-};
-
-window.startRoom = () => App.Studio.startRoom();
-window.quickStartSet = (d) => App.Studio.quickStart(d);
-
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('btn-judge-correct')?.addEventListener('click', () => App.Studio.judgeBuzz(true));
-    document.getElementById('btn-judge-wrong')?.addEventListener('click', () => App.Studio.judgeBuzz(false));
-    document.getElementById('btn-toggle-ans')?.addEventListener('click', () => App.Studio.toggleAns());
-    document.getElementById('btn-force-next')?.addEventListener('click', () => App.Studio.goNext());
-    document.getElementById('host-close-studio-btn')?.addEventListener('click', () => App.Dashboard.enter());
-});
+</body>
+</html>
