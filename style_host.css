@@ -537,3 +537,50 @@
     padding: 5px;
     margin-bottom: 5px;
 }
+
+/* 設定パネル内のグリッドレイアウト */
+.grid-2-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px; /* 間隔を少し広めに */
+}
+
+/* 設定項目を囲むボックス（Soloモードと同じデザイン） */
+.mode-settings-box {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-left: 4px solid #00bfff; /* アクセントカラー */
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+/* モード別のアクセントカラー変更 */
+.mode-box-normal { border-left-color: #00bfff; } /* シアン */
+.mode-box-buzz   { border-left-color: #ff9800; } /* オレンジ */
+.mode-box-turn   { border-left-color: #9c27b0; } /* 紫 */
+.mode-box-solo   { border-left-color: #e91e63; } /* ピンク */
+
+/* 入力欄の微調整 */
+.mode-settings-box input, 
+.mode-settings-box select {
+    background: #333;
+    border: 1px solid #555;
+    color: white;
+    width: 100%;
+    box-sizing: border-box; /* 枠からはみ出さないように */
+}
+
+/* 単位などのテキスト */
+.unit-text {
+    font-size: 0.9em;
+    color: #aaa;
+    margin-left: 5px;
+    white-space: nowrap;
+}
+
+.flex-center {
+    display: flex;
+    align-items: center;
+}
