@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v68: Unified Modern UI)
+ * host_config.js (v69.1: Show Set Type Info)
  * =======================================================*/
 
 App.Config = {
@@ -62,9 +62,28 @@ App.Config = {
         this.selectedSetQuestions = data.q || [];
         const conf = data.c || {};
         
-        // ★UI構築：全モードをSoloモード風のグリッドデザインに統一
+        // --- ★追加: 出題形式の判定と表示 ---
+        let typeDisplay = "不明";
+        if(this.selectedSetQuestions.length > 0) {
+            const t = this.selectedSetQuestions[0].type;
+            if(t === 'choice') typeDisplay = APP_TEXT.Creator.TypeChoice; // 選択式
+            else if(t === 'sort') typeDisplay = APP_TEXT.Creator.TypeSort; // 並べ替え
+            else if(t === 'free_oral') typeDisplay = APP_TEXT.Creator.TypeFreeOral; // 口頭
+            else if(t === 'free_written') typeDisplay = APP_TEXT.Creator.TypeFreeWritten; // 記述
+            else if(t === 'multi') typeDisplay = APP_TEXT.Creator.TypeMulti; // 多答
+        }
+
         let html = `
-            <div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>
+            <div style="background:#252525; padding:12px; border-radius:6px; border:1px solid #444; border-left:4px solid #aaa; margin-bottom:20px; display:flex; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.2);">
+                <div style="color:#aaa; font-size:0.9em; font-weight:bold; margin-right:10px;">収録形式:</div>
+                <div style="color:#fff; font-weight:bold; font-size:1.1em; letter-spacing:1px;">${typeDisplay}</div>
+                <div style="color:#666; font-size:0.8em; margin-left:auto; font-family:monospace;">全${this.selectedSetQuestions.length}問</div>
+            </div>
+        `;
+        // ------------------------------------
+
+        html += `<div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>`;
+        html += `
             <div class="config-item-box">
                 <select id="config-mode-select" class="btn-block config-select highlight-select" onchange="App.Config.updateModeDetails(this.value)">
                     <option value="normal">${APP_TEXT.Config.ModeNormal}</option>
@@ -290,7 +309,6 @@ App.Config = {
         document.querySelectorAll('.q-point-input').forEach(inp => qs[inp.dataset.index].points = parseInt(inp.value));
         document.querySelectorAll('.q-time-input').forEach(inp => qs[inp.dataset.index].timeLimit = parseInt(inp.value));
 
-        // シャッフル設定の読み取り（モード別IDに対応）
         let shuffle = 'off';
         if(mode === 'normal') shuffle = document.getElementById('config-shuffle-q')?.value;
         else if(mode === 'buzz') shuffle = document.getElementById('config-buzz-shuffle')?.value;
@@ -303,7 +321,6 @@ App.Config = {
             }
         }
 
-        // 基本Config
         const newConfig = {
             mode: mode,
             gameType: document.getElementById('config-game-type').value,
@@ -312,21 +329,15 @@ App.Config = {
             eliminationRule: 'none',
             buzzWrongAction: document.getElementById('config-buzz-wrong-action')?.value || 'next',
             buzzTime: parseInt(document.getElementById('config-buzz-timer')?.value) || 0,
-            
-            // 一斉回答の設定
             normalLimit: document.getElementById('config-normal-limit')?.value || 'unlimited',
-            
-            // 順番回答の設定
             turnOrder: document.getElementById('config-turn-order')?.value || 'fixed',
             turnPass: document.getElementById('config-turn-pass')?.value || 'ok'
         };
 
-        // 一斉回答の制限時間設定
         if (mode === 'normal') {
             newConfig.timeLimit = parseInt(document.getElementById('config-normal-time')?.value) || 0;
         }
 
-        // Solo Mode Configs
         if (mode === 'solo') {
             newConfig.soloStyle = document.getElementById('config-solo-style').value;
             newConfig.soloTimeType = document.getElementById('config-solo-time-type').value;
