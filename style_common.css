@@ -249,3 +249,119 @@ input:focus, select:focus {
     background: linear-gradient(180deg, #5fbefe 0%, #10fefe 100%);
     filter: brightness(1.1);
 }
+/* style_common.css の一番下に追加してください */
+
+/* =========================================================
+ * Modern Landing Page Design (画像なしでもOK版)
+ * =======================================================*/
+
+/* 1. 全体背景：深い紫〜黒のグラデーション */
+.landing-view {
+    background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%) !important;
+    border: none !important;
+    box-shadow: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.landing-content {
+    width: 100%;
+    max-width: 350px; /* スマホで見やすい幅に */
+    text-align: center;
+}
+
+/* 2. ロゴ周り：電球アイコンの発光演出 */
+.landing-logo-emoji {
+    font-size: 80px;
+    margin-bottom: 0;
+    /* 電球っぽく白と黄色で光らせる */
+    text-shadow: 0 0 30px rgba(255, 255, 100, 0.8), 0 0 60px rgba(255, 165, 0, 0.6);
+    animation: floatLogo 3s ease-in-out infinite alternate;
+}
+
+@keyframes floatLogo {
+    0% { transform: translateY(0) scale(1); filter: brightness(1); }
+    100% { transform: translateY(-10px) scale(1.05); filter: brightness(1.2); }
+}
+
+.landing-title {
+    color: #fff;
+    font-family: 'Arial Black', sans-serif; /* 太いフォント */
+    font-size: 2.5em !important;
+    margin: 10px 0 0 0 !important;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    letter-spacing: 1px;
+}
+
+.landing-subtitle {
+    color: #a0a0ff !important;
+    font-size: 1em !important;
+    margin: 5px 0 50px 0 !important;
+    font-weight: bold;
+    letter-spacing: 2px;
+    opacity: 0.7;
+}
+
+/* 3. ボタンエリア */
+.landing-btn-area {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 共通ボタン設定：丸みのある立体ボタン */
+.landing-btn {
+    width: 100%;
+    padding: 18px !important;
+    border-radius: 50px !important; /* 完全に丸く */
+    border: none !important;
+    font-size: 1.2em !important;
+    font-weight: bold !important;
+    color: white !important;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.1s, box-shadow 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+    /* 既存スタイルの上書き */
+    box-shadow: none; 
+    margin: 0 !important;
+}
+
+.landing-btn:active {
+    transform: translateY(4px); /* 押したときに沈む */
+}
+
+.btn-icon {
+    font-size: 1.2em;
+}
+
+/* 【Hostボタン】オレンジ〜ピンク (ターゲット画像風) */
+.btn-host-modern {
+    background: linear-gradient(180deg, #ff9966 0%, #ff5e62 100%) !important;
+    box-shadow: 0 6px 0 #c24e2e, 0 15px 20px rgba(0,0,0,0.4) !important;
+}
+.btn-host-modern:hover {
+    filter: brightness(1.1);
+}
+.btn-host-modern:active {
+    box-shadow: 0 0 0 #c24e2e, 0 0 0 rgba(0,0,0,0) !important;
+}
+
+/* 【Playerボタン】シアン〜ブルー (ターゲット画像風) */
+.btn-player-modern {
+    background: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%) !important;
+    box-shadow: 0 6px 0 #2a7a7d, 0 15px 20px rgba(0,0,0,0.4) !important;
+}
+.btn-player-modern:hover {
+    filter: brightness(1.1);
+}
+.btn-player-modern:active {
+    box-shadow: 0 0 0 #2a7a7d, 0 0 0 rgba(0,0,0,0) !important;
+}
