@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v78: Bulk Loss & Toggle Details)
+ * host_config.js (v79: Explicit No-Limit Button)
  * =======================================================*/
 
 App.Config = {
@@ -246,21 +246,22 @@ App.Config = {
             
             <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px; background:#222; padding:10px; border-radius:6px; border:1px solid #444;">
                 <div>
-                    <label class="config-label" style="font-size:0.8em; color:#aaa;">${APP_TEXT.Config.LabelBulkTime}</label>
-                    <div style="display:flex; gap:5px;">
-                        <input type="number" id="config-bulk-time-input" value="0" min="0" style="width:100%; text-align:center;">
+                    <label class="config-label" style="font-size:0.8em; color:#aaa;">${APP_TEXT.Config.LabelHeaderTime}</label>
+                    <div style="display:flex; gap:5px; margin-bottom:5px;">
+                        <input type="number" id="config-bulk-time-input" value="10" min="1" placeholder="Sec" style="width:100%; text-align:center;">
                         <button id="config-bulk-time-btn" class="btn-mini btn-dark">SET</button>
                     </div>
+                    <button id="config-bulk-time-inf-btn" class="btn-mini btn-info" style="width:100%; font-size:0.8em;">無制限 (No Limit)</button>
                 </div>
                 <div>
-                    <label class="config-label" style="font-size:0.8em; color:#0055ff;">${APP_TEXT.Config.LabelBulkPt}</label>
+                    <label class="config-label" style="font-size:0.8em; color:#0055ff;">${APP_TEXT.Config.LabelHeaderPt}</label>
                     <div style="display:flex; gap:5px;">
                         <input type="number" id="config-bulk-point-input" value="1" min="1" style="width:100%; text-align:center; color:#0055ff; font-weight:bold;">
                         <button id="config-bulk-point-btn" class="btn-mini btn-primary">SET</button>
                     </div>
                 </div>
                 <div>
-                    <label class="config-label" style="font-size:0.8em; color:#d00;">${APP_TEXT.Config.LabelBulkLoss}</label>
+                    <label class="config-label" style="font-size:0.8em; color:#d00;">${APP_TEXT.Config.LabelHeaderLoss}</label>
                     <div style="display:flex; gap:5px;">
                         <input type="number" id="config-bulk-loss-input" value="0" min="0" style="width:100%; text-align:center; color:#d00; font-weight:bold;">
                         <button id="config-bulk-loss-btn" class="btn-mini btn-danger">SET</button>
@@ -280,7 +281,7 @@ App.Config = {
         // イベント登録
         document.getElementById('config-add-playlist-btn').onclick = () => this.addPeriod();
         
-        // ★個別設定のトグル
+        // 個別設定のトグル
         document.getElementById('btn-toggle-q-list').onclick = () => {
             const list = document.getElementById('config-questions-list');
             list.classList.toggle('hidden');
@@ -294,11 +295,17 @@ App.Config = {
             }
         };
 
-        // ★一括反映ロジック
+        // 一括反映ロジック
         document.getElementById('config-bulk-time-btn').onclick = () => {
             const val = document.getElementById('config-bulk-time-input').value;
             document.querySelectorAll('.q-time-input').forEach(inp => inp.value = val);
         };
+        // ★追加: 無制限ボタンロジック (0をセット)
+        document.getElementById('config-bulk-time-inf-btn').onclick = () => {
+            document.querySelectorAll('.q-time-input').forEach(inp => inp.value = 0);
+            App.Ui.showToast("全ての制限時間を「無制限(0)」に設定しました");
+        };
+
         document.getElementById('config-bulk-point-btn').onclick = () => {
             const val = document.getElementById('config-bulk-point-input').value;
             document.querySelectorAll('.q-point-input').forEach(inp => inp.value = val);
@@ -350,14 +357,6 @@ App.Config = {
             `;
             list.appendChild(row);
         });
-    },
-
-    bulkApply: function(type) {
-        // ボタンイベント内で定義しているので、この関数は基本使われないが互換性のため残す
-        const idMap = { time: 'config-bulk-time-input', point: 'config-bulk-point-input', loss: 'config-bulk-loss-input' };
-        const classMap = { time: '.q-time-input', point: '.q-point-input', loss: '.q-loss-input' };
-        const val = document.getElementById(idMap[type]).value;
-        document.querySelectorAll(classMap[type]).forEach(inp => inp.value = val);
     },
 
     addPeriod: function() {
