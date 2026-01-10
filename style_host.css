@@ -540,3 +540,27 @@
     font-family: monospace;
     text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
 }
+
+/* ROOM IDをクリック可能にするスタイル */
+#studio-header-room-id, 
+#studio-big-room-id {
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    user-select: all; /* 選択しやすくする */
+}
+
+/* ホバー時のエフェクト */
+#studio-header-room-id:hover, 
+#studio-big-room-id:hover {
+    color: #fff;
+    text-shadow: 0 0 15px gold, 0 0 30px rgba(255, 215, 0, 0.8);
+    transform: scale(1.05);
+}
+
+/* クリック時のエフェクト */
+#studio-header-room-id:active, 
+#studio-big-room-id:active {
+    transform: scale(0.95);
+    color: #aaa;
+}
