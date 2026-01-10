@@ -568,3 +568,78 @@ h3, h4 {
     0% { transform: scale(0.8); opacity: 0; }
     100% { transform: scale(1); opacity: 1; }
 }
+/* style_host.css の末尾に追加 */
+
+/* --- デザイン画面：左右分割レイアウト --- */
+.design-layout-wrapper {
+    display: flex;
+    flex-wrap: wrap; /* スマホでは縦並び */
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.design-settings-area {
+    flex: 1;
+    min-width: 300px; /* ある程度の幅を確保 */
+}
+
+.design-preview-area {
+    flex: 1;
+    min-width: 300px;
+    position: sticky;
+    top: 20px; /* スクロールしてもついてくる */
+    background: #111;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #444;
+}
+
+/* プレビュー枠（16:9） */
+.design-preview-frame {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border: 2px solid #333;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+/* プレビューの中身（縮小して全体を表示） */
+#design-monitor-preview-content {
+    width: 1920px;  /* 仮想フルHDサイズ */
+    height: 1080px;
+    transform-origin: top left;
+    /* CSS変数かJSでscaleを制御するが、簡易的に fit させる */
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* プレビュー内のダミー要素スタイル */
+.preview-q-area {
+    width: 80%;
+    margin-bottom: 50px;
+    padding: 40px;
+    font-size: 80px; /* 1920px基準なので大きく */
+    font-weight: bold;
+    border-radius: 10px;
+}
+.preview-c-area {
+    width: 70%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.preview-choice-item {
+    padding: 20px;
+    font-size: 50px; /* 1920px基準 */
+    border-bottom: 2px solid;
+    display: flex;
+    align-items: center;
+}
