@@ -10,18 +10,24 @@ window.initCreatorMode = function() {
     currentEditingTitle = "";
     createdQuestions = [];
     
-    document.getElementById('save-to-cloud-btn').textContent = APP_TEXT.Creator.BtnSave;
+    const btnSave = document.getElementById('save-to-cloud-btn');
+    if(btnSave) btnSave.textContent = APP_TEXT.Creator.BtnSave;
     
-    resetGlobalSettings(); 
+    // resetGlobalSettingsが失敗しないようにtry-catch
+    try {
+        if(typeof resetGlobalSettings === 'function') resetGlobalSettings();
+    } catch(e) { console.error(e); }
+
     resetForm();
-    
     renderQuestionList();
     window.showView(window.views.creator);
     
     const typeSelect = document.getElementById('creator-q-type');
-    typeSelect.disabled = false;
-    document.getElementById('creator-type-locked-msg').classList.add('hidden');
-    renderCreatorForm(typeSelect.value);
+    if(typeSelect) {
+        typeSelect.disabled = false;
+        document.getElementById('creator-type-locked-msg').classList.add('hidden');
+        renderCreatorForm(typeSelect.value);
+    }
 };
 
 window.loadSetForEditing = function(key, item) {
@@ -29,7 +35,8 @@ window.loadSetForEditing = function(key, item) {
     currentEditingTitle = item.title || "";
     createdQuestions = item.questions || [];
     
-    document.getElementById('save-to-cloud-btn').textContent = APP_TEXT.Creator.BtnUpdate;
+    const btnSave = document.getElementById('save-to-cloud-btn');
+    if(btnSave) btnSave.textContent = APP_TEXT.Creator.BtnUpdate;
     
     const typeSelect = document.getElementById('creator-q-type');
     
@@ -40,20 +47,23 @@ window.loadSetForEditing = function(key, item) {
         document.getElementById('creator-type-locked-msg').classList.remove('hidden');
 
         if(firstQ.layout) document.getElementById('creator-set-layout').value = firstQ.layout;
-        if(firstQ.align) updateAlignUI(firstQ.align);
+        if(firstQ.align && typeof updateAlignUI === 'function') updateAlignUI(firstQ.align);
+        
         if(firstQ.design) {
-            if(document.getElementById('design-main-bg-color')) document.getElementById('design-main-bg-color').value = firstQ.design.mainBgColor || "#222222";
-            if(document.getElementById('design-bg-image-data')) document.getElementById('design-bg-image-data').value = firstQ.design.bgImage || "";
-            if(document.getElementById('design-q-text')) document.getElementById('design-q-text').value = firstQ.design.qTextColor || "#ffffff";
-            if(document.getElementById('design-q-bg')) document.getElementById('design-q-bg').value = firstQ.design.qBgColor || "#2c5066";
-            if(document.getElementById('design-q-border')) document.getElementById('design-q-border').value = firstQ.design.qBorderColor || "#ffffff";
-            if(document.getElementById('design-c-text')) document.getElementById('design-c-text').value = firstQ.design.cTextColor || "#ffffff";
-            if(document.getElementById('design-c-bg')) document.getElementById('design-c-bg').value = firstQ.design.cBgColor || "#365c75";
-            if(document.getElementById('design-c-border')) document.getElementById('design-c-border').value = firstQ.design.cBorderColor || "#ffffff";
+            const d = firstQ.design;
+            if(document.getElementById('design-main-bg-color')) document.getElementById('design-main-bg-color').value = d.mainBgColor || "#222222";
+            if(document.getElementById('design-bg-image-data')) document.getElementById('design-bg-image-data').value = d.bgImage || "";
+            if(document.getElementById('design-q-text')) document.getElementById('design-q-text').value = d.qTextColor || "#ffffff";
+            if(document.getElementById('design-q-bg')) document.getElementById('design-q-bg').value = d.qBgColor || "#2c5066";
+            if(document.getElementById('design-q-border')) document.getElementById('design-q-border').value = d.qBorderColor || "#ffffff";
+            if(document.getElementById('design-c-text')) document.getElementById('design-c-text').value = d.cTextColor || "#ffffff";
+            if(document.getElementById('design-c-bg')) document.getElementById('design-c-bg').value = d.cBgColor || "#365c75";
+            if(document.getElementById('design-c-border')) document.getElementById('design-c-border').value = d.cBorderColor || "#ffffff";
         }
-        document.getElementById('creator-special-mode').value = firstQ.specialMode || 'none';
     } else {
-        resetGlobalSettings();
+        try {
+            if(typeof resetGlobalSettings === 'function') resetGlobalSettings();
+        } catch(e) {}
         typeSelect.disabled = false;
         document.getElementById('creator-type-locked-msg').classList.add('hidden');
     }
@@ -83,26 +93,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.btn-align').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const align = e.target.getAttribute('data-align');
-            updateAlignUI(align);
+            if(typeof updateAlignUI === 'function') updateAlignUI(align);
         });
     });
-
-    const imgBtn = document.getElementById('design-bg-image-btn');
-    const imgInput = document.getElementById('design-bg-image-file');
-    const clearBtn = document.getElementById('design-bg-clear-btn');
-
-    if(imgBtn && imgInput) {
-        imgBtn.addEventListener('click', () => imgInput.click());
-        imgInput.addEventListener('change', handleImageUpload);
-    }
-    
-    if(clearBtn) {
-        clearBtn.addEventListener('click', () => {
-            document.getElementById('design-bg-image-data').value = "";
-            document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgNoImage;
-            if(imgInput) imgInput.value = "";
-        });
-    }
 
     const upBtn = document.getElementById('update-question-btn');
     if(upBtn) upBtn.addEventListener('click', updateQuestion);
@@ -120,62 +113,16 @@ window.showToast = function(msg) {
     setTimeout(() => div.remove(), 3000);
 };
 
-function handleImageUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        const img = new Image();
-        img.onload = function() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const MAX_WIDTH = 1280;
-            let width = img.width;
-            let height = img.height;
-            if (width > MAX_WIDTH) {
-                height *= MAX_WIDTH / width;
-                width = MAX_WIDTH;
-            }
-            canvas.width = width;
-            canvas.height = height;
-            ctx.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            document.getElementById('design-bg-image-data').value = dataUrl;
-            document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgImageLoaded;
-        };
-        img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
-function resetGlobalSettings() {
+// --- グローバルリセット関数 (host_design.jsの関数を呼ぶ) ---
+window.resetGlobalSettings = function() {
     if(typeof setDefaultDesignUI === 'function') {
         setDefaultDesignUI();
     } else {
-        document.getElementById('creator-set-layout').value = 'standard';
-        updateAlignUI('center');
-        document.getElementById('design-main-bg-color').value = "#222222";
-        document.getElementById('design-bg-image-data').value = "";
-        document.getElementById('design-bg-image-status').textContent = APP_TEXT.Creator.MsgNoImage;
+        // フォールバック
+        const layout = document.getElementById('creator-set-layout');
+        if(layout) layout.value = 'standard';
     }
-    document.getElementById('creator-special-mode').value = 'none';
-
-    if(typeof window.loadDesignSettings === 'function') {
-        window.loadDesignSettings();
-    }
-}
-
-function updateAlignUI(align) {
-    document.getElementById('creator-set-align').value = align;
-    document.querySelectorAll('.btn-align').forEach(btn => {
-        if(btn.getAttribute('data-align') === align) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
-}
+};
 
 function resetForm() {
     editingQuestionIndex = null;
@@ -302,7 +249,6 @@ function renderCreatorForm(type, data = null) {
     }
 }
 
-// ★上限を20に変更
 function addChoiceInput(parent, index, text = "", checked = false) {
     if (parent.children.length >= 20) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
     const wrapper = document.createElement('div');
@@ -330,19 +276,17 @@ function addChoiceInput(parent, index, text = "", checked = false) {
     parent.appendChild(wrapper);
 }
 
-// ★上限を20に変更 & アイコンをA,B,C...に変更
 function addSortInput(parent, index, text = "") {
     if (parent.children.length >= 20) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
     
     const wrapper = document.createElement('div');
-    wrapper.className = 'sort-row'; // クラス追加
+    wrapper.className = 'sort-row'; 
     wrapper.style.display = 'flex';
     wrapper.style.alignItems = 'center';
     wrapper.style.gap = '5px';
     
     const num = document.createElement('span');
-    num.className = 'sort-label'; // クラス追加
-    // スタイル調整（青い文字で見やすく）
+    num.className = 'sort-label'; 
     num.style.fontWeight = 'bold';
     num.style.color = '#00bfff';
     num.style.minWidth = '25px';
@@ -363,7 +307,6 @@ function addSortInput(parent, index, text = "") {
     del.style.width = '30px';
     del.style.padding = '5px';
     
-    // ★削除時にラベルを振り直す
     del.onclick = () => {
         parent.removeChild(wrapper);
         updateSortLabels(parent);
@@ -374,19 +317,14 @@ function addSortInput(parent, index, text = "") {
     wrapper.appendChild(del);
     parent.appendChild(wrapper);
     
-    // 追加後にラベル更新
     updateSortLabels(parent);
 }
 
-// ★新規追加: 並べ替えラベル(A,B,C...)の一括更新関数
 function updateSortLabels(parent) {
     const rows = parent.querySelectorAll('.sort-row');
     rows.forEach((row, i) => {
         const label = row.querySelector('.sort-label');
-        if(label) {
-            // A=65
-            label.textContent = String.fromCharCode(65 + i); 
-        }
+        if(label) label.textContent = String.fromCharCode(65 + i); 
     });
 }
 
@@ -573,7 +511,8 @@ function saveToCloud() {
     
     const layout = document.getElementById('creator-set-layout').value;
     const align = document.getElementById('creator-set-align').value;
-    const specialMode = document.getElementById('creator-special-mode').value;
+    // スペシャルモードは削除したのでnone固定
+    const specialMode = 'none';
     
     const design = {
         mainBgColor: document.getElementById('design-main-bg-color').value,
