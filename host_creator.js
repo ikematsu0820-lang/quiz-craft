@@ -1,5 +1,5 @@
 /* =========================================================
- * host_creator.js (v70: Safe Module Loading)
+ * host_creator.js (v71: Auto Multi-Select Detection)
  * =======================================================*/
 
 // ★ 安全装置
@@ -18,12 +18,9 @@ window.App.Creator = {
         const btnSave = document.getElementById('save-to-cloud-btn');
         if(btnSave) btnSave.textContent = APP_TEXT.Creator.BtnSave;
 
-        // デザイン設定のリセット
         if(window.resetGlobalSettings) window.resetGlobalSettings();
 
-        // 形式選択肢の生成
         this.setupTypeSelect();
-
         this.resetForm();
         this.renderList();
         window.App.Ui.showView(window.App.Ui.views.creator);
@@ -38,7 +35,6 @@ window.App.Creator = {
 
     setupTypeSelect: function() {
         const sel = document.getElementById('creator-q-type');
-        // セレクトボックスが無い、または既に選択肢がある場合は何もしない
         if(!sel || sel.options.length > 0) return;
 
         const opts = [
@@ -100,7 +96,6 @@ window.App.Creator = {
         document.getElementById('update-question-area').classList.add('hidden');
         document.getElementById('question-text').value = '';
         
-        // フォームを初期状態に戻すためにデフォルトのタイプを取得
         const typeSelect = document.getElementById('creator-q-type');
         const type = typeSelect ? typeSelect.value : 'choice'; 
         this.renderForm(type);
@@ -112,9 +107,9 @@ window.App.Creator = {
         container.innerHTML = ''; 
 
         if (type === 'choice') {
-            const isMulti = data ? data.multi : false;
-            container.innerHTML = `<label class="mb-10 block pointer"><input type="checkbox" id="opt-multi-select" ${isMulti?'checked':''}> ${APP_TEXT.Creator.OptMulti}</label>`;
-            
+            // ★削除: 「正解を選択」チェックボックスの生成コードを削除しました
+            // 選択肢自体をクリックして選ぶので不要です
+
             const choicesDiv = document.createElement('div');
             choicesDiv.id = 'creator-choices-list';
             choicesDiv.className = 'grid-gap-5';
@@ -164,7 +159,6 @@ window.App.Creator = {
         }
     },
 
-    // 選択肢をクリックで正解にする機能
     addChoiceInput: function(parent, index, text="", checked=false) {
         if (parent.children.length >= 20) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
         
@@ -178,7 +172,7 @@ window.App.Creator = {
         chk.checked = checked;
         chk.style.display = 'none';
 
-        // 2. ラベルボタン
+        // 2. ラベルボタン（クリックでトグル）
         const labelBtn = document.createElement('div');
         labelBtn.className = 'choice-label-btn';
         if(checked) labelBtn.classList.add('active');
@@ -270,8 +264,13 @@ window.App.Creator = {
                 }
             });
             if(opts.length < 2 || corr.length === 0) { alert(APP_TEXT.Creator.AlertLessChoice); return null; }
-            newQ.c = opts; newQ.correct = corr; newQ.correctIndex = corr[0];
-            newQ.multi = document.getElementById('opt-multi-select').checked;
+            newQ.c = opts; 
+            newQ.correct = corr; 
+            newQ.correctIndex = corr[0];
+            
+            // ★変更: 複数正解があれば自動的にマルチモードとする
+            newQ.multi = (corr.length > 1);
+            
         } else if (type === 'sort') {
             const opts = [];
             document.querySelectorAll('.sort-text-input').forEach(inp => { if(inp.value.trim()) opts.push(inp.value.trim()); });
@@ -396,10 +395,8 @@ window.App.Creator = {
     }
 };
 
-// 互換性維持用の記述
 window.initCreatorMode = () => window.App.Creator.init();
 window.loadSetForEditing = (k, i) => window.App.Creator.loadSet(k, i);
-
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('add-question-btn')?.addEventListener('click', () => window.App.Creator.add());
     document.getElementById('update-question-btn')?.addEventListener('click', () => window.App.Creator.update());
