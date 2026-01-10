@@ -1,30 +1,20 @@
 /* =========================================================
- * style_viewer.css (v61: U-NEXT Style Cinema UI)
- * =======================================================*/
-
-/* =========================================================
- * style_viewer.css (v62: Scroll Fix)
+ * style_viewer.css (v72: Z-Index Fix)
  * =======================================================*/
 
 :root {
-    /* U-NEXT風カラーパレット */
     --main-bg-color: #0a0a0a;
     --accent-color: #00bfff;
     --text-main: #ffffff;
     --text-sub: #a0a0a0;
-    
     --q-bg-color: rgba(255, 255, 255, 0.05);
     --c-bg-color: transparent;
-    
     --font-stack: "Hiragino Kaku Gothic ProN", "Noto Sans JP", Roboto, sans-serif;
-    
-    --progress: 100%;
 }
 
 body {
     margin: 0;
     padding: 0;
-    /* overflow: hidden;  ← ★これを削除しました！ */
     background-color: var(--main-bg-color);
     font-family: var(--font-stack);
 }
@@ -34,18 +24,18 @@ body {
     background-image: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
     color: var(--text-main);
     
-    /* モニター画面だけを固定・全画面化 */
+    /* ★修正: モニター画面を強制的に最前面へ */
     width: 100vw;
     height: 100vh;
-    position: fixed; /* これでモニター画面を独立レイヤー化 */
+    position: fixed !important;
     top: 0;
     left: 0;
-    z-index: 9999;
+    z-index: 2147483647; /* ブラウザの最大値付近 */
     
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden; /* ★モニター画面の中でだけスクロール禁止にする */
+    overflow: hidden;
 }
 
 #viewer-content {
@@ -56,7 +46,7 @@ body {
     position: relative;
 }
 
-/* ステータス表示（左上に小さくロゴっぽく配置） */
+/* ステータス表示 */
 #viewer-status {
     position: absolute;
     top: 0;
@@ -65,7 +55,7 @@ body {
     font-weight: 900;
     color: var(--accent-color);
     letter-spacing: 0.1em;
-    text-shadow: 0 0 10px rgba(0, 191, 255, 0.5); /* 青い発光 */
+    text-shadow: 0 0 10px rgba(0, 191, 255, 0.5);
     z-index: 100;
 }
 
@@ -76,11 +66,10 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: center; /* 垂直方向中央 */
-    align-items: center;     /* 水平方向中央 */
+    justify-content: center;
+    align-items: center;
 }
 
-/* レイアウトコンテナ */
 .viewer-layout-container {
     width: 100%;
     height: 100%;
@@ -90,19 +79,16 @@ body {
     align-items: center;
 }
 
-/* --- 問題文エリア (Q) --- */
+/* 問題文エリア */
 .q-area {
     font-size: 5vh;
     font-weight: 700;
     line-height: 1.4;
     color: var(--text-main);
     text-align: center;
-    
-    /* 枠線をなくし、左側のアクセントバーで表現 */
     border: none;
     border-left: 6px solid var(--accent-color);
     background: linear-gradient(90deg, rgba(0,191,255,0.1) 0%, transparent 100%);
-    
     padding: 40px;
     margin-bottom: 4vh;
     width: 90%;
@@ -111,7 +97,7 @@ body {
     transition: all 0.3s ease;
 }
 
-/* --- 選択肢エリア (Choices) --- */
+/* 選択肢エリア */
 .c-area {
     width: 80%;
     display: flex;
@@ -123,13 +109,11 @@ body {
     font-size: 3vh;
     color: var(--text-sub);
     padding: 15px 20px;
-    border-bottom: 1px solid #333; /* 下線だけのミニマルデザイン */
+    border-bottom: 1px solid #333;
     display: flex;
     align-items: center;
-    transition: color 0.3s, border-color 0.3s;
 }
 
-/* 選択肢の記号 (A, B, C...) */
 .choice-prefix {
     color: var(--accent-color);
     font-weight: bold;
@@ -138,16 +122,7 @@ body {
     font-size: 1.2em;
 }
 
-/* 強調表示（正解発表時など） */
-.choice-item.highlight {
-    color: var(--text-main);
-    border-bottom-color: var(--accent-color);
-    background: rgba(255,255,255,0.05);
-}
-
-/* --- レイアウト別調整 --- */
-
-/* 左右分割レイアウトの調整 */
+/* 左右分割レイアウト */
 .layout-split-list {
     flex-direction: row;
     align-items: stretch;
@@ -157,7 +132,7 @@ body {
     writing-mode: vertical-rl;
     text-orientation: upright;
     border-left: none;
-    border-top: 6px solid var(--accent-color); /* 縦書きなら上にバー */
+    border-top: 6px solid var(--accent-color);
     background: linear-gradient(180deg, rgba(0,191,255,0.1) 0%, transparent 100%);
     display: flex;
     align-items: center;
@@ -170,9 +145,7 @@ body {
     justify-content: center;
 }
 
-/* --- その他の要素 --- */
-
-/* タイムバー（画面上部に極細で表示） */
+/* タイムバー */
 #viewer-timer-bar-area {
     position: absolute;
     top: 0;
@@ -187,9 +160,6 @@ body {
     width: 100%;
     background-color: var(--accent-color);
     box-shadow: 0 0 10px var(--accent-color);
-}
-.timer-animate {
-    transition: width linear;
 }
 
 /* パネルアタック */
@@ -212,7 +182,6 @@ body {
     align-items: center;
     border-radius: 4px;
 }
-/* パネルの色 */
 .panel-red { background: #b71c1c !important; color: white !important; box-shadow: 0 0 15px #b71c1c; border:none; }
 .panel-green { background: #1b5e20 !important; color: white !important; box-shadow: 0 0 15px #1b5e20; border:none; }
 .panel-white { background: #f5f5f5 !important; color: #333 !important; box-shadow: 0 0 15px white; border:none; }
@@ -224,11 +193,15 @@ body {
     border: 1px solid #333;
     color: white;
     box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 .card-item.flipped {
     background: #fff;
     color: #000;
 }
+.card-number { font-size: 2em; color: #555; }
 
 /* レース */
 .race-lane {
@@ -245,5 +218,5 @@ body {
     border-radius: 5px;
     box-shadow: 0 0 8px var(--accent-color);
 }
-.race-name { color: var(--text-main); }
-.race-score { color: var(--accent-color); font-weight: bold; }
+.race-name { color: var(--text-main); font-size: 2vh; }
+.race-score { color: var(--accent-color); font-weight: bold; font-size: 2vh; margin-left: 10px; }
