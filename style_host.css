@@ -1,5 +1,5 @@
 /* =========================================================
- * style_host.css (v76: Merged & Fixed)
+ * style_host.css (v90: Final Complete Version)
  * =======================================================*/
 
 /* ---------------------------------------------------
@@ -216,10 +216,32 @@
 .design-preview-area-top {
     width: 100%; margin-bottom: 20px; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #444;
 }
+
+/* ★修正: プレビュー枠 (Flexboxで強制中央配置) */
 .design-preview-frame {
-    width: 100%; max-width: 500px; margin: 0 auto; aspect-ratio: 16 / 9;
-    background: #000; border: 2px solid #333; overflow: hidden; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    width: 100%; max-width: 800px; margin: 0 auto; 
+    aspect-ratio: 16 / 9;
+    background: #000; 
+    border: 2px solid #333; 
+    overflow: hidden; 
+    position: relative; 
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    
+    /* Flexboxで中身をど真ん中に */
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
+
+/* ★修正: 内部コンテンツ (絶対固定サイズ & FlexItem化) */
+#design-monitor-preview-content {
+    width: 1280px;
+    height: 720px;
+    flex-shrink: 0; /* 勝手に縮まないようにする */
+    background-color: #000;
+    overflow: hidden;
+}
+
 .design-toolbar {
     background: #1f1f1f; padding: 10px; border: 1px solid #00bfff; border-radius: 8px; margin-bottom: 15px;
     display: flex; gap: 10px; align-items: center;
@@ -261,7 +283,7 @@
 .color-picker-full { width: 100%; height: 40px; cursor: pointer; }
 
 /* ---------------------------------------------------
-   5. HOST STUDIO (新しいスタジオ画面 - v73 Layout)
+   5. HOST STUDIO
    --------------------------------------------------- */
 /* 全体レイアウト */
 .host-studio-layout {
@@ -291,6 +313,16 @@
 .text-pink { color: #e94560; text-shadow: 0 0 10px rgba(233,69,96,0.5); }
 .ml-10 { margin-left: 10px; }
 
+/* ★追加: ROOM ID用 (金色 & クリック可) */
+.text-yellow {
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    cursor: pointer;
+    user-select: all;
+    transition: all 0.2s;
+}
+.text-yellow:active { transform: scale(0.9); color: #fff; }
+
 /* B. メインエリア */
 .studio-main-area {
     flex: 1; padding: 20px; overflow-y: auto;
@@ -298,6 +330,36 @@
     background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
 }
 .center-message { text-align: center; width: 100%; max-width: 500px; }
+
+/* ★追加: 待機画面の巨大IDボックス */
+.big-room-id-box {
+    background: #000;
+    border: 2px solid #ffd700;
+    padding: 15px 30px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    display: inline-block;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    text-align: center;
+    min-width: 200px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.big-room-id-box:hover {
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+    transform: scale(1.02);
+}
+.big-room-id-box:active {
+    transform: scale(0.95);
+    background: #111;
+}
+.big-room-id-box .label {
+    display: block; font-size: 0.9em; color: #aaa; margin-bottom: 5px; font-weight: bold; letter-spacing: 2px;
+}
+.big-room-id-box span[id] {
+    font-size: 3em; font-weight: 900; color: #ffd700; letter-spacing: 5px; font-family: monospace;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+}
 
 /* モニター風パネル */
 .question-monitor {
@@ -365,40 +427,7 @@
 .delete-btn { background: #331111; color: #ff5555; border: 1px solid #ff5555; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
 .btn-block { width: 100%; padding: 12px; font-size: 1em; border-radius: 6px; } /* 汎用 */
 
-/* スタジオ画面のセレクトボックス修正 */
-#studio-program-select {
-    background-color: #333 !important; /* 背景をダークグレーに */
-    color: #fff !important;            /* 文字を白に */
-    border: 1px solid #00bfff !important; /* 枠線をシアンに */
-    padding: 10px;
-    font-size: 1.1em;
-    border-radius: 6px;
-    height: 50px;
-    cursor: pointer;
-    appearance: none; /* デフォルトの矢印を消す */
-    -webkit-appearance: none;
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300bfff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-    background-repeat: no-repeat;
-    background-position: right 15px top 50%;
-    background-size: 12px auto;
-}
-
-#studio-program-select:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    border-color: #555 !important;
-}
-
-/* セットボタンも目立たせる */
-#studio-load-program-btn {
-    background: linear-gradient(135deg, #0055ff 0%, #0033aa 100%) !important;
-    font-weight: bold;
-    font-size: 1.2em;
-    box-shadow: 0 0 10px rgba(0, 85, 255, 0.5);
-}
-/* --- style_host.css 末尾に追加 --- */
-
-/* スタジオ画面のセレクトボックス修正 (強力版) */
+/* ★修正: スタジオ画面のセレクトボックス (強力版) */
 #studio-program-select {
     background-color: #333 !important; /* 背景色: ダークグレー */
     color: #fff !important;            /* 文字色: 白 */
@@ -421,7 +450,6 @@
     background-size: 16px !important;
 }
 
-/* プルダウン展開時のリストスタイル (一部ブラウザ用) */
 #studio-program-select option {
     background-color: #333;
     color: #fff;
@@ -450,196 +478,3 @@
     box-shadow: none;
     cursor: not-allowed;
 }
-/* スタジオ画面のセレクトボックス修正 (強力版) */
-#studio-program-select {
-    background-color: #333 !important; /* 背景色: ダークグレー */
-    color: #fff !important;            /* 文字色: 白 */
-    border: 1px solid #00bfff !important; /* 枠線: シアン */
-    padding: 10px 40px 10px 15px !important; /* 右側に矢印用の余白を確保 */
-    font-size: 1.1em !important;
-    border-radius: 6px !important;
-    height: 50px !important;
-    cursor: pointer;
-    
-    /* ブラウザデフォルトのスタイルを無効化 */
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
-
-    /* カスタム矢印アイコン (SVG) */
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300bfff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 15px center !important;
-    background-size: 16px !important;
-}
-
-/* プルダウン展開時のリストスタイル (一部ブラウザ用) */
-#studio-program-select option {
-    background-color: #333;
-    color: #fff;
-    padding: 10px;
-}
-
-#studio-program-select:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    border-color: #555 !important;
-    background-image: none !important; /* 無効時は矢印を消す */
-}
-
-/* 読み込んでセットボタン */
-#studio-load-program-btn {
-    background: linear-gradient(135deg, #0055ff 0%, #0033aa 100%) !important;
-    font-weight: bold;
-    font-size: 1.2em;
-    box-shadow: 0 0 10px rgba(0, 85, 255, 0.5);
-    color: white !important;
-    border: none !important;
-    margin-top: 15px; /* 上に少し余白 */
-}
-#studio-load-program-btn:disabled {
-    background: #555 !important;
-    box-shadow: none;
-    cursor: not-allowed;
-}
-
-/* ルームIDを目立たせる黄色 */
-.text-yellow {
-    color: #ffd700;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-}
-
-/* 待機画面の巨大IDボックス */
-.big-room-id-box {
-    background: #000;
-    border: 2px solid #ffd700;
-    padding: 15px 30px;
-    border-radius: 8px;
-    margin-bottom: 30px;
-    display: inline-block;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
-    text-align: center;
-    min-width: 200px;
-}
-
-.big-room-id-box .label {
-    display: block;
-    font-size: 0.9em;
-    color: #aaa;
-    margin-bottom: 5px;
-    font-weight: bold;
-    letter-spacing: 2px;
-}
-
-.big-room-id-box span[id] {
-    font-size: 3em;
-    font-weight: 900;
-    color: #ffd700;
-    letter-spacing: 5px;
-    font-family: monospace;
-    text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
-}
-
-/* ROOM IDをクリック可能にするスタイル */
-#studio-header-room-id, 
-#studio-big-room-id {
-    cursor: pointer;
-    position: relative;
-    transition: all 0.2s ease;
-    user-select: all; /* 選択しやすくする */
-}
-
-/* ホバー時のエフェクト */
-#studio-header-room-id:hover, 
-#studio-big-room-id:hover {
-    color: #fff;
-    text-shadow: 0 0 15px gold, 0 0 30px rgba(255, 215, 0, 0.8);
-    transform: scale(1.05);
-}
-
-/* クリック時のエフェクト */
-#studio-header-room-id:active, 
-#studio-big-room-id:active {
-    transform: scale(0.95);
-    color: #aaa;
-}
-/* --- style_host.css 末尾に追加 --- */
-
-/* ルームIDを目立たせる黄色 & クリック可能設定 */
-.text-yellow {
-    color: #ffd700;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-    cursor: pointer;
-    user-select: all;
-    transition: all 0.2s;
-}
-.text-yellow:active { transform: scale(0.9); color: #fff; }
-
-/* 待機画面の巨大IDボックス */
-.big-room-id-box {
-    background: #000;
-    border: 2px solid #ffd700;
-    padding: 15px 30px;
-    border-radius: 8px;
-    margin-bottom: 30px;
-    display: inline-block;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
-    text-align: center;
-    min-width: 200px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.big-room-id-box:hover {
-    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-    transform: scale(1.02);
-}
-.big-room-id-box:active {
-    transform: scale(0.95);
-    background: #111;
-}
-
-.big-room-id-box .label {
-    display: block;
-    font-size: 0.9em;
-    color: #aaa;
-    margin-bottom: 5px;
-    font-weight: bold;
-    letter-spacing: 2px;
-}
-
-.big-room-id-box span[id] {
-    font-size: 3em;
-    font-weight: 900;
-    color: #ffd700;
-    letter-spacing: 5px;
-    font-family: monospace;
-    text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
-}
-/* --- style_host.css 末尾に追加 --- */
-
-/* デザインプレビューの外枠 (16:9を強制維持) */
-.design-preview-frame {
-    width: 100%;
-    max-width: 800px; /* PCでの最大幅 */
-    aspect-ratio: 16 / 9;
-    background: #000;
-    border: 2px solid #333;
-    overflow: hidden; /* はみ出し防止 */
-    position: relative;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    margin: 0 auto;
-}
-
-/* 内部のコンテンツ (基準サイズ 1280x720 で固定) */
-/* これをJSで縮小(scale)して表示させる */
-#design-monitor-preview-content {
-    width: 1280px;  /* 絶対固定 */
-    height: 720px;  /* 絶対固定 */
-    position: absolute;
-    top: 0;
-    left: 0;
-    transform-origin: top left; /* 左上基準で縮小 */
-    background-color: #000;
-    overflow: hidden;
-}
-
