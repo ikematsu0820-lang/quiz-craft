@@ -450,3 +450,55 @@
     box-shadow: none;
     cursor: not-allowed;
 }
+/* スタジオ画面のセレクトボックス修正 (強力版) */
+#studio-program-select {
+    background-color: #333 !important; /* 背景色: ダークグレー */
+    color: #fff !important;            /* 文字色: 白 */
+    border: 1px solid #00bfff !important; /* 枠線: シアン */
+    padding: 10px 40px 10px 15px !important; /* 右側に矢印用の余白を確保 */
+    font-size: 1.1em !important;
+    border-radius: 6px !important;
+    height: 50px !important;
+    cursor: pointer;
+    
+    /* ブラウザデフォルトのスタイルを無効化 */
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+
+    /* カスタム矢印アイコン (SVG) */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300bfff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 15px center !important;
+    background-size: 16px !important;
+}
+
+/* プルダウン展開時のリストスタイル (一部ブラウザ用) */
+#studio-program-select option {
+    background-color: #333;
+    color: #fff;
+    padding: 10px;
+}
+
+#studio-program-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: #555 !important;
+    background-image: none !important; /* 無効時は矢印を消す */
+}
+
+/* 読み込んでセットボタン */
+#studio-load-program-btn {
+    background: linear-gradient(135deg, #0055ff 0%, #0033aa 100%) !important;
+    font-weight: bold;
+    font-size: 1.2em;
+    box-shadow: 0 0 10px rgba(0, 85, 255, 0.5);
+    color: white !important;
+    border: none !important;
+    margin-top: 15px; /* 上に少し余白 */
+}
+#studio-load-program-btn:disabled {
+    background: #555 !important;
+    box-shadow: none;
+    cursor: not-allowed;
+}
