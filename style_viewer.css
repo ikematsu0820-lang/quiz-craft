@@ -220,3 +220,22 @@ body {
 }
 .race-name { color: var(--text-main); font-size: 2vh; }
 .race-score { color: var(--accent-color); font-weight: bold; font-size: 2vh; margin-left: 10px; }
+/* モニター接続画面のレイアウト修正 */
+#viewer-login-view {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* ヘッダーを上に配置 */
+    height: 100vh;
+}
+
+/* フォームエリアを画面の残りのスペースの中央に配置 */
+#viewer-login-view .login-form-area {
+    margin-top: auto;
+    margin-bottom: auto;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    max-width: 350px;
+    /* ヘッダーの分だけ少し上にずらすと視覚的に真ん中に見えます */
+    transform: translateY(-50px); 
+}
