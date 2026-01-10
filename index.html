@@ -76,92 +76,87 @@
     </div>
     <hr>
 
-    <div class="design-layout-wrapper">
-        
-        <div class="design-settings-area">
-            <div style="background:#fffbe6; padding:15px; border:2px solid #e6b800; border-radius:8px; margin-bottom:20px;">
-                <label style="font-size:1.1em; font-weight:bold; color:#b8860b;">📂 過去の構成から引用</label>
-                <div style="display:flex; gap:5px; margin-top:5px;">
-                    <select id="design-prog-select" class="btn-block" style="font-size:1.1em; margin-bottom:0; background:#fff; color:#333; border:1px solid #e6b800;">
-                        <option value="">読み込み中...</option>
-                    </select>
-                    <button id="design-load-prog-btn" class="btn-warning" style="width:100px; font-weight:bold; border:1px solid #e6b800;">Load</button>
+    <div class="design-preview-area-top">
+        <h4 style="margin:0 0 5px 0; color:#aaa; text-align:center; font-size:0.9em;">モニター画面プレビュー</h4>
+        <div class="design-preview-frame">
+            <div id="design-monitor-preview-content">
+                </div>
+        </div>
+        <p style="text-align:center; font-size:0.8em; color:#666; margin-top:5px;">※実際の表示とは解像度が異なります</p>
+    </div>
+
+    <div style="background:#fffbe6; padding:15px; border:2px solid #e6b800; border-radius:8px; margin-bottom:20px;">
+        <label style="font-size:1.1em; font-weight:bold; color:#b8860b;">📂 過去の構成から引用</label>
+        <div style="display:flex; gap:5px; margin-top:5px;">
+            <select id="design-prog-select" class="btn-block" style="font-size:1.1em; margin-bottom:0; background:#fff; color:#333; border:1px solid #e6b800;">
+                <option value="">読み込み中...</option>
+            </select>
+            <button id="design-load-prog-btn" class="btn-warning" style="width:100px; font-weight:bold; border:1px solid #e6b800;">Load</button>
+        </div>
+    </div>
+
+    <div style="background:#2d2d34; padding:15px; border-radius:8px; border:1px solid #444; margin-bottom:15px;">
+        <h4 style="margin:0 0 10px 0; color:#00bfff;">モニターレイアウト</h4>
+        <select id="creator-set-layout" class="btn-block" style="margin-bottom:10px;">
+            <option value="standard" data-text="Creator.LayoutStandard">Standard</option>
+            <option value="split_list" data-text="Creator.LayoutSplitList">Split List</option>
+            <option value="split_grid" data-text="Creator.LayoutSplitGrid">Split Grid</option>
+        </select>
+
+        <h4 style="margin:15px 0 10px 0; color:#00bfff;">文字の配置</h4>
+        <div style="display:flex; gap:5px;">
+            <button type="button" class="btn-align" data-align="left" data-text="Creator.AlignLeft">Left</button>
+            <button type="button" class="btn-align active" data-align="center" data-text="Creator.AlignCenter">Center</button>
+            <button type="button" class="btn-align" data-align="right" data-text="Creator.AlignRight">Right</button>
+        </div>
+        <input type="hidden" id="creator-set-align" value="center">
+    </div>
+
+    <div style="background:#2d2d34; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #444;">
+        <h4 style="margin:0 0 10px 0; color:#00bfff;">カラー・画像設定</h4>
+
+        <div class="design-group" style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed #555;">
+            <label style="font-size:0.8em; font-weight:bold; color:#aaa;" data-text="Creator.GroupMain">Main Background</label>
+            <div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
+                <div>
+                    <label style="font-size:0.7em;" data-text="Creator.LabelColorBg">Color</label>
+                    <input type="color" id="design-main-bg-color" value="#222222" style="height:30px; width:50px;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:0.7em;" data-text="Creator.LabelBgImage">Image</label>
+                    <input type="file" id="design-bg-image-file" accept="image/*" style="display:none;">
+                    <div style="display:flex; gap:5px;">
+                        <button id="design-bg-image-btn" class="btn-dark" style="font-size:0.7em; padding:5px 10px;" data-text="Creator.BtnSelectImage">Select</button>
+                        <button id="design-bg-clear-btn" class="btn-danger" style="font-size:0.7em; padding:5px 10px;" data-text="Creator.BtnClearImage">Clear</button>
+                    </div>
+                    <span id="design-bg-image-status" style="font-size:0.7em; color:#00aa00;"></span>
                 </div>
             </div>
+            <input type="hidden" id="design-bg-image-data">
+        </div>
 
-            <div style="background:#2d2d34; padding:15px; border-radius:8px; border:1px solid #444; margin-bottom:15px;">
-                <h4 style="margin:0 0 10px 0; color:#00bfff;">モニターレイアウト</h4>
-                <select id="creator-set-layout" class="btn-block" style="margin-bottom:10px;">
-                    <option value="standard" data-text="Creator.LayoutStandard">Standard</option>
-                    <option value="split_list" data-text="Creator.LayoutSplitList">Split List</option>
-                    <option value="split_grid" data-text="Creator.LayoutSplitGrid">Split Grid</option>
-                </select>
-
-                <h4 style="margin:15px 0 10px 0; color:#00bfff;">文字の配置</h4>
-                <div style="display:flex; gap:5px;">
-                    <button type="button" class="btn-align" data-align="left" data-text="Creator.AlignLeft">Left</button>
-                    <button type="button" class="btn-align active" data-align="center" data-text="Creator.AlignCenter">Center</button>
-                    <button type="button" class="btn-align" data-align="right" data-text="Creator.AlignRight">Right</button>
-                </div>
-                <input type="hidden" id="creator-set-align" value="center">
-            </div>
-
-            <div style="background:#2d2d34; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #444;">
-                <h4 style="margin:0 0 10px 0; color:#00bfff;">カラー・画像設定</h4>
-
-                <div class="design-group" style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed #555;">
-                    <label style="font-size:0.8em; font-weight:bold; color:#aaa;" data-text="Creator.GroupMain">Main Background</label>
-                    <div style="display:flex; align-items:center; gap:10px; margin-top:5px;">
-                        <div>
-                            <label style="font-size:0.7em;" data-text="Creator.LabelColorBg">Color</label>
-                            <input type="color" id="design-main-bg-color" value="#222222" style="height:30px; width:50px;">
-                        </div>
-                        <div style="flex:1;">
-                            <label style="font-size:0.7em;" data-text="Creator.LabelBgImage">Image</label>
-                            <input type="file" id="design-bg-image-file" accept="image/*" style="display:none;">
-                            <div style="display:flex; gap:5px;">
-                                <button id="design-bg-image-btn" class="btn-dark" style="font-size:0.7em; padding:5px 10px;" data-text="Creator.BtnSelectImage">Select</button>
-                                <button id="design-bg-clear-btn" class="btn-danger" style="font-size:0.7em; padding:5px 10px;" data-text="Creator.BtnClearImage">Clear</button>
-                            </div>
-                            <span id="design-bg-image-status" style="font-size:0.7em; color:#00aa00;"></span>
-                        </div>
-                    </div>
-                    <input type="hidden" id="design-bg-image-data">
-                </div>
-
-                <div class="design-group" style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed #555;">
-                    <label style="font-size:0.8em; font-weight:bold; color:#aaa;" data-text="Creator.GroupQ">Question Area</label>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top:5px;">
-                        <div><label style="font-size:0.7em;">Text</label><input type="color" id="design-q-text" value="#ffffff" style="width:100%;"></div>
-                        <div><label style="font-size:0.7em;">Bg</label><input type="color" id="design-q-bg" value="#2c5066" style="width:100%;"></div>
-                        <div><label style="font-size:0.7em;">Border</label><input type="color" id="design-q-border" value="#ffffff" style="width:100%;"></div>
-                    </div>
-                </div>
-
-                <div class="design-group">
-                    <label style="font-size:0.8em; font-weight:bold; color:#aaa;" data-text="Creator.GroupC">Choice Area</label>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top:5px;">
-                        <div><label style="font-size:0.7em;">Text</label><input type="color" id="design-c-text" value="#ffffff" style="width:100%;"></div>
-                        <div><label style="font-size:0.7em;">Bg</label><input type="color" id="design-c-bg" value="#365c75" style="width:100%;"></div>
-                        <div><label style="font-size:0.7em;">Border</label><input type="color" id="design-c-border" value="#ffffff" style="width:100%;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div style="display:flex; gap:10px;">
-                <button id="design-reset-btn" class="btn-dark" style="flex:1; padding:12px; font-weight:bold;">初期値に戻す</button>
-                <button id="design-save-btn" class="btn-success" style="flex:1; padding:12px; font-weight:bold;">保存</button>
+        <div class="design-group" style="margin-bottom:15px; padding-bottom:10px; border-bottom:1px dashed #555;">
+            <label style="font-size:0.8em; font-weight:bold; color:#aaa;" data-text="Creator.GroupQ">Question Area</label>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top:5px;">
+                <div><label style="font-size:0.7em;">Text</label><input type="color" id="design-q-text" value="#ffffff" style="width:100%;"></div>
+                <div><label style="font-size:0.7em;">Bg</label><input type="color" id="design-q-bg" value="#2c5066" style="width:100%;"></div>
+                <div><label style="font-size:0.7em;">Border</label><input type="color" id="design-q-border" value="#ffffff" style="width:100%;"></div>
             </div>
         </div>
 
-        <div class="design-preview-area">
-            <h4 style="margin:0 0 10px 0; color:#fff; text-align:center;">モニター画面プレビュー</h4>
-            <div class="design-preview-frame">
-                <div id="design-monitor-preview-content">
-                    </div>
+        <div class="design-group">
+            <label style="font-size:0.8em; font-weight:bold; color:#aaa;" data-text="Creator.GroupC">Choice Area</label>
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px; margin-top:5px;">
+                <div><label style="font-size:0.7em;">Text</label><input type="color" id="design-c-text" value="#ffffff" style="width:100%;"></div>
+                <div><label style="font-size:0.7em;">Bg</label><input type="color" id="design-c-bg" value="#365c75" style="width:100%;"></div>
+                <div><label style="font-size:0.7em;">Border</label><input type="color" id="design-c-border" value="#ffffff" style="width:100%;"></div>
             </div>
-            <p style="text-align:center; font-size:0.8em; color:#666; margin-top:5px;">※実際の表示とは解像度が異なります</p>
         </div>
+    </div>
+
+    <div style="display:flex; gap:10px;">
+        <button id="design-reset-btn" class="btn-dark" style="flex:1; padding:12px; font-weight:bold;">初期値に戻す</button>
+        <button id="design-save-btn" class="btn-success" style="flex:1; padding:12px; font-weight:bold;">保存</button>
     </div>
 </div>
 
