@@ -1,19 +1,19 @@
 /* =========================================================
- * host_core.js (v77: Session Persistence)
+ * host_core.js (v83: Force Session Persistence)
  * =======================================================*/
 
 window.App = window.App || {};
 
-// ★修正: セッションストレージからIDを復元する
+// ★ 修正: セッションからIDを強力に復元
 const savedShowId = sessionStorage.getItem('qs_show_id');
 
-window.App.State = window.App.State || {
-    currentShowId: savedShowId || null, // 復元
+window.App.State = {
+    currentShowId: savedShowId || null,
     currentRoomId: null,
     isHost: false
 };
 
-window.App.Data = window.App.Data || {
+window.App.Data = {
     createdQuestions: [],
     periodPlaylist: [],
     studioQuestions: [],
@@ -58,19 +58,6 @@ window.App.Ui = {
             keys.forEach(k => { if(val) val = val[k]; });
             if(val) el.textContent = val;
         });
-        // Placeholder map... (省略せず記述)
-        const phMap = {
-            'show-id-input': APP_TEXT.Login.Placeholder,
-            'question-text': APP_TEXT.Creator.PlaceholderQ,
-            'config-program-title': APP_TEXT.Config.PlaceholderProgName,
-            'room-code-input': APP_TEXT.Player.PlaceholderCode,
-            'player-name-input': APP_TEXT.Player.PlaceholderName,
-            'viewer-room-code': APP_TEXT.Player.PlaceholderCode
-        };
-        for(let id in phMap) {
-            const el = document.getElementById(id);
-            if(el) el.placeholder = phMap[id];
-        }
     },
 
     showToast: function(msg) {
@@ -89,15 +76,13 @@ window.App.init = function() {
     this.Ui.applyTexts();
     this.bindEvents();
     
-    // ★修正: IDがあればダッシュボードへ直行、なければメインへ
+    // ★ IDがあれば即ダッシュボードへ（復帰）
     if (window.App.State.currentShowId) {
         console.log("Session restored:", window.App.State.currentShowId);
         window.App.Dashboard.enter();
     } else {
         this.Ui.showView(this.Ui.views.main);
     }
-    
-    console.log("App Initialized (v77)");
 };
 
 window.App.bindEvents = function() {
@@ -107,27 +92,26 @@ window.App.bindEvents = function() {
     document.getElementById('main-host-btn')?.addEventListener('click', () => U.showView(V.hostLogin));
     document.getElementById('main-player-btn')?.addEventListener('click', () => U.showView(V.respondent));
 
+    // ログイン処理
     document.getElementById('host-login-submit-btn')?.addEventListener('click', () => {
         const input = document.getElementById('show-id-input').value.trim().toUpperCase();
-        if(!input) { alert(APP_TEXT.Login.AlertEmpty); return; }
-        if(!/^[A-Z0-9_-]+$/.test(input)) { alert(APP_TEXT.Login.AlertError); return; }
+        if(!input) { alert("IDを入力してください"); return; }
         
-        // ★保存
+        // ★ IDを保存
         window.App.State.currentShowId = input;
         sessionStorage.setItem('qs_show_id', input);
         
         window.App.Dashboard.enter();
     });
 
+    // 戻るボタン
     document.querySelectorAll('.header-back-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        btn.addEventListener('click', () => {
             if (btn.classList.contains('btn-logout')) {
-                // ★ログアウト時は消去
                 sessionStorage.removeItem('qs_show_id');
                 window.App.State.currentShowId = null;
                 U.showView(V.main);
             } else if (btn.classList.contains('back-to-main')) {
-                // ログイン画面などから戻る場合
                 U.showView(V.main);
             } else {
                 window.App.Dashboard.enter();
@@ -135,6 +119,7 @@ window.App.bindEvents = function() {
         });
     });
 
+    // 各機能への遷移
     document.getElementById('dash-create-btn')?.addEventListener('click', () => {
         if(window.App.Creator && window.App.Creator.init) window.App.Creator.init();
     });
@@ -145,6 +130,7 @@ window.App.bindEvents = function() {
     document.getElementById('dash-design-btn')?.addEventListener('click', () => {
         if(window.App.Design && window.App.Design.init) window.App.Design.init();
     });
+    // ★ スタジオ起動
     document.getElementById('dash-studio-btn')?.addEventListener('click', () => {
         if(window.App.Studio && window.App.Studio.startRoom) window.App.Studio.startRoom();
     });
@@ -163,12 +149,10 @@ window.App.Dashboard = {
         const listEl = document.getElementById('dash-set-list');
         if(!listEl) return;
         
-        listEl.innerHTML = `<p style="text-align:center;">${APP_TEXT.Config.SelectLoading}</p>`;
+        listEl.innerHTML = '<p style="text-align:center;">Loading...</p>';
         const showId = window.App.State.currentShowId;
-        if(!showId) {
-             listEl.innerHTML = `<p style="text-align:center;">ID Error (Please Relogin)</p>`;
-             return;
-        }
+        
+        if(!showId) return;
 
         Promise.all([
             window.db.ref(`saved_sets/${showId}`).once('value'),
@@ -176,72 +160,60 @@ window.App.Dashboard = {
         ]).then(([setSnap, progSnap]) => {
             const sets = setSnap.val() || {};
             const progs = progSnap.val() || {};
-            let items = [];
-
-            Object.keys(sets).forEach(k => items.push({ type: 'set', key: k, data: sets[k], date: sets[k].createdAt || 0 }));
-            Object.keys(progs).forEach(k => items.push({ type: 'prog', key: k, data: progs[k], date: progs[k].createdAt || 0 }));
             
-            items.sort((a, b) => b.date - a.date);
             listEl.innerHTML = '';
-
-            if(items.length === 0) {
-                listEl.innerHTML = `<p style="text-align:center; color:#999;">データがありません</p>`;
-                return;
-            }
-
-            this._cache = {};
-            items.forEach(item => {
-                this._cache[item.key] = item.data;
-                listEl.appendChild(this.createItem(item));
+            
+            // セット一覧
+            Object.keys(sets).forEach(k => {
+                const d = sets[k];
+                const div = document.createElement('div');
+                div.className = 'dash-list-item item-type-set';
+                div.innerHTML = `
+                    <div style="flex:1;">
+                        <div class="item-title"><span class="badge-set">SET</span> ${d.title}</div>
+                        <div class="item-meta">${new Date(d.createdAt||0).toLocaleDateString()} / ${d.questions.length}Q</div>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-mini btn-info" onclick="window.App.Dashboard.quick('${k}')">▶ Quick</button>
+                        <button class="btn-mini btn-dark" onclick="window.App.Creator.loadSet('${k}', ${JSON.stringify(d).replace(/"/g, '&quot;')})">Edit</button>
+                        <button class="delete-btn btn-mini" onclick="window.App.Dashboard.del('saved_sets', '${k}')">Del</button>
+                    </div>`;
+                listEl.appendChild(div);
             });
+
+            // プログラム一覧
+            Object.keys(progs).forEach(k => {
+                const d = progs[k];
+                const div = document.createElement('div');
+                div.className = 'dash-list-item item-type-prog';
+                div.innerHTML = `
+                    <div style="flex:1;">
+                        <div class="item-title"><span class="badge-prog">PROG</span> ${d.title}</div>
+                        <div class="item-meta">${new Date(d.createdAt||0).toLocaleDateString()} / ${d.playlist?d.playlist.length:0} Periods</div>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-mini btn-danger" onclick="window.App.Config.loadExternal(${JSON.stringify(d).replace(/"/g, '&quot;')})">Load</button>
+                        <button class="delete-btn btn-mini" onclick="window.App.Dashboard.del('saved_programs', '${k}')">Del</button>
+                    </div>`;
+                listEl.appendChild(div);
+            });
+            
+            if(listEl.innerHTML === '') listEl.innerHTML = '<p style="text-align:center;">データがありません</p>';
         });
     },
-
-    createItem: function(item) {
-        const div = document.createElement('div');
-        const d = item.data;
-        const dateStr = new Date(item.date).toLocaleDateString();
-        div.className = `dash-list-item item-type-${item.type}`;
-
-        if (item.type === 'set') {
-            const typeLabel = (d.questions && d.questions.length > 0) ? d.questions[0].type.toUpperCase() : "MIX";
-            div.innerHTML = `
-                <div style="flex:1;">
-                    <div class="item-title"><span class="badge-set">SET</span> ${d.title}</div>
-                    <div class="item-meta">${dateStr} / ${d.questions.length}Q / [${typeLabel}]</div>
-                </div>
-                <div style="display:flex; gap:5px;">
-                    <button class="btn-mini btn-info" onclick="window.App.Dashboard.quick('${item.key}')">▶ Quick</button>
-                    <button class="btn-mini btn-dark" onclick="window.App.Creator.loadSet('${item.key}', window.App.Dashboard.getCache('${item.key}'))">Edit</button>
-                    <button class="delete-btn btn-mini" onclick="window.App.Dashboard.del('saved_sets', '${item.key}')">Del</button>
-                </div>
-            `;
-        } else {
-            div.innerHTML = `
-                <div style="flex:1;">
-                    <div class="item-title"><span class="badge-prog">PROG</span> ${d.title}</div>
-                    <div class="item-meta">${dateStr} / ${d.playlist ? d.playlist.length : 0} Periods</div>
-                </div>
-                <div style="display:flex; gap:5px;">
-                    <button class="btn-mini btn-danger" onclick="window.App.Config.loadExternal(window.App.Dashboard.getCache('${item.key}'))">Load</button>
-                    <button class="delete-btn btn-mini" onclick="window.App.Dashboard.del('saved_programs', '${item.key}')">Del</button>
-                </div>
-            `;
-        }
-        return div;
-    },
     
-    getCache: function(key) { return this._cache[key]; },
-    
+    // Quick Start: セットを直接スタジオに送る
     quick: function(key) {
-        const data = this._cache[key];
-        if(window.App.Studio && window.App.Studio.quickStart && confirm(`「${data.title}」をU-NEXT風デザインで\n即座にスタジオ投影しますか？`)) {
-            window.App.Studio.quickStart(data);
-        }
+        window.db.ref(`saved_sets/${window.App.State.currentShowId}/${key}`).once('value', snap => {
+            const data = snap.val();
+            if(data && confirm(`「${data.title}」をすぐに開始しますか？`)) {
+                window.App.Studio.quickStart(data);
+            }
+        });
     },
     
     del: function(path, key) {
-        if(confirm(APP_TEXT.Dashboard.DeleteConfirm)) {
+        if(confirm("削除しますか？")) {
             window.db.ref(`${path}/${window.App.State.currentShowId}/${key}`).remove()
             .then(() => this.loadItems());
         }
@@ -249,13 +221,6 @@ window.App.Dashboard = {
 };
 
 // 互換性ブリッジ
-Object.defineProperty(window, 'currentShowId', { get: () => window.App.State.currentShowId, set: (v) => window.App.State.currentShowId = v });
-Object.defineProperty(window, 'currentRoomId', { get: () => window.App.State.currentRoomId, set: (v) => window.App.State.currentRoomId = v });
-Object.defineProperty(window, 'createdQuestions', { get: () => window.App.Data.createdQuestions, set: (v) => window.App.Data.createdQuestions = v });
-Object.defineProperty(window, 'periodPlaylist', { get: () => window.App.Data.periodPlaylist, set: (v) => window.App.Data.periodPlaylist = v });
-Object.defineProperty(window, 'studioQuestions', { get: () => window.App.Data.studioQuestions, set: (v) => window.App.Data.studioQuestions = v });
-Object.defineProperty(window, 'currentConfig', { get: () => window.App.Data.currentConfig, set: (v) => window.App.Data.currentConfig = v });
-
 window.initCreatorMode = () => window.App.Creator.init();
 window.loadSetForEditing = (k, i) => window.App.Creator.loadSet(k, i);
 window.enterConfigMode = () => window.App.Config.init();
@@ -263,8 +228,6 @@ window.loadProgramToConfigOnDash = (d) => window.App.Config.loadExternal(d);
 window.startRoom = () => window.App.Studio.startRoom();
 window.quickStartSet = (d) => window.App.Studio.quickStart(d);
 window.enterDashboard = () => window.App.Dashboard.enter();
-window.showView = (id) => window.App.Ui.showView(id);
-window.showToast = (msg) => window.App.Ui.showToast(msg);
 
 document.addEventListener('DOMContentLoaded', () => {
     window.App.init();
