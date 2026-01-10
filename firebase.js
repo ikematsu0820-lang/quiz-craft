@@ -1,6 +1,5 @@
 /* =========================================================
- * firebase.js
- * 役割：通信の初期化、共通の便利機能（画面切り替えなど）
+ * firebase.js (v66: Core DB Init Only)
  * =======================================================*/
 
 const firebaseConfig = {
@@ -14,40 +13,10 @@ const firebaseConfig = {
   measurementId: "G-3HRYY8ZC2W"
 };
 
+// 二重初期化防止
 if (typeof firebase !== 'undefined' && !firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
 
+// グローバルなDB参照ショートカット（これだけは便利なので残す）
 window.db = firebase.database();
-
-/* --- 共通：画面切り替え機能 --- */
-window.views = {
-    main: 'main-view',
-    hostLogin: 'host-login-view',
-    dashboard: 'host-dashboard-view',
-    creator: 'creator-view',
-    config: 'config-view',
-    hostControl: 'host-control-view',
-    ranking: 'ranking-view',
-    respondent: 'respondent-view',
-    playerGame: 'player-game-view'
-};
-
-window.showView = function(targetId) {
-    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-    const target = document.getElementById(targetId);
-    if(target) {
-        target.classList.remove('hidden');
-    }
-    // 画面遷移時に一度ライトテーマに戻す
-    document.body.classList.remove('dark-theme');
-};
-
-/* --- 共通：戻るボタンの動作 --- */
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.back-to-main').forEach(btn => {
-        btn.addEventListener('click', () => {
-            window.showView(window.views.main);
-        });
-    });
-});
