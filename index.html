@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style_common.css?v=87">
-<link rel="stylesheet" href="style_host.css?v=87">
-<link rel="stylesheet" href="style_player.css?v=87">
-<link rel="stylesheet" href="style_viewer.css?v=87">
+<link rel="stylesheet" href="style_common.css?v=92">
+<link rel="stylesheet" href="style_host.css?v=92">
+<link rel="stylesheet" href="style_player.css?v=92">
+<link rel="stylesheet" href="style_viewer.css?v=92">
 </head>
 <body>
 
@@ -216,16 +216,17 @@
 <div id="host-control-view" class="view hidden host-studio-layout">
     <div class="studio-header-bar">
         <div class="status-item">
-            <span class="status-label">ROOM ID</span>
+            <span class="status-label">部屋ID</span>
             <span id="studio-header-room-id" class="status-value text-yellow" title="クリックしてコピー">---</span>
         </div>
-        <div class="status-item"><span class="status-label">MODE</span><span id="studio-mode-display" class="status-value text-cyan">NORMAL</span></div>
-        <div class="status-item"><span class="status-label">Q</span><span id="studio-q-num-display" class="status-value">1/10</span></div>
-        <div class="status-item"><span class="status-label">STEP</span><span id="studio-step-display" class="status-value">STANDBY</span></div>
-        <div class="status-item"><span class="status-label">PLAYER</span><span id="studio-player-count-display" class="status-value">0</span></div>
+        <div class="status-item"><span class="status-label">モード</span><span id="studio-mode-display" class="status-value text-cyan">NORMAL</span></div>
+        <div class="status-item"><span class="status-label">問題数</span><span id="studio-q-num-display" class="status-value">1/10</span></div>
+        <div class="status-item"><span class="status-label">状態</span><span id="studio-step-display" class="status-value">STANDBY</span></div>
+        <div class="status-item"><span class="status-label">参加人数</span><span id="studio-player-count-display" class="status-value">0</span></div>
+        
         <div id="studio-solo-info" class="status-item hidden">
-            <span class="status-label">CHALLENGER</span><span id="studio-challenger-name" class="status-value text-pink">---</span>
-            <span class="status-label ml-10">LIFE</span><span id="studio-life-display" class="status-value">3</span>
+            <span class="status-label">挑戦者</span><span id="studio-challenger-name" class="status-value text-pink">---</span>
+            <span class="status-label ml-10">ライフ</span><span id="studio-life-display" class="status-value">3</span>
         </div>
         <button id="host-close-studio-btn" class="header-back-btn" style="margin-left: auto;">ダッシュボード</button>
     </div>
@@ -233,7 +234,7 @@
     <div class="studio-main-area">
         <div id="studio-standby-panel" class="center-message">
             <div class="big-room-id-box">
-                <span class="label">ROOM ID (Click to Copy)</span>
+                <span class="label">部屋ID (クリックしてコピー)</span>
                 <span id="studio-big-room-id" title="クリックしてコピー">------</span>
             </div>
 
@@ -254,7 +255,7 @@
             <div id="studio-q-text" class="monitor-q-text"></div>
             <div id="studio-choices-container" class="monitor-choices"></div>
             <div id="studio-correct-display" class="monitor-correct hidden">
-                <span class="label">ANSWER:</span> <span id="studio-correct-text"></span>
+                <span class="label">正解:</span> <span id="studio-correct-text"></span>
             </div>
             <div id="studio-sub-info" class="monitor-sub-info hidden"></div>
         </div>
@@ -263,12 +264,12 @@
     <div class="studio-footer-controls">
         <button id="btn-phase-main" class="btn-block btn-large-action">START</button>
         <div id="studio-sub-controls" class="sub-controls-grid hidden">
-            <button id="btn-judge-correct" class="btn-success btn-judge">⭕ COR</button>
-            <button id="btn-judge-wrong" class="btn-danger btn-judge">❌ WRO</button>
+            <button id="btn-judge-correct" class="btn-success btn-judge">⭕ 正解</button>
+            <button id="btn-judge-wrong" class="btn-danger btn-judge">❌ 不正解</button>
         </div>
         <div class="footer-tools">
             <button id="btn-toggle-ans" class="btn-mini btn-dark">正解表示</button>
-            <button id="btn-force-next" class="btn-mini btn-dark">Skip Q</button>
+            <button id="btn-force-next" class="btn-mini btn-dark">強制スキップ</button>
         </div>
     </div>
 </div>
@@ -360,14 +361,14 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=87"></script>
-<script src="host_core.js?v=87"></script>
-<script src="host_design.js?v=87"></script>
-<script src="host_creator.js?v=87"></script>
-<script src="host_config.js?v=87"></script>
-<script src="host_studio.js?v=87"></script>
-<script src="player.js?v=87"></script>
-<script src="viewer.js?v=87"></script>
+<script src="text_config.js?v=92"></script>
+<script src="host_core.js?v=92"></script>
+<script src="host_design.js?v=92"></script>
+<script src="host_creator.js?v=92"></script>
+<script src="host_config.js?v=92"></script>
+<script src="host_studio.js?v=92"></script>
+<script src="player.js?v=92"></script>
+<script src="viewer.js?v=92"></script>
 
 </body>
 </html>
