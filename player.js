@@ -1,5 +1,5 @@
 /* =========================================================
- * player.js (v50: Shuffle & Oral & Sort)
+ * player.js (v93: Fix View Switching Error)
  * =======================================================*/
 
 let myRoomId = null;
@@ -30,7 +30,9 @@ function joinRoom() {
         periodScore: 0,
         periodTime: 0
     }).then(() => {
-        window.showView(window.views.playerGame);
+        // ★修正: 画面切り替えの記述を最新の形式に変更
+        App.Ui.showView(App.Ui.views.playerGame);
+        
         document.getElementById('player-name-disp').textContent = name;
         startPlayerListener(code, myPlayerId);
     }).catch(e => alert("Error: " + e.message));
@@ -82,7 +84,7 @@ function startPlayerListener(roomId, playerId) {
         document.getElementById('player-wait-msg').classList.add('hidden');
         document.getElementById('player-ranking-overlay').classList.add('hidden');
         document.getElementById('player-buzz-area').classList.add('hidden');
-        document.getElementById('player-oral-done-area').classList.add('hidden'); // ★v50
+        document.getElementById('player-oral-done-area').classList.add('hidden');
 
         if (st.step === 'standby') {
             document.getElementById('player-lobby-msg').innerHTML = `<h3>${APP_TEXT.Player.MsgLobbyHead}</h3><p>${APP_TEXT.Player.MsgLobbyBody}</p>`;
@@ -128,14 +130,9 @@ function handleBuzzMode(roomId, playerId, status) {
     else if (status.currentAnswerer) {
         buzzArea.classList.add('hidden');
         if (status.currentAnswerer === playerId) {
-            // 自分だ！
-            // ★v50: 問題文を表示してあげる（口頭でも内容は確認したい）
             window.db.ref(`rooms/${roomId}/questions/${status.qIndex}`).once('value', qSnap => {
                 const q = qSnap.val();
-                renderPlayerQuestion(q, roomId, playerId); // 通常フォームを表示
-                // ただし早押しで口頭回答が前提なら、フォーム操作はさせずに「回答中」だけ出す手もあるが、
-                // 記述で答える可能性もあるのでフォームは出す。
-                // もし口頭モードならフォームは出ない（renderPlayerQuestion内で制御）
+                renderPlayerQuestion(q, roomId, playerId); 
             });
         } else {
             lobbyMsg.innerHTML = `<h3>LOCKED</h3><p>Waiting for answer...</p>`;
@@ -187,7 +184,7 @@ function renderPlayerQuestion(q, roomId, playerId) {
     const oralArea = document.getElementById('player-oral-done-area');
     
     area.classList.remove('hidden');
-    oralArea.classList.add('hidden'); // デフォルト隠す
+    oralArea.classList.add('hidden'); 
     
     qText.textContent = q.q;
     inputCont.innerHTML = '';
@@ -195,7 +192,6 @@ function renderPlayerQuestion(q, roomId, playerId) {
     if (q.type === 'choice') {
         let choices = q.c.map((text, i) => ({ text: text, originalIndex: i }));
         
-        // ★v50: シャッフル処理
         if (roomConfig.shuffleChoices === 'on') {
             for (let i = choices.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -208,20 +204,18 @@ function renderPlayerQuestion(q, roomId, playerId) {
             btn.className = 'btn-block answer-btn';
             btn.textContent = item.text;
             
-            // 色は表示順で固定する（場所が変わっても色は場所依存）
             if(i===0) btn.classList.add('btn-blue');
             else if(i===1) btn.classList.add('btn-red');
             else if(i===2) btn.classList.add('btn-green');
             else btn.classList.add('btn-yellow');
 
-            btn.onclick = () => submitAnswer(roomId, playerId, item.originalIndex); // 元のインデックスを送る
+            btn.onclick = () => submitAnswer(roomId, playerId, item.originalIndex); 
             inputCont.appendChild(btn);
         });
 
     } else if (q.type === 'sort') {
         let choices = q.c.map((text, i) => ({ text: text, originalIndex: i }));
         
-        // ★v50: 並べ替え初期配置（ランダム or 固定）
         if (!q.initialOrder || q.initialOrder === 'random') {
             for (let i = choices.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -234,17 +228,15 @@ function renderPlayerQuestion(q, roomId, playerId) {
             const btn = document.createElement('div');
             btn.className = 'btn-sort';
             btn.textContent = item.text;
-            btn.dataset.index = item.originalIndex; // 今回はUI実装省略のためdatasetに入れるのみ
+            btn.dataset.index = item.originalIndex; 
             ul.appendChild(btn);
         });
         inputCont.innerHTML = "<p style='font-size:0.8em;'>Sort not supported on simple web view yet.</p>"; 
-        // 実際にはSortableJS等が必要だが、今回は省略
 
-    } else if (q.type === 'text') {
-        // ★v50: 口頭モード分岐
-        if (q.mode === 'oral') {
-            area.classList.add('hidden'); // 通常エリアは隠す
-            oralArea.classList.remove('hidden'); // 口頭用ボタン表示
+    } else if (q.type === 'free_written' || q.type === 'free_oral') {
+        if (q.type === 'free_oral') {
+            area.classList.add('hidden'); 
+            oralArea.classList.remove('hidden'); 
             
             document.getElementById('player-oral-done-btn').onclick = () => {
                 submitAnswer(roomId, playerId, "[Oral]");
@@ -277,7 +269,6 @@ function submitAnswer(roomId, playerId, answer) {
             lastTime: duration 
         });
         
-        // 完了後の画面遷移
         if(roomConfig.mode === 'turn') {
              document.getElementById('player-quiz-area').classList.add('hidden');
              document.getElementById('player-oral-done-area').classList.add('hidden');
@@ -286,9 +277,6 @@ function submitAnswer(roomId, playerId, answer) {
              document.getElementById('player-quiz-area').classList.add('hidden');
              document.getElementById('player-oral-done-area').classList.add('hidden');
              document.getElementById('player-wait-msg').classList.remove('hidden');
-        } else {
-             // 何度でも修正可の場合、通知だけ
-             // 今回はトースト未実装なので簡易的にボタン色変えるなどで対応すべきだが省略
         }
     });
 }
