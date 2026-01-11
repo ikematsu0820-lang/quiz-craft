@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v100: Fix Answer Display Logic)
+ * host_studio.js (v101: Full Rule Support)
  * =======================================================*/
 
 App.Studio = {
@@ -195,10 +195,8 @@ App.Studio = {
             case 0: // STANDBY
                 btnMain.textContent = `Q.${App.State.currentQIndex + 1} ゲーム開始`;
                 btnMain.onclick = () => this.setStep(1);
-                
                 const pTitle = App.Data.periodPlaylist[App.State.currentPeriodIndex].title;
                 this.renderMonitorMessage("PROGRAM", pTitle);
-                
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: App.State.currentQIndex });
                 break;
                 
@@ -206,17 +204,27 @@ App.Studio = {
                 btnMain.textContent = "準備完了 (SKIP)";
                 btnMain.classList.add('action-ready');
                 btnMain.onclick = () => this.setStep(2);
-                
                 this.renderMonitorMessage("QUESTION", `Q. ${App.State.currentQIndex + 1}`);
-                
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'ready' });
                 break;
                 
-            case 2: // QUESTION
+            case 2: // QUESTION (OPEN)
                 btnMain.textContent = "問題を表示 (OPEN)";
                 btnMain.onclick = () => this.setStep(3);
                 this.renderQuestionMonitor(q);
-                window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', startTime: firebase.database.ServerValue.TIMESTAMP });
+                
+                // ★修正: タイムアタックなら制限時間を送信
+                let updateData = { 
+                    step: 'question', 
+                    startTime: firebase.database.ServerValue.TIMESTAMP 
+                };
+                
+                if (App.Data.currentConfig.mode === 'time_attack' || App.Data.currentConfig.mode === 'solo') {
+                    // デフォルト10秒、設定があればそれを使う
+                    updateData.timeLimit = App.Data.currentConfig.timeLimit || 10;
+                }
+                
+                window.db.ref(`rooms/${roomId}/status`).update(updateData);
                 break;
                 
             case 3: // ANSWERING
@@ -307,7 +315,6 @@ App.Studio = {
             });
         }
         
-        // ★修正: 正解表示ロジック改良
         let correctText = "";
         if(Array.isArray(q.correct)) {
             correctText = (q.type==='choice' && q.c) ? q.correct.map(i=>q.c[i]).join(' / ') : q.correct.join(' / ');
