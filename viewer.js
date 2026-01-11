@@ -109,11 +109,12 @@ function updateViewerDisplay(status) {
             </div>
         `;
     }
-    // 3. 出題中
+// 3. 出題中
     else if (status.step === 'question' || status.step === 'answering') {
         statusDiv.textContent = `Q${status.qIndex + 1}`;
         
-        if ((viewerConfig.mode === 'time_attack' || viewerConfig.mode === 'solo') && status.timeLimit) {
+        // ★修正: モード問わず、timeLimitがあればタイマー発動
+        if (status.timeLimit) {
             const timerArea = document.getElementById('viewer-timer-bar-area');
             const timerBar = document.getElementById('viewer-timer-bar');
             timerArea.classList.remove('hidden');
@@ -125,7 +126,6 @@ function updateViewerDisplay(status) {
                 timerBar.style.width = '0%';
             }, 50);
         }
-
         if (status.step === 'answering' && viewerConfig.mode === 'buzz') {
              statusDiv.textContent = "早押し受付中！";
              statusDiv.style.color = "#ff9800";
