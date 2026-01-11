@@ -1,5 +1,5 @@
 /* =========================================================
- * viewer.js (v99: Title & Q-Num with Full Design)
+ * viewer.js (v100: Fix Answer Display Logic)
  * =======================================================*/
 
 let viewerRoomId = null;
@@ -45,8 +45,7 @@ function startViewer(roomId) {
 
     refs.config.on('value', snap => {
         viewerConfig = snap.val() || {};
-        // 背景を即時適用（待機画面でもデザインを反映）
-        applyDefaultDesign(document.getElementById('viewer-main-view'), null);
+        if(viewerConfig.baseDesign) applyBaseDesign(viewerConfig.baseDesign);
     });
 
     refs.questions.on('value', snap => {
@@ -81,8 +80,7 @@ function updateViewerDisplay(status) {
         updateViewerRace();
     }
 
-    // ★修正: ステップごとの表示分岐
-    // 1. 待機中 (タイトル表示)
+    // 1. 待機中
     if (status.step === 'standby') {
         statusDiv.textContent = "STANDBY";
         applyDefaultDesign(viewContainer, null);
@@ -97,12 +95,11 @@ function updateViewerDisplay(status) {
             </div>
         `;
     } 
-    // 2. 準備中 (問題番号表示)
+    // 2. 準備中
     else if (status.step === 'ready') {
         statusDiv.textContent = "READY";
         const q = viewerQuestions[status.qIndex] || {};
-        applyDefaultDesign(viewContainer, q.design); // 背景画像があれば適用
-        
+        applyDefaultDesign(viewContainer, q.design);
         mainText.innerHTML = `
             <div style="text-align:center;">
                 <div style="color:#fff; font-size:15vh; font-weight:900; letter-spacing:0.1em; text-shadow:0 10px 30px rgba(0,0,0,0.8);">
@@ -112,11 +109,10 @@ function updateViewerDisplay(status) {
             </div>
         `;
     }
-    // 3. 出題中 (問題表示)
+    // 3. 出題中
     else if (status.step === 'question' || status.step === 'answering') {
         statusDiv.textContent = `Q${status.qIndex + 1}`;
         
-        // タイムアタックバー
         if ((viewerConfig.mode === 'time_attack' || viewerConfig.mode === 'solo') && status.timeLimit) {
             const timerArea = document.getElementById('viewer-timer-bar-area');
             const timerBar = document.getElementById('viewer-timer-bar');
@@ -141,7 +137,7 @@ function updateViewerDisplay(status) {
             if(q.type === 'multi') renderMultiGrid(q, status.multiState);
         }
     } 
-    // 4. 正解表示
+    // 4. 正解表示 (修正箇所)
     else if (status.step === 'answer' || status.step === 'result') {
         statusDiv.textContent = "ANSWER";
         const q = viewerQuestions[status.qIndex];
@@ -150,6 +146,7 @@ function updateViewerDisplay(status) {
             
             if (status.step === 'answer') {
                 const accent = q.design?.qBorderColor || '#00bfff';
+                // ★修正: 正解文字列の取得ロジック改良
                 let ansStr = getAnswerString(q);
                 
                 const answerBox = document.createElement('div');
@@ -173,6 +170,7 @@ function updateViewerDisplay(status) {
             }
         }
     } 
+    // 5. その他
     else if (status.step === 'panel') {
         statusDiv.textContent = "PANEL";
         applyDefaultDesign(viewContainer, null);
@@ -192,7 +190,14 @@ function renderQuestionLayout(container, contentBox, q) {
     const layout = q.layout || 'standard';
     const align = q.align || 'center';
     
-    applyDefaultDesign(container, d);
+    container.style.backgroundColor = d.mainBgColor || '#0a0a0a';
+    if (d.bgImage) {
+        container.style.backgroundImage = `url(${d.bgImage})`;
+        container.style.backgroundSize = "cover";
+        container.style.backgroundPosition = "center";
+    } else {
+        container.style.backgroundImage = (d.mainBgColor === '#0a0a0a') ? "radial-gradient(circle at center, #1a1a1a 0%, #000000 100%)" : "none";
+    }
 
     const qStyleBase = `color:${d.qTextColor||'#fff'}; background:${d.qBgColor||'rgba(255,255,255,0.1)'}; border:6px solid ${d.qBorderColor||'#fff'}; text-align:${align}; box-shadow:0 10px 40px rgba(0,0,0,0.5);`;
     const cStyle = `color:${d.cTextColor||'#ccc'}; background:${d.cBgColor||'transparent'}; border-bottom:2px solid ${d.cBorderColor||'#555'}; padding:1.5vh 2vw; font-size:3vh; display:flex; align-items:center;`;
@@ -237,13 +242,24 @@ function renderQuestionLayout(container, contentBox, q) {
     contentBox.innerHTML = html;
 }
 
+// ★修正: 正解文字列の生成 (配列なら結合する)
 function getAnswerString(q) {
     if (!q) return "";
-    if (Array.isArray(q.correct)) return "複数正解 (Multi)";
+    
+    // 選択式の場合のインデックス変換処理
     if (q.type === 'choice' && q.c) {
+        if (Array.isArray(q.correct)) {
+            return q.correct.map(idx => q.c[idx]).join(' / ');
+        }
         const idx = q.correctIndex !== undefined ? q.correctIndex : q.correct;
         return q.c[idx];
     }
+    
+    // 記述式などの場合 (配列ならスラッシュで連結、文字列ならそのまま)
+    if (Array.isArray(q.correct)) {
+        return q.correct.join(' / ');
+    }
+    
     return q.correct;
 }
 
@@ -259,6 +275,11 @@ function applyDefaultDesign(container, design) {
     }
 }
 
+function applyBaseDesign(design) {
+    // 待機画面などに共通デザインを適用する場合の予備関数
+}
+
+// --- サブ機能 ---
 function renderPanelGrid(panels) {
     const grid = document.getElementById('viewer-panel-grid');
     if(!grid) return;
