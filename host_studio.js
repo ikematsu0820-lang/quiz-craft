@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v92: Japanese UI Text)
+ * host_studio.js (v97: Title & Q-Num Display)
  * =======================================================*/
 
 App.Studio = {
@@ -155,6 +155,9 @@ App.Studio = {
         App.State.currentPeriodIndex = index;
         App.Data.studioQuestions = item.questions;
         App.Data.currentConfig = item.config;
+        // ★修正: Viewer側でタイトル表示するために config にタイトルを追加
+        App.Data.currentConfig.periodTitle = item.title;
+
         App.State.currentQIndex = 0;
 
         const roomId = App.State.currentRoomId;
@@ -187,10 +190,8 @@ App.Studio = {
         subControls.classList.add('hidden');
         btnMain.classList.remove('hidden');
 
-        // 日本語ラベル用配列
         const stepsJA = ['待機中', '準備中', '出題中', '回答中', '結果表示', '正解表示', '次へ'];
         document.getElementById('studio-step-display').textContent = stepsJA[stepId];
-        
         document.getElementById('studio-q-num-display').textContent = `${App.State.currentQIndex + 1}/${App.Data.studioQuestions.length}`;
         document.getElementById('studio-mode-display').textContent = this.translateMode(App.Data.currentConfig.mode);
 
@@ -201,20 +202,35 @@ App.Studio = {
             case 0: // STANDBY
                 btnMain.textContent = `Q${App.State.currentQIndex + 1} ゲーム開始 (START)`;
                 btnMain.onclick = () => this.setStep(1);
-                this.renderQuestionMonitor(q);
+                
+                // ★修正: ここで「番組タイトル」を表示
+                const pTitle = App.Data.periodPlaylist[App.State.currentPeriodIndex].title;
+                this.renderMonitorMessage("PROGRAM", pTitle);
+                
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: App.State.currentQIndex });
                 break;
+                
             case 1: // READY
                 btnMain.textContent = "準備完了 (SKIP)";
                 btnMain.classList.add('action-ready');
                 btnMain.onclick = () => this.setStep(2);
+                
+                // ★修正: ここで「第〇問」を表示
+                this.renderMonitorMessage("QUESTION", `第 ${App.State.currentQIndex + 1} 問`);
+                
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'ready' });
                 break;
+                
             case 2: // QUESTION
                 btnMain.textContent = "問題を表示 (OPEN)";
                 btnMain.onclick = () => this.setStep(3);
+                
+                // ★修正: ここで初めて「問題文」を表示
+                this.renderQuestionMonitor(q);
+                
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', startTime: firebase.database.ServerValue.TIMESTAMP });
                 break;
+                
             case 3: // ANSWERING
                 btnMain.textContent = "回答締め切り / 判定";
                 btnMain.classList.add('action-stop');
@@ -226,11 +242,13 @@ App.Studio = {
                 }
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'answering', isBuzzActive: (App.Data.currentConfig.mode === 'buzz') });
                 break;
+                
             case 4: // RESULT
                 btnMain.textContent = "正解を発表 (SHOW ANSWER)";
                 btnMain.onclick = () => this.setStep(5);
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'result', isBuzzActive: false });
                 break;
+                
             case 5: // ANSWER
                 btnMain.textContent = "次の問題へ (NEXT) >>";
                 btnMain.classList.add('action-next');
@@ -238,6 +256,7 @@ App.Studio = {
                 document.getElementById('studio-correct-display').classList.remove('hidden');
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
                 break;
+                
             case 6: // NEXT
                 this.goNext();
                 break;
@@ -269,6 +288,14 @@ App.Studio = {
                 document.getElementById('btn-phase-main').classList.add('hidden');
             }
         }
+    },
+
+    // ★追加: プレビュー画面にメッセージ（タイトルやQ数）を出す専用関数
+    renderMonitorMessage: function(label, text) {
+        document.getElementById('studio-q-text').innerHTML = `<div style="font-size:2em; color:#ffd700; margin-top:50px;">${text}</div>`;
+        document.getElementById('studio-q-type-badge').textContent = label;
+        document.getElementById('studio-choices-container').innerHTML = ''; // 選択肢は消す
+        document.getElementById('studio-correct-display').classList.add('hidden');
     },
 
     renderQuestionMonitor: function(q) {
