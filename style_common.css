@@ -1,5 +1,5 @@
 /* =========================================================
- * style_common.css (v66.1: Layout Fixes)
+ * style_common.css (v94: Modern Login Styles)
  * =======================================================*/
 
 :root {
@@ -18,6 +18,7 @@
     --grad-blue: linear-gradient(135deg, #0055ff 0%, #0033aa 100%);
     --grad-cyan: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%);
     --grad-orange: linear-gradient(180deg, #ff9966 0%, #ff5e62 100%);
+    --grad-gold: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
 }
 
 body {
@@ -44,63 +45,37 @@ body {
 
 .hidden { display: none !important; }
 
-/* --- ②・⑤ ヘッダー位置修正 --- */
+/* --- ヘッダー --- */
 .view-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
     border-bottom: 2px solid var(--border-color);
-    padding: 10px 5px; /* 上下左右に少し余白を持たせる */
+    padding: 10px 5px;
     min-height: 40px;
 }
 
 .header-back-btn {
-    background: #333;
-    color: #ccc;
-    border: 1px solid #555;
-    padding: 6px 15px; /* 少し大きくして押しやすく */
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-    transition: all 0.2s;
-    white-space: nowrap; /* 折り返し防止 */
+    background: #333; color: #ccc; border: 1px solid #555;
+    padding: 6px 15px; border-radius: 4px; cursor: pointer;
+    font-size: 0.9em; transition: all 0.2s; white-space: nowrap;
 }
-.header-back-btn:hover {
-    background: #444;
-    color: white;
-    border-color: white;
-}
-
-/* タイトルの余白調整 */
-.view-header h2, .view-header h3 {
-    margin: 0;
-    line-height: 1.2;
-}
+.header-back-btn:hover { background: #444; color: white; border-color: white; }
+.view-header h2, .view-header h3 { margin: 0; line-height: 1.2; }
 
 /* --- ボタン共通 --- */
 button {
-    cursor: pointer;
-    font-family: inherit;
-    transition: all 0.2s ease;
-    border: none;
-    outline: none;
+    cursor: pointer; font-family: inherit; transition: all 0.2s ease;
+    border: none; outline: none;
 }
 button:active { transform: translateY(2px); opacity: 0.8; }
 
 .btn-block {
-    display: block;
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 10px;
-    font-size: 1em;
-    border-radius: 6px;
-    text-align: center;
-    box-sizing: border-box;
-    font-weight: bold;
-    color: white;
-    background: #333;
-    border: 1px solid var(--border-color);
+    display: block; width: 100%; padding: 12px; margin-bottom: 10px;
+    font-size: 1em; border-radius: 6px; text-align: center;
+    box-sizing: border-box; font-weight: bold; color: white;
+    background: #333; border: 1px solid var(--border-color);
 }
 .btn-block:hover { filter: brightness(1.1); }
 
@@ -110,37 +85,86 @@ button:active { transform: translateY(2px); opacity: 0.8; }
 .btn-warning { background-color: #fce38a; color: #333; border-color: #fce38a; }
 .btn-info    { background-color: var(--color-cyan); color: #333; border-color: var(--color-cyan); }
 .btn-dark    { background-color: #636e72; border-color: #636e72; }
-
-.btn-mini {
-    padding: 4px 8px;
-    font-size: 0.85em;
-    border-radius: 4px;
-    cursor: pointer;
-}
+.btn-mini    { padding: 4px 8px; font-size: 0.85em; border-radius: 4px; cursor: pointer; }
 
 /* --- フォーム要素 --- */
 input[type="text"], input[type="number"], select, textarea {
-    padding: 10px;
-    background: var(--bg-input);
-    border: 1px solid #555;
-    color: #fff;
-    border-radius: 4px;
-    font-size: 1em;
-    box-sizing: border-box;
+    padding: 10px; background: var(--bg-input); border: 1px solid #555;
+    color: #fff; border-radius: 4px; font-size: 1em; box-sizing: border-box;
 }
-input:focus, select:focus {
-    border-color: var(--color-cyan);
-    background: #000;
-    outline: none;
+input:focus, select:focus { border-color: var(--color-cyan); background: #000; outline: none; }
+
+/* --- Landing & Modern Login Styles --- */
+.landing-view {
+    background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
+    border: none; box-shadow: none; display: flex; align-items: center;
+    justify-content: center; min-height: 100vh; padding: 20px;
+}
+.landing-content { width: 100%; max-width: 350px; text-align: center; }
+
+.landing-logo-emoji {
+    font-size: 80px; margin-bottom: 0;
+    text-shadow: 0 0 30px rgba(255, 255, 100, 0.8), 0 0 60px rgba(255, 165, 0, 0.6);
+    animation: floatLogo 3s ease-in-out infinite alternate;
+}
+@keyframes floatLogo {
+    0% { transform: translateY(0) scale(1); filter: brightness(1); }
+    100% { transform: translateY(-10px) scale(1.05); filter: brightness(1.2); }
+}
+.landing-title {
+    color: #fff; font-family: 'Arial Black', sans-serif; font-size: 2.5em;
+    margin: 10px 0 0 0; text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); letter-spacing: 1px;
+}
+.landing-subtitle {
+    color: #a0a0ff; font-size: 1em; margin: 5px 0 40px 0;
+    font-weight: bold; letter-spacing: 2px; opacity: 0.7;
 }
 
-/* --- その他 --- */
-.app-logo, .app-logo-small {
-    display: block;
-    margin: 0 auto;
-    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+.landing-btn-area { display: flex; flex-direction: column; gap: 20px; }
+.landing-btn {
+    width: 100%; padding: 18px; border-radius: 50px; border: none;
+    font-size: 1.2em; font-weight: bold; color: white; position: relative;
+    display: flex; align-items: center; justify-content: center; gap: 15px;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.2); margin: 0;
+}
+.landing-btn:active { transform: translateY(4px); }
+
+.btn-host-modern {
+    background: var(--grad-orange);
+    box-shadow: 0 6px 0 #c24e2e, 0 15px 20px rgba(0,0,0,0.4);
+}
+.btn-host-modern:active { box-shadow: 0 0 0 #c24e2e; }
+
+.btn-player-modern {
+    background: var(--grad-cyan);
+    box-shadow: 0 6px 0 #2a7a7d, 0 15px 20px rgba(0,0,0,0.4);
+}
+.btn-player-modern:active { box-shadow: 0 0 0 #2a7a7d; }
+
+/* ★モダン入力フォーム (丸いデザイン) */
+.modern-input {
+    width: 100%; padding: 15px; margin-bottom: 20px;
+    border-radius: 50px; border: 2px solid rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.5); color: #fff;
+    font-size: 1.2em; text-align: center; font-family: monospace; font-weight: bold;
+    outline: none; transition: all 0.3s;
+}
+.modern-input:focus {
+    border-color: #00bfff; background: rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 15px rgba(0, 191, 255, 0.3);
+}
+.modern-input::placeholder {
+    color: rgba(255, 255, 255, 0.3); font-family: sans-serif; font-weight: normal;
 }
 
+/* ★テキストリンク (戻るボタン用) */
+.text-link-btn {
+    background: none; border: none; color: rgba(255, 255, 255, 0.6);
+    text-decoration: underline; font-size: 0.9em; margin-top: 20px; cursor: pointer;
+}
+.text-link-btn:hover { color: #fff; }
+
+/* その他 */
 #toast-container {
     position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
     z-index: 9999; width: 90%; max-width: 400px; pointer-events: none;
@@ -157,46 +181,3 @@ input:focus, select:focus {
     80% { opacity: 1; }
     100% { opacity: 0; }
 }
-
-/* --- Landing Page --- */
-.landing-view {
-    background: radial-gradient(circle at center, #1a0b2e 0%, #000000 100%);
-    border: none; box-shadow: none; display: flex; align-items: center;
-    justify-content: center; min-height: 100vh; padding: 20px;
-}
-.landing-content { width: 100%; max-width: 350px; text-align: center; }
-.landing-logo-emoji {
-    font-size: 80px; margin-bottom: 0;
-    text-shadow: 0 0 30px rgba(255, 255, 100, 0.8), 0 0 60px rgba(255, 165, 0, 0.6);
-    animation: floatLogo 3s ease-in-out infinite alternate;
-}
-@keyframes floatLogo {
-    0% { transform: translateY(0) scale(1); filter: brightness(1); }
-    100% { transform: translateY(-10px) scale(1.05); filter: brightness(1.2); }
-}
-.landing-title {
-    color: #fff; font-family: 'Arial Black', sans-serif; font-size: 2.5em;
-    margin: 10px 0 0 0; text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); letter-spacing: 1px;
-}
-.landing-subtitle {
-    color: #a0a0ff; font-size: 1em; margin: 5px 0 50px 0;
-    font-weight: bold; letter-spacing: 2px; opacity: 0.7;
-}
-.landing-btn-area { display: flex; flex-direction: column; gap: 20px; }
-.landing-btn {
-    width: 100%; padding: 18px; border-radius: 50px; border: none;
-    font-size: 1.2em; font-weight: bold; color: white; position: relative;
-    display: flex; align-items: center; justify-content: center; gap: 15px;
-    text-shadow: 1px 1px 0 rgba(0,0,0,0.2); margin: 0;
-}
-.landing-btn:active { transform: translateY(4px); }
-.btn-host-modern {
-    background: var(--grad-orange);
-    box-shadow: 0 6px 0 #c24e2e, 0 15px 20px rgba(0,0,0,0.4);
-}
-.btn-host-modern:active { box-shadow: 0 0 0 #c24e2e; }
-.btn-player-modern {
-    background: var(--grad-cyan);
-    box-shadow: 0 6px 0 #2a7a7d, 0 15px 20px rgba(0,0,0,0.4);
-}
-.btn-player-modern:active { box-shadow: 0 0 0 #2a7a7d; }
