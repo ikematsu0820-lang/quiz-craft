@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v106: Disable Normal Mode for Oral)
+ * host_config.js (v107: "None" Text & Solo Time Limit Fix)
  * =======================================================*/
 
 App.Config = {
@@ -63,16 +63,11 @@ App.Config = {
         const conf = data.c || {};
         
         let typeDisplay = "不明";
-        let isOral = false; // ★追加: 口頭判定フラグ
-
         if(this.selectedSetQuestions.length > 0) {
             const t = this.selectedSetQuestions[0].type;
             if(t === 'choice') typeDisplay = APP_TEXT.Creator.TypeChoice;
             else if(t === 'sort') typeDisplay = APP_TEXT.Creator.TypeSort;
-            else if(t === 'free_oral') { 
-                typeDisplay = APP_TEXT.Creator.TypeFreeOral;
-                isOral = true; // ★口頭ならフラグON
-            }
+            else if(t === 'free_oral') typeDisplay = APP_TEXT.Creator.TypeFreeOral;
             else if(t === 'free_written') typeDisplay = APP_TEXT.Creator.TypeFreeWritten;
             else if(t === 'multi') typeDisplay = APP_TEXT.Creator.TypeMulti;
         }
@@ -87,17 +82,12 @@ App.Config = {
 
         html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
         
-        // ★修正: 口頭形式の場合、Normalを選択不可にするHTML生成
-        const normalOption = isOral 
-            ? `<option value="normal" disabled style="color:#555;">✖ 一斉回答 (口頭形式では選択不可)</option>` 
-            : `<option value="normal">一斉回答 (Normal)</option>`;
-
         html += `
             <div class="config-item-box">
                 <div class="mb-15">
                     <label class="config-label">1. 回答モード (Answer Mode)</label>
                     <select id="config-mode-select" class="btn-block config-select mb-10 highlight-select">
-                        ${normalOption}
+                        <option value="normal">一斉回答 (Normal)</option>
                         <option value="buzz">早押し (Buzz)</option>
                         <option value="turn">順番回答 (Turn)</option>
                         <option value="solo">ソロ挑戦 (Solo)</option>
@@ -121,7 +111,7 @@ App.Config = {
                             <input type="number" id="config-bulk-time-input" value="10" min="1" placeholder="Sec" style="width:100%; text-align:center;">
                             <button id="config-bulk-time-btn" class="btn-mini btn-dark">SET</button>
                         </div>
-                        <button id="config-bulk-time-inf-btn" class="btn-mini btn-info" style="width:100%; font-size:0.8em;">無制限 (No Limit)</button>
+                        <button id="config-bulk-time-inf-btn" class="btn-mini btn-info" style="width:100%; font-size:0.8em;">なし (No Limit)</button>
                     </div>
                     <div>
                         <label class="config-label" style="font-size:0.8em; color:#0055ff;">${APP_TEXT.Config.LabelHeaderPt}</label>
@@ -169,9 +159,10 @@ App.Config = {
             const val = document.getElementById('config-bulk-time-input').value;
             document.querySelectorAll('.q-time-input').forEach(inp => { inp.value = val; inp.type = "number"; });
         };
+        // ★修正: 「なし」を設定
         document.getElementById('config-bulk-time-inf-btn').onclick = () => {
-            document.querySelectorAll('.q-time-input').forEach(inp => { inp.type = "text"; inp.value = "無制限"; });
-            App.Ui.showToast("制限時間を「無制限」に設定");
+            document.querySelectorAll('.q-time-input').forEach(inp => { inp.type = "text"; inp.value = "なし"; });
+            App.Ui.showToast("制限時間を「なし」に設定しました");
         };
         document.getElementById('config-bulk-point-btn').onclick = () => {
             const val = document.getElementById('config-bulk-point-input').value;
@@ -182,20 +173,7 @@ App.Config = {
             document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = val);
         };
         
-        // 初期状態の適用
-        if(conf.mode) {
-            // ★安全策: 口頭形式なのにNormalが保存されていたらBuzzに強制変更
-            if (isOral && conf.mode === 'normal') {
-                modeSel.value = 'buzz';
-            } else {
-                modeSel.value = conf.mode;
-            }
-        } else {
-            // 新規で口頭ならBuzz、それ以外ならNormalをデフォルトに
-            if (isOral) modeSel.value = 'buzz';
-            else modeSel.value = 'normal';
-        }
-
+        if(conf.mode) modeSel.value = conf.mode;
         updateDetails();
         this.renderQList();
     },
@@ -302,10 +280,16 @@ App.Config = {
                             </select>
                         </div>
                     </div>
+                    
                     <div class="grid-2-col mt-10">
                         <div>
                             <label class="config-label">${APP_TEXT.Config.LabelSoloTimeValue}</label>
-                            <input type="number" id="config-solo-time-val" class="btn-block" value="5" min="1">
+                            <div class="flex-center">
+                                <input type="number" id="config-solo-time-val" class="btn-block" value="5" min="0" placeholder="0=なし" 
+                                    onfocus="this.type='number'; this.value='';" 
+                                    onblur="if(this.value==''||this.value=='0'){this.type='text';this.value='なし';}">
+                                <span class="unit-text">秒</span>
+                            </div>
                         </div>
                         <div>
                             <label class="config-label">${APP_TEXT.Config.LabelSoloRecovery}</label>
@@ -317,6 +301,7 @@ App.Config = {
                             </select>
                         </div>
                     </div>
+
                     <div class="grid-2-col mt-10">
                         <div>
                             <label class="config-label">${APP_TEXT.Config.LabelSoloLife}</label>
@@ -365,8 +350,9 @@ App.Config = {
             row.style.borderBottom = '1px solid #333';
             row.style.padding = '8px 0';
             
+            // ★修正: デフォルト表示を「なし」に
             const isNoLimit = (q.timeLimit === 0 || q.timeLimit === undefined || q.timeLimit === "0");
-            const timeVal = isNoLimit ? "無制限" : q.timeLimit;
+            const timeVal = isNoLimit ? "なし" : q.timeLimit;
             const inputType = isNoLimit ? "text" : "number";
 
             row.innerHTML = `
@@ -376,7 +362,7 @@ App.Config = {
                 <div style="display:flex; gap:5px; align-items:center;">
                     <div style="display:flex; flex-direction:column; align-items:center;">
                         <span style="font-size:0.6em; color:#aaa;">Time</span>
-                        <input type="${inputType}" class="q-time-input" data-index="${i}" value="${timeVal}" style="width:60px; text-align:center; padding:5px; font-size:0.8em;" onfocus="this.type='number'; this.value='';" onblur="if(this.value==''||this.value=='0'){this.type='text';this.value='無制限';}">
+                        <input type="${inputType}" class="q-time-input" data-index="${i}" value="${timeVal}" style="width:60px; text-align:center; padding:5px; font-size:0.8em;" onfocus="this.type='number'; this.value='';" onblur="if(this.value==''||this.value=='0'){this.type='text';this.value='なし';}">
                     </div>
                     <div style="display:flex; flex-direction:column; align-items:center;">
                         <span style="font-size:0.6em; color:#0055ff;">Pt</span>
@@ -401,9 +387,10 @@ App.Config = {
         document.querySelectorAll('.q-point-input').forEach(inp => qs[inp.dataset.index].points = parseInt(inp.value));
         document.querySelectorAll('.q-loss-input').forEach(inp => qs[inp.dataset.index].loss = parseInt(inp.value));
         
+        // ★修正: "なし" or 0 で保存
         document.querySelectorAll('.q-time-input').forEach(inp => {
             const val = inp.value;
-            qs[inp.dataset.index].timeLimit = (val === "無制限" || val === "") ? 0 : (parseInt(val) || 0);
+            qs[inp.dataset.index].timeLimit = (val === "なし" || val === "" || val === "0") ? 0 : (parseInt(val) || 0);
         });
 
         let shuffle = 'off';
@@ -412,7 +399,7 @@ App.Config = {
         else if(mode === 'turn') shuffle = document.getElementById('config-turn-shuffle')?.value;
         
         if(shuffle === 'on') {
-            for (let i = qs.length - 0; i > 0; i--) {
+            for (let i = qs.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [qs[i], qs[j]] = [qs[j], qs[i]];
             }
@@ -434,7 +421,11 @@ App.Config = {
         if (mode === 'solo') {
             newConfig.soloStyle = document.getElementById('config-solo-style')?.value;
             newConfig.soloTimeType = document.getElementById('config-solo-time-type')?.value;
-            newConfig.soloTimeVal = parseInt(document.getElementById('config-solo-time-val')?.value) || 5;
+            
+            // ★修正: "なし" なら 0 として保存
+            const sVal = document.getElementById('config-solo-time-val').value;
+            newConfig.soloTimeVal = (sVal === 'なし' || sVal === '0') ? 0 : (parseInt(sVal) || 5);
+            
             newConfig.soloLife = parseInt(document.getElementById('config-solo-life')?.value) || 3;
             newConfig.soloRetire = document.getElementById('config-solo-retire')?.value;
             newConfig.soloRecovery = parseInt(document.getElementById('config-solo-recovery')?.value) || 0;
@@ -452,6 +443,7 @@ App.Config = {
         this.renderPreview();
     },
 
+    // ... (renderPreview, remove, saveProgram, setupModal, loadExternal はそのまま) ...
     renderPreview: function() {
         const list = document.getElementById('config-playlist-preview');
         list.innerHTML = '';
