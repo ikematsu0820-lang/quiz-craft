@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v105: Fix Time Limit Logic)
+ * host_config.js (v106: Disable Normal Mode for Oral)
  * =======================================================*/
 
 App.Config = {
@@ -63,11 +63,16 @@ App.Config = {
         const conf = data.c || {};
         
         let typeDisplay = "不明";
+        let isOral = false; // ★追加: 口頭判定フラグ
+
         if(this.selectedSetQuestions.length > 0) {
             const t = this.selectedSetQuestions[0].type;
             if(t === 'choice') typeDisplay = APP_TEXT.Creator.TypeChoice;
             else if(t === 'sort') typeDisplay = APP_TEXT.Creator.TypeSort;
-            else if(t === 'free_oral') typeDisplay = APP_TEXT.Creator.TypeFreeOral;
+            else if(t === 'free_oral') { 
+                typeDisplay = APP_TEXT.Creator.TypeFreeOral;
+                isOral = true; // ★口頭ならフラグON
+            }
             else if(t === 'free_written') typeDisplay = APP_TEXT.Creator.TypeFreeWritten;
             else if(t === 'multi') typeDisplay = APP_TEXT.Creator.TypeMulti;
         }
@@ -82,12 +87,17 @@ App.Config = {
 
         html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
         
+        // ★修正: 口頭形式の場合、Normalを選択不可にするHTML生成
+        const normalOption = isOral 
+            ? `<option value="normal" disabled style="color:#555;">✖ 一斉回答 (口頭形式では選択不可)</option>` 
+            : `<option value="normal">一斉回答 (Normal)</option>`;
+
         html += `
             <div class="config-item-box">
                 <div class="mb-15">
                     <label class="config-label">1. 回答モード (Answer Mode)</label>
                     <select id="config-mode-select" class="btn-block config-select mb-10 highlight-select">
-                        <option value="normal">一斉回答 (Normal)</option>
+                        ${normalOption}
                         <option value="buzz">早押し (Buzz)</option>
                         <option value="turn">順番回答 (Turn)</option>
                         <option value="solo">ソロ挑戦 (Solo)</option>
@@ -172,7 +182,20 @@ App.Config = {
             document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = val);
         };
         
-        if(conf.mode) modeSel.value = conf.mode;
+        // 初期状態の適用
+        if(conf.mode) {
+            // ★安全策: 口頭形式なのにNormalが保存されていたらBuzzに強制変更
+            if (isOral && conf.mode === 'normal') {
+                modeSel.value = 'buzz';
+            } else {
+                modeSel.value = conf.mode;
+            }
+        } else {
+            // 新規で口頭ならBuzz、それ以外ならNormalをデフォルトに
+            if (isOral) modeSel.value = 'buzz';
+            else modeSel.value = 'normal';
+        }
+
         updateDetails();
         this.renderQList();
     },
@@ -181,7 +204,6 @@ App.Config = {
         const area = document.getElementById('conf-detail-area');
         let html = '';
 
-        // ★修正: Normalモードから重複していた「Time Limit」を削除
         if(mode === 'normal') {
             html += `
                 <div class="mode-settings-box mode-box-normal">
@@ -231,7 +253,6 @@ App.Config = {
                     </div>
                 </div>`;
         } 
-        // Turn, Solo, GameTypeはそのまま...
         else if(mode === 'turn') {
             html += `
                 <div class="mode-settings-box mode-box-turn">
@@ -344,7 +365,6 @@ App.Config = {
             row.style.borderBottom = '1px solid #333';
             row.style.padding = '8px 0';
             
-            // ★修正: デフォルトで「無制限」と表示する処理
             const isNoLimit = (q.timeLimit === 0 || q.timeLimit === undefined || q.timeLimit === "0");
             const timeVal = isNoLimit ? "無制限" : q.timeLimit;
             const inputType = isNoLimit ? "text" : "number";
@@ -381,7 +401,6 @@ App.Config = {
         document.querySelectorAll('.q-point-input').forEach(inp => qs[inp.dataset.index].points = parseInt(inp.value));
         document.querySelectorAll('.q-loss-input').forEach(inp => qs[inp.dataset.index].loss = parseInt(inp.value));
         
-        // ★修正: "無制限" または 0 は 0 として保存
         document.querySelectorAll('.q-time-input').forEach(inp => {
             const val = inp.value;
             qs[inp.dataset.index].timeLimit = (val === "無制限" || val === "") ? 0 : (parseInt(val) || 0);
