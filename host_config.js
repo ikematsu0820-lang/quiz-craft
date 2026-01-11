@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v105: Remove Redundant Time Setting)
+ * host_config.js (v105: Fix Time Limit Logic)
  * =======================================================*/
 
 App.Config = {
@@ -181,7 +181,7 @@ App.Config = {
         const area = document.getElementById('conf-detail-area');
         let html = '';
 
-        // ★修正: Normalモードから「制限時間」設定を削除（下リストで管理するため）
+        // ★修正: Normalモードから重複していた「Time Limit」を削除
         if(mode === 'normal') {
             html += `
                 <div class="mode-settings-box mode-box-normal">
@@ -231,6 +231,7 @@ App.Config = {
                     </div>
                 </div>`;
         } 
+        // Turn, Solo, GameTypeはそのまま...
         else if(mode === 'turn') {
             html += `
                 <div class="mode-settings-box mode-box-turn">
@@ -282,6 +283,21 @@ App.Config = {
                     </div>
                     <div class="grid-2-col mt-10">
                         <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelSoloTimeValue}</label>
+                            <input type="number" id="config-solo-time-val" class="btn-block" value="5" min="1">
+                        </div>
+                        <div>
+                            <label class="config-label">${APP_TEXT.Config.LabelSoloRecovery}</label>
+                            <select id="config-solo-recovery" class="btn-block config-select">
+                                <option value="none">${APP_TEXT.Config.SoloRecoveryNone}</option>
+                                <option value="1">+1s</option>
+                                <option value="3">+3s</option>
+                                <option value="5">+5s</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-2-col mt-10">
+                        <div>
                             <label class="config-label">${APP_TEXT.Config.LabelSoloLife}</label>
                             <select id="config-solo-life" class="btn-block config-select">
                                 <option value="3">3 Lives</option>
@@ -328,7 +344,8 @@ App.Config = {
             row.style.borderBottom = '1px solid #333';
             row.style.padding = '8px 0';
             
-            const isNoLimit = (q.timeLimit === 0 || q.timeLimit === "0");
+            // ★修正: デフォルトで「無制限」と表示する処理
+            const isNoLimit = (q.timeLimit === 0 || q.timeLimit === undefined || q.timeLimit === "0");
             const timeVal = isNoLimit ? "無制限" : q.timeLimit;
             const inputType = isNoLimit ? "text" : "number";
 
@@ -339,7 +356,7 @@ App.Config = {
                 <div style="display:flex; gap:5px; align-items:center;">
                     <div style="display:flex; flex-direction:column; align-items:center;">
                         <span style="font-size:0.6em; color:#aaa;">Time</span>
-                        <input type="${inputType}" class="q-time-input" data-index="${i}" value="${timeVal||0}" style="width:60px; text-align:center; padding:5px; font-size:0.8em;" onfocus="this.type='number'; this.value='';">
+                        <input type="${inputType}" class="q-time-input" data-index="${i}" value="${timeVal}" style="width:60px; text-align:center; padding:5px; font-size:0.8em;" onfocus="this.type='number'; this.value='';" onblur="if(this.value==''||this.value=='0'){this.type='text';this.value='無制限';}">
                     </div>
                     <div style="display:flex; flex-direction:column; align-items:center;">
                         <span style="font-size:0.6em; color:#0055ff;">Pt</span>
@@ -363,9 +380,11 @@ App.Config = {
         
         document.querySelectorAll('.q-point-input').forEach(inp => qs[inp.dataset.index].points = parseInt(inp.value));
         document.querySelectorAll('.q-loss-input').forEach(inp => qs[inp.dataset.index].loss = parseInt(inp.value));
+        
+        // ★修正: "無制限" または 0 は 0 として保存
         document.querySelectorAll('.q-time-input').forEach(inp => {
             const val = inp.value;
-            qs[inp.dataset.index].timeLimit = (val === "無制限") ? 0 : (parseInt(val) || 0);
+            qs[inp.dataset.index].timeLimit = (val === "無制限" || val === "") ? 0 : (parseInt(val) || 0);
         });
 
         let shuffle = 'off';
@@ -374,7 +393,7 @@ App.Config = {
         else if(mode === 'turn') shuffle = document.getElementById('config-turn-shuffle')?.value;
         
         if(shuffle === 'on') {
-            for (let i = qs.length - 1; i > 0; i--) {
+            for (let i = qs.length - 0; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [qs[i], qs[j]] = [qs[j], qs[i]];
             }
@@ -384,7 +403,7 @@ App.Config = {
             mode: mode,
             gameType: gameType,
             initialStatus: 'revive',
-            timeLimit: 0, // ★Global設定は無効化(一括設定を使用)
+            timeLimit: 0, 
             eliminationRule: 'none',
             buzzWrongAction: document.getElementById('config-buzz-wrong-action')?.value || 'next',
             buzzTime: parseInt(document.getElementById('config-buzz-timer')?.value) || 0,
