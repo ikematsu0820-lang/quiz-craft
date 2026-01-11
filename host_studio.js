@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v99: Title & Q-Num Sync)
+ * host_studio.js (v100: Fix Answer Display Logic)
  * =======================================================*/
 
 App.Studio = {
@@ -150,8 +150,6 @@ App.Studio = {
         App.State.currentPeriodIndex = index;
         App.Data.studioQuestions = item.questions;
         App.Data.currentConfig = item.config;
-        
-        // ★修正: モニター用のタイトルをセット
         App.Data.currentConfig.periodTitle = item.title;
 
         App.State.currentQIndex = 0;
@@ -193,32 +191,31 @@ App.Studio = {
         const q = App.Data.studioQuestions[App.State.currentQIndex];
         const roomId = App.State.currentRoomId;
 
-        // ★修正: プレビュー画面の表示切り替え
         switch(stepId) {
-            case 0: // STANDBY (タイトル画面)
+            case 0: // STANDBY
                 btnMain.textContent = `Q.${App.State.currentQIndex + 1} ゲーム開始`;
                 btnMain.onclick = () => this.setStep(1);
                 
                 const pTitle = App.Data.periodPlaylist[App.State.currentPeriodIndex].title;
-                this.renderMonitorMessage("PROGRAM", pTitle); // プレビュー更新
+                this.renderMonitorMessage("PROGRAM", pTitle);
                 
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: App.State.currentQIndex });
                 break;
                 
-            case 1: // READY (第〇問)
+            case 1: // READY
                 btnMain.textContent = "準備完了 (SKIP)";
                 btnMain.classList.add('action-ready');
                 btnMain.onclick = () => this.setStep(2);
                 
-                this.renderMonitorMessage("QUESTION", `Q. ${App.State.currentQIndex + 1}`); // プレビュー更新
+                this.renderMonitorMessage("QUESTION", `Q. ${App.State.currentQIndex + 1}`);
                 
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'ready' });
                 break;
                 
-            case 2: // QUESTION (問題文)
+            case 2: // QUESTION
                 btnMain.textContent = "問題を表示 (OPEN)";
                 btnMain.onclick = () => this.setStep(3);
-                this.renderQuestionMonitor(q); // プレビュー更新
+                this.renderQuestionMonitor(q);
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', startTime: firebase.database.ServerValue.TIMESTAMP });
                 break;
                 
@@ -281,9 +278,7 @@ App.Studio = {
         }
     },
 
-    // ★追加: プレビュー画面にメッセージ（タイトルやQ数）を出す専用関数
     renderMonitorMessage: function(label, text) {
-        // スタジオのプレビュー画面のHTMLを書き換える
         document.getElementById('studio-q-text').innerHTML = `
             <div style="display:flex; justify-content:center; align-items:center; height:200px;">
                 <div style="font-size:2.5em; color:#ffd700; font-weight:bold; text-shadow:0 0 10px rgba(0,0,0,0.5);">
@@ -292,7 +287,7 @@ App.Studio = {
             </div>
         `;
         document.getElementById('studio-q-type-badge').textContent = label;
-        document.getElementById('studio-choices-container').innerHTML = ''; // 選択肢は消す
+        document.getElementById('studio-choices-container').innerHTML = '';
         document.getElementById('studio-correct-display').classList.add('hidden');
     },
 
@@ -311,7 +306,16 @@ App.Studio = {
                 cContainer.appendChild(div);
             });
         }
-        document.getElementById('studio-correct-text').textContent = Array.isArray(q.correct) ? "複数正解" : (q.c ? q.c[q.correct] : q.correct);
+        
+        // ★修正: 正解表示ロジック改良
+        let correctText = "";
+        if(Array.isArray(q.correct)) {
+            correctText = (q.type==='choice' && q.c) ? q.correct.map(i=>q.c[i]).join(' / ') : q.correct.join(' / ');
+        } else {
+            correctText = (q.type==='choice' && q.c) ? q.c[q.correct] : q.correct;
+        }
+        
+        document.getElementById('studio-correct-text').textContent = correctText;
         document.getElementById('studio-correct-display').classList.add('hidden');
     },
 
