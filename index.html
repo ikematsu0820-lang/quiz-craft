@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quiz Studio</title>
-<link rel="stylesheet" href="style_common.css?v=92">
-<link rel="stylesheet" href="style_host.css?v=92">
-<link rel="stylesheet" href="style_player.css?v=92">
-<link rel="stylesheet" href="style_viewer.css?v=92">
+<link rel="stylesheet" href="style_common.css?v=94">
+<link rel="stylesheet" href="style_host.css?v=94">
+<link rel="stylesheet" href="style_player.css?v=94">
+<link rel="stylesheet" href="style_viewer.css?v=94">
 </head>
 <body>
 
@@ -27,15 +27,18 @@
     </div>
 </div>
 
-<div id="host-login-view" class="view hidden center-content-view">
-    <div class="view-header">
-        <h2 data-text="Login.Title">ID Input</h2>
-        <button class="header-back-btn back-to-main" data-text="Login.BackBtn">Home</button>
-    </div>
-    <div class="login-form-area">
-        <img src="logo.png" alt="Quiz Studio" class="app-logo-small mb-20">
-        <input type="text" id="show-id-input" class="input-large text-uppercase mb-20" placeholder="SHOW ID">
-        <button id="host-login-submit-btn" class="btn-primary btn-block" data-text="Login.SubmitBtn">Login</button>
+<div id="host-login-view" class="view landing-view hidden">
+    <div class="landing-content">
+        <div class="landing-logo-area">
+            <div class="landing-logo-emoji">🔐</div>
+            <h1 class="landing-title">Host Login</h1>
+            <p class="landing-subtitle">番組IDを入力してください</p>
+        </div>
+        <div class="login-form-area" style="margin: 0 auto;">
+            <input type="text" id="show-id-input" class="modern-input" placeholder="SHOW ID">
+            <button id="host-login-submit-btn" class="landing-btn btn-host-modern">ログイン / 新規作成</button>
+            <button class="header-back-btn back-to-main text-link-btn" data-text="Login.BackBtn">ホームに戻る</button>
+        </div>
     </div>
 </div>
 
@@ -84,7 +87,6 @@
         <button id="design-reset-btn" class="btn-dark">初期値</button>
         <button id="design-save-btn" class="btn-success">保存 (完了)</button>
     </div>
-    
     <div id="modal-design-text" class="design-modal-overlay hidden">
         <div class="design-modal-content">
             <h3 class="modal-title">テキスト設定</h3>
@@ -237,9 +239,7 @@
                 <span class="label">部屋ID (クリックしてコピー)</span>
                 <span id="studio-big-room-id" title="クリックしてコピー">------</span>
             </div>
-
             <div id="studio-program-info" class="text-gray mb-20"></div>
-            
             <div id="studio-loader-ui" class="panel-section section-blue" style="max-width:400px; margin:0 auto;">
                 <select id="studio-program-select" class="btn-block config-select mb-10"></select>
                 <button id="studio-load-program-btn" class="btn-primary btn-block" data-text="Studio.BtnLoad">Set</button>
@@ -280,15 +280,19 @@
     <button id="ranking-back-btn" class="btn-primary btn-block mt-20" data-text="Studio.BtnBackRanking">Back</button>
 </div>
 
-<div id="respondent-view" class="view hidden center-content-view">
-    <div class="view-header">
-        <h2 data-text="Player.TitleEntry">Entry</h2>
-        <button class="header-back-btn back-to-main" data-text="Login.BackBtn">Home</button>
-    </div>
-    <div class="login-form-area">
-        <input type="text" id="room-code-input" class="input-large text-uppercase mb-20" placeholder="CODE" maxlength="6">
-        <input type="text" id="player-name-input" class="input-large mb-20" placeholder="NAME">
-        <button id="join-room-btn" class="btn-primary btn-block" data-text="Player.BtnJoin">Join</button>
+<div id="respondent-view" class="view landing-view hidden">
+    <div class="landing-content">
+        <div class="landing-logo-area">
+            <div class="landing-logo-emoji">🎮</div>
+            <h1 class="landing-title">Entry</h1>
+            <p class="landing-subtitle">参加情報を入力してください</p>
+        </div>
+        <div class="login-form-area" style="margin: 0 auto;">
+            <input type="text" id="room-code-input" class="modern-input" placeholder="部屋コード (6桁)" maxlength="6">
+            <input type="text" id="player-name-input" class="modern-input" placeholder="ニックネーム">
+            <button id="join-room-btn" class="landing-btn btn-player-modern">参加する</button>
+            <button class="header-back-btn back-to-main text-link-btn" data-text="Login.BackBtn">ホームに戻る</button>
+        </div>
     </div>
 </div>
 
@@ -332,15 +336,18 @@
     </div>
 </div>
 
-<div id="viewer-login-view" class="view hidden">
-    <div class="view-header">
-        <h2 data-text="Viewer.Title">Monitor Connect</h2>
-        <button class="header-back-btn">ダッシュボード</button>
-    </div>
-    <div class="login-form-area">
-        <img src="logo.png" alt="Quiz Studio" class="app-logo-small mb-20">
-        <input type="text" id="viewer-room-code" class="input-large text-uppercase mb-20" placeholder="CODE">
-        <button id="viewer-connect-btn" class="btn-warning btn-block" data-text="Viewer.BtnConnect">Connect</button>
+<div id="viewer-login-view" class="view landing-view hidden">
+    <div class="landing-content">
+        <div class="landing-logo-area">
+            <div class="landing-logo-emoji">🖥</div>
+            <h1 class="landing-title">Monitor</h1>
+            <p class="landing-subtitle">モニター用接続</p>
+        </div>
+        <div class="login-form-area" style="margin: 0 auto;">
+            <input type="text" id="viewer-room-code" class="modern-input" placeholder="部屋コード (6桁)">
+            <button id="viewer-connect-btn" class="landing-btn btn-player-modern">接続する</button>
+            <button class="header-back-btn back-to-main text-link-btn">ダッシュボード</button>
+        </div>
     </div>
 </div>
 
@@ -361,14 +368,14 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script src="firebase.js"></script>
-<script src="text_config.js?v=92"></script>
-<script src="host_core.js?v=92"></script>
-<script src="host_design.js?v=92"></script>
-<script src="host_creator.js?v=92"></script>
-<script src="host_config.js?v=92"></script>
-<script src="host_studio.js?v=92"></script>
-<script src="player.js?v=92"></script>
-<script src="viewer.js?v=92"></script>
+<script src="text_config.js?v=94"></script>
+<script src="host_core.js?v=94"></script>
+<script src="host_design.js?v=94"></script>
+<script src="host_creator.js?v=94"></script>
+<script src="host_config.js?v=94"></script>
+<script src="host_studio.js?v=94"></script>
+<script src="player.js?v=94"></script>
+<script src="viewer.js?v=94"></script>
 
 </body>
 </html>
