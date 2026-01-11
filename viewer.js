@@ -1,9 +1,10 @@
 /* =========================================================
- * viewer.js (v81: Sync with Design Preview)
+ * viewer.js (v98: Full Features + Title Display)
  * =======================================================*/
 
 let viewerRoomId = null;
 let viewerConfig = {};
+let viewerQuestions = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('viewer-connect-btn');
@@ -32,21 +33,36 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function startViewer(roomId) {
-    document.getElementById('viewer-login-view').classList.add('hidden');
+    // 画面切り替え
+    document.querySelectorAll('.view').forEach(el => el.classList.add('hidden'));
     document.getElementById('viewer-main-view').classList.remove('hidden');
     
     document.getElementById('viewer-main-text').innerHTML = '<div style="font-size:3vh; color:#aaa;">Loading...</div>';
 
-    window.db.ref(`rooms/${roomId}/config`).on('value', snap => {
+    // 監視開始
+    const refs = {
+        config: window.db.ref(`rooms/${roomId}/config`),
+        status: window.db.ref(`rooms/${roomId}/status`),
+        questions: window.db.ref(`rooms/${roomId}/questions`),
+        players: window.db.ref(`rooms/${roomId}/players`)
+    };
+
+    refs.config.on('value', snap => {
         viewerConfig = snap.val() || {};
+        // 背景の即時適用（待機画面でもデザイン反映するため）
+        if(viewerConfig.baseDesign) applyBaseDesign(viewerConfig.baseDesign);
     });
 
-    window.db.ref(`rooms/${roomId}/status`).on('value', snap => {
+    refs.questions.on('value', snap => {
+        viewerQuestions = snap.val() || [];
+    });
+
+    refs.status.on('value', snap => {
         const status = snap.val();
         updateViewerDisplay(status);
     });
     
-    window.db.ref(`rooms/${roomId}/players`).on('value', () => {
+    refs.players.on('value', () => {
         if(viewerConfig.gameType === 'race') updateViewerRace();
     });
 }
@@ -55,37 +71,64 @@ function updateViewerDisplay(status) {
     if (!status) return;
 
     const mainText = document.getElementById('viewer-main-text');
+    const subText = document.getElementById('viewer-sub-text'); // 正解表示用エリア
     const statusDiv = document.getElementById('viewer-status');
     const viewContainer = document.getElementById('viewer-main-view');
     
+    // 一旦リセット
+    subText.innerHTML = '';
     ['viewer-panel-grid', 'viewer-bomb-grid', 'viewer-multi-grid', 'viewer-race-area', 'viewer-timer-bar-area'].forEach(id => {
         document.getElementById(id).classList.add('hidden');
     });
 
+    // レースモード表示
     if(viewerConfig.gameType === 'race') {
         document.getElementById('viewer-race-area').classList.remove('hidden');
         updateViewerRace();
     }
 
+    // --- ステップごとの表示分岐 ---
+
+    // 1. 待機中 (タイトル表示)
     if (status.step === 'standby') {
-        statusDiv.textContent = "WAITING";
+        statusDiv.textContent = "STANDBY";
         applyDefaultDesign(viewContainer);
+        const title = viewerConfig.periodTitle || "Quiz Studio";
         mainText.innerHTML = `
             <div style="text-align:center;">
-                <div style="color:#00bfff; font-size:4vh; font-weight:bold; letter-spacing:2px; margin-bottom:20px;">ROOM: ${viewerRoomId}</div>
-                <div style="color:rgba(255,255,255,0.5); font-size:3vh;">READY...</div>
+                <div style="color:#ffd700; font-size:8vh; font-weight:900; letter-spacing:2px; margin-bottom:20px; text-shadow:0 0 30px rgba(255, 215, 0, 0.6); animation: pulseTitle 2s infinite;">
+                    ${title}
+                </div>
+                <div style="color:rgba(255,255,255,0.5); font-size:3vh; margin-top:20px;">ID: ${viewerRoomId}</div>
+                <style>@keyframes pulseTitle { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }</style>
             </div>
         `;
     } 
-    else if (status.step === 'question') {
+    // 2. 準備中 (問題番号表示)
+    else if (status.step === 'ready') {
+        statusDiv.textContent = "READY";
+        applyDefaultDesign(viewContainer);
+        mainText.innerHTML = `
+            <div style="text-align:center;">
+                <div style="color:#fff; font-size:15vh; font-weight:900; letter-spacing:0.1em; text-shadow:0 10px 30px rgba(0,0,0,0.8);">
+                    Q.${status.qIndex + 1}
+                </div>
+                <div style="color:#00bfff; font-size:4vh; font-weight:bold; letter-spacing:5px; margin-top:20px;">READY...</div>
+            </div>
+        `;
+    }
+    // 3. 出題中 (デザイン適用レイアウト)
+    else if (status.step === 'question' || status.step === 'answering') {
         statusDiv.textContent = `Q${status.qIndex + 1}`;
         
+        // タイムアタックバー
         if ((viewerConfig.mode === 'time_attack' || viewerConfig.mode === 'solo') && status.timeLimit) {
             const timerArea = document.getElementById('viewer-timer-bar-area');
             const timerBar = document.getElementById('viewer-timer-bar');
             timerArea.classList.remove('hidden');
             timerBar.className = '';
             timerBar.style.width = '100%';
+            // アニメーション開始
             setTimeout(() => {
                 timerBar.className = 'timer-animate';
                 timerBar.style.transition = `width ${status.timeLimit}s linear`;
@@ -93,43 +136,54 @@ function updateViewerDisplay(status) {
             }, 50);
         }
 
-        window.db.ref(`rooms/${viewerRoomId}/questions/${status.qIndex}`).once('value', snap => {
-            const q = snap.val();
-            if(q) {
-                renderQuestionLayout(viewContainer, mainText, q);
-                if(q.type === 'multi') renderMultiGrid(q, status.multiState);
-            }
-        });
-    } 
-    else if (status.step === 'answer') {
-        statusDiv.textContent = "ANSWER";
-        window.db.ref(`rooms/${viewerRoomId}/questions/${status.qIndex}`).once('value', snap => {
-            const q = snap.val();
-            if(q) {
-                renderQuestionLayout(viewContainer, mainText, q);
-                
-                const d = q.design || {};
-                const accent = d.qBorderColor || '#00bfff';
-                let ansStr = getAnswerString(q);
+        // 早押し受付中表示
+        if (status.step === 'answering' && viewerConfig.mode === 'buzz') {
+             statusDiv.textContent = "早押し受付中！";
+             statusDiv.style.color = "#ff9800";
+        }
 
-                const overlay = document.createElement('div');
-                overlay.style.position = 'absolute';
-                overlay.style.zIndex = '200';
-                overlay.style.background = 'rgba(0,0,0,0.85)';
-                overlay.style.border = `4px solid ${accent}`;
-                overlay.style.borderRadius = '15px';
-                overlay.style.padding = '30px 60px';
-                overlay.style.color = accent;
-                overlay.style.fontSize = '6vh';
-                overlay.style.fontWeight = '900';
-                overlay.style.textShadow = `0 0 30px ${accent}`;
-                overlay.style.boxShadow = '0 0 50px rgba(0,0,0,0.8)';
-                overlay.textContent = ansStr;
-                
-                mainText.appendChild(overlay);
-            }
-        });
+        const q = viewerQuestions[status.qIndex];
+        if(q) {
+            renderQuestionLayout(viewContainer, mainText, q);
+            if(q.type === 'multi') renderMultiGrid(q, status.multiState);
+        }
     } 
+    // 4. 正解表示 (オーバーレイ)
+    else if (status.step === 'answer' || status.step === 'result') {
+        statusDiv.textContent = "ANSWER";
+        const q = viewerQuestions[status.qIndex];
+        if(q) {
+            renderQuestionLayout(viewContainer, mainText, q);
+            
+            // 正解オーバーレイの表示
+            if (status.step === 'answer') {
+                const accent = q.design?.qBorderColor || '#00bfff';
+                let ansStr = getAnswerString(q);
+                
+                // 下部に正解を出す
+                const answerBox = document.createElement('div');
+                answerBox.style.position = 'absolute';
+                answerBox.style.bottom = '5%';
+                answerBox.style.left = '50%';
+                answerBox.style.transform = 'translateX(-50%)';
+                answerBox.style.zIndex = '200';
+                answerBox.style.background = 'rgba(0,0,0,0.9)';
+                answerBox.style.border = `4px solid ${accent}`;
+                answerBox.style.borderRadius = '15px';
+                answerBox.style.padding = '20px 50px';
+                answerBox.style.color = accent;
+                answerBox.style.fontSize = '5vh';
+                answerBox.style.fontWeight = '900';
+                answerBox.style.boxShadow = '0 0 50px rgba(0,0,0,0.8)';
+                answerBox.style.textAlign = 'center';
+                answerBox.style.minWidth = '50vw';
+                answerBox.innerHTML = `<span style="font-size:0.6em; display:block; color:#fff;">ANSWER</span>${ansStr}`;
+                
+                mainText.appendChild(answerBox);
+            }
+        }
+    } 
+    // 5. パネル・爆弾
     else if (status.step === 'panel') {
         statusDiv.textContent = "PANEL";
         applyDefaultDesign(viewContainer);
@@ -144,13 +198,13 @@ function updateViewerDisplay(status) {
     }
 }
 
-// ★ デザインプレビューと同じロジック
+// ★ デザイン再現ロジック (Design Studioと同じ)
 function renderQuestionLayout(container, contentBox, q) {
     const d = q.design || {};
     const layout = q.layout || 'standard';
     const align = q.align || 'center';
     
-    // 背景
+    // 背景適用
     container.style.backgroundColor = d.mainBgColor || '#0a0a0a';
     if (d.bgImage) {
         container.style.backgroundImage = `url(${d.bgImage})`;
@@ -162,10 +216,11 @@ function renderQuestionLayout(container, contentBox, q) {
 
     const qStyleBase = `color:${d.qTextColor||'#fff'}; background:${d.qBgColor||'rgba(255,255,255,0.1)'}; border:6px solid ${d.qBorderColor||'#fff'}; text-align:${align}; box-shadow:0 10px 40px rgba(0,0,0,0.5);`;
     const cStyle = `color:${d.cTextColor||'#ccc'}; background:${d.cBgColor||'transparent'}; border-bottom:2px solid ${d.cBorderColor||'#555'}; padding:1.5vh 2vw; font-size:3vh; display:flex; align-items:center;`;
-    const pStyle = `color:${d.qBorderColor||'#00bfff'}; margin-right:20px; font-weight:900; font-size:1.2em;`;
+    const pStyle = `color:${d.qBorderColor||'#00bfff'}; margin-right:20px; font-weight:900; font-size:1.2em; font-family:monospace;`;
 
     let html = '';
 
+    // フリー記述・口頭
     if (q.type === 'free_oral' || q.type === 'free_written') {
         contentBox.style.flexDirection = 'column';
         contentBox.style.justifyContent = 'center';
@@ -175,6 +230,7 @@ function renderQuestionLayout(container, contentBox, q) {
         let typeLabel = (q.type==='free_oral') ? "フリー（口頭回答）" : "フリー（記述式）";
         html += `<div style="color:${d.cTextColor||'#aaa'}; font-size:3vh; margin-top:30px;">[ ${typeLabel} ]</div>`;
     } 
+    // 選択式・並べ替え
     else {
         if (layout === 'standard') {
             contentBox.style.flexDirection = 'column';
@@ -189,6 +245,7 @@ function renderQuestionLayout(container, contentBox, q) {
                 html += `</div>`;
             }
         } else {
+            // Split Layout
             contentBox.style.flexDirection = 'row-reverse';
             contentBox.style.justifyContent = 'center';
             contentBox.style.alignItems = 'center';
@@ -207,7 +264,7 @@ function renderQuestionLayout(container, contentBox, q) {
 
 function getAnswerString(q) {
     if (!q) return "";
-    if (Array.isArray(q.correct)) return q.correct.join(' / ');
+    if (Array.isArray(q.correct)) return "複数正解 (Multi)";
     if (q.type === 'choice' && q.c) {
         const idx = q.correctIndex !== undefined ? q.correctIndex : q.correct;
         return q.c[idx];
@@ -220,7 +277,11 @@ function applyDefaultDesign(container) {
     container.style.backgroundImage = "radial-gradient(circle at center, #1a1a1a 0%, #000000 100%)";
 }
 
-// サブ機能
+function applyBaseDesign(design) {
+    // 待機画面などに共通デザインを適用する場合の予備関数
+}
+
+// --- サブ機能 (Grid, Race) ---
 function renderPanelGrid(panels) {
     const grid = document.getElementById('viewer-panel-grid');
     if(!grid) return;
