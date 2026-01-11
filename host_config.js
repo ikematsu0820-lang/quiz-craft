@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v104: Full Option Restore & Split)
+ * host_config.js (v105: Remove Redundant Time Setting)
  * =======================================================*/
 
 App.Config = {
@@ -40,7 +40,7 @@ App.Config = {
                 const items = Object.keys(data).map(k => ({...data[k], key: k})).sort((a,b)=>b.createdAt-a.createdAt);
                 items.forEach(item => {
                     const opt = document.createElement('option');
-                    const val = { t: item.title, q: item.questions, c: item.config, sp: item.questions?.[0]?.specialMode||'none' };
+                    const val = { t: item.title, q: item.questions, c: item.config };
                     opt.value = JSON.stringify(val);
                     opt.textContent = `${item.title} (${new Date(item.createdAt).toLocaleDateString()})`;
                     select.appendChild(opt);
@@ -87,9 +87,10 @@ App.Config = {
                 <div class="mb-15">
                     <label class="config-label">1. 回答モード (Answer Mode)</label>
                     <select id="config-mode-select" class="btn-block config-select mb-10 highlight-select">
-                        <option value="normal">${APP_TEXT.Config.ModeNormal}</option>
-                        <option value="buzz">${APP_TEXT.Config.ModeBuzz}</option>
-                        <option value="turn">${APP_TEXT.Config.ModeTurn} (順番/TimeAttack)</option> <option value="solo">${APP_TEXT.Config.ModeSolo}</option>
+                        <option value="normal">一斉回答 (Normal)</option>
+                        <option value="buzz">早押し (Buzz)</option>
+                        <option value="turn">順番回答 (Turn)</option>
+                        <option value="solo">ソロ挑戦 (Solo)</option>
                     </select>
 
                     <label class="config-label">2. ゲームタイプ (Reward Type)</label>
@@ -148,11 +149,12 @@ App.Config = {
         
         document.getElementById('config-add-playlist-btn').onclick = () => this.addPeriod();
         
-        // トグル・一括設定ボタン
         document.getElementById('btn-toggle-q-list').onclick = () => {
             const list = document.getElementById('config-questions-list');
             list.classList.toggle('hidden');
         };
+
+        // 一括設定ボタン
         document.getElementById('config-bulk-time-btn').onclick = () => {
             const val = document.getElementById('config-bulk-time-input').value;
             document.querySelectorAll('.q-time-input').forEach(inp => { inp.value = val; inp.type = "number"; });
@@ -170,33 +172,25 @@ App.Config = {
             document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = val);
         };
         
-        // 初期状態
         if(conf.mode) modeSel.value = conf.mode;
         updateDetails();
         this.renderQList();
     },
 
-    // ★修正: 詳細設定の動的生成 (v80の内容を完全復元)
     renderDetail: function(mode, gameType) {
         const area = document.getElementById('conf-detail-area');
         let html = '';
 
-        // --- モード別設定 ---
+        // ★修正: Normalモードから「制限時間」設定を削除（下リストで管理するため）
         if(mode === 'normal') {
             html += `
                 <div class="mode-settings-box mode-box-normal">
-                    <div class="grid-2-col">
-                        <div>
-                            <label class="config-label">制限時間 (Time Limit)</label>
-                            <input type="number" id="config-normal-time" class="btn-block" value="0" min="0" placeholder="0=無制限">
-                        </div>
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelNormalLimit}</label>
-                            <select id="config-normal-limit" class="btn-block config-select">
-                                <option value="unlimited">${APP_TEXT.Config.NormalLimitUnlimited}</option>
-                                <option value="one">${APP_TEXT.Config.NormalLimitOne}</option>
-                            </select>
-                        </div>
+                    <div class="mt-5">
+                        <label class="config-label">${APP_TEXT.Config.LabelNormalLimit}</label>
+                        <select id="config-normal-limit" class="btn-block config-select">
+                            <option value="unlimited">${APP_TEXT.Config.NormalLimitUnlimited}</option>
+                            <option value="one">${APP_TEXT.Config.NormalLimitOne}</option>
+                        </select>
                     </div>
                     <div class="mt-10">
                         <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
@@ -237,7 +231,7 @@ App.Config = {
                     </div>
                 </div>`;
         } 
-        else if(mode === 'turn') { // ★復活したTurn設定
+        else if(mode === 'turn') {
             html += `
                 <div class="mode-settings-box mode-box-turn">
                     <div class="grid-2-col">
@@ -288,21 +282,6 @@ App.Config = {
                     </div>
                     <div class="grid-2-col mt-10">
                         <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelSoloTimeValue}</label>
-                            <input type="number" id="config-solo-time-val" class="btn-block" value="5" min="1">
-                        </div>
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelSoloRecovery}</label>
-                            <select id="config-solo-recovery" class="btn-block config-select">
-                                <option value="none">${APP_TEXT.Config.SoloRecoveryNone}</option>
-                                <option value="1">+1s</option>
-                                <option value="3">+3s</option>
-                                <option value="5">+5s</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="grid-2-col mt-10">
-                        <div>
                             <label class="config-label">${APP_TEXT.Config.LabelSoloLife}</label>
                             <select id="config-solo-life" class="btn-block config-select">
                                 <option value="3">3 Lives</option>
@@ -322,7 +301,6 @@ App.Config = {
                 </div>`;
         }
 
-        // --- ゲームタイプ別設定 ---
         if (gameType === 'panel') {
             html += `<div class="mode-settings-box mode-box-normal" style="border-color:#ffd700; margin-top:15px;">
                 <label style="color:#ffd700;">★ 陣取りモード (Panel 25)</label>
@@ -390,7 +368,6 @@ App.Config = {
             qs[inp.dataset.index].timeLimit = (val === "無制限") ? 0 : (parseInt(val) || 0);
         });
 
-        // シャッフル設定の取得
         let shuffle = 'off';
         if(mode === 'normal') shuffle = document.getElementById('config-shuffle-q')?.value;
         else if(mode === 'buzz') shuffle = document.getElementById('config-buzz-shuffle')?.value;
@@ -403,29 +380,20 @@ App.Config = {
             }
         }
 
-        // 基本Config
         const newConfig = {
             mode: mode,
             gameType: gameType,
             initialStatus: 'revive',
-            timeLimit: 0, 
-            eliminationRule: 'none'
+            timeLimit: 0, // ★Global設定は無効化(一括設定を使用)
+            eliminationRule: 'none',
+            buzzWrongAction: document.getElementById('config-buzz-wrong-action')?.value || 'next',
+            buzzTime: parseInt(document.getElementById('config-buzz-timer')?.value) || 0,
+            normalLimit: document.getElementById('config-normal-limit')?.value || 'unlimited',
+            turnOrder: document.getElementById('config-turn-order')?.value || 'fixed',
+            turnPass: document.getElementById('config-turn-pass')?.value || 'ok'
         };
 
-        // 各モードごとの詳細設定を取得
-        if (mode === 'normal') {
-            newConfig.timeLimit = parseInt(document.getElementById('config-normal-time')?.value) || 0;
-            newConfig.normalLimit = document.getElementById('config-normal-limit')?.value || 'unlimited';
-        } 
-        else if (mode === 'buzz') {
-            newConfig.buzzWrongAction = document.getElementById('config-buzz-wrong-action')?.value || 'next';
-            newConfig.buzzTime = parseInt(document.getElementById('config-buzz-timer')?.value) || 0;
-        }
-        else if (mode === 'turn') {
-            newConfig.turnOrder = document.getElementById('config-turn-order')?.value || 'fixed';
-            newConfig.turnPass = document.getElementById('config-turn-pass')?.value || 'ok';
-        }
-        else if (mode === 'solo') {
+        if (mode === 'solo') {
             newConfig.soloStyle = document.getElementById('config-solo-style')?.value;
             newConfig.soloTimeType = document.getElementById('config-solo-time-type')?.value;
             newConfig.soloTimeVal = parseInt(document.getElementById('config-solo-time-val')?.value) || 5;
@@ -434,7 +402,6 @@ App.Config = {
             newConfig.soloRecovery = parseInt(document.getElementById('config-solo-recovery')?.value) || 0;
         }
 
-        // レース設定
         if (gameType === 'race') {
             newConfig.passCount = document.getElementById('conf-pass-count')?.value || 10;
         }
@@ -496,7 +463,6 @@ App.Config = {
             const sel = document.getElementById('config-prog-select');
             sel.innerHTML = '<option>Loading...</option>';
             document.getElementById('config-load-modal').classList.remove('hidden');
-            
             window.db.ref(`saved_programs/${App.State.currentShowId}`).once('value', snap => {
                 sel.innerHTML = '<option value="">-- Select --</option>';
                 const data = snap.val();
@@ -510,7 +476,6 @@ App.Config = {
                 }
             });
         };
-        
         document.getElementById('config-load-prog-exec-btn').onclick = () => {
             const val = document.getElementById('config-prog-select').value;
             if(!val) return;
@@ -520,7 +485,6 @@ App.Config = {
             this.renderPreview();
             document.getElementById('config-load-modal').classList.add('hidden');
         };
-        
         document.getElementById('config-modal-close-btn').onclick = () => {
             document.getElementById('config-load-modal').classList.add('hidden');
         };
