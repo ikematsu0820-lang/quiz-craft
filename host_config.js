@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v80: "No Limit" Text Display)
+ * host_config.js (v103: Full Version with Split Mode/Type)
  * =======================================================*/
 
 App.Config = {
@@ -80,203 +80,78 @@ App.Config = {
             </div>
         `;
 
-        html += `<div class="config-section-title">${APP_TEXT.Config.LabelMode}</div>`;
+        html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
+        
+        // ★修正: モードとゲームタイプを分離したUI
         html += `
             <div class="config-item-box">
-                <select id="config-mode-select" class="btn-block config-select highlight-select" onchange="App.Config.updateModeDetails(this.value)">
-                    <option value="normal">${APP_TEXT.Config.ModeNormal}</option>
-                    <option value="buzz">${APP_TEXT.Config.ModeBuzz}</option>
-                    <option value="turn">${APP_TEXT.Config.ModeTurn}</option>
-                    <option value="solo" style="color:#00bfff; font-weight:bold;">${APP_TEXT.Config.ModeSolo}</option>
-                </select>
-                
-                <div id="mode-details-normal" class="mode-details hidden mt-10">
-                    <div class="grid-2-col">
-                        <div>
-                            <label class="config-label">制限時間 (Time Limit)</label>
-                            <div class="flex-center">
-                                <input type="number" id="config-normal-time" class="btn-block" value="0" min="0" placeholder="0=無制限">
-                                <span class="unit-text">秒</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelNormalLimit}</label>
-                            <select id="config-normal-limit" class="btn-block config-select">
-                                <option value="unlimited">${APP_TEXT.Config.NormalLimitUnlimited}</option>
-                                <option value="one">${APP_TEXT.Config.NormalLimitOne}</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mt-10">
-                        <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
-                        <select id="config-shuffle-q" class="btn-block config-select">
-                            <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
-                            <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
-                        </select>
-                    </div>
+                <div class="mb-15">
+                    <label class="config-label">1. 回答モード (Answer Mode)</label>
+                    <select id="config-mode-select" class="btn-block config-select mb-10 highlight-select">
+                        <option value="normal">一斉回答 (Normal)</option>
+                        <option value="buzz">早押し (Buzz)</option>
+                        <option value="time_attack">タイムアタック</option>
+                        <option value="solo">ソロ挑戦 (Solo)</option>
+                    </select>
+
+                    <label class="config-label">2. ゲームタイプ (Reward Type)</label>
+                    <select id="config-game-type" class="btn-block config-select">
+                        <option value="score">得点制 (Score)</option>
+                        <option value="panel">陣取り (Panel 25)</option>
+                        <option value="race">レース / すごろく (Race)</option>
+                    </select>
                 </div>
                 
-                <div id="mode-details-buzz" class="mode-details hidden mt-10">
-                    <div class="grid-2-col">
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelBuzzWrongAction}</label>
-                            <select id="config-buzz-wrong-action" class="btn-block config-select">
-                                <option value="next">${APP_TEXT.Config.BuzzWrongNext}</option>
-                                <option value="reset">${APP_TEXT.Config.BuzzWrongReset}</option>
-                                <option value="end">${APP_TEXT.Config.BuzzWrongEnd}</option>
-                            </select>
+                <div id="conf-detail-area"></div>
+                
+                <h5 style="margin:15px 0 5px 0;">${APP_TEXT.Config.HeadingCustomScore}</h5>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px; background:#222; padding:10px; border-radius:6px; border:1px solid #444;">
+                    <div>
+                        <label class="config-label" style="font-size:0.8em; color:#aaa;">${APP_TEXT.Config.LabelHeaderTime}</label>
+                        <div style="display:flex; gap:5px; margin-bottom:5px;">
+                            <input type="number" id="config-bulk-time-input" value="10" min="1" placeholder="Sec" style="width:100%; text-align:center;">
+                            <button id="config-bulk-time-btn" class="btn-mini btn-dark">SET</button>
                         </div>
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelBuzzTime}</label>
-                            <select id="config-buzz-timer" class="btn-block config-select">
-                                <option value="0">${APP_TEXT.Config.BuzzTimeNone}</option>
-                                <option value="5">${APP_TEXT.Config.BuzzTime5}</option>
-                                <option value="10">${APP_TEXT.Config.BuzzTime10}</option>
-                            </select>
+                        <button id="config-bulk-time-inf-btn" class="btn-mini btn-info" style="width:100%; font-size:0.8em;">無制限 (No Limit)</button>
+                    </div>
+                    <div>
+                        <label class="config-label" style="font-size:0.8em; color:#0055ff;">${APP_TEXT.Config.LabelHeaderPt}</label>
+                        <div style="display:flex; gap:5px;">
+                            <input type="number" id="config-bulk-point-input" value="1" min="1" style="width:100%; text-align:center; color:#0055ff; font-weight:bold;">
+                            <button id="config-bulk-point-btn" class="btn-mini btn-primary">SET</button>
                         </div>
                     </div>
-                    <div class="mt-10">
-                        <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
-                        <select id="config-buzz-shuffle" class="btn-block config-select">
-                            <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
-                            <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div id="mode-details-turn" class="mode-details hidden mt-10">
-                    <div class="grid-2-col">
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelTurnOrder}</label>
-                            <select id="config-turn-order" class="btn-block config-select">
-                                <option value="fixed">${APP_TEXT.Config.TurnOrderFixed}</option>
-                                <option value="random">${APP_TEXT.Config.TurnOrderRandom}</option>
-                                <option value="rank">${APP_TEXT.Config.TurnOrderRank}</option>
-                            </select>
+                    <div>
+                        <label class="config-label" style="font-size:0.8em; color:#d00;">${APP_TEXT.Config.LabelHeaderLoss}</label>
+                        <div style="display:flex; gap:5px;">
+                            <input type="number" id="config-bulk-loss-input" value="0" min="0" style="width:100%; text-align:center; color:#d00; font-weight:bold;">
+                            <button id="config-bulk-loss-btn" class="btn-mini btn-danger">SET</button>
                         </div>
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelTurnPass}</label>
-                            <select id="config-turn-pass" class="btn-block config-select">
-                                <option value="ok">${APP_TEXT.Config.TurnPassOk}</option>
-                                <option value="ng">${APP_TEXT.Config.TurnPassNg}</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mt-10">
-                        <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
-                        <select id="config-turn-shuffle" class="btn-block config-select">
-                            <option value="off">${APP_TEXT.Config.ShuffleQOff}</option>
-                            <option value="on">${APP_TEXT.Config.ShuffleQOn}</option>
-                        </select>
                     </div>
                 </div>
 
-                <div id="mode-details-solo" class="mode-details hidden mt-10">
-                    <div class="grid-2-col">
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelSoloStyle}</label>
-                            <select id="config-solo-style" class="btn-block config-select">
-                                <option value="manual">${APP_TEXT.Config.SoloStyleManual}</option>
-                                <option value="correct">${APP_TEXT.Config.SoloStyleCorrect}</option>
-                                <option value="auto">${APP_TEXT.Config.SoloStyleAuto}</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelSoloTimeType}</label>
-                            <select id="config-solo-time-type" class="btn-block config-select">
-                                <option value="per_q">${APP_TEXT.Config.SoloTimePerQ}</option>
-                                <option value="total">${APP_TEXT.Config.SoloTimeTotal}</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="grid-2-col mt-10">
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelSoloTimeValue}</label>
-                            <div class="flex-center">
-                                <input type="number" id="config-solo-time-val" class="btn-block" value="5" min="1">
-                                <span class="unit-text">秒</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelSoloRecovery}</label>
-                            <select id="config-solo-recovery" class="btn-block config-select">
-                                <option value="none">${APP_TEXT.Config.SoloRecoveryNone}</option>
-                                <option value="1">+1s</option>
-                                <option value="3">+3s</option>
-                                <option value="5">+5s</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="grid-2-col mt-10">
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelSoloLife}</label>
-                            <select id="config-solo-life" class="btn-block config-select">
-                                <option value="0">${APP_TEXT.Config.SoloLifeSudden}</option>
-                                <option value="2">2 Lives</option>
-                                <option value="3">3 Lives</option>
-                                <option value="5">5 Lives</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelSoloRetire}</label>
-                            <select id="config-solo-retire" class="btn-block config-select">
-                                <option value="off">${APP_TEXT.Config.SoloRetireOff}</option>
-                                <option value="on">${APP_TEXT.Config.SoloRetireOn}</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
+                <button id="btn-toggle-q-list" class="btn-block btn-dark" style="margin-bottom:10px;">▼ 個別で設定する (全${this.selectedSetQuestions.length}問)</button>
+                <div id="config-questions-list" class="hidden scroll-list" style="height:200px; border:1px solid #333; padding:5px; background:#1a1a1a;"></div>
             </div>`;
-
-        html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
-        html += `
-        <div class="config-item-box">
-            <label class="config-label-large">${APP_TEXT.Config.LabelGameType}</label>
-            <select id="config-game-type" class="btn-block config-select mb-10">
-                <option value="score">${APP_TEXT.Config.GameTypeScore}</option>
-                <option value="territory">${APP_TEXT.Config.GameTypeTerritory}</option>
-            </select>
-            
-            <h5 style="margin:10px 0 5px 0;">${APP_TEXT.Config.HeadingCustomScore}</h5>
-            
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px; background:#222; padding:10px; border-radius:6px; border:1px solid #444;">
-                <div>
-                    <label class="config-label" style="font-size:0.8em; color:#aaa;">${APP_TEXT.Config.LabelHeaderTime}</label>
-                    <div style="display:flex; gap:5px; margin-bottom:5px;">
-                        <input type="number" id="config-bulk-time-input" value="10" min="1" placeholder="Sec" style="width:100%; text-align:center;">
-                        <button id="config-bulk-time-btn" class="btn-mini btn-dark">SET</button>
-                    </div>
-                    <button id="config-bulk-time-inf-btn" class="btn-mini btn-info" style="width:100%; font-size:0.8em;">無制限 (No Limit)</button>
-                </div>
-                <div>
-                    <label class="config-label" style="font-size:0.8em; color:#0055ff;">${APP_TEXT.Config.LabelHeaderPt}</label>
-                    <div style="display:flex; gap:5px;">
-                        <input type="number" id="config-bulk-point-input" value="1" min="1" style="width:100%; text-align:center; color:#0055ff; font-weight:bold;">
-                        <button id="config-bulk-point-btn" class="btn-mini btn-primary">SET</button>
-                    </div>
-                </div>
-                <div>
-                    <label class="config-label" style="font-size:0.8em; color:#d00;">${APP_TEXT.Config.LabelHeaderLoss}</label>
-                    <div style="display:flex; gap:5px;">
-                        <input type="number" id="config-bulk-loss-input" value="0" min="0" style="width:100%; text-align:center; color:#d00; font-weight:bold;">
-                        <button id="config-bulk-loss-btn" class="btn-mini btn-danger">SET</button>
-                    </div>
-                </div>
-            </div>
-
-            <button id="btn-toggle-q-list" class="btn-block btn-dark" style="margin-bottom:10px;">▼ 個別で設定する (全${this.selectedSetQuestions.length}問)</button>
-
-            <div id="config-questions-list" class="hidden scroll-list" style="height:200px; border:1px solid #333; padding:5px; background:#1a1a1a;"></div>
-        </div>`;
 
         html += `<button id="config-add-playlist-btn" class="btn-success btn-block btn-large mt-20">${APP_TEXT.Config.BtnAddList}</button>`;
 
         container.innerHTML = html;
 
+        // イベントリスナー再設定
+        const modeSel = document.getElementById('config-mode-select');
+        const typeSel = document.getElementById('config-game-type');
+        
+        const updateDetails = () => {
+            this.renderDetail(modeSel.value, typeSel.value);
+        };
+        
+        modeSel.onchange = updateDetails;
+        typeSel.onchange = updateDetails;
+        
         document.getElementById('config-add-playlist-btn').onclick = () => this.addPeriod();
         
+        // トグルボタン
         document.getElementById('btn-toggle-q-list').onclick = () => {
             const list = document.getElementById('config-questions-list');
             list.classList.toggle('hidden');
@@ -290,23 +165,21 @@ App.Config = {
             }
         };
 
-        // 一括反映
+        // 一括反映ボタン
         document.getElementById('config-bulk-time-btn').onclick = () => {
             const val = document.getElementById('config-bulk-time-input').value;
             document.querySelectorAll('.q-time-input').forEach(inp => {
                 inp.value = val;
-                inp.type = "number"; // 数字モードに戻す
+                inp.type = "number";
             });
         };
-        // ★修正: 無制限設定時、「無制限」と表示する
         document.getElementById('config-bulk-time-inf-btn').onclick = () => {
             document.querySelectorAll('.q-time-input').forEach(inp => {
-                inp.type = "text"; // 文字を表示可能にする
+                inp.type = "text";
                 inp.value = "無制限";
             });
             App.Ui.showToast("全ての制限時間を「無制限」に設定しました");
         };
-
         document.getElementById('config-bulk-point-btn').onclick = () => {
             const val = document.getElementById('config-bulk-point-input').value;
             document.querySelectorAll('.q-point-input').forEach(inp => inp.value = val);
@@ -316,16 +189,47 @@ App.Config = {
             document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = val);
         };
         
-        const modeSel = document.getElementById('config-mode-select');
+        // 初期状態の反映
         if(conf.mode) modeSel.value = (conf.mode === 'time_attack') ? 'solo' : conf.mode;
-        this.updateModeDetails(modeSel.value);
+        updateDetails();
         this.renderQList();
     },
 
-    updateModeDetails: function(mode) {
-        document.querySelectorAll('.mode-details').forEach(e => e.classList.add('hidden'));
-        const el = document.getElementById(`mode-details-${mode}`);
-        if(el) el.classList.remove('hidden');
+    // ★追加: 選択されたモードとタイプに応じた詳細設定を表示
+    renderDetail: function(mode, gameType) {
+        const area = document.getElementById('conf-detail-area');
+        let html = '';
+
+        // モードごとの設定
+        if(mode === 'buzz') {
+            html += `<div class="mode-settings-box mode-box-buzz"><p>早押しボタンを使用します。</p></div>`;
+        } else if (mode === 'solo') {
+            html += `<div class="mode-settings-box mode-box-solo">
+                <label>ライフ設定</label>
+                <input type="number" id="conf-solo-life" value="3" class="config-select">
+            </div>`;
+        } else if (mode === 'time_attack') {
+            html += `<div class="mode-settings-box mode-box-buzz">
+                <label>制限時間 (秒)</label>
+                <input type="number" id="conf-time-limit" value="10" class="config-select">
+            </div>`;
+        }
+
+        // ゲームタイプごとの設定
+        if (gameType === 'panel') {
+            html += `<div class="mode-settings-box mode-box-normal" style="border-color:#ffd700;">
+                <label style="color:#ffd700;">★ 陣取りモード</label>
+                <p class="unit-text">正解者にパネル選択権を与えます。<br>司会者画面にパネル操作盤が表示されます。</p>
+            </div>`;
+        } else if (gameType === 'race') {
+            html += `<div class="mode-settings-box mode-box-normal" style="border-color:#00ff00;">
+                <label style="color:#00ff00;">★ レースモード</label>
+                <label>ゴールまでのポイント数</label>
+                <input type="number" id="conf-pass-count" value="10" class="config-select">
+            </div>`;
+        }
+
+        area.innerHTML = html;
     },
 
     renderQList: function() {
@@ -337,7 +241,6 @@ App.Config = {
             row.style.borderBottom = '1px solid #333';
             row.style.padding = '8px 0';
             
-            // ★修正: Timeが0なら「無制限」と表示
             const isNoLimit = (q.timeLimit === 0 || q.timeLimit === "0");
             const timeVal = isNoLimit ? "無制限" : q.timeLimit;
             const inputType = isNoLimit ? "text" : "number";
@@ -365,17 +268,18 @@ App.Config = {
         });
     },
 
-    // ... (bulkApply は不要だが互換性のため残す場合はそのままでOK) ...
-
     addPeriod: function() {
         const title = JSON.parse(document.getElementById('config-set-select').value).t;
+        
+        // ★修正: ModeとGameTypeの両方を取得
         const mode = document.getElementById('config-mode-select').value;
+        const gameType = document.getElementById('config-game-type').value;
+        
         const qs = JSON.parse(JSON.stringify(this.selectedSetQuestions));
         
         document.querySelectorAll('.q-point-input').forEach(inp => qs[inp.dataset.index].points = parseInt(inp.value));
         document.querySelectorAll('.q-loss-input').forEach(inp => qs[inp.dataset.index].loss = parseInt(inp.value));
         
-        // ★修正: Timeの保存処理（"無制限"なら0にする）
         document.querySelectorAll('.q-time-input').forEach(inp => {
             const val = inp.value;
             if (val === "無制限") qs[inp.dataset.index].timeLimit = 0;
@@ -383,43 +287,30 @@ App.Config = {
         });
 
         // シャッフル
-        let shuffle = 'off';
-        if(mode === 'normal') shuffle = document.getElementById('config-shuffle-q')?.value;
-        else if(mode === 'buzz') shuffle = document.getElementById('config-buzz-shuffle')?.value;
-        else if(mode === 'turn') shuffle = document.getElementById('config-turn-shuffle')?.value;
+        let shuffle = 'off'; // 今回は簡易化のためOFF固定（必要なら復活可）
         
-        if(shuffle === 'on') {
-            for (let i = qs.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [qs[i], qs[j]] = [qs[j], qs[i]];
-            }
-        }
-
         const newConfig = {
             mode: mode,
-            gameType: document.getElementById('config-game-type').value,
+            gameType: gameType, // ★追加
             initialStatus: 'revive',
             timeLimit: 0, 
             eliminationRule: 'none',
-            buzzWrongAction: document.getElementById('config-buzz-wrong-action')?.value || 'next',
-            buzzTime: parseInt(document.getElementById('config-buzz-timer')?.value) || 0,
-            normalLimit: document.getElementById('config-normal-limit')?.value || 'unlimited',
-            turnOrder: document.getElementById('config-turn-order')?.value || 'fixed',
-            turnPass: document.getElementById('config-turn-pass')?.value || 'ok'
+            buzzWrongAction: 'next',
+            buzzTime: 0,
+            normalLimit: 'unlimited',
+            turnOrder: 'fixed',
+            turnPass: 'ok'
         };
 
-        if (mode === 'normal') {
-            newConfig.timeLimit = parseInt(document.getElementById('config-normal-time')?.value) || 0;
-        }
+        // 個別設定の取得
+        const lifeEl = document.getElementById('conf-solo-life');
+        if(lifeEl) newConfig.soloLife = lifeEl.value;
+        
+        const timeEl = document.getElementById('conf-time-limit');
+        if(timeEl) newConfig.timeLimit = timeEl.value;
 
-        if (mode === 'solo') {
-            newConfig.soloStyle = document.getElementById('config-solo-style').value;
-            newConfig.soloTimeType = document.getElementById('config-solo-time-type').value;
-            newConfig.soloTimeVal = parseInt(document.getElementById('config-solo-time-val').value) || 5;
-            newConfig.soloLife = parseInt(document.getElementById('config-solo-life').value) || 0;
-            newConfig.soloRetire = document.getElementById('config-solo-retire').value;
-            newConfig.soloRecovery = parseInt(document.getElementById('config-solo-recovery').value) || 0;
-        }
+        const goalEl = document.getElementById('conf-pass-count');
+        if(goalEl) newConfig.passCount = goalEl.value;
 
         App.Data.periodPlaylist.push({
             title: title,
@@ -442,7 +333,7 @@ App.Config = {
             div.innerHTML = `
                 <div class="flex-1">
                     <div class="bold">${i+1}. ${item.title}</div>
-                    <div class="text-sm text-gray">[${item.config.mode.toUpperCase()}] ${item.questions.length}Q</div>
+                    <div class="text-sm text-gray">[${item.config.mode.toUpperCase()}] / [${item.config.gameType.toUpperCase()}] ${item.questions.length}Q</div>
                 </div>
                 <button class="delete-btn btn-mini" onclick="App.Config.remove(${i})">Del</button>
             `;
