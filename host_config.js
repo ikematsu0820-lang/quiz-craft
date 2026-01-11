@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v107: "None" Text & Solo Time Limit Fix)
+ * host_config.js (v108: Reorder UI Layout)
  * =======================================================*/
 
 App.Config = {
@@ -63,14 +63,23 @@ App.Config = {
         const conf = data.c || {};
         
         let typeDisplay = "不明";
+        let isOral = false;
+
         if(this.selectedSetQuestions.length > 0) {
             const t = this.selectedSetQuestions[0].type;
             if(t === 'choice') typeDisplay = APP_TEXT.Creator.TypeChoice;
             else if(t === 'sort') typeDisplay = APP_TEXT.Creator.TypeSort;
-            else if(t === 'free_oral') typeDisplay = APP_TEXT.Creator.TypeFreeOral;
+            else if(t === 'free_oral') { 
+                typeDisplay = APP_TEXT.Creator.TypeFreeOral;
+                isOral = true;
+            }
             else if(t === 'free_written') typeDisplay = APP_TEXT.Creator.TypeFreeWritten;
             else if(t === 'multi') typeDisplay = APP_TEXT.Creator.TypeMulti;
         }
+
+        const normalOption = isOral 
+            ? `<option value="normal" disabled style="color:#555;">✖ 一斉回答 (口頭形式では選択不可)</option>` 
+            : `<option value="normal">一斉回答 (Normal)</option>`;
 
         let html = `
             <div style="background:#252525; padding:12px; border-radius:6px; border:1px solid #444; border-left:4px solid #aaa; margin-bottom:20px; display:flex; align-items:center;">
@@ -82,28 +91,35 @@ App.Config = {
 
         html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
         
+        // ★修正: レイアウト変更 (上段: 回答モード, 中段: ゲームタイプ, 下段: 問題設定)
         html += `
             <div class="config-item-box">
                 <div class="mb-15">
                     <label class="config-label">1. 回答モード (Answer Mode)</label>
                     <select id="config-mode-select" class="btn-block config-select mb-10 highlight-select">
-                        <option value="normal">一斉回答 (Normal)</option>
+                        ${normalOption}
                         <option value="buzz">早押し (Buzz)</option>
                         <option value="turn">順番回答 (Turn)</option>
                         <option value="solo">ソロ挑戦 (Solo)</option>
                     </select>
+                    <div id="mode-detail-area"></div>
+                </div>
 
+                <hr style="border:0; border-top:1px dashed #444; margin:20px 0;">
+
+                <div class="mb-15">
                     <label class="config-label">2. ゲームタイプ (Reward Type)</label>
                     <select id="config-game-type" class="btn-block config-select">
                         <option value="score">得点制 (Score)</option>
                         <option value="panel">陣取り (Panel 25)</option>
                         <option value="race">レース / すごろく (Race)</option>
                     </select>
+                    <div id="gametype-detail-area"></div>
                 </div>
+
+                <hr style="border:0; border-top:1px dashed #444; margin:20px 0;">
                 
-                <div id="conf-detail-area"></div>
-                
-                <h5 style="margin:15px 0 5px 0;">${APP_TEXT.Config.HeadingCustomScore}</h5>
+                <h5 style="margin:15px 0 5px 0;">問題別配点・失点・時間設定</h5>
                 <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px; background:#222; padding:10px; border-radius:6px; border:1px solid #444;">
                     <div>
                         <label class="config-label" style="font-size:0.8em; color:#aaa;">${APP_TEXT.Config.LabelHeaderTime}</label>
@@ -141,7 +157,8 @@ App.Config = {
         const typeSel = document.getElementById('config-game-type');
         
         const updateDetails = () => {
-            this.renderDetail(modeSel.value, typeSel.value);
+            this.renderModeDetail(modeSel.value);
+            this.renderGameTypeDetail(typeSel.value);
         };
         
         modeSel.onchange = updateDetails;
@@ -154,12 +171,10 @@ App.Config = {
             list.classList.toggle('hidden');
         };
 
-        // 一括設定ボタン
         document.getElementById('config-bulk-time-btn').onclick = () => {
             const val = document.getElementById('config-bulk-time-input').value;
             document.querySelectorAll('.q-time-input').forEach(inp => { inp.value = val; inp.type = "number"; });
         };
-        // ★修正: 「なし」を設定
         document.getElementById('config-bulk-time-inf-btn').onclick = () => {
             document.querySelectorAll('.q-time-input').forEach(inp => { inp.type = "text"; inp.value = "なし"; });
             App.Ui.showToast("制限時間を「なし」に設定しました");
@@ -173,13 +188,21 @@ App.Config = {
             document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = val);
         };
         
-        if(conf.mode) modeSel.value = conf.mode;
+        if(conf.mode) {
+            if (isOral && conf.mode === 'normal') modeSel.value = 'buzz';
+            else modeSel.value = conf.mode;
+        } else {
+            if (isOral) modeSel.value = 'buzz';
+            else modeSel.value = 'normal';
+        }
+
         updateDetails();
         this.renderQList();
     },
 
-    renderDetail: function(mode, gameType) {
-        const area = document.getElementById('conf-detail-area');
+    // ★修正: 詳細表示関数を2つに分割
+    renderModeDetail: function(mode) {
+        const area = document.getElementById('mode-detail-area');
         let html = '';
 
         if(mode === 'normal') {
@@ -200,8 +223,7 @@ App.Config = {
                         </select>
                     </div>
                 </div>`;
-        } 
-        else if(mode === 'buzz') {
+        } else if(mode === 'buzz') {
             html += `
                 <div class="mode-settings-box mode-box-buzz">
                     <div class="grid-2-col">
@@ -230,8 +252,7 @@ App.Config = {
                         </select>
                     </div>
                 </div>`;
-        } 
-        else if(mode === 'turn') {
+        } else if(mode === 'turn') {
             html += `
                 <div class="mode-settings-box mode-box-turn">
                     <div class="grid-2-col">
@@ -259,8 +280,7 @@ App.Config = {
                         </select>
                     </div>
                 </div>`;
-        } 
-        else if(mode === 'solo') {
+        } else if(mode === 'solo') {
             html += `
                 <div class="mode-settings-box mode-box-solo">
                     <div class="grid-2-col">
@@ -280,7 +300,6 @@ App.Config = {
                             </select>
                         </div>
                     </div>
-                    
                     <div class="grid-2-col mt-10">
                         <div>
                             <label class="config-label">${APP_TEXT.Config.LabelSoloTimeValue}</label>
@@ -301,7 +320,6 @@ App.Config = {
                             </select>
                         </div>
                     </div>
-
                     <div class="grid-2-col mt-10">
                         <div>
                             <label class="config-label">${APP_TEXT.Config.LabelSoloLife}</label>
@@ -322,14 +340,20 @@ App.Config = {
                     </div>
                 </div>`;
         }
+        area.innerHTML = html;
+    },
+
+    renderGameTypeDetail: function(gameType) {
+        const area = document.getElementById('gametype-detail-area');
+        let html = '';
 
         if (gameType === 'panel') {
-            html += `<div class="mode-settings-box mode-box-normal" style="border-color:#ffd700; margin-top:15px;">
+            html += `<div class="mode-settings-box mode-box-normal" style="border-color:#ffd700; margin-top:5px;">
                 <label style="color:#ffd700;">★ 陣取りモード (Panel 25)</label>
                 <p class="unit-text">25枚のパネル操作盤を有効にします。</p>
             </div>`;
         } else if (gameType === 'race') {
-            html += `<div class="mode-settings-box mode-box-normal" style="border-color:#00ff00; margin-top:15px;">
+            html += `<div class="mode-settings-box mode-box-normal" style="border-color:#00ff00; margin-top:5px;">
                 <label style="color:#00ff00;">★ レースモード (Race)</label>
                 <div class="mt-5">
                     <label class="config-label">ゴールまでのポイント</label>
@@ -337,7 +361,6 @@ App.Config = {
                 </div>
             </div>`;
         }
-
         area.innerHTML = html;
     },
 
@@ -350,7 +373,6 @@ App.Config = {
             row.style.borderBottom = '1px solid #333';
             row.style.padding = '8px 0';
             
-            // ★修正: デフォルト表示を「なし」に
             const isNoLimit = (q.timeLimit === 0 || q.timeLimit === undefined || q.timeLimit === "0");
             const timeVal = isNoLimit ? "なし" : q.timeLimit;
             const inputType = isNoLimit ? "text" : "number";
@@ -387,7 +409,6 @@ App.Config = {
         document.querySelectorAll('.q-point-input').forEach(inp => qs[inp.dataset.index].points = parseInt(inp.value));
         document.querySelectorAll('.q-loss-input').forEach(inp => qs[inp.dataset.index].loss = parseInt(inp.value));
         
-        // ★修正: "なし" or 0 で保存
         document.querySelectorAll('.q-time-input').forEach(inp => {
             const val = inp.value;
             qs[inp.dataset.index].timeLimit = (val === "なし" || val === "" || val === "0") ? 0 : (parseInt(val) || 0);
@@ -421,11 +442,8 @@ App.Config = {
         if (mode === 'solo') {
             newConfig.soloStyle = document.getElementById('config-solo-style')?.value;
             newConfig.soloTimeType = document.getElementById('config-solo-time-type')?.value;
-            
-            // ★修正: "なし" なら 0 として保存
             const sVal = document.getElementById('config-solo-time-val').value;
             newConfig.soloTimeVal = (sVal === 'なし' || sVal === '0') ? 0 : (parseInt(sVal) || 5);
-            
             newConfig.soloLife = parseInt(document.getElementById('config-solo-life')?.value) || 3;
             newConfig.soloRetire = document.getElementById('config-solo-retire')?.value;
             newConfig.soloRecovery = parseInt(document.getElementById('config-solo-recovery')?.value) || 0;
@@ -443,7 +461,6 @@ App.Config = {
         this.renderPreview();
     },
 
-    // ... (renderPreview, remove, saveProgram, setupModal, loadExternal はそのまま) ...
     renderPreview: function() {
         const list = document.getElementById('config-playlist-preview');
         list.innerHTML = '';
