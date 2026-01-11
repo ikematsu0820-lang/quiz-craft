@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v97: Title & Q-Num Display)
+ * host_studio.js (v99: Title & Q-Num Sync)
  * =======================================================*/
 
 App.Studio = {
@@ -63,10 +63,8 @@ App.Studio = {
             document.getElementById('studio-question-panel').classList.add('hidden');
             document.getElementById('studio-standby-panel').classList.remove('hidden');
             document.getElementById('studio-loader-ui').classList.remove('hidden');
-            
             const btnMain = document.getElementById('btn-phase-main');
             btnMain.classList.add('hidden');
-            
             this.loadProgramList();
         }
     },
@@ -85,7 +83,6 @@ App.Studio = {
         window.db.ref(`saved_programs/${showId}`).once('value', snap => {
             const data = snap.val();
             select.innerHTML = '';
-            
             const def = document.createElement('option');
             def.value = "";
             def.textContent = "-- 読み込むプログラムを選択 --";
@@ -118,9 +115,7 @@ App.Studio = {
                 const prog = JSON.parse(val);
                 App.Data.periodPlaylist = prog.playlist || [];
                 document.getElementById('studio-loader-ui').classList.add('hidden');
-                
-                const titleEl = document.getElementById('studio-program-info');
-                if(titleEl) titleEl.textContent = "読込完了: " + prog.title;
+                document.getElementById('studio-program-info').textContent = "読込完了: " + prog.title;
                 
                 this.renderTimeline();
 
@@ -155,7 +150,8 @@ App.Studio = {
         App.State.currentPeriodIndex = index;
         App.Data.studioQuestions = item.questions;
         App.Data.currentConfig = item.config;
-        // ★修正: Viewer側でタイトル表示するために config にタイトルを追加
+        
+        // ★修正: モニター用のタイトルをセット
         App.Data.currentConfig.periodTitle = item.title;
 
         App.State.currentQIndex = 0;
@@ -169,8 +165,7 @@ App.Studio = {
         
         this.renderTimeline();
 
-        const isSolo = (item.config.mode === 'solo');
-        if (isSolo) {
+        if (item.config.mode === 'solo') {
             document.getElementById('studio-solo-info').classList.remove('hidden');
             this.soloState.lives = item.config.soloLife || 3;
             document.getElementById('studio-life-display').textContent = this.soloState.lives;
@@ -198,36 +193,32 @@ App.Studio = {
         const q = App.Data.studioQuestions[App.State.currentQIndex];
         const roomId = App.State.currentRoomId;
 
+        // ★修正: プレビュー画面の表示切り替え
         switch(stepId) {
-            case 0: // STANDBY
-                btnMain.textContent = `Q${App.State.currentQIndex + 1} ゲーム開始 (START)`;
+            case 0: // STANDBY (タイトル画面)
+                btnMain.textContent = `Q.${App.State.currentQIndex + 1} ゲーム開始`;
                 btnMain.onclick = () => this.setStep(1);
                 
-                // ★修正: ここで「番組タイトル」を表示
                 const pTitle = App.Data.periodPlaylist[App.State.currentPeriodIndex].title;
-                this.renderMonitorMessage("PROGRAM", pTitle);
+                this.renderMonitorMessage("PROGRAM", pTitle); // プレビュー更新
                 
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: App.State.currentQIndex });
                 break;
                 
-            case 1: // READY
+            case 1: // READY (第〇問)
                 btnMain.textContent = "準備完了 (SKIP)";
                 btnMain.classList.add('action-ready');
                 btnMain.onclick = () => this.setStep(2);
                 
-                // ★修正: ここで「第〇問」を表示
-                this.renderMonitorMessage("QUESTION", `第 ${App.State.currentQIndex + 1} 問`);
+                this.renderMonitorMessage("QUESTION", `Q. ${App.State.currentQIndex + 1}`); // プレビュー更新
                 
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'ready' });
                 break;
                 
-            case 2: // QUESTION
+            case 2: // QUESTION (問題文)
                 btnMain.textContent = "問題を表示 (OPEN)";
                 btnMain.onclick = () => this.setStep(3);
-                
-                // ★修正: ここで初めて「問題文」を表示
-                this.renderQuestionMonitor(q);
-                
+                this.renderQuestionMonitor(q); // プレビュー更新
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'question', startTime: firebase.database.ServerValue.TIMESTAMP });
                 break;
                 
@@ -292,7 +283,14 @@ App.Studio = {
 
     // ★追加: プレビュー画面にメッセージ（タイトルやQ数）を出す専用関数
     renderMonitorMessage: function(label, text) {
-        document.getElementById('studio-q-text').innerHTML = `<div style="font-size:2em; color:#ffd700; margin-top:50px;">${text}</div>`;
+        // スタジオのプレビュー画面のHTMLを書き換える
+        document.getElementById('studio-q-text').innerHTML = `
+            <div style="display:flex; justify-content:center; align-items:center; height:200px;">
+                <div style="font-size:2.5em; color:#ffd700; font-weight:bold; text-shadow:0 0 10px rgba(0,0,0,0.5);">
+                    ${text}
+                </div>
+            </div>
+        `;
         document.getElementById('studio-q-type-badge').textContent = label;
         document.getElementById('studio-choices-container').innerHTML = ''; // 選択肢は消す
         document.getElementById('studio-correct-display').classList.add('hidden');
@@ -313,7 +311,6 @@ App.Studio = {
                 cContainer.appendChild(div);
             });
         }
-        
         document.getElementById('studio-correct-text').textContent = Array.isArray(q.correct) ? "複数正解" : (q.c ? q.c[q.correct] : q.correct);
         document.getElementById('studio-correct-display').classList.add('hidden');
     },
