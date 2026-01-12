@@ -1,9 +1,10 @@
 /* =========================================================
- * host_config.js (v139: Hide Score/Loss for Panel Mode)
+ * host_config.js (v140: Retain Set Info on Edit)
  * =======================================================*/
 
 App.Config = {
     selectedSetQuestions: [],
+    editingTitle: "", // ★追加: 編集中のタイトル保持用
 
     init: function() {
         App.Ui.showView(App.Ui.views.config);
@@ -55,12 +56,14 @@ App.Config = {
         
         if(!select.value) {
             this.selectedSetQuestions = [];
+            this.editingTitle = "";
             container.innerHTML = '<p class="text-center text-gray p-20">セットを選択してください</p>';
             return;
         }
 
         const data = JSON.parse(select.value);
         this.selectedSetQuestions = data.q || [];
+        this.editingTitle = data.t || "";
         const conf = data.c || {};
         
         this.renderBuilderForm(conf, this.selectedSetQuestions);
@@ -162,7 +165,6 @@ App.Config = {
         const updateDetails = () => {
             this.renderModeDetail(modeSel.value, conf);
             this.renderGameTypeDetail(typeSel.value, conf);
-            // ★追加: パネルモードならPt/Lossを隠す
             const isPanel = (typeSel.value === 'panel');
             this.toggleScoreSections(!isPanel);
         };
@@ -190,19 +192,14 @@ App.Config = {
 
         updateDetails();
         this.renderQList();
-        
-        // 初期状態でも反映
         this.toggleScoreSections(typeSel.value !== 'panel');
     },
 
-    // ★追加: 点数設定エリアの表示切替
     toggleScoreSections: function(show) {
         document.querySelectorAll('.score-section').forEach(el => {
             if(show) el.classList.remove('hidden');
             else el.classList.add('hidden');
         });
-        
-        // グリッドレイアウトの調整
         const bulkGrid = document.getElementById('config-bulk-grid');
         if(bulkGrid) {
             bulkGrid.style.gridTemplateColumns = show ? "1fr 1fr 1fr" : "1fr";
@@ -411,7 +408,7 @@ App.Config = {
                 <div style="display:flex; gap:5px; align-items:center;">
                     <div style="display:flex; flex-direction:column; align-items:center;">
                         <span style="font-size:0.6em; color:#aaa;">Time</span>
-                        <input type="${inputType}" class="q-time-input" data-index="${i}" value="${timeVal}" style="width:50px; text-align:center; padding:5px; font-size:0.8em;" onfocus="this.type='number'; this.value='';" onblur="if(this.value==''||this.value=='0'){this.type='text';this.value='なし';}">
+                        <input type="${inputType}" class="q-time-input" data-index="${i}" value="${timeVal}" style="width:60px; text-align:center; padding:5px; font-size:0.8em;" onfocus="this.type='number'; this.value='';" onblur="if(this.value==''||this.value=='0'){this.type='text';this.value='なし';}">
                     </div>
                     <div class="score-section" style="display:flex; flex-direction:column; align-items:center;">
                         <span style="font-size:0.6em; color:#0055ff;">Pt</span>
@@ -426,7 +423,6 @@ App.Config = {
             list.appendChild(row);
         });
         
-        // リスト描画後、現在の設定に合わせて表示制御
         const typeSel = document.getElementById('config-game-type');
         if(typeSel && typeSel.value === 'panel') {
             this.toggleScoreSections(false);
@@ -434,9 +430,10 @@ App.Config = {
     },
 
     addPeriod: function() {
+        // ★修正: セレクトボックスが空なら編集中のタイトルを使う
         const select = document.getElementById('config-set-select');
-        let title = "Custom Set";
-        if (select.options.length > 0 && select.selectedIndex >= 0) {
+        let title = this.editingTitle || "Custom Set";
+        if (select.value) {
              const raw = select.options[select.selectedIndex].text;
              title = raw.replace(/\s\([0-9/]+\)$/, '');
         }
@@ -474,13 +471,25 @@ App.Config = {
             passCount: document.getElementById('conf-pass-count')?.value || 10
         };
 
+        if (mode === 'solo') {
+            newConfig.soloStyle = document.getElementById('config-solo-style')?.value;
+            newConfig.soloTimeType = document.getElementById('config-solo-time-type')?.value;
+            const sVal = document.getElementById('config-solo-time-val').value;
+            newConfig.soloTimeVal = (sVal === 'なし' || sVal === '0') ? 0 : (parseInt(sVal) || 5);
+            newConfig.soloLife = parseInt(document.getElementById('config-solo-life')?.value) || 3;
+            newConfig.soloRetire = document.getElementById('config-solo-retire')?.value;
+            newConfig.soloRecovery = parseInt(document.getElementById('config-solo-recovery')?.value) || 0;
+        }
+
         App.Data.periodPlaylist.push({
             title: title,
             questions: qs,
             config: newConfig
         });
         
+        // リセット
         this.selectedSetQuestions = [];
+        this.editingTitle = "";
         document.getElementById('config-builder-ui').innerHTML = '<p class="text-center text-gray p-20">セットが追加されました</p>';
         select.value = "";
         
@@ -494,8 +503,14 @@ App.Config = {
         App.Data.periodPlaylist.splice(index, 1);
         
         this.selectedSetQuestions = item.questions;
+        this.editingTitle = item.title; // ★タイトル保持
         this.renderBuilderForm(item.config, item.questions);
         
+        // ★修正: セレクトボックスを「編集中」表示にする
+        const select = document.getElementById('config-set-select');
+        select.innerHTML = `<option value="">⚠️ 編集中: ${item.title}</option>`;
+        select.value = ""; // 値は空にしておく（誤作動防止）
+
         this.renderPreview();
         document.querySelector('.panel-section.section-cyan').scrollIntoView({behavior: "smooth"});
         App.Ui.showToast("再編集モード: 設定を変更して再度追加してください");
