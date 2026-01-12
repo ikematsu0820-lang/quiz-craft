@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v125: Send Title & Hide Info)
+ * host_studio.js (v130: Separate Close & Reveal)
  * =======================================================*/
 
 App.Studio = {
@@ -47,7 +47,6 @@ App.Studio = {
             }
         });
 
-        // ★修正: 初期状態ではヘッダー情報とフッターツールを隠す
         this.toggleUIForStandby(true);
 
         window.db.ref(`rooms/${code}/players`).on('value', snap => {
@@ -71,9 +70,7 @@ App.Studio = {
         }
     },
 
-    // ★追加: 待機中の表示制御（モードや問題数、ボタンを隠す）
     toggleUIForStandby: function(isStandby) {
-        // ヘッダー項目 (親要素 .status-item を探して非表示に)
         const hideIds = ['studio-mode-display', 'studio-q-num-display', 'studio-step-display'];
         hideIds.forEach(id => {
             const el = document.getElementById(id);
@@ -81,8 +78,6 @@ App.Studio = {
                 el.parentNode.style.visibility = isStandby ? 'hidden' : 'visible';
             }
         });
-
-        // フッターツール (正解表示・スキップ)
         const footerTools = document.querySelector('.footer-tools');
         if(footerTools) footerTools.style.display = isStandby ? 'none' : 'flex';
     },
@@ -213,11 +208,10 @@ App.Studio = {
         subControls.classList.add('hidden');
         btnMain.classList.remove('hidden');
 
-        // 待機中(0)か開始前(1)なら情報を隠す
         const isStandby = (stepId === 0 || stepId === 1);
         this.toggleUIForStandby(isStandby);
 
-        const stepsJA = ['待機中', '準備中', '出題中', '回答中', '結果表示', '正解表示', '次へ'];
+        const stepsJA = ['待機中', '準備中', '出題中', '回答中', '回答締切', '正解表示', '次へ'];
         document.getElementById('studio-step-display').textContent = stepsJA[stepId];
         document.getElementById('studio-q-num-display').textContent = `${App.State.currentQIndex + 1}/${App.Data.studioQuestions.length}`;
         document.getElementById('studio-mode-display').textContent = this.translateMode(App.Data.currentConfig.mode);
@@ -230,7 +224,6 @@ App.Studio = {
                 btnMain.textContent = `Q.${App.State.currentQIndex + 1} ゲーム開始`;
                 btnMain.onclick = () => this.setStep(1);
                 
-                // ★修正: 番組タイトルを取得してDBに送信
                 const pTitle = App.Data.periodPlaylist[App.State.currentPeriodIndex].title;
                 this.renderMonitorMessage("PROGRAM", pTitle);
                 
@@ -239,7 +232,7 @@ App.Studio = {
                 window.db.ref(`rooms/${roomId}/status`).update({ 
                     step: 'standby', 
                     qIndex: App.State.currentQIndex,
-                    programTitle: pTitle // ★ここでタイトル送信！
+                    programTitle: pTitle
                 });
                 break;
                 
@@ -252,8 +245,9 @@ App.Studio = {
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'ready' });
                 break;
             
-            case 3: // ANSWERING (Start)
-                btnMain.textContent = "回答締め切り / 判定";
+            case 3: // ANSWERING
+                // ★変更: 「判定」の文字を消し、純粋な締め切りボタンにする
+                btnMain.textContent = "回答締め切り (CLOSE)";
                 btnMain.classList.add('action-stop');
                 if(App.Data.currentConfig.mode === 'buzz' || App.Data.currentConfig.mode === 'solo') {
                     subControls.classList.remove('hidden');
@@ -269,7 +263,6 @@ App.Studio = {
                     startTime: firebase.database.ServerValue.TIMESTAMP,
                     isBuzzActive: (App.Data.currentConfig.mode === 'buzz')
                 };
-                
                 const qLimit = q.timeLimit || 0;
                 if (qLimit > 0) updateData.timeLimit = qLimit;
                 else if (App.Data.currentConfig.mode === 'solo' && App.Data.currentConfig.soloTimeVal) {
@@ -279,13 +272,14 @@ App.Studio = {
                 window.db.ref(`rooms/${roomId}/status`).update(updateData);
                 break;
                 
-            case 4: // RESULT
+            case 4: // RESULT (CLOSED)
+                // ★変更: ここでモニターに正解を出す
                 btnMain.textContent = "正解を発表 (SHOW ANSWER)";
                 btnMain.onclick = () => this.setStep(5);
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'result', isBuzzActive: false });
                 break;
                 
-            case 5: // ANSWER
+            case 5: // ANSWER (REVEAL)
                 btnMain.textContent = "次の問題へ (NEXT) >>";
                 btnMain.classList.add('action-next');
                 btnMain.onclick = () => this.setStep(6);
@@ -299,7 +293,6 @@ App.Studio = {
         }
     },
 
-    // ... (goNext, resetPlayerStatus, renderMonitorMessage などは変更なし。そのまま維持) ...
     goNext: function() {
         if (App.State.currentQIndex < App.Data.studioQuestions.length - 1) {
             App.State.currentQIndex++;
