@@ -1,5 +1,5 @@
 /* =========================================================
- * viewer.js (v135: Final Ranking Added)
+ * viewer.js (v136: Remove Next Q Screen)
  * =======================================================*/
 
 // --- Monitor App ---
@@ -83,7 +83,6 @@ window.App.Viewer = {
         const statusDiv = document.getElementById('viewer-status');
         const viewContainer = document.getElementById('viewer-main-view');
         
-        // エリア初期化
         ['viewer-panel-grid', 'viewer-bomb-grid', 'viewer-multi-grid', 'viewer-race-area', 'viewer-timer-bar-area'].forEach(id => {
             document.getElementById(id).classList.add('hidden');
         });
@@ -100,6 +99,7 @@ window.App.Viewer = {
             this.applyDefaultDesign(viewContainer, null);
             
             if (st.qIndex === 0) {
+                // ★1問目の開始前だけタイトルを表示
                 const title = st.programTitle || this.config.periodTitle || "Quiz Studio";
                 mainText.innerHTML = `
                     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; width:100%;">
@@ -112,11 +112,10 @@ window.App.Viewer = {
                     <style>@keyframes pulse { 0%{opacity:0.6;} 50%{opacity:1;} 100%{opacity:0.6;} }</style>
                 `;
             } else {
+                // ★2問目以降はシンプルに黒画面（余計な演出なし）
                 mainText.innerHTML = `
-                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; width:100%;">
-                        <div style="font-size:4vw; font-weight:bold; color:#00bfff; letter-spacing:0.1em; margin-bottom:10px;">NEXT QUESTION</div>
-                        <div style="font-size:10vw; font-weight:900; color:#fff; text-shadow:0 0 30px rgba(0,191,255,0.5);">Q.${st.qIndex + 1}</div>
-                        <div style="font-size:2vw; color:#aaa; margin-top:30px; letter-spacing:5px;">STANDBY...</div>
+                    <div style="display:flex; align-items:center; justify-content:center; height:100%; width:100%; background-color:#000;">
+                        <div style="color:#333; font-size:2vh; font-family:monospace;">WAITING...</div>
                     </div>
                 `;
             }
@@ -186,7 +185,7 @@ window.App.Viewer = {
                 }
             }
         } 
-        // --- 5. FINAL RANKING (★追加) ---
+        // --- 5. FINAL RANKING ---
         else if (st.step === 'final_ranking') {
             statusDiv.textContent = "FINALE";
             this.applyDefaultDesign(viewContainer, null);
@@ -207,7 +206,6 @@ window.App.Viewer = {
         }
     },
 
-    // ★追加: 最終結果ランキング表示
     renderFinalRanking: function(container) {
         window.db.ref(`rooms/${this.roomId}/players`).once('value', snap => {
             const players = snap.val() || {};
