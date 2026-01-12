@@ -284,18 +284,30 @@ function renderPlayerQuestion(q, roomId, playerId) {
     
     // --- ★追加: B. 文字選択式 (Letter Select) ---
     else if (q.type === 'letter_select') {
-        const correctChars = q.correct.split('');
-        const dummyChars = (q.dummyChars || '').split('');
-        // 正解とダミーを混ぜる
-        let pool = [...correctChars, ...dummyChars];
+        let pool = [];
         
-        // シャッフル
+        // ステップデータがある場合 (新方式)
+        if (q.steps) {
+            q.steps.forEach(step => {
+                pool.push(step.correct);
+                if (step.dummies) pool.push(...step.dummies);
+            });
+        } 
+        // 旧方式（念のため互換性維持）
+        else {
+            const correctChars = q.correct.split('');
+            const dummyChars = (q.dummyChars || '').split('');
+            pool = [...correctChars, ...dummyChars];
+        }
+        
+        // 空文字を除去してシャッフル
+        pool = pool.filter(c => c && c.trim() !== '');
         for (let i = pool.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [pool[i], pool[j]] = [pool[j], pool[i]];
         }
 
-        // 入力表示エリア
+        // 表示エリア
         const displayBox = document.createElement('div');
         displayBox.className = 'letter-display-box';
         displayBox.style.background = "#fff";
@@ -306,11 +318,12 @@ function renderPlayerQuestion(q, roomId, playerId) {
         displayBox.style.textAlign = "center";
         displayBox.style.marginBottom = "15px";
         displayBox.style.borderRadius = "8px";
-        displayBox.style.minHeight = "40px";
-        displayBox.textContent = ""; // 初期は空
+        displayBox.style.minHeight = "50px";
+        displayBox.style.border = "2px solid #ccc";
+        displayBox.textContent = ""; 
         inputCont.appendChild(displayBox);
 
-        // 文字パネルグリッド
+        // グリッド
         const grid = document.createElement('div');
         grid.style.display = "grid";
         grid.style.gridTemplateColumns = "repeat(5, 1fr)";
@@ -326,19 +339,23 @@ function renderPlayerQuestion(q, roomId, playerId) {
             btn.style.border = "1px solid #555";
             btn.style.color = "#fff";
             btn.style.fontSize = "20px";
-            btn.style.borderRadius = "4px";
+            btn.style.fontWeight = "bold";
+            btn.style.borderRadius = "8px";
             btn.style.cursor = "pointer";
             
             btn.onclick = () => {
                 if (displayBox.textContent.length < 20) {
                     displayBox.textContent += char;
+                    // クリックアニメーション
+                    btn.style.transform = "scale(0.9)";
+                    setTimeout(() => btn.style.transform = "scale(1)", 100);
                 }
             };
             grid.appendChild(btn);
         });
         inputCont.appendChild(grid);
 
-        // 操作ボタン (Clear / Submit)
+        // ボタン
         const controlRow = document.createElement('div');
         controlRow.style.display = "flex";
         controlRow.style.gap = "10px";
@@ -359,7 +376,7 @@ function renderPlayerQuestion(q, roomId, playerId) {
         controlRow.appendChild(clearBtn);
         controlRow.appendChild(submitBtn);
         inputCont.appendChild(controlRow);
-    } 
+    }
     
     // --- C. 口頭回答 ---
     else if (q.type === 'free_oral') {
