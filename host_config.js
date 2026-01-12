@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v108: Reorder UI Layout)
+ * host_config.js (v138: Edit Set Content & Playlist)
  * =======================================================*/
 
 App.Config = {
@@ -52,6 +52,7 @@ App.Config = {
     updateBuilderUI: function() {
         const container = document.getElementById('config-builder-ui');
         const select = document.getElementById('config-set-select');
+        
         if(!select.value) {
             this.selectedSetQuestions = [];
             container.innerHTML = '<p class="text-center text-gray p-20">セットを選択してください</p>';
@@ -62,21 +63,24 @@ App.Config = {
         this.selectedSetQuestions = data.q || [];
         const conf = data.c || {};
         
+        this.renderBuilderForm(conf, this.selectedSetQuestions);
+    },
+
+    renderBuilderForm: function(conf, questions) {
+        const container = document.getElementById('config-builder-ui');
         let typeDisplay = "不明";
         let isOral = false;
 
-        if(this.selectedSetQuestions.length > 0) {
-            const t = this.selectedSetQuestions[0].type;
+        if(questions.length > 0) {
+            const t = questions[0].type;
             if(t === 'choice') typeDisplay = APP_TEXT.Creator.TypeChoice;
-            else if(t === 'letter_select') typeDisplay = "文字選択 (Letter)"; // ★追加
+            else if(t === 'letter_select') typeDisplay = "文字選択 (Letter)";
             else if(t === 'sort') typeDisplay = APP_TEXT.Creator.TypeSort;
-            else if(t === 'free_oral') { 
-                typeDisplay = APP_TEXT.Creator.TypeFreeOral;
-                isOral = true;
-            }
+            else if(t === 'free_oral') { typeDisplay = APP_TEXT.Creator.TypeFreeOral; isOral = true; }
             else if(t === 'free_written') typeDisplay = APP_TEXT.Creator.TypeFreeWritten;
             else if(t === 'multi') typeDisplay = APP_TEXT.Creator.TypeMulti;
         }
+        
         const normalOption = isOral 
             ? `<option value="normal" disabled style="color:#555;">✖ 一斉回答 (口頭形式では選択不可)</option>` 
             : `<option value="normal">一斉回答 (Normal)</option>`;
@@ -85,13 +89,12 @@ App.Config = {
             <div style="background:#252525; padding:12px; border-radius:6px; border:1px solid #444; border-left:4px solid #aaa; margin-bottom:20px; display:flex; align-items:center;">
                 <div style="color:#aaa; font-size:0.9em; font-weight:bold; margin-right:10px;">収録形式:</div>
                 <div style="color:#fff; font-weight:bold; font-size:1.1em;">${typeDisplay}</div>
-                <div style="color:#666; font-size:0.8em; margin-left:auto; font-family:monospace;">全${this.selectedSetQuestions.length}問</div>
+                <div style="color:#666; font-size:0.8em; margin-left:auto; font-family:monospace;">全${questions.length}問</div>
             </div>
         `;
 
         html += `<div class="config-section-title">${APP_TEXT.Config.LabelRule}</div>`;
         
-        // ★修正: レイアウト変更 (上段: 回答モード, 中段: ゲームタイプ, 下段: 問題設定)
         html += `
             <div class="config-item-box">
                 <div class="mb-15">
@@ -145,8 +148,8 @@ App.Config = {
                     </div>
                 </div>
 
-                <button id="btn-toggle-q-list" class="btn-block btn-dark" style="margin-bottom:10px;">▼ 個別で設定する (全${this.selectedSetQuestions.length}問)</button>
-                <div id="config-questions-list" class="hidden scroll-list" style="height:200px; border:1px solid #333; padding:5px; background:#1a1a1a;"></div>
+                <button id="btn-toggle-q-list" class="btn-block btn-dark" style="margin-bottom:10px;">▼ 個別で設定する (全${questions.length}問)</button>
+                <div id="config-questions-list" class="hidden scroll-list" style="height:300px; border:1px solid #333; padding:5px; background:#1a1a1a;"></div>
             </div>`;
 
         html += `<button id="config-add-playlist-btn" class="btn-success btn-block btn-large mt-20">${APP_TEXT.Config.BtnAddList}</button>`;
@@ -157,8 +160,8 @@ App.Config = {
         const typeSel = document.getElementById('config-game-type');
         
         const updateDetails = () => {
-            this.renderModeDetail(modeSel.value);
-            this.renderGameTypeDetail(typeSel.value);
+            this.renderModeDetail(modeSel.value, conf);
+            this.renderGameTypeDetail(typeSel.value, conf);
         };
         
         modeSel.onchange = updateDetails;
@@ -171,6 +174,22 @@ App.Config = {
             list.classList.toggle('hidden');
         };
 
+        this.setupBulkButtons();
+        
+        if(conf.mode) {
+            if (isOral && conf.mode === 'normal') modeSel.value = 'buzz';
+            else modeSel.value = conf.mode;
+        } else {
+            modeSel.value = isOral ? 'buzz' : 'normal';
+        }
+        
+        if (conf.gameType) typeSel.value = conf.gameType;
+
+        updateDetails();
+        this.renderQList();
+    },
+
+    setupBulkButtons: function() {
         document.getElementById('config-bulk-time-btn').onclick = () => {
             const val = document.getElementById('config-bulk-time-input').value;
             document.querySelectorAll('.q-time-input').forEach(inp => { inp.value = val; inp.type = "number"; });
@@ -187,21 +206,9 @@ App.Config = {
             const val = document.getElementById('config-bulk-loss-input').value;
             document.querySelectorAll('.q-loss-input').forEach(inp => inp.value = val);
         };
-        
-        if(conf.mode) {
-            if (isOral && conf.mode === 'normal') modeSel.value = 'buzz';
-            else modeSel.value = conf.mode;
-        } else {
-            if (isOral) modeSel.value = 'buzz';
-            else modeSel.value = 'normal';
-        }
-
-        updateDetails();
-        this.renderQList();
     },
 
-    // ★修正: 詳細表示関数を2つに分割
-    renderModeDetail: function(mode) {
+    renderModeDetail: function(mode, conf = {}) {
         const area = document.getElementById('mode-detail-area');
         let html = '';
 
@@ -211,8 +218,8 @@ App.Config = {
                     <div class="mt-5">
                         <label class="config-label">${APP_TEXT.Config.LabelNormalLimit}</label>
                         <select id="config-normal-limit" class="btn-block config-select">
-                            <option value="unlimited">${APP_TEXT.Config.NormalLimitUnlimited}</option>
-                            <option value="one">${APP_TEXT.Config.NormalLimitOne}</option>
+                            <option value="unlimited" ${conf.normalLimit==='unlimited'?'selected':''}>${APP_TEXT.Config.NormalLimitUnlimited}</option>
+                            <option value="one" ${conf.normalLimit==='one'?'selected':''}>${APP_TEXT.Config.NormalLimitOne}</option>
                         </select>
                     </div>
                     <div class="mt-10">
@@ -230,17 +237,17 @@ App.Config = {
                         <div>
                             <label class="config-label">${APP_TEXT.Config.LabelBuzzWrongAction}</label>
                             <select id="config-buzz-wrong-action" class="btn-block config-select">
-                                <option value="next">${APP_TEXT.Config.BuzzWrongNext}</option>
-                                <option value="reset">${APP_TEXT.Config.BuzzWrongReset}</option>
-                                <option value="end">${APP_TEXT.Config.BuzzWrongEnd}</option>
+                                <option value="next" ${conf.buzzWrongAction==='next'?'selected':''}>${APP_TEXT.Config.BuzzWrongNext}</option>
+                                <option value="reset" ${conf.buzzWrongAction==='reset'?'selected':''}>${APP_TEXT.Config.BuzzWrongReset}</option>
+                                <option value="end" ${conf.buzzWrongAction==='end'?'selected':''}>${APP_TEXT.Config.BuzzWrongEnd}</option>
                             </select>
                         </div>
                         <div>
                             <label class="config-label">${APP_TEXT.Config.LabelBuzzTime}</label>
                             <select id="config-buzz-timer" class="btn-block config-select">
                                 <option value="0">${APP_TEXT.Config.BuzzTimeNone}</option>
-                                <option value="5">${APP_TEXT.Config.BuzzTime5}</option>
-                                <option value="10">${APP_TEXT.Config.BuzzTime10}</option>
+                                <option value="5" ${conf.buzzTime===5?'selected':''}>${APP_TEXT.Config.BuzzTime5}</option>
+                                <option value="10" ${conf.buzzTime===10?'selected':''}>${APP_TEXT.Config.BuzzTime10}</option>
                             </select>
                         </div>
                     </div>
@@ -343,10 +350,9 @@ App.Config = {
         area.innerHTML = html;
     },
 
-    renderGameTypeDetail: function(gameType) {
+    renderGameTypeDetail: function(gameType, conf = {}) {
         const area = document.getElementById('gametype-detail-area');
         let html = '';
-
         if (gameType === 'panel') {
             html += `<div class="mode-settings-box mode-box-normal" style="border-color:#ffd700; margin-top:5px;">
                 <label style="color:#ffd700;">★ 陣取りモード (Panel 25)</label>
@@ -357,7 +363,7 @@ App.Config = {
                 <label style="color:#00ff00;">★ レースモード (Race)</label>
                 <div class="mt-5">
                     <label class="config-label">ゴールまでのポイント</label>
-                    <input type="number" id="conf-pass-count" value="10" class="config-select">
+                    <input type="number" id="conf-pass-count" value="${conf.passCount||10}" class="config-select">
                 </div>
             </div>`;
         }
@@ -378,13 +384,14 @@ App.Config = {
             const inputType = isNoLimit ? "text" : "number";
 
             row.innerHTML = `
-                <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:0.9em; font-weight:bold; color:#ddd;">
-                    Q${i+1}. ${q.q}
+                <div style="flex:1; margin-right:10px;">
+                    <div style="font-size:0.7em; color:#888;">Q${i+1}</div>
+                    <input type="text" class="q-text-input config-select" data-index="${i}" value="${q.q}" style="width:100%; padding:5px; border:1px solid #444;">
                 </div>
                 <div style="display:flex; gap:5px; align-items:center;">
                     <div style="display:flex; flex-direction:column; align-items:center;">
                         <span style="font-size:0.6em; color:#aaa;">Time</span>
-                        <input type="${inputType}" class="q-time-input" data-index="${i}" value="${timeVal}" style="width:60px; text-align:center; padding:5px; font-size:0.8em;" onfocus="this.type='number'; this.value='';" onblur="if(this.value==''||this.value=='0'){this.type='text';this.value='なし';}">
+                        <input type="${inputType}" class="q-time-input" data-index="${i}" value="${timeVal}" style="width:50px; text-align:center; padding:5px; font-size:0.8em;" onfocus="this.type='number'; this.value='';" onblur="if(this.value==''||this.value=='0'){this.type='text';this.value='なし';}">
                     </div>
                     <div style="display:flex; flex-direction:column; align-items:center;">
                         <span style="font-size:0.6em; color:#0055ff;">Pt</span>
@@ -401,14 +408,20 @@ App.Config = {
     },
 
     addPeriod: function() {
-        const title = JSON.parse(document.getElementById('config-set-select').value).t;
+        const select = document.getElementById('config-set-select');
+        let title = "Custom Set";
+        if (select.options.length > 0 && select.selectedIndex >= 0) {
+             const raw = select.options[select.selectedIndex].text;
+             title = raw.replace(/\s\([0-9/]+\)$/, '');
+        }
+
         const mode = document.getElementById('config-mode-select').value;
         const gameType = document.getElementById('config-game-type').value;
         const qs = JSON.parse(JSON.stringify(this.selectedSetQuestions));
         
+        document.querySelectorAll('.q-text-input').forEach(inp => qs[inp.dataset.index].q = inp.value);
         document.querySelectorAll('.q-point-input').forEach(inp => qs[inp.dataset.index].points = parseInt(inp.value));
         document.querySelectorAll('.q-loss-input').forEach(inp => qs[inp.dataset.index].loss = parseInt(inp.value));
-        
         document.querySelectorAll('.q-time-input').forEach(inp => {
             const val = inp.value;
             qs[inp.dataset.index].timeLimit = (val === "なし" || val === "" || val === "0") ? 0 : (parseInt(val) || 0);
@@ -429,14 +442,10 @@ App.Config = {
         const newConfig = {
             mode: mode,
             gameType: gameType,
-            initialStatus: 'revive',
-            timeLimit: 0, 
-            eliminationRule: 'none',
             buzzWrongAction: document.getElementById('config-buzz-wrong-action')?.value || 'next',
             buzzTime: parseInt(document.getElementById('config-buzz-timer')?.value) || 0,
             normalLimit: document.getElementById('config-normal-limit')?.value || 'unlimited',
-            turnOrder: document.getElementById('config-turn-order')?.value || 'fixed',
-            turnPass: document.getElementById('config-turn-pass')?.value || 'ok'
+            passCount: document.getElementById('conf-pass-count')?.value || 10
         };
 
         if (mode === 'solo') {
@@ -449,16 +458,31 @@ App.Config = {
             newConfig.soloRecovery = parseInt(document.getElementById('config-solo-recovery')?.value) || 0;
         }
 
-        if (gameType === 'race') {
-            newConfig.passCount = document.getElementById('conf-pass-count')?.value || 10;
-        }
-
         App.Data.periodPlaylist.push({
             title: title,
             questions: qs,
             config: newConfig
         });
+        
+        this.selectedSetQuestions = [];
+        document.getElementById('config-builder-ui').innerHTML = '<p class="text-center text-gray p-20">セットが追加されました</p>';
+        select.value = "";
+        
         this.renderPreview();
+    },
+
+    editPeriod: function(index) {
+        if (!confirm("このピリオドを再編集しますか？\n（リストから削除され、エディタに戻ります）")) return;
+        
+        const item = App.Data.periodPlaylist[index];
+        App.Data.periodPlaylist.splice(index, 1);
+        
+        this.selectedSetQuestions = item.questions;
+        this.renderBuilderForm(item.config, item.questions);
+        
+        this.renderPreview();
+        document.querySelector('.panel-section.section-cyan').scrollIntoView({behavior: "smooth"});
+        App.Ui.showToast("再編集モード: 設定を変更して再度追加してください");
     },
 
     renderPreview: function() {
@@ -476,13 +500,17 @@ App.Config = {
                     <div class="bold">${i+1}. ${item.title}</div>
                     <div class="text-sm text-gray">[${item.config.mode.toUpperCase()}] / [${item.config.gameType.toUpperCase()}] ${item.questions.length}Q</div>
                 </div>
-                <button class="delete-btn btn-mini" onclick="App.Config.remove(${i})">Del</button>
+                <div style="display:flex; gap:5px;">
+                    <button class="btn-mini btn-info" onclick="App.Config.editPeriod(${i})">Edit</button>
+                    <button class="delete-btn btn-mini" onclick="App.Config.remove(${i})">Del</button>
+                </div>
             `;
             list.appendChild(div);
         });
     },
 
     remove: function(i) {
+        if(!confirm("削除しますか？")) return;
         App.Data.periodPlaylist.splice(i, 1);
         this.renderPreview();
     },
@@ -526,10 +554,7 @@ App.Config = {
         document.getElementById('config-load-prog-exec-btn').onclick = () => {
             const val = document.getElementById('config-prog-select').value;
             if(!val) return;
-            const prog = JSON.parse(val);
-            App.Data.periodPlaylist = prog.playlist;
-            document.getElementById('config-program-title').value = prog.title;
-            this.renderPreview();
+            this.loadExternal(JSON.parse(val));
             document.getElementById('config-load-modal').classList.add('hidden');
         };
         document.getElementById('config-modal-close-btn').onclick = () => {
@@ -543,7 +568,7 @@ App.Config = {
         App.Ui.showView(App.Ui.views.config);
         document.getElementById('config-program-title').value = progData.title;
         this.renderPreview();
-        setTimeout(() => this.loadSetList(), 500);
+        this.loadSetList();
     }
 };
 
