@@ -1,5 +1,5 @@
 /* =========================================================
- * player.js (v122: Selection Lock & Change Popup)
+ * player.js (v129: Hide Change Button on Result)
  * =======================================================*/
 
 let myRoomId = null;
@@ -8,7 +8,6 @@ let myName = "NoName";
 let roomConfig = { mode: 'normal', normalLimit: 'one' }; 
 let currentQuestion = null;
 
-// ★追加: 再回答中かどうかのフラグ
 let isReanswering = false;
 
 let localStatus = { step: 'standby' };
@@ -134,6 +133,9 @@ function updateUI() {
     const resultOverlay = document.getElementById('player-result-overlay');
     const buzzArea = document.getElementById('player-buzz-area');
     const oralArea = document.getElementById('player-oral-done-area');
+    
+    // 変更ボタンエリアを取得
+    const changeArea = document.getElementById('change-btn-area');
 
     lobby.classList.add('hidden');
     if (st.step !== 'answering' && st.step !== 'question' && st.step !== 'answer') {
@@ -147,12 +149,14 @@ function updateUI() {
     if (st.step === 'standby') {
         lobby.classList.remove('hidden');
         lobby.innerHTML = `<h3>STANDBY</h3><p>ホストが準備中です...</p>`;
-        isReanswering = false; // リセット
+        isReanswering = false;
+        if(changeArea) changeArea.innerHTML = ''; // リセット
     }
     else if (st.step === 'ready') {
         lobby.classList.remove('hidden');
         lobby.innerHTML = `<h3>ARE YOU READY?</h3><p>まもなく開始します</p>`;
         isReanswering = false;
+        if(changeArea) changeArea.innerHTML = '';
     }
     else if (st.step === 'question') {
         if (roomConfig.mode === 'buzz') {
@@ -186,6 +190,9 @@ function updateUI() {
     }
     else if (st.step === 'result') {
         isReanswering = false;
+        // ★修正: 結果発表時は変更ボタンを確実に消す
+        if(changeArea) changeArea.innerHTML = '';
+
         if (p.lastResult) showResultOverlay(p.lastResult);
         else {
             waitMsg.classList.remove('hidden');
@@ -193,6 +200,9 @@ function updateUI() {
         }
     }
     else if (st.step === 'answer') {
+        // ★修正: 正解表示時も変更ボタンを確実に消す
+        if(changeArea) changeArea.innerHTML = '';
+
         if(currentQuestion) {
             quizArea.classList.remove('hidden');
             document.getElementById('question-text-disp').textContent = currentQuestion.q;
@@ -230,15 +240,12 @@ function updateUI() {
     }
 }
 
-// ★修正: 回答済みUIの制御（薄くする処理・変更ボタン）
 function handleNormalResponseUI(p, quizArea, waitMsg) {
-    // 常にクイズエリアは表示しておく（隠さずに制御する）
     quizArea.classList.remove('hidden');
     waitMsg.classList.add('hidden');
 
     const inputCont = document.getElementById('player-input-container');
     
-    // 「変更」ボタンエリアがあるか確認、なければ作る
     let changeBtnArea = document.getElementById('change-btn-area');
     if (!changeBtnArea) {
         changeBtnArea = document.createElement('div');
@@ -247,18 +254,12 @@ function handleNormalResponseUI(p, quizArea, waitMsg) {
     }
 
     if (p.lastAnswer != null) {
-        // 回答済みの場合
         if (roomConfig.normalLimit === 'unlimited') {
-            // 修正可モード
             if (isReanswering) {
-                // 再回答中 -> 全ボタン復活
                 unlockChoices();
-                changeBtnArea.innerHTML = ''; // ボタン消す
+                changeBtnArea.innerHTML = ''; 
             } else {
-                // ロック中 -> 選んだもの以外を薄く & 変更ボタン表示
                 lockChoices(p.lastAnswer);
-                
-                // 変更ボタンの描画（重複防止）
                 if (!document.getElementById('btn-change-ans')) {
                     changeBtnArea.innerHTML = `
                         <button id="btn-change-ans" class="btn-change-answer">
@@ -269,7 +270,6 @@ function handleNormalResponseUI(p, quizArea, waitMsg) {
                 }
             }
         } else {
-            // 一発勝負モード -> 画面消して待機
             quizArea.classList.add('hidden');
             waitMsg.classList.remove('hidden');
             waitMsg.style.background = "rgba(0, 184, 148, 0.2)";
@@ -279,17 +279,15 @@ function handleNormalResponseUI(p, quizArea, waitMsg) {
             waitMsg.textContent = "回答を受け付けました。発表を待っています...";
         }
     } else {
-        // 未回答 -> 全ボタン復活
         unlockChoices();
         changeBtnArea.innerHTML = '';
     }
 }
 
-// ボタンをロックして薄くする
 function lockChoices(selectedIndex) {
     const btns = document.querySelectorAll('.answer-btn');
     btns.forEach(btn => {
-        btn.disabled = true; // クリック不可
+        btn.disabled = true; 
         if (btn.dataset.ans == selectedIndex) {
             btn.classList.add('btn-selected');
             btn.classList.remove('btn-dimmed');
@@ -300,7 +298,6 @@ function lockChoices(selectedIndex) {
     });
 }
 
-// ボタンを元に戻す
 function unlockChoices() {
     const btns = document.querySelectorAll('.answer-btn');
     btns.forEach(btn => {
@@ -309,9 +306,7 @@ function unlockChoices() {
     });
 }
 
-// 確認モーダルを開く
 function openConfirmModal() {
-    // 既存モーダルがあれば削除
     const old = document.getElementById('confirm-modal-overlay');
     if(old) old.remove();
 
@@ -330,7 +325,7 @@ function openConfirmModal() {
 
     document.getElementById('btn-yes').onclick = () => {
         isReanswering = true;
-        updateUI(); // 画面更新してロック解除
+        updateUI(); 
         document.getElementById('confirm-modal-overlay').remove();
     };
     document.getElementById('btn-no').onclick = () => {
@@ -356,7 +351,6 @@ function renderPlayerQuestion(q, roomId, playerId) {
     const inputCont = document.getElementById('player-input-container');
     const qText = document.getElementById('question-text-disp');
     
-    // 変更ボタンエリアのリセット
     const changeArea = document.getElementById('change-btn-area');
     if(changeArea) changeArea.innerHTML = '';
 
@@ -375,7 +369,7 @@ function renderPlayerQuestion(q, roomId, playerId) {
             const btn = document.createElement('button');
             btn.className = 'answer-btn'; 
             btn.textContent = item.text;
-            btn.dataset.ans = item.originalIndex; // ★識別用ID
+            btn.dataset.ans = item.originalIndex;
             
             if(i===0) btn.classList.add('btn-blue');
             else if(i===1) btn.classList.add('btn-red');
@@ -386,10 +380,7 @@ function renderPlayerQuestion(q, roomId, playerId) {
             inputCont.appendChild(btn);
         });
     }
-    // ... (Letter, Oral, Written の処理は変更なし) ...
-    // ※ 簡略化のため省略していますが、v117の内容をそのまま維持してください
     else if (q.type === 'letter_select') {
-        // v117のコードと同じ
         let pool = [];
         if (q.steps) {
             q.steps.forEach(step => {
@@ -453,7 +444,6 @@ function renderPlayerQuestion(q, roomId, playerId) {
 }
 
 function submitAnswer(roomId, playerId, answer) {
-    // 送信したらロックする（再回答フラグを下げる）
     isReanswering = false;
     window.db.ref(`rooms/${roomId}/players/${playerId}`).update({
         lastAnswer: answer
