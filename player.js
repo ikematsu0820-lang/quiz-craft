@@ -1,5 +1,5 @@
 /* =========================================================
- * player.js (v130: Sync Reveal with Monitor)
+ * player.js (v131: Fix Buzz Button)
  * =======================================================*/
 
 let myRoomId = null;
@@ -14,8 +14,26 @@ let localStatus = { step: 'standby' };
 let localPlayerData = { isAlive: true, lastResult: null };
 
 document.addEventListener('DOMContentLoaded', () => {
-    const btn = document.getElementById('join-room-btn');
-    if(btn) btn.onclick = joinRoom;
+    // 参加ボタン
+    const joinBtn = document.getElementById('join-room-btn');
+    if(joinBtn) joinBtn.onclick = joinRoom;
+
+    // ★修正: 早押しボタンのイベント追加
+    const buzzBtn = document.getElementById('player-buzz-btn');
+    if(buzzBtn) {
+        buzzBtn.addEventListener('click', () => {
+            if(!myRoomId || !myPlayerId) return;
+            
+            // 連打防止の即時UI更新
+            buzzBtn.disabled = true;
+            buzzBtn.textContent = "送信中...";
+            
+            // サーバーに書き込み
+            window.db.ref(`rooms/${myRoomId}/players/${myPlayerId}`).update({
+                buzzTime: firebase.database.ServerValue.TIMESTAMP
+            });
+        });
+    }
 });
 
 function showPlayerView(viewId) {
@@ -133,9 +151,9 @@ function updateUI() {
     const resultOverlay = document.getElementById('player-result-overlay');
     const buzzArea = document.getElementById('player-buzz-area');
     const oralArea = document.getElementById('player-oral-done-area');
-    
     const changeArea = document.getElementById('change-btn-area');
 
+    // 初期化（隠す）
     lobby.classList.add('hidden');
     if (st.step !== 'answering' && st.step !== 'question' && st.step !== 'answer') {
         quizArea.classList.add('hidden');
@@ -145,6 +163,8 @@ function updateUI() {
     waitMsg.classList.add('hidden');
     resultOverlay.classList.add('hidden');
 
+    // --- 状態ごとの表示 ---
+    
     if (st.step === 'standby') {
         lobby.classList.remove('hidden');
         lobby.innerHTML = `<h3>STANDBY</h3><p>ホストが準備中です...</p>`;
@@ -160,35 +180,46 @@ function updateUI() {
     else if (st.step === 'question') {
         if (roomConfig.mode === 'buzz') {
             buzzArea.classList.remove('hidden');
+            // まだ押せない状態なら無効化などの処理も可
         } else {
             handleNormalResponseUI(p, quizArea, waitMsg);
         }
     }
     else if (st.step === 'answering') {
         if (roomConfig.mode === 'buzz') {
+            // 早押しモード
             if (st.isBuzzActive) {
+                // 早押し受付中
                 buzzArea.classList.remove('hidden');
                 const btn = document.getElementById('player-buzz-btn');
                 if (p.buzzTime) {
-                    btn.disabled = true; btn.textContent = "承認待ち...";
+                    // 自分が押したあと（判定待ち）
+                    btn.disabled = true; 
+                    btn.textContent = "承認待ち...";
+                    btn.style.background = "#555";
                 } else {
-                    btn.disabled = false; btn.textContent = "PUSH!";
+                    // まだ押していない
+                    btn.disabled = false; 
+                    btn.textContent = "PUSH!";
+                    btn.style.background = "radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b)";
                 }
             } else if (st.currentAnswerer === myPlayerId) {
+                // 自分が回答権を得た！
                 quizArea.classList.remove('hidden'); 
                 buzzArea.classList.add('hidden');
             } else {
+                // 他の人が回答中（押し負け）
                 lobby.classList.remove('hidden');
-                lobby.innerHTML = `<h3>LOCKED</h3><p>他のプレイヤーが回答中...</p>`;
+                lobby.innerHTML = `<h3>LOCKED</h3><p style="color:#e94560; font-weight:bold;">他のプレイヤーが回答中...</p>`;
                 quizArea.classList.add('hidden');
                 buzzArea.classList.add('hidden');
             }
         } else {
+            // 通常モード
             handleNormalResponseUI(p, quizArea, waitMsg);
         }
     }
     else if (st.step === 'result') {
-        // ★修正: ここではまだ結果を出さず、「締め切り」表示にする
         isReanswering = false;
         if(changeArea) changeArea.innerHTML = '';
         
@@ -200,7 +231,6 @@ function updateUI() {
         waitMsg.textContent = "回答を締め切りました。正解発表を待っています...";
     }
     else if (st.step === 'answer') {
-        // ★修正: ここで合否と正解をまとめて表示
         if(changeArea) changeArea.innerHTML = '';
 
         if(currentQuestion) {
@@ -226,7 +256,7 @@ function updateUI() {
                 }
             }
             
-            // ★追加: 合否判定の表示
+            // 合否判定表示
             let judgeHtml = '';
             if (p.lastResult === 'win') {
                 judgeHtml = `<div style="background:#00b894; color:#fff; padding:10px; border-radius:8px; font-weight:bold; font-size:1.5em; text-align:center; margin-bottom:15px; border:2px solid #fff; box-shadow:0 0 15px #00b894;">⭕️ 正解！</div>`;
@@ -254,7 +284,6 @@ function handleNormalResponseUI(p, quizArea, waitMsg) {
     waitMsg.classList.add('hidden');
 
     const inputCont = document.getElementById('player-input-container');
-    
     let changeBtnArea = document.getElementById('change-btn-area');
     if (!changeBtnArea) {
         changeBtnArea = document.createElement('div');
@@ -293,7 +322,6 @@ function handleNormalResponseUI(p, quizArea, waitMsg) {
     }
 }
 
-// ... (lockChoices, unlockChoices, openConfirmModal, renderPlayerQuestion, submitAnswer は前回のまま維持) ...
 function lockChoices(selectedIndex) {
     const btns = document.querySelectorAll('.answer-btn');
     btns.forEach(btn => {
