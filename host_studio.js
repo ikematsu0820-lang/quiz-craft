@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v130: Separate Close & Reveal)
+ * host_studio.js (v131: Final Ranking Trigger)
  * =======================================================*/
 
 App.Studio = {
@@ -246,7 +246,6 @@ App.Studio = {
                 break;
             
             case 3: // ANSWERING
-                // ★変更: 「判定」の文字を消し、純粋な締め切りボタンにする
                 btnMain.textContent = "回答締め切り (CLOSE)";
                 btnMain.classList.add('action-stop');
                 if(App.Data.currentConfig.mode === 'buzz' || App.Data.currentConfig.mode === 'solo') {
@@ -273,7 +272,6 @@ App.Studio = {
                 break;
                 
             case 4: // RESULT (CLOSED)
-                // ★変更: ここでモニターに正解を出す
                 btnMain.textContent = "正解を発表 (SHOW ANSWER)";
                 btnMain.onclick = () => this.setStep(5);
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'result', isBuzzActive: false });
@@ -312,10 +310,16 @@ App.Studio = {
                     btn.onclick = () => this.setupPeriod(nextIdx);
                 }
             } else {
-                alert("全てのプログラムが終了しました！");
-                document.getElementById('studio-question-panel').classList.add('hidden');
-                document.getElementById('studio-standby-panel').classList.remove('hidden');
-                document.getElementById('btn-phase-main').classList.add('hidden');
+                // ★修正: ここで最終結果発表モードへ切り替え
+                if(confirm("全プログラム終了です。最終結果を表示しますか？")) {
+                    window.db.ref(`rooms/${App.State.currentRoomId}/status`).update({ step: 'final_ranking' });
+                    // スタジオ側は「終了しました」表示
+                    document.getElementById('studio-question-panel').classList.add('hidden');
+                    document.getElementById('studio-standby-panel').classList.remove('hidden');
+                    const btn = document.getElementById('btn-phase-main');
+                    btn.classList.add('hidden');
+                    document.getElementById('studio-program-info').innerHTML = "<h2 style='color:#ffd700'>全プログラム終了 (COMPLETED)</h2><p>モニターに結果を表示中...</p>";
+                }
             }
         }
     },
