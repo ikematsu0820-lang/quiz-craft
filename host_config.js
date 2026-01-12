@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v142: Fix Syntax Error)
+ * host_config.js (v143: Rename Buzz Options)
  * =======================================================*/
 
 App.Config = {
@@ -59,7 +59,7 @@ App.Config = {
             this.editingTitle = "";
             container.innerHTML = '<p class="text-center text-gray p-20">セットを選択してください</p>';
             return;
-        } // ★修正: ここにあった余計なカンマを削除
+        } 
 
         const data = JSON.parse(select.value);
         this.selectedSetQuestions = data.q || [];
@@ -231,9 +231,7 @@ App.Config = {
         let html = '';
 
         if(mode === 'normal') {
-            // 修正を許可する形式: 選択式, 並べ替え, 文字パネル, 多答
             const canRetry = ['choice', 'sort', 'letter_select', 'multi'].includes(qType);
-            
             let limitSelect = '';
             if (canRetry) {
                 limitSelect = `
@@ -242,7 +240,6 @@ App.Config = {
                         <option value="one" ${conf.normalLimit==='one'?'selected':''}>${APP_TEXT.Config.NormalLimitOne}</option>
                     </select>`;
             } else {
-                // 記述式などは強制的に「1回のみ」
                 limitSelect = `
                     <select id="config-normal-limit" class="btn-block config-select" disabled style="opacity:0.7; cursor:not-allowed;">
                         <option value="one" selected>1回のみ (固定)</option>
@@ -266,15 +263,16 @@ App.Config = {
                     </div>
                 </div>`;
         } else if(mode === 'buzz') {
+            // ★修正: 選択肢の文言をわかりやすく変更
             html += `
                 <div class="mode-settings-box mode-box-buzz">
                     <div class="grid-2-col">
                         <div>
-                            <label class="config-label">${APP_TEXT.Config.LabelBuzzWrongAction}</label>
+                            <label class="config-label">誤答時の処理</label>
                             <select id="config-buzz-wrong-action" class="btn-block config-select">
-                                <option value="next" ${conf.buzzWrongAction==='next'?'selected':''}>${APP_TEXT.Config.BuzzWrongNext}</option>
-                                <option value="reset" ${conf.buzzWrongAction==='reset'?'selected':''}>${APP_TEXT.Config.BuzzWrongReset}</option>
-                                <option value="end" ${conf.buzzWrongAction==='end'?'selected':''}>${APP_TEXT.Config.BuzzWrongEnd}</option>
+                                <option value="next" ${conf.buzzWrongAction==='next'?'selected':''}>誤答者以外で早押し再開</option>
+                                <option value="reset" ${conf.buzzWrongAction==='reset'?'selected':''}>全員リセット (全員復活)</option>
+                                <option value="end" ${conf.buzzWrongAction==='end'?'selected':''}>その問題終了 (打ち切り)</option>
                             </select>
                         </div>
                         <div>
@@ -426,7 +424,7 @@ App.Config = {
                 <div style="display:flex; gap:5px; align-items:center;">
                     <div style="display:flex; flex-direction:column; align-items:center;">
                         <span style="font-size:0.6em; color:#aaa;">Time</span>
-                        <input type="${inputType}" class="q-time-input" data-index="${i}" value="${timeVal}" style="width:60px; text-align:center; padding:5px; font-size:0.8em;" onfocus="this.type='number'; this.value='';" onblur="if(this.value==''||this.value=='0'){this.type='text';this.value='なし';}">
+                        <input type="${inputType}" class="q-time-input" data-index="${i}" value="${timeVal}" style="width:50px; text-align:center; padding:5px; font-size:0.8em;" onfocus="this.type='number'; this.value='';" onblur="if(this.value==''||this.value=='0'){this.type='text';this.value='なし';}">
                     </div>
                     <div class="score-section" style="display:flex; flex-direction:column; align-items:center;">
                         <span style="font-size:0.6em; color:#0055ff;">Pt</span>
