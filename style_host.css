@@ -538,3 +538,46 @@ select option {
     box-shadow: 0 4px 0 #cc0000;
 }
 .btn-delete-modal:active { transform: translateY(4px); box-shadow: 0 0 0 #cc0000; }
+/* --- モニター接続画面のレイアウト修正 --- */
+
+/* ログインエリア全体の文字間隔を調整 */
+.login-form-area h1 {
+    margin-bottom: 10px;
+    font-size: 3.5em; /* タイトルを大きく */
+    font-weight: 900;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.6);
+}
+
+.login-form-area p {
+    margin-bottom: 30px; /* ★ここを広げて被りを防止 */
+    color: #aaa;
+    font-weight: bold;
+    font-size: 1.1em;
+    letter-spacing: 1px;
+}
+
+.login-form-area input {
+    margin-bottom: 20px; /* 入力欄とボタンの間隔 */
+    padding: 15px;
+    font-size: 1.2em;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid #555 !important;
+}
+
+.login-form-area button {
+    padding: 15px;
+    font-size: 1.2em;
+    font-weight: bold;
+    width: 100%;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #00bfff 0%, #0088cc 100%);
+    box-shadow: 0 0 15px rgba(0, 191, 255, 0.4);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.login-form-area button:active {
+    transform: scale(0.98);
+}
