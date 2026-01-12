@@ -1,5 +1,5 @@
 /* =========================================================
- * player.js (v138: Simple Standby Screen)
+ * player.js (v139: Hide Buzz for Loser)
  * =======================================================*/
 
 let myRoomId = null;
@@ -171,10 +171,8 @@ function updateUI() {
     if (st.step === 'standby') {
         lobby.classList.remove('hidden');
         if (st.qIndex === 0) {
-            // 第1問目の開始前はタイトルっぽく
             lobby.innerHTML = `<h3>STANDBY</h3><p>ホストが準備中です...</p>`;
         } else {
-            // ★変更: 2問目以降はシンプルに
             lobby.innerHTML = `<div style="text-align:center; color:#555; margin-top:50px;">Waiting...</div>`;
         }
         isReanswering = false;
@@ -188,14 +186,26 @@ function updateUI() {
     }
     else if (st.step === 'question') {
         if (roomConfig.mode === 'buzz') {
-            buzzArea.classList.remove('hidden');
+            // ★修正: 既に誤答している(lose)ならボタンは出さない
+            if (!p.lastResult) {
+                buzzArea.classList.remove('hidden');
+            } else {
+                lobby.classList.remove('hidden');
+                lobby.innerHTML = `<div style="text-align:center; color:#e94560; font-weight:bold; font-size:1.5em; margin-top:30px;">❌ 不正解</div><p style="text-align:center; color:#aaa;">この問題の回答権はありません</p>`;
+            }
         } else {
             handleNormalResponseUI(p, quizArea, waitMsg);
         }
     }
     else if (st.step === 'answering') {
         if (roomConfig.mode === 'buzz') {
-            if (st.isBuzzActive) {
+            // ★修正: 既に誤答している(lose)ならボタンは出さない
+            if (p.lastResult === 'lose') {
+                lobby.classList.remove('hidden');
+                lobby.innerHTML = `<div style="text-align:center; color:#e94560; font-weight:bold; font-size:1.5em; margin-top:30px;">❌ 不正解</div><p style="text-align:center; color:#aaa;">この問題の回答権はありません</p>`;
+                buzzArea.classList.add('hidden');
+                quizArea.classList.add('hidden');
+            } else if (st.isBuzzActive) {
                 buzzArea.classList.remove('hidden');
                 const btn = document.getElementById('player-buzz-btn');
                 if (p.buzzTime) {
