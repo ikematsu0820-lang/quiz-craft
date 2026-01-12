@@ -1,5 +1,5 @@
 /* =========================================================
- * player.js (v139: Hide Buzz for Loser)
+ * player.js (v140: Mobile-First UI with Visible Question)
  * =======================================================*/
 
 let myRoomId = null;
@@ -124,6 +124,7 @@ function startPlayerListener(roomId, playerId) {
                 if(q) {
                     currentQuestion = q;
                     renderPlayerQuestion(q, roomId, playerId);
+                    updateUI(); // 描画後にUI状態を適用
                 }
             });
         }
@@ -158,15 +159,22 @@ function updateUI() {
     const changeArea = document.getElementById('change-btn-area');
     const rankingOverlay = document.getElementById('player-ranking-overlay');
 
+    // 基本リセット
     lobby.classList.add('hidden');
-    if (st.step !== 'answering' && st.step !== 'question' && st.step !== 'answer') {
+    waitMsg.classList.add('hidden');
+    resultOverlay.classList.add('hidden');
+    rankingOverlay.classList.add('hidden'); 
+    
+    // クイズエリア（問題文・選択肢）は、待機中以外は基本表示する方針に変更
+    if (st.step === 'question' || st.step === 'answering' || st.step === 'answer') {
+        quizArea.classList.remove('hidden');
+    } else {
         quizArea.classList.add('hidden');
         buzzArea.classList.add('hidden');
         oralArea.classList.add('hidden');
     }
-    waitMsg.classList.add('hidden');
-    resultOverlay.classList.add('hidden');
-    rankingOverlay.classList.add('hidden'); 
+
+    // --- 状態ごとのUI制御 ---
 
     if (st.step === 'standby') {
         lobby.classList.remove('hidden');
@@ -185,52 +193,84 @@ function updateUI() {
         if(changeArea) changeArea.innerHTML = '';
     }
     else if (st.step === 'question') {
+        // 出題中（まだ回答開始前）
         if (roomConfig.mode === 'buzz') {
-            // ★修正: 既に誤答している(lose)ならボタンは出さない
+            // 早押しの場合、ボタンは見せるが、選択肢はロック
             if (!p.lastResult) {
                 buzzArea.classList.remove('hidden');
+                toggleInputEnabled(false); // 選択肢ロック
+                
+                // ボタンの見た目リセット
+                const btn = document.getElementById('player-buzz-btn');
+                btn.disabled = false; 
+                btn.textContent = "PUSH!";
+                btn.style.background = "radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b)";
             } else {
-                lobby.classList.remove('hidden');
-                lobby.innerHTML = `<div style="text-align:center; color:#e94560; font-weight:bold; font-size:1.5em; margin-top:30px;">❌ 不正解</div><p style="text-align:center; color:#aaa;">この問題の回答権はありません</p>`;
+                showLoserMessage(lobby, buzzArea);
             }
         } else {
+            // 一斉回答ならすぐ入力可
             handleNormalResponseUI(p, quizArea, waitMsg);
+            toggleInputEnabled(true);
         }
     }
     else if (st.step === 'answering') {
         if (roomConfig.mode === 'buzz') {
-            // ★修正: 既に誤答している(lose)ならボタンは出さない
+            // 早押しモード
             if (p.lastResult === 'lose') {
-                lobby.classList.remove('hidden');
-                lobby.innerHTML = `<div style="text-align:center; color:#e94560; font-weight:bold; font-size:1.5em; margin-top:30px;">❌ 不正解</div><p style="text-align:center; color:#aaa;">この問題の回答権はありません</p>`;
-                buzzArea.classList.add('hidden');
-                quizArea.classList.add('hidden');
-            } else if (st.isBuzzActive) {
+                // 自分が既に間違えている場合
+                showLoserMessage(lobby, buzzArea);
+                toggleInputEnabled(false);
+            } 
+            else if (st.isBuzzActive) {
+                // 早押し受付中
                 buzzArea.classList.remove('hidden');
+                toggleInputEnabled(false); // まだ押してないので選択肢はロック
+                
                 const btn = document.getElementById('player-buzz-btn');
                 if (p.buzzTime) {
-                    btn.disabled = true; btn.textContent = "承認待ち..."; btn.style.background = "#555";
+                    // 自分は押した（承認待ち）
+                    btn.disabled = true; 
+                    btn.textContent = "承認待ち..."; 
+                    btn.style.background = "#555";
                 } else {
-                    btn.disabled = false; btn.textContent = "PUSH!"; btn.style.background = "radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b)";
+                    // まだ押してない
+                    btn.disabled = false; 
+                    btn.textContent = "PUSH!"; 
+                    btn.style.background = "radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b)";
                 }
-            } else if (st.currentAnswerer === myPlayerId) {
-                buzzArea.classList.add('hidden');
+            } 
+            else if (st.currentAnswerer === myPlayerId) {
+                // ★自分が回答権獲得！
+                buzzArea.classList.add('hidden'); // ボタン消す
+                toggleInputEnabled(true); // 選択肢ロック解除！
+                
                 handleNormalResponseUI(p, quizArea, waitMsg);
-            } else {
-                lobby.classList.remove('hidden');
-                lobby.innerHTML = `<h3>LOCKED</h3><p style="color:#e94560; font-weight:bold;">他のプレイヤーが回答中...</p>`;
-                quizArea.classList.add('hidden');
+            } 
+            else {
+                // ★他の人が回答中
                 buzzArea.classList.add('hidden');
+                toggleInputEnabled(false); // 選択肢ロック
+                
+                // 画面を隠さず、下部にステータスだけ出す
+                waitMsg.classList.remove('hidden');
+                waitMsg.style.background = "#333";
+                waitMsg.style.color = "#e94560";
+                waitMsg.style.border = "1px solid #e94560";
+                waitMsg.innerHTML = "🔒 <b>LOCKED</b><br>他のプレイヤーが回答中です...";
             }
         } else {
+            // 通常モード
             handleNormalResponseUI(p, quizArea, waitMsg);
+            toggleInputEnabled(true);
         }
     }
     else if (st.step === 'result') {
         isReanswering = false;
         if(changeArea) changeArea.innerHTML = '';
         
-        quizArea.classList.add('hidden');
+        // 結果待ち
+        quizArea.classList.add('hidden'); 
         waitMsg.classList.remove('hidden');
         waitMsg.style.background = "#444";
         waitMsg.style.color = "#ccc";
@@ -239,53 +279,124 @@ function updateUI() {
     }
     else if (st.step === 'answer') {
         if(changeArea) changeArea.innerHTML = '';
-
         if(currentQuestion) {
-            quizArea.classList.remove('hidden');
-            document.getElementById('question-text-disp').textContent = currentQuestion.q;
-            
-            const ansBox = document.getElementById('player-input-container');
-            let correctText = "";
-            if(currentQuestion.type === 'choice') {
-                if(Array.isArray(currentQuestion.correct)) correctText = currentQuestion.correct.map(i => currentQuestion.c[i]).join(' / ');
-                else correctText = currentQuestion.c[currentQuestion.correct];
-            } else if (currentQuestion.type === 'letter_select' && currentQuestion.steps) {
-                correctText = currentQuestion.steps.map(s => s.correct).join('');
-            } else {
-                correctText = currentQuestion.correct;
-            }
-
-            let myAnsText = p.lastAnswer || "(未回答)";
-            if(p.lastAnswer !== null && currentQuestion.type === 'choice') {
-                const idx = parseInt(p.lastAnswer);
-                if(!isNaN(idx) && currentQuestion.c && currentQuestion.c[idx]) {
-                    myAnsText = currentQuestion.c[idx];
-                }
-            }
-            
-            let judgeHtml = '';
-            if (p.lastResult === 'win') {
-                judgeHtml = `<div style="background:#00b894; color:#fff; padding:10px; border-radius:8px; font-weight:bold; font-size:1.5em; text-align:center; margin-bottom:15px; border:2px solid #fff; box-shadow:0 0 15px #00b894;">⭕️ 正解！</div>`;
-            } else if (p.lastResult === 'lose') {
-                judgeHtml = `<div style="background:#e94560; color:#fff; padding:10px; border-radius:8px; font-weight:bold; font-size:1.5em; text-align:center; margin-bottom:15px; border:2px solid #fff; box-shadow:0 0 15px #e94560;">❌ 不正解...</div>`;
-            }
-
-            ansBox.innerHTML = `
-                ${judgeHtml}
-                <div style="background:#00bfff; color:#000; padding:15px; border-radius:8px; font-weight:bold; text-align:center; margin-top:10px;">
-                    <div style="font-size:0.8em; margin-bottom:5px;">正解 (ANSWER)</div>
-                    <div style="font-size:1.5em;">${correctText}</div>
-                </div>
-                <div style="background:#333; border:1px solid #555; color:#fff; padding:15px; border-radius:8px; font-weight:bold; text-align:center; margin-top:10px;">
-                    <div style="font-size:0.8em; margin-bottom:5px; color:#aaa;">あなたの回答 (YOUR ANSWER)</div>
-                    <div style="font-size:1.3em;">${myAnsText}</div>
-                </div>
-            `;
+            // 正解表示
+            renderResultScreen(p);
         }
     }
     else if (st.step === 'final_ranking') {
         showFinalResult(myRoomId, myPlayerId);
     }
+}
+
+// ★追加: 入力エリア（選択肢など）の有効/無効切り替え
+function toggleInputEnabled(enabled) {
+    const cont = document.getElementById('player-input-container');
+    if(!cont) return;
+    
+    if (enabled) {
+        cont.style.opacity = "1";
+        cont.style.pointerEvents = "auto";
+    } else {
+        cont.style.opacity = "0.4"; // 薄くする
+        cont.style.pointerEvents = "none"; // クリック禁止
+    }
+}
+
+function showLoserMessage(lobby, buzzArea) {
+    lobby.classList.remove('hidden');
+    lobby.innerHTML = `<div style="text-align:center; color:#e94560; font-weight:bold; font-size:1.5em; margin-top:30px;">❌ 不正解</div><p style="text-align:center; color:#aaa;">この問題の回答権はありません</p>`;
+    buzzArea.classList.add('hidden');
+    // クイズエリアは隠さない（見学できるように）
+}
+
+function handleNormalResponseUI(p, quizArea, waitMsg) {
+    // 既に回答済みなら待機表示
+    if (p.lastAnswer != null) {
+        if (roomConfig.normalLimit === 'unlimited') {
+            if (isReanswering) {
+                unlockChoices();
+                const area = document.getElementById('change-btn-area');
+                if(area) area.innerHTML = ''; 
+            } else {
+                lockChoices(p.lastAnswer);
+                renderChangeButton();
+            }
+        } else {
+            // 回答済み＆修正不可
+            quizArea.classList.add('hidden');
+            waitMsg.classList.remove('hidden');
+            waitMsg.style.background = "rgba(0, 184, 148, 0.2)";
+            waitMsg.style.color = "#00b894";
+            waitMsg.style.border = "1px solid #00b894";
+            waitMsg.style.padding = "15px";
+            waitMsg.textContent = "回答を受け付けました。発表を待っています...";
+        }
+    } else {
+        unlockChoices();
+        const area = document.getElementById('change-btn-area');
+        if(area) area.innerHTML = '';
+    }
+}
+
+function renderChangeButton() {
+    const inputCont = document.getElementById('player-input-container');
+    let changeBtnArea = document.getElementById('change-btn-area');
+    if (!changeBtnArea) {
+        changeBtnArea = document.createElement('div');
+        changeBtnArea.id = 'change-btn-area';
+        inputCont.parentNode.insertBefore(changeBtnArea, inputCont.nextSibling);
+    }
+    if (!document.getElementById('btn-change-ans')) {
+        changeBtnArea.innerHTML = `
+            <button id="btn-change-ans" class="btn-change-answer">
+                答えを変更する
+            </button>
+        `;
+        document.getElementById('btn-change-ans').onclick = openConfirmModal;
+    }
+}
+
+function renderResultScreen(p) {
+    const ansBox = document.getElementById('player-input-container');
+    let correctText = "";
+    if(currentQuestion.type === 'choice') {
+        if(Array.isArray(currentQuestion.correct)) correctText = currentQuestion.correct.map(i => currentQuestion.c[i]).join(' / ');
+        else correctText = currentQuestion.c[currentQuestion.correct];
+    } else if (currentQuestion.type === 'letter_select' && currentQuestion.steps) {
+        correctText = currentQuestion.steps.map(s => s.correct).join('');
+    } else {
+        correctText = currentQuestion.correct;
+    }
+
+    let myAnsText = p.lastAnswer || "(未回答)";
+    if(p.lastAnswer !== null && currentQuestion.type === 'choice') {
+        const idx = parseInt(p.lastAnswer);
+        if(!isNaN(idx) && currentQuestion.c && currentQuestion.c[idx]) {
+            myAnsText = currentQuestion.c[idx];
+        }
+    }
+    
+    let judgeHtml = '';
+    if (p.lastResult === 'win') {
+        judgeHtml = `<div style="background:#00b894; color:#fff; padding:10px; border-radius:8px; font-weight:bold; font-size:1.5em; text-align:center; margin-bottom:15px; border:2px solid #fff; box-shadow:0 0 15px #00b894;">⭕️ 正解！</div>`;
+    } else if (p.lastResult === 'lose') {
+        judgeHtml = `<div style="background:#e94560; color:#fff; padding:10px; border-radius:8px; font-weight:bold; font-size:1.5em; text-align:center; margin-bottom:15px; border:2px solid #fff; box-shadow:0 0 15px #e94560;">❌ 不正解...</div>`;
+    }
+
+    ansBox.innerHTML = `
+        ${judgeHtml}
+        <div style="background:#00bfff; color:#000; padding:15px; border-radius:8px; font-weight:bold; text-align:center; margin-top:10px;">
+            <div style="font-size:0.8em; margin-bottom:5px;">正解 (ANSWER)</div>
+            <div style="font-size:1.5em;">${correctText}</div>
+        </div>
+        <div style="background:#333; border:1px solid #555; color:#fff; padding:15px; border-radius:8px; font-weight:bold; text-align:center; margin-top:10px;">
+            <div style="font-size:0.8em; margin-bottom:5px; color:#aaa;">あなたの回答 (YOUR ANSWER)</div>
+            <div style="font-size:1.3em;">${myAnsText}</div>
+        </div>
+    `;
+    document.getElementById('question-text-disp').textContent = currentQuestion.q;
+    document.getElementById('player-quiz-area').classList.remove('hidden');
 }
 
 function showFinalResult(roomId, myId) {
@@ -323,49 +434,6 @@ function showFinalResult(roomId, myId) {
             list.appendChild(div);
         });
     });
-}
-
-function handleNormalResponseUI(p, quizArea, waitMsg) {
-    quizArea.classList.remove('hidden');
-    waitMsg.classList.add('hidden');
-
-    const inputCont = document.getElementById('player-input-container');
-    let changeBtnArea = document.getElementById('change-btn-area');
-    if (!changeBtnArea) {
-        changeBtnArea = document.createElement('div');
-        changeBtnArea.id = 'change-btn-area';
-        inputCont.parentNode.insertBefore(changeBtnArea, inputCont.nextSibling);
-    }
-
-    if (p.lastAnswer != null) {
-        if (roomConfig.normalLimit === 'unlimited') {
-            if (isReanswering) {
-                unlockChoices();
-                changeBtnArea.innerHTML = ''; 
-            } else {
-                lockChoices(p.lastAnswer);
-                if (!document.getElementById('btn-change-ans')) {
-                    changeBtnArea.innerHTML = `
-                        <button id="btn-change-ans" class="btn-change-answer">
-                            答えを変更する
-                        </button>
-                    `;
-                    document.getElementById('btn-change-ans').onclick = openConfirmModal;
-                }
-            }
-        } else {
-            quizArea.classList.add('hidden');
-            waitMsg.classList.remove('hidden');
-            waitMsg.style.background = "rgba(0, 184, 148, 0.2)";
-            waitMsg.style.color = "#00b894";
-            waitMsg.style.border = "1px solid #00b894";
-            waitMsg.style.padding = "15px";
-            waitMsg.textContent = "回答を受け付けました。発表を待っています...";
-        }
-    } else {
-        unlockChoices();
-        changeBtnArea.innerHTML = '';
-    }
 }
 
 function lockChoices(selectedIndex) {
