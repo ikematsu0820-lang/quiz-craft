@@ -1,6 +1,26 @@
 /* =========================================================
- * style_host.css (v90: Final Complete Version)
+ * style_host.css (v113: Complete Version with Modal & Fixes)
  * =======================================================*/
+
+/* ---------------------------------------------------
+   0. RESET & BASE FIXES (基本修正)
+   --------------------------------------------------- */
+/* ★重要: 入力・選択フォームの視認性修正 */
+input, select, textarea {
+    background-color: #333 !important;
+    color: #fff !important;
+    border: 1px solid #555 !important;
+}
+/* 選択肢の背景も黒くする（ブラウザ依存対策） */
+select option {
+    background-color: #333;
+    color: #fff;
+}
+/* プレースホルダーの色 */
+::placeholder {
+    color: #aaa;
+    opacity: 1;
+}
 
 /* ---------------------------------------------------
    1. UTILITIES (レイアウト・基本設定)
@@ -217,7 +237,7 @@
     width: 100%; margin-bottom: 20px; background: #111; padding: 15px; border-radius: 8px; border: 1px solid #444;
 }
 
-/* ★修正: プレビュー枠 (Flexboxで強制中央配置) */
+/* プレビュー枠 (Flexboxで強制中央配置) */
 .design-preview-frame {
     width: 100%; max-width: 800px; margin: 0 auto; 
     aspect-ratio: 16 / 9;
@@ -226,20 +246,13 @@
     overflow: hidden; 
     position: relative; 
     box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    
-    /* Flexboxで中身をど真ん中に */
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: flex; justify-content: center; align-items: center;
 }
 
-/* ★修正: 内部コンテンツ (絶対固定サイズ & FlexItem化) */
+/* 内部コンテンツ (絶対固定サイズ & FlexItem化) */
 #design-monitor-preview-content {
-    width: 1280px;
-    height: 720px;
-    flex-shrink: 0; /* 勝手に縮まないようにする */
-    background-color: #000;
-    overflow: hidden;
+    width: 1280px; height: 720px;
+    flex-shrink: 0; background-color: #000; overflow: hidden;
 }
 
 .design-toolbar {
@@ -285,15 +298,13 @@
 /* ---------------------------------------------------
    5. HOST STUDIO
    --------------------------------------------------- */
-/* 全体レイアウト */
 .host-studio-layout {
     display: flex; flex-direction: column;
     height: 100vh; padding: 0 !important;
-    background: #0a0a0a; /* 漆黒 */
-    overflow: hidden;
+    background: #0a0a0a; overflow: hidden;
 }
 
-/* A. ヘッダーバー */
+/* ヘッダーバー */
 .studio-header-bar {
     background: #111; border-bottom: 1px solid #333;
     padding: 10px 20px; display: flex; gap: 20px; align-items: center;
@@ -311,19 +322,14 @@
 }
 .text-cyan { color: #00bfff; text-shadow: 0 0 10px rgba(0,191,255,0.5); }
 .text-pink { color: #e94560; text-shadow: 0 0 10px rgba(233,69,96,0.5); }
-.ml-10 { margin-left: 10px; }
-
-/* ★追加: ROOM ID用 (金色 & クリック可) */
 .text-yellow {
-    color: #ffd700;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-    cursor: pointer;
-    user-select: all;
-    transition: all 0.2s;
+    color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    cursor: pointer; user-select: all; transition: all 0.2s;
 }
 .text-yellow:active { transform: scale(0.9); color: #fff; }
+.ml-10 { margin-left: 10px; }
 
-/* B. メインエリア */
+/* メインエリア */
 .studio-main-area {
     flex: 1; padding: 20px; overflow-y: auto;
     display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -331,28 +337,15 @@
 }
 .center-message { text-align: center; width: 100%; max-width: 500px; }
 
-/* ★追加: 待機画面の巨大IDボックス */
+/* 巨大IDボックス */
 .big-room-id-box {
-    background: #000;
-    border: 2px solid #ffd700;
-    padding: 15px 30px;
-    border-radius: 8px;
-    margin-bottom: 30px;
-    display: inline-block;
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
-    text-align: center;
-    min-width: 200px;
-    cursor: pointer;
-    transition: all 0.2s;
+    background: #000; border: 2px solid #ffd700;
+    padding: 15px 30px; border-radius: 8px; margin-bottom: 30px;
+    display: inline-block; box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    text-align: center; min-width: 200px; cursor: pointer; transition: all 0.2s;
 }
-.big-room-id-box:hover {
-    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-    transform: scale(1.02);
-}
-.big-room-id-box:active {
-    transform: scale(0.95);
-    background: #111;
-}
+.big-room-id-box:hover { box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); transform: scale(1.02); }
+.big-room-id-box:active { transform: scale(0.95); background: #111; }
 .big-room-id-box .label {
     display: block; font-size: 0.9em; color: #aaa; margin-bottom: 5px; font-weight: bold; letter-spacing: 2px;
 }
@@ -391,7 +384,7 @@
     padding: 15px; border-radius: 8px; color: #00bfff; font-weight: bold; font-size: 1.2em;
 }
 
-/* C. フッター操作エリア */
+/* フッター操作エリア */
 .studio-footer-controls {
     background: #111; border-top: 1px solid #333; padding: 15px 20px; z-index: 10;
 }
@@ -420,130 +413,128 @@
 }
 
 /* ---------------------------------------------------
-   6. ユーティリティ & 旧互換
+   6. ユーティリティ
    --------------------------------------------------- */
 .hidden { display: none !important; }
 .btn-mini { padding: 5px 10px; font-size: 0.9em; border-radius: 4px; cursor: pointer; }
 .delete-btn { background: #331111; color: #ff5555; border: 1px solid #ff5555; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-.btn-block { width: 100%; padding: 12px; font-size: 1em; border-radius: 6px; } /* 汎用 */
+.btn-block { width: 100%; padding: 12px; font-size: 1em; border-radius: 6px; }
 
-/* ★修正: スタジオ画面のセレクトボックス (強力版) */
+/* スタジオ画面のセレクトボックス (強力版) */
 #studio-program-select {
-    background-color: #333 !important; /* 背景色: ダークグレー */
-    color: #fff !important;            /* 文字色: 白 */
-    border: 1px solid #00bfff !important; /* 枠線: シアン */
-    padding: 10px 40px 10px 15px !important; /* 右側に矢印用の余白を確保 */
+    background-color: #333 !important;
+    color: #fff !important;
+    border: 1px solid #00bfff !important;
+    padding: 10px 40px 10px 15px !important;
     font-size: 1.1em !important;
     border-radius: 6px !important;
     height: 50px !important;
     cursor: pointer;
-    
-    /* ブラウザデフォルトのスタイルを無効化 */
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    appearance: none !important;
-
-    /* カスタム矢印アイコン (SVG) */
+    -webkit-appearance: none !important; -moz-appearance: none !important; appearance: none !important;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300bfff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
     background-repeat: no-repeat !important;
     background-position: right 15px center !important;
     background-size: 16px !important;
 }
-
-#studio-program-select option {
-    background-color: #333;
-    color: #fff;
-    padding: 10px;
-}
-
-#studio-program-select:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    border-color: #555 !important;
-    background-image: none !important; /* 無効時は矢印を消す */
-}
+#studio-program-select option { background-color: #333; color: #fff; padding: 10px; }
+#studio-program-select:disabled { opacity: 0.5; cursor: not-allowed; border-color: #555 !important; background-image: none !important; }
 
 /* 読み込んでセットボタン */
 #studio-load-program-btn {
     background: linear-gradient(135deg, #0055ff 0%, #0033aa 100%) !important;
-    font-weight: bold;
-    font-size: 1.2em;
-    box-shadow: 0 0 10px rgba(0, 85, 255, 0.5);
-    color: white !important;
-    border: none !important;
-    margin-top: 15px; /* 上に少し余白 */
+    font-weight: bold; font-size: 1.2em; box-shadow: 0 0 10px rgba(0, 85, 255, 0.5);
+    color: white !important; border: none !important; margin-top: 15px;
 }
-#studio-load-program-btn:disabled {
-    background: #555 !important;
-    box-shadow: none;
-    cursor: not-allowed;
-}
-/* --- style_host.css 末尾に追加: 文字選択式エディタ用 --- */
+#studio-load-program-btn:disabled { background: #555 !important; box-shadow: none; cursor: not-allowed; }
 
-/* ステップ一覧（「あ」「か」＋ ボタン） */
+/* ---------------------------------------------------
+   7. 文字選択式エディタ (新規追加)
+   --------------------------------------------------- */
+/* ステップ一覧 */
 .letter-step-list {
     display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-    background: #252525; padding: 15px; border-radius: 8px; border: 1px solid #444;
+    background: #252525; padding: 20px; border-radius: 8px; border: 1px solid #444;
+    min-height: 80px;
 }
 .letter-step-item {
-    width: 50px; height: 50px; background: #fff; color: #333;
-    font-size: 24px; font-weight: bold; border-radius: 8px; border: 2px solid #ccc;
+    width: 60px; height: 60px; background: #fff; color: #333;
+    font-size: 28px; font-weight: bold; border-radius: 10px; border: 3px solid #ccc;
     display: flex; justify-content: center; align-items: center; cursor: pointer;
-    transition: all 0.2s;
+    box-shadow: 0 4px 0 #bbb; transition: all 0.1s; position: relative;
 }
-.letter-step-item:hover { transform: translateY(-2px); border-color: #00bfff; }
+.letter-step-item:active { transform: translateY(4px); box-shadow: 0 0 0 #bbb; }
+.letter-step-item:hover { border-color: #ffa500; }
+
+.step-badge {
+    position: absolute; top: -8px; left: -8px; 
+    background: #333; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px;
+}
+
 .letter-step-add-btn {
-    width: 50px; height: 50px; border-radius: 50%; background: #fff; border: 2px solid #ccc;
-    font-size: 30px; color: #333; display: flex; justify-content: center; align-items: center;
+    width: 60px; height: 60px; border-radius: 50%; 
+    background: #444; border: 2px dashed #888;
+    font-size: 30px; color: #fff; display: flex; justify-content: center; align-items: center;
     cursor: pointer; transition: all 0.2s;
 }
-.letter-step-add-btn:hover { background: #eee; }
+.letter-step-add-btn:hover { background: #555; border-color: #fff; }
 
-/* 編集モーダル（オレンジのヘッダー風） */
+/* 編集モーダル */
 .letter-modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8); z-index: 9999;
-    display: flex; justify-content: center; align-items: center;
+    background: rgba(0,0,0,0.85); z-index: 10000;
+    display: flex; justify-content: center; align-items: center; backdrop-filter: blur(2px);
 }
 .letter-modal-window {
-    background: #fff; width: 90%; max-width: 400px; border-radius: 12px; overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-family: sans-serif;
+    background: #fff; width: 95%; max-width: 450px; 
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8); font-family: sans-serif;
+    animation: popIn 0.2s ease-out;
 }
+@keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
 .letter-modal-header {
-    background: #ffa500; padding: 15px; color: #fff; font-weight: bold; font-size: 1.2em;
-    text-align: center; position: relative;
+    background: #ffa500; padding: 15px 20px; color: #fff; 
+    font-weight: bold; font-size: 1.2em;
     display: flex; justify-content: space-between; align-items: center;
 }
 .letter-modal-close {
-    background: none; border: none; color: #fff; font-size: 1.5em; cursor: pointer;
-}
-.letter-modal-body { padding: 20px; background: #f9f9f9; color: #333; }
-
-/* 正解・不正解ラベル */
-.tag-correct {
-    display: inline-block; background: #333; color: #fff; padding: 4px 10px; font-size: 0.8em;
-    border-left: 5px solid #ff3333; margin-bottom: 5px; font-weight: bold;
-}
-.tag-wrong {
-    display: inline-block; background: #333; color: #fff; padding: 4px 10px; font-size: 0.8em;
-    border-left: 5px solid #00bfff; margin-bottom: 5px; margin-top: 15px; font-weight: bold;
+    background: rgba(255,255,255,0.2); border: none; color: #fff; 
+    width: 30px; height: 30px; border-radius: 50%;
+    font-size: 1.2em; cursor: pointer; display: flex; justify-content: center; align-items: center;
 }
 
-/* 入力ボックス */
+.letter-modal-body { padding: 25px; background: #fdfdfd; color: #333; }
+
+.tag-label {
+    display: inline-block; padding: 4px 12px; font-size: 0.85em; font-weight: bold;
+    color: #fff; margin-bottom: 8px; border-radius: 4px;
+}
+.tag-correct { background: #333; border-left: 6px solid #e94560; }
+.tag-wrong { background: #333; border-left: 6px solid #00bfff; margin-top: 20px; }
+
 .char-input-box {
-    width: 60px; height: 60px; font-size: 30px; text-align: center;
-    border: 2px solid #ddd; border-radius: 8px; outline: none; background: #fff;
-    font-weight: bold; color: #333;
+    width: 70px; height: 70px; font-size: 32px; text-align: center;
+    border: 2px solid #ddd !important; border-radius: 12px; outline: none; background: #fff !important; color: #333 !important;
+    font-weight: bold; box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
 }
-.char-input-box:focus { border-color: #ffa500; }
+.char-input-box:focus { border-color: #ffa500 !important; background: #fffaf0 !important; }
 
-.dummy-grid {
-    display: flex; gap: 10px; flex-wrap: wrap;
-}
+.dummy-grid { display: flex; gap: 10px; justify-content: flex-start; }
 
 .letter-modal-footer {
-    padding: 15px; display: flex; justify-content: space-between; gap: 10px;
-    border-top: 1px solid #eee; background: #fff;
+    padding: 15px 25px; display: flex; justify-content: space-between; gap: 15px;
+    border-top: 1px solid #eee; background: #f9f9f9;
 }
-.btn-save-modal { background: #333; color: #fff; padding: 10px 20px; border-radius: 30px; border: none; font-weight: bold; flex: 1; cursor: pointer; }
-.btn-delete-modal { background: #ff4d4d; color: #fff; padding: 10px 20px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; }
+.btn-save-modal { 
+    background: #333; color: #fff; padding: 12px 0; border-radius: 8px; 
+    border: none; font-weight: bold; flex: 2; cursor: pointer; font-size: 1em;
+    box-shadow: 0 4px 0 #111; transition: transform 0.1s;
+}
+.btn-save-modal:active { transform: translateY(4px); box-shadow: 0 0 0 #111; }
+
+.btn-delete-modal { 
+    background: #ff4d4d; color: #fff; padding: 12px 0; border-radius: 8px; 
+    border: none; font-weight: bold; flex: 1; cursor: pointer; font-size: 1em;
+    box-shadow: 0 4px 0 #cc0000;
+}
+.btn-delete-modal:active { transform: translateY(4px); box-shadow: 0 0 0 #cc0000; }
