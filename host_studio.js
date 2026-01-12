@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v114: Complete Version)
+ * host_studio.js (v114: Fix Preview Crash & Letter Support)
  * =======================================================*/
 
 App.Studio = {
@@ -312,7 +312,7 @@ App.Studio = {
         document.getElementById('studio-correct-display').classList.add('hidden');
     },
 
-    // ★重要: 文字選択式に対応したプレビュー描画
+    // ★重要: 文字選択式に対応したプレビュー描画 (ここがエラー原因でした)
     renderQuestionMonitor: function(q) {
         if(!q) return;
         document.getElementById('studio-q-text').textContent = q.q;
