@@ -1,5 +1,5 @@
 /* =========================================================
- * viewer.js (v134: Full Features + Smart Standby)
+ * viewer.js (v135: Final Ranking Added)
  * =======================================================*/
 
 // --- Monitor App ---
@@ -61,7 +61,6 @@ window.App.Viewer = {
 
         refs.config.on('value', snap => {
             this.config = snap.val() || {};
-            // 背景設定などを即時反映したい場合はここに記述
         });
 
         refs.questions.on('value', snap => {
@@ -90,19 +89,17 @@ window.App.Viewer = {
         });
         document.getElementById('viewer-sub-text').innerHTML = '';
 
-        // レースモードの場合の表示
         if(this.config.gameType === 'race') {
             document.getElementById('viewer-race-area').classList.remove('hidden');
             this.updateViewerRace();
         }
 
-        // --- 1. STANDBY (待機中) ---
+        // --- 1. STANDBY ---
         if (st.step === 'standby') {
             statusDiv.textContent = "STANDBY";
             this.applyDefaultDesign(viewContainer, null);
             
             if (st.qIndex === 0) {
-                // ★1問目: 番組タイトル表示
                 const title = st.programTitle || this.config.periodTitle || "Quiz Studio";
                 mainText.innerHTML = `
                     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; width:100%;">
@@ -115,7 +112,6 @@ window.App.Viewer = {
                     <style>@keyframes pulse { 0%{opacity:0.6;} 50%{opacity:1;} 100%{opacity:0.6;} }</style>
                 `;
             } else {
-                // ★2問目以降: NEXT QUESTION 表示
                 mainText.innerHTML = `
                     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; width:100%;">
                         <div style="font-size:4vw; font-weight:bold; color:#00bfff; letter-spacing:0.1em; margin-bottom:10px;">NEXT QUESTION</div>
@@ -125,7 +121,7 @@ window.App.Viewer = {
                 `;
             }
         } 
-        // --- 2. READY (開始直前) ---
+        // --- 2. READY ---
         else if (st.step === 'ready') {
             statusDiv.textContent = "READY";
             const q = this.questions[st.qIndex] || {};
@@ -139,11 +135,10 @@ window.App.Viewer = {
                 </div>
             `;
         }
-        // --- 3. QUESTION / ANSWERING (出題中) ---
+        // --- 3. QUESTION / ANSWERING ---
         else if (st.step === 'question' || st.step === 'answering') {
             statusDiv.textContent = `Q${st.qIndex + 1}`;
             
-            // タイマーバー
             if (st.timeLimit) {
                 const timerArea = document.getElementById('viewer-timer-bar-area');
                 const timerBar = document.getElementById('viewer-timer-bar');
@@ -156,7 +151,6 @@ window.App.Viewer = {
                     timerBar.style.width = '0%';
                 }, 50);
             }
-            // 早押し受付表示
             if (st.step === 'answering' && this.config.mode === 'buzz') {
                  statusDiv.textContent = "早押し受付中！";
                  statusDiv.style.color = "#ff9800";
@@ -168,7 +162,7 @@ window.App.Viewer = {
                 if(q.type === 'multi') this.renderMultiGrid(q, st.multiState);
             }
         } 
-        // --- 4. ANSWER / RESULT (正解発表) ---
+        // --- 4. ANSWER / RESULT ---
         else if (st.step === 'answer' || st.step === 'result') {
             statusDiv.textContent = "ANSWER";
             const q = this.questions[st.qIndex];
@@ -192,7 +186,13 @@ window.App.Viewer = {
                 }
             }
         } 
-        // --- 5. PANEL / BOMB (特殊モード) ---
+        // --- 5. FINAL RANKING (★追加) ---
+        else if (st.step === 'final_ranking') {
+            statusDiv.textContent = "FINALE";
+            this.applyDefaultDesign(viewContainer, null);
+            this.renderFinalRanking(mainText);
+        }
+        // --- 6. OTHERS ---
         else if (st.step === 'panel') {
             statusDiv.textContent = "PANEL";
             this.applyDefaultDesign(viewContainer, null);
@@ -205,6 +205,49 @@ window.App.Viewer = {
             mainText.innerHTML = '';
             this.renderBombGrid(st.cards);
         }
+    },
+
+    // ★追加: 最終結果ランキング表示
+    renderFinalRanking: function(container) {
+        window.db.ref(`rooms/${this.roomId}/players`).once('value', snap => {
+            const players = snap.val() || {};
+            const arr = Object.values(players).map(p => ({
+                name: p.name,
+                score: p.periodScore || 0
+            })).sort((a,b) => b.score - a.score);
+
+            let html = `
+                <div style="text-align:center; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                    <h1 style="font-size:6vh; color:#ffd700; text-shadow:0 0 20px #ffd700; margin-bottom:4vh;">FINAL RESULTS</h1>
+                    <div style="width:70%; max-width:1000px; background:rgba(0,0,0,0.5); padding:20px; border-radius:10px;">
+            `;
+
+            arr.slice(0, 5).forEach((p, i) => {
+                let rankColor = "#fff";
+                let size = "3vh";
+                let medal = "";
+                
+                if (i===0) { rankColor = "#ffd700"; size = "5vh"; medal = "👑"; }
+                else if (i===1) { rankColor = "#c0c0c0"; size = "4vh"; medal = "🥈"; }
+                else if (i===2) { rankColor = "#cd7f32"; size = "4vh"; medal = "🥉"; }
+
+                html += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:15px; border-bottom:1px solid #444; font-size:${size}; color:${rankColor}; animation:slideIn ${0.5 + i*0.2}s ease-out;">
+                        <div style="font-weight:bold; width:10%;">${i+1}</div>
+                        <div style="flex:1; text-align:left; padding-left:20px;">${medal} ${p.name}</div>
+                        <div style="font-weight:900;">${p.score} <span style="font-size:0.6em;">pts</span></div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                    <div style="margin-top:30px; font-size:2vh; color:#aaa;">CONGRATULATIONS!</div>
+                </div>
+                <style>@keyframes slideIn { from { opacity:0; transform:translateX(-50px); } to { opacity:1; transform:translateX(0); } }</style>
+            `;
+            container.innerHTML = html;
+        });
     },
 
     renderQuestionLayout: function(container, contentBox, q) {
