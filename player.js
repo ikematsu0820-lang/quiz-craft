@@ -1,5 +1,5 @@
 /* =========================================================
- * player.js (v131: Fix Buzz Button)
+ * player.js (v132: Final Result Display)
  * =======================================================*/
 
 let myRoomId = null;
@@ -14,21 +14,15 @@ let localStatus = { step: 'standby' };
 let localPlayerData = { isAlive: true, lastResult: null };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 参加ボタン
-    const joinBtn = document.getElementById('join-room-btn');
-    if(joinBtn) joinBtn.onclick = joinRoom;
+    const btn = document.getElementById('join-room-btn');
+    if(btn) btn.onclick = joinRoom;
 
-    // ★修正: 早押しボタンのイベント追加
     const buzzBtn = document.getElementById('player-buzz-btn');
     if(buzzBtn) {
         buzzBtn.addEventListener('click', () => {
             if(!myRoomId || !myPlayerId) return;
-            
-            // 連打防止の即時UI更新
             buzzBtn.disabled = true;
             buzzBtn.textContent = "送信中...";
-            
-            // サーバーに書き込み
             window.db.ref(`rooms/${myRoomId}/players/${myPlayerId}`).update({
                 buzzTime: firebase.database.ServerValue.TIMESTAMP
             });
@@ -152,6 +146,9 @@ function updateUI() {
     const buzzArea = document.getElementById('player-buzz-area');
     const oralArea = document.getElementById('player-oral-done-area');
     const changeArea = document.getElementById('change-btn-area');
+    
+    // ★追加: ランキングオーバーレイの取得
+    const rankingOverlay = document.getElementById('player-ranking-overlay');
 
     // 初期化（隠す）
     lobby.classList.add('hidden');
@@ -162,6 +159,7 @@ function updateUI() {
     }
     waitMsg.classList.add('hidden');
     resultOverlay.classList.add('hidden');
+    rankingOverlay.classList.add('hidden'); // ★隠す
 
     // --- 状態ごとの表示 ---
     
@@ -180,42 +178,30 @@ function updateUI() {
     else if (st.step === 'question') {
         if (roomConfig.mode === 'buzz') {
             buzzArea.classList.remove('hidden');
-            // まだ押せない状態なら無効化などの処理も可
         } else {
             handleNormalResponseUI(p, quizArea, waitMsg);
         }
     }
     else if (st.step === 'answering') {
         if (roomConfig.mode === 'buzz') {
-            // 早押しモード
             if (st.isBuzzActive) {
-                // 早押し受付中
                 buzzArea.classList.remove('hidden');
                 const btn = document.getElementById('player-buzz-btn');
                 if (p.buzzTime) {
-                    // 自分が押したあと（判定待ち）
-                    btn.disabled = true; 
-                    btn.textContent = "承認待ち...";
-                    btn.style.background = "#555";
+                    btn.disabled = true; btn.textContent = "承認待ち..."; btn.style.background = "#555";
                 } else {
-                    // まだ押していない
-                    btn.disabled = false; 
-                    btn.textContent = "PUSH!";
-                    btn.style.background = "radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b)";
+                    btn.disabled = false; btn.textContent = "PUSH!"; btn.style.background = "radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b)";
                 }
             } else if (st.currentAnswerer === myPlayerId) {
-                // 自分が回答権を得た！
                 quizArea.classList.remove('hidden'); 
                 buzzArea.classList.add('hidden');
             } else {
-                // 他の人が回答中（押し負け）
                 lobby.classList.remove('hidden');
                 lobby.innerHTML = `<h3>LOCKED</h3><p style="color:#e94560; font-weight:bold;">他のプレイヤーが回答中...</p>`;
                 quizArea.classList.add('hidden');
                 buzzArea.classList.add('hidden');
             }
         } else {
-            // 通常モード
             handleNormalResponseUI(p, quizArea, waitMsg);
         }
     }
@@ -256,7 +242,6 @@ function updateUI() {
                 }
             }
             
-            // 合否判定表示
             let judgeHtml = '';
             if (p.lastResult === 'win') {
                 judgeHtml = `<div style="background:#00b894; color:#fff; padding:10px; border-radius:8px; font-weight:bold; font-size:1.5em; text-align:center; margin-bottom:15px; border:2px solid #fff; box-shadow:0 0 15px #00b894;">⭕️ 正解！</div>`;
@@ -277,6 +262,54 @@ function updateUI() {
             `;
         }
     }
+    // ★追加: 最終結果発表
+    else if (st.step === 'final_ranking') {
+        showFinalResult(myRoomId, myPlayerId);
+    }
+}
+
+// ★追加: 最終結果表示ロジック
+function showFinalResult(roomId, myId) {
+    const overlay = document.getElementById('player-ranking-overlay');
+    overlay.classList.remove('hidden');
+    
+    // データ取得してランキング計算
+    window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
+        const players = snap.val() || {};
+        const arr = Object.keys(players).map(k => ({
+            id: k,
+            name: players[k].name,
+            score: players[k].periodScore || 0
+        })).sort((a,b) => b.score - a.score);
+
+        // 自分の順位を探す
+        const myRankIdx = arr.findIndex(p => p.id === myId);
+        const myData = arr[myRankIdx];
+        
+        if (myData) {
+            document.getElementById('player-my-rank').textContent = `${myRankIdx + 1}位`;
+            document.getElementById('player-my-score').textContent = `${myData.score}点`;
+        }
+
+        // 上位表示
+        const list = document.getElementById('player-leaderboard');
+        list.innerHTML = '';
+        arr.slice(0, 5).forEach((p, i) => {
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.justifyContent = 'space-between';
+            div.style.padding = '8px';
+            div.style.borderBottom = '1px solid #444';
+            div.style.color = (p.id === myId) ? '#00bfff' : '#fff';
+            div.style.fontWeight = (p.id === myId) ? 'bold' : 'normal';
+            
+            div.innerHTML = `
+                <span>${i+1}. ${p.name}</span>
+                <span>${p.score}pt</span>
+            `;
+            list.appendChild(div);
+        });
+    });
 }
 
 function handleNormalResponseUI(p, quizArea, waitMsg) {
