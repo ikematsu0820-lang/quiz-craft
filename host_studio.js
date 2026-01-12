@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v114: Fix Preview Crash & Letter Support)
+ * host_studio.js (v115: Robust & Safe Version)
  * =======================================================*/
 
 App.Studio = {
@@ -126,7 +126,16 @@ App.Studio = {
                 btnMain.textContent = "番組を開始 (START PROGRAM)";
                 btnMain.classList.remove('hidden');
                 btnMain.className = 'btn-block btn-large-action action-ready';
-                btnMain.onclick = () => this.setupPeriod(0);
+                
+                // ★修正: エラーハンドリングを追加
+                btnMain.onclick = () => {
+                    try {
+                        this.setupPeriod(0);
+                    } catch(e) {
+                        alert("エラーが発生しました: " + e.message);
+                        console.error(e);
+                    }
+                };
 
             } catch(e) { alert("データの読み込みに失敗しました"); }
         };
@@ -163,12 +172,15 @@ App.Studio = {
         document.getElementById('studio-standby-panel').classList.add('hidden');
         document.getElementById('studio-question-panel').classList.remove('hidden');
         
+        // ★修正: パネル操作盤がない場合でもエラーにしない
         const panelCtrl = document.getElementById('studio-panel-control');
-        if (item.config.gameType === 'panel') {
-            panelCtrl.classList.remove('hidden');
-            this.renderPanelControl();
-        } else {
-            panelCtrl.classList.add('hidden');
+        if (panelCtrl) {
+            if (item.config.gameType === 'panel') {
+                panelCtrl.classList.remove('hidden');
+                this.renderPanelControl();
+            } else {
+                panelCtrl.classList.add('hidden');
+            }
         }
 
         this.renderTimeline();
@@ -312,7 +324,6 @@ App.Studio = {
         document.getElementById('studio-correct-display').classList.add('hidden');
     },
 
-    // ★重要: 文字選択式に対応したプレビュー描画 (ここがエラー原因でした)
     renderQuestionMonitor: function(q) {
         if(!q) return;
         document.getElementById('studio-q-text').textContent = q.q;
@@ -379,6 +390,9 @@ App.Studio = {
 
     renderPanelControl: function() {
         const grid = document.getElementById('studio-panel-grid');
+        // ★修正: 要素がない場合は処理しない
+        if(!grid) return;
+        
         grid.innerHTML = '';
         this.panelState.forEach((color, i) => {
             const btn = document.createElement('button');
@@ -403,7 +417,8 @@ App.Studio = {
     setPanelColor: function(colorCode) {
         this.selectedPanelColor = colorCode;
         const names = ["クリア(黒)", "Red", "Green", "White", "Blue"];
-        document.getElementById('panel-selected-color').textContent = names[colorCode];
+        const disp = document.getElementById('panel-selected-color');
+        if(disp) disp.textContent = names[colorCode];
         document.querySelectorAll('.p-btn').forEach(b => b.style.border = '1px solid #555');
     },
 
