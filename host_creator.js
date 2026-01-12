@@ -1,5 +1,5 @@
 /* =========================================================
- * host_creator.js (v110: Letter Panel & Manual Dummy Support)
+ * host_creator.js (v111: Step-by-Step Letter Editor)
  * =======================================================*/
 
 // ★ 安全装置
@@ -8,12 +8,14 @@ window.App = window.App || {};
 window.App.Creator = {
     editingIndex: null,
     editingTitle: "",
+    currentLetterSteps: [], // ★追加: 文字選択式のステップデータ管理用
 
     init: function() {
         this.editingIndex = null;
         this.editingTitle = "";
         window.App.Data.createdQuestions = [];
         window.App.State.editingSetId = null;
+        this.currentLetterSteps = [];
 
         const btnSave = document.getElementById('save-to-cloud-btn');
         if(btnSave) btnSave.textContent = APP_TEXT.Creator.BtnSave;
@@ -39,7 +41,7 @@ window.App.Creator = {
 
         const opts = [
             { v: 'choice', t: APP_TEXT.Creator.TypeChoice },
-            { v: 'letter_select', t: '文字選択 (Letter Panel)' }, // ★追加
+            { v: 'letter_select', t: '文字選択 (Letter Panel)' },
             { v: 'sort', t: APP_TEXT.Creator.TypeSort },
             { v: 'free_oral', t: APP_TEXT.Creator.TypeFreeOral },
             { v: 'free_written', t: APP_TEXT.Creator.TypeFreeWritten },
@@ -92,6 +94,7 @@ window.App.Creator = {
 
     resetForm: function() {
         this.editingIndex = null;
+        this.currentLetterSteps = []; // リセット
         document.getElementById('creator-form-title').textContent = APP_TEXT.Creator.HeadingNewQ;
         document.getElementById('add-question-btn').classList.remove('hidden');
         document.getElementById('update-question-area').classList.add('hidden');
@@ -118,23 +121,28 @@ window.App.Creator = {
 
             this.createAddBtn(container, APP_TEXT.Creator.BtnAddChoice, () => this.addChoiceInput(choicesDiv));
         } 
-        // ★追加: 文字選択式の入力フォーム
+        
+        // ★修正: 文字選択式 (ステップ入力UI)
         else if (type === 'letter_select') {
-            const correctVal = (data && data.correct) ? data.correct : '';
-            const dummyVal = (data && data.dummyChars) ? data.dummyChars : '';
-            
+            // データがあれば読み込む
+            if (data && data.steps) {
+                this.currentLetterSteps = JSON.parse(JSON.stringify(data.steps));
+            } else if (this.currentLetterSteps.length === 0) {
+                // 新規なら空っぽ
+                this.currentLetterSteps = [];
+            }
+
             container.innerHTML = `
                 <div class="mb-10">
-                    <label class="config-label">正解の言葉 (Correct Word)</label>
-                    <input type="text" id="creator-letter-correct" class="btn-block" placeholder="例: キャビア" value="${correctVal}">
-                </div>
-                <div class="mb-10">
-                    <label class="config-label" style="color:#e94560;">ダミー文字 (Dummy Chars)</label>
-                    <input type="text" id="creator-letter-dummy" class="btn-block" placeholder="例: トフグラ (誤答を誘う文字)" value="${dummyVal}">
-                    <p class="text-sm text-gray" style="margin-top:5px;">※プレイヤー画面には、正解とダミーがシャッフルされて表示されます。</p>
+                    <label class="config-label">解答ステップ作成</label>
+                    <p class="text-sm text-gray mb-5">1文字ずつ正解とダミーを設定してください。</p>
+                    <div id="letter-step-container" class="letter-step-list">
+                        </div>
                 </div>
             `;
+            this.renderLetterStepList();
         }
+
         else if (type === 'sort') {
             const initVal = data ? data.initialOrder : 'random';
             container.innerHTML = `
@@ -151,7 +159,7 @@ window.App.Creator = {
 
             this.createAddBtn(container, APP_TEXT.Creator.BtnAddSort, () => this.addSortInput(sortDiv));
         }
-        else if (type === 'free_written' || type === 'free_oral') {
+        else if (type.startsWith('free')) {
             container.innerHTML = `<p class="text-sm text-gray mb-5">${APP_TEXT.Creator.DescText}</p>`;
             const input = document.createElement('input');
             input.type = 'text';
@@ -174,48 +182,126 @@ window.App.Creator = {
         }
     },
 
+    // ★追加: ステップ一覧描画
+    renderLetterStepList: function() {
+        const list = document.getElementById('letter-step-container');
+        if(!list) return;
+        list.innerHTML = '';
+
+        // 既存ステップの表示
+        this.currentLetterSteps.forEach((step, i) => {
+            const btn = document.createElement('div');
+            btn.className = 'letter-step-item';
+            btn.textContent = step.correct || '?';
+            btn.onclick = () => this.openLetterModal(i);
+            list.appendChild(btn);
+        });
+
+        // 「＋」ボタン
+        const addBtn = document.createElement('div');
+        addBtn.className = 'letter-step-add-btn';
+        addBtn.textContent = '+';
+        addBtn.onclick = () => this.openLetterModal(this.currentLetterSteps.length);
+        list.appendChild(addBtn);
+    },
+
+    // ★追加: 編集モーダルを開く
+    openLetterModal: function(index) {
+        const isNew = (index >= this.currentLetterSteps.length);
+        const data = isNew ? { correct: '', dummies: ['', '', ''] } : this.currentLetterSteps[index];
+        const dummies = data.dummies || ['', '', ''];
+        
+        // 足りない分を補完
+        while(dummies.length < 3) dummies.push('');
+
+        const modalHtml = `
+            <div id="letter-modal" class="letter-modal-overlay">
+                <div class="letter-modal-window">
+                    <div class="letter-modal-header">
+                        <span>解答選択肢 ${index + 1}/${isNew ? index+1 : this.currentLetterSteps.length}</span>
+                        <button class="letter-modal-close" onclick="document.getElementById('letter-modal').remove()">×</button>
+                    </div>
+                    <div class="letter-modal-body">
+                        <div class="tag-correct">正解</div>
+                        <div style="margin-bottom:10px;">
+                            <input type="text" id="modal-input-correct" class="char-input-box" value="${data.correct}" maxlength="1" placeholder="あ">
+                        </div>
+
+                        <div class="tag-wrong">不正解 (ダミー)</div>
+                        <div class="dummy-grid">
+                            <input type="text" class="char-input-box modal-input-dummy" value="${dummies[0]}" maxlength="1" placeholder="い">
+                            <input type="text" class="char-input-box modal-input-dummy" value="${dummies[1]}" maxlength="1" placeholder="う">
+                            <input type="text" class="char-input-box modal-input-dummy" value="${dummies[2]}" maxlength="1" placeholder="え">
+                        </div>
+                    </div>
+                    <div class="letter-modal-footer">
+                        ${!isNew ? '<button id="modal-btn-delete" class="btn-delete-modal">削除</button>' : '<div style="flex:1;"></div>'}
+                        <button id="modal-btn-save" class="btn-save-modal">保存 / 閉じる</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // ボタンイベント
+        document.getElementById('modal-btn-save').onclick = () => {
+            const correct = document.getElementById('modal-input-correct').value.trim();
+            const dummyInputs = document.querySelectorAll('.modal-input-dummy');
+            const newDummies = [];
+            dummyInputs.forEach(inp => { if(inp.value.trim()) newDummies.push(inp.value.trim()); });
+
+            if(!correct) return alert("正解文字は必須です");
+
+            const stepData = { correct: correct, dummies: newDummies };
+            
+            if(isNew) this.currentLetterSteps.push(stepData);
+            else this.currentLetterSteps[index] = stepData;
+
+            this.renderLetterStepList();
+            document.getElementById('letter-modal').remove();
+        };
+
+        if(!isNew) {
+            document.getElementById('modal-btn-delete').onclick = () => {
+                if(confirm("このステップを削除しますか？")) {
+                    this.currentLetterSteps.splice(index, 1);
+                    this.renderLetterStepList();
+                    document.getElementById('letter-modal').remove();
+                }
+            };
+        }
+    },
+
+    // 既存の関数群...
     addChoiceInput: function(parent, index, text="", checked=false) {
         if (parent.children.length >= 20) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
-        
         const row = document.createElement('div');
         row.className = 'choice-row flex-center gap-5 p-5';
-        
         const chk = document.createElement('input');
         chk.type = 'checkbox';
         chk.className = 'choice-correct-chk';
         chk.checked = checked;
         chk.style.display = 'none';
-
         const labelBtn = document.createElement('div');
         labelBtn.className = 'choice-label-btn';
         if(checked) labelBtn.classList.add('active');
-        
         labelBtn.onclick = () => {
             chk.checked = !chk.checked;
             if(chk.checked) labelBtn.classList.add('active');
             else labelBtn.classList.remove('active');
         };
-
         const inp = document.createElement('input');
         inp.type = 'text';
         inp.className = 'choice-text-input flex-1';
         inp.placeholder = 'Choice';
         inp.value = text;
-
         const delBtn = document.createElement('button');
         delBtn.textContent = '×';
         delBtn.className = 'btn-mini btn-dark w-30';
-        delBtn.onclick = () => {
-            row.remove();
-            this.updateLabels(parent);
-        };
-
-        row.appendChild(chk);
-        row.appendChild(labelBtn);
-        row.appendChild(inp);
-        row.appendChild(delBtn);
+        delBtn.onclick = () => { row.remove(); this.updateLabels(parent); };
+        row.appendChild(chk); row.appendChild(labelBtn); row.appendChild(inp); row.appendChild(delBtn);
         parent.appendChild(row);
-        
         this.updateLabels(parent);
     },
 
@@ -275,21 +361,19 @@ window.App.Creator = {
                 }
             });
             if(opts.length < 2 || corr.length === 0) { alert(APP_TEXT.Creator.AlertLessChoice); return null; }
-            newQ.c = opts; 
-            newQ.correct = corr; 
-            newQ.correctIndex = corr[0];
+            newQ.c = opts; newQ.correct = corr; newQ.correctIndex = corr[0];
             newQ.multi = (corr.length > 1);
             
         } 
-        // ★追加: 文字選択式のデータ保存
+        // ★修正: 文字選択式のデータ保存
         else if (type === 'letter_select') {
-            const correct = document.getElementById('creator-letter-correct').value.trim();
-            const dummy = document.getElementById('creator-letter-dummy').value.trim();
-            
-            if(!correct) { alert("正解の言葉を入力してください"); return null; }
-            
-            newQ.correct = correct;
-            newQ.dummyChars = dummy; // ダミー文字を保存
+            if (this.currentLetterSteps.length === 0) {
+                alert("少なくとも1文字のステップを作成してください");
+                return null;
+            }
+            newQ.steps = this.currentLetterSteps;
+            // 一応互換性のためCorrect文字列も作っておく
+            newQ.correct = this.currentLetterSteps.map(s => s.correct).join('');
             
         } else if (type === 'sort') {
             const opts = [];
@@ -371,7 +455,6 @@ window.App.Creator = {
         window.App.Data.createdQuestions.forEach((q, i) => {
             const div = document.createElement('div');
             div.className = 'q-list-item flex-between';
-            
             // ★アイコンに文字選択を追加
             let icon = '🔳';
             if (q.type === 'letter_select') icon = '🔠';
