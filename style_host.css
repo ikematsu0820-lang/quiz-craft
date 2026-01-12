@@ -581,3 +581,53 @@ select option {
 .login-form-area button:active {
     transform: scale(0.98);
 }
+/* --- モニターログイン画面のレイアウト完全修正 --- */
+.login-form-area {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 60px 20px !important;
+    height: auto !important;
+    min-height: 500px !important; /* 高さを確保 */
+}
+
+/* タイトル "Monitor" */
+.login-form-area h1 {
+    font-size: 4em !important;
+    margin: 0 0 10px 0 !important;
+    line-height: 1.1 !important;
+    position: static !important;
+}
+
+/* サブタイトル "モニター用接続" */
+.login-form-area p {
+    font-size: 1.2em !important;
+    color: #00bfff !important;
+    font-weight: bold !important;
+    margin: 0 0 50px 0 !important; /* ★ここを大きく空けて入力欄との被りを防ぐ */
+    position: static !important;
+    display: block !important;
+}
+
+/* 入力ボックス */
+.login-form-area input {
+    width: 100% !important;
+    max-width: 400px !important;
+    font-size: 1.5em !important;
+    padding: 15px !important;
+    margin: 0 0 30px 0 !important; /* 下に余白 */
+    height: auto !important;
+    position: static !important;
+    text-align: center !important;
+}
+
+/* 接続ボタン */
+.login-form-area button {
+    width: 100% !important;
+    max-width: 400px !important;
+    padding: 18px !important;
+    font-size: 1.3em !important;
+    margin: 0 !important;
+    position: static !important;
+}
