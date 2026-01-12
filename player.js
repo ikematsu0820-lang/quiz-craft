@@ -1,5 +1,5 @@
 /* =========================================================
- * player.js (v129: Hide Change Button on Result)
+ * player.js (v130: Sync Reveal with Monitor)
  * =======================================================*/
 
 let myRoomId = null;
@@ -134,7 +134,6 @@ function updateUI() {
     const buzzArea = document.getElementById('player-buzz-area');
     const oralArea = document.getElementById('player-oral-done-area');
     
-    // 変更ボタンエリアを取得
     const changeArea = document.getElementById('change-btn-area');
 
     lobby.classList.add('hidden');
@@ -150,7 +149,7 @@ function updateUI() {
         lobby.classList.remove('hidden');
         lobby.innerHTML = `<h3>STANDBY</h3><p>ホストが準備中です...</p>`;
         isReanswering = false;
-        if(changeArea) changeArea.innerHTML = ''; // リセット
+        if(changeArea) changeArea.innerHTML = ''; 
     }
     else if (st.step === 'ready') {
         lobby.classList.remove('hidden');
@@ -189,18 +188,19 @@ function updateUI() {
         }
     }
     else if (st.step === 'result') {
+        // ★修正: ここではまだ結果を出さず、「締め切り」表示にする
         isReanswering = false;
-        // ★修正: 結果発表時は変更ボタンを確実に消す
         if(changeArea) changeArea.innerHTML = '';
-
-        if (p.lastResult) showResultOverlay(p.lastResult);
-        else {
-            waitMsg.classList.remove('hidden');
-            waitMsg.textContent = "正解発表中...";
-        }
+        
+        quizArea.classList.add('hidden');
+        waitMsg.classList.remove('hidden');
+        waitMsg.style.background = "#444";
+        waitMsg.style.color = "#ccc";
+        waitMsg.style.border = "none";
+        waitMsg.textContent = "回答を締め切りました。正解発表を待っています...";
     }
     else if (st.step === 'answer') {
-        // ★修正: 正解表示時も変更ボタンを確実に消す
+        // ★修正: ここで合否と正解をまとめて表示
         if(changeArea) changeArea.innerHTML = '';
 
         if(currentQuestion) {
@@ -226,8 +226,17 @@ function updateUI() {
                 }
             }
             
+            // ★追加: 合否判定の表示
+            let judgeHtml = '';
+            if (p.lastResult === 'win') {
+                judgeHtml = `<div style="background:#00b894; color:#fff; padding:10px; border-radius:8px; font-weight:bold; font-size:1.5em; text-align:center; margin-bottom:15px; border:2px solid #fff; box-shadow:0 0 15px #00b894;">⭕️ 正解！</div>`;
+            } else if (p.lastResult === 'lose') {
+                judgeHtml = `<div style="background:#e94560; color:#fff; padding:10px; border-radius:8px; font-weight:bold; font-size:1.5em; text-align:center; margin-bottom:15px; border:2px solid #fff; box-shadow:0 0 15px #e94560;">❌ 不正解...</div>`;
+            }
+
             ansBox.innerHTML = `
-                <div style="background:#00bfff; color:#000; padding:15px; border-radius:8px; font-weight:bold; text-align:center; margin-top:20px;">
+                ${judgeHtml}
+                <div style="background:#00bfff; color:#000; padding:15px; border-radius:8px; font-weight:bold; text-align:center; margin-top:10px;">
                     <div style="font-size:0.8em; margin-bottom:5px;">正解 (ANSWER)</div>
                     <div style="font-size:1.5em;">${correctText}</div>
                 </div>
@@ -284,6 +293,7 @@ function handleNormalResponseUI(p, quizArea, waitMsg) {
     }
 }
 
+// ... (lockChoices, unlockChoices, openConfirmModal, renderPlayerQuestion, submitAnswer は前回のまま維持) ...
 function lockChoices(selectedIndex) {
     const btns = document.querySelectorAll('.answer-btn');
     btns.forEach(btn => {
@@ -331,20 +341,6 @@ function openConfirmModal() {
     document.getElementById('btn-no').onclick = () => {
         document.getElementById('confirm-modal-overlay').remove();
     };
-}
-
-function showResultOverlay(result) {
-    const ol = document.getElementById('player-result-overlay');
-    const icon = document.getElementById('result-icon');
-    const text = document.getElementById('result-text');
-    ol.classList.remove('hidden');
-    if (result === 'win') {
-        ol.style.background = "rgba(0, 180, 0, 0.9)";
-        icon.textContent = '⭕️'; text.textContent = 'WIN!'; text.style.color = '#fff';
-    } else {
-        ol.style.background = "rgba(180, 0, 0, 0.9)";
-        icon.textContent = '❌'; text.textContent = 'LOSE...'; text.style.color = '#fff';
-    }
 }
 
 function renderPlayerQuestion(q, roomId, playerId) {
