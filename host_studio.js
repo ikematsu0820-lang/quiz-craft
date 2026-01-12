@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v119: Auto Reset Player Status)
+ * host_studio.js (v121: Hide Tools on Standby)
  * =======================================================*/
 
 App.Studio = {
@@ -203,6 +203,14 @@ App.Studio = {
         subControls.classList.add('hidden');
         btnMain.classList.remove('hidden');
 
+        // ★追加: フッターツール（正解表示・強制スキップ）の表示制御
+        const footerTools = document.querySelector('.footer-tools');
+        if(footerTools) {
+            // 待機中(0)・開始前(1)は隠す、それ以外(出題中など)は表示
+            if (stepId === 0 || stepId === 1) footerTools.classList.add('hidden');
+            else footerTools.classList.remove('hidden');
+        }
+
         const stepsJA = ['待機中', '準備中', '出題中', '回答中', '結果表示', '正解表示', '次へ'];
         document.getElementById('studio-step-display').textContent = stepsJA[stepId];
         document.getElementById('studio-q-num-display').textContent = `${App.State.currentQIndex + 1}/${App.Data.studioQuestions.length}`;
@@ -219,21 +227,23 @@ App.Studio = {
                 const pTitle = App.Data.periodPlaylist[App.State.currentPeriodIndex].title;
                 this.renderMonitorMessage("PROGRAM", pTitle);
                 
-                // ★修正: 待機状態に入るときに、全プレイヤーの回答状態をリセットする
                 this.resetPlayerStatus();
 
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: App.State.currentQIndex });
                 break;
                 
-            case 1: // READY -> Skip to Step 3
+            case 1: // READY
                 btnMain.textContent = "ゲーム開始 (START)";
                 btnMain.classList.add('action-ready');
+                // ★修正: Step 2 (Open) を飛ばして Step 3 (Start) へ
                 btnMain.onclick = () => this.setStep(3);
                 
                 this.renderMonitorMessage("QUESTION", `Q. ${App.State.currentQIndex + 1}`);
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'ready' });
                 break;
             
+            // Case 2 (Open) is skipped
+                
             case 3: // ANSWERING
                 btnMain.textContent = "回答締め切り / 判定";
                 btnMain.classList.add('action-stop');
@@ -273,6 +283,8 @@ App.Studio = {
                 btnMain.classList.add('action-next');
                 btnMain.onclick = () => this.setStep(6);
                 document.getElementById('studio-correct-display').classList.remove('hidden');
+                
+                // ★スマホにも正解画面が出るようにステータス更新
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
                 break;
                 
@@ -309,7 +321,6 @@ App.Studio = {
         }
     },
 
-    // ★追加: プレイヤーの状態リセット（回答・結果・早押しタイムを消す）
     resetPlayerStatus: function() {
         const roomId = App.State.currentRoomId;
         window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
@@ -482,18 +493,14 @@ App.Studio = {
                 const p = pSnap.val();
                 let isCor = false;
                 
-                // 判定ロジック
                 if(q.type === 'choice') {
                     if (p.lastAnswer == q.correct) isCor = true;
                 } else if (q.type === 'letter_select') {
-                    // 文字パネルの判定 (正解文字列と比較)
                     let correctStr = "";
                     if (q.steps) correctStr = q.steps.map(s => s.correct).join('');
                     else correctStr = q.correct;
-                    
                     if (p.lastAnswer === correctStr) isCor = true;
                 } else {
-                    // 完全一致
                     if (p.lastAnswer == q.correct) isCor = true;
                 }
 
