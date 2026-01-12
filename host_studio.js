@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v132: Always Show Answer)
+ * host_studio.js (v143: Fix Start Button & Safety Checks)
  * =======================================================*/
 
 App.Studio = {
@@ -47,7 +47,7 @@ App.Studio = {
             }
         });
 
-        // ★修正: 「正解表示」ボタンはもう不要なので隠す
+        // 「正解表示」ボタンは不要なので隠す
         const btnAns = document.getElementById('btn-toggle-ans');
         if(btnAns) btnAns.style.display = 'none';
 
@@ -129,6 +129,13 @@ App.Studio = {
             try {
                 const prog = JSON.parse(val);
                 App.Data.periodPlaylist = prog.playlist || [];
+                
+                // ★修正: プレイリストが空の場合のチェック
+                if (App.Data.periodPlaylist.length === 0) {
+                    alert("⚠️ このプログラムにはセットが登録されていません。\n「ルール設定」でセットを追加して保存し直してください。");
+                    return;
+                }
+
                 document.getElementById('studio-loader-ui').classList.add('hidden');
                 document.getElementById('studio-program-info').textContent = "読込完了: " + prog.title;
                 
@@ -139,13 +146,17 @@ App.Studio = {
                 btnMain.classList.remove('hidden');
                 btnMain.className = 'btn-block btn-large-action action-ready';
                 
+                // ★修正: クリックイベントを確実にリセットして再登録
+                btnMain.onclick = null; 
                 btnMain.onclick = () => {
                     try {
                         this.setupPeriod(0);
-                    } catch(e) { alert("エラー: " + e.message); }
+                    } catch(e) { 
+                        alert("開始エラー: " + e.message); 
+                    }
                 };
 
-            } catch(e) { alert("読込失敗"); }
+            } catch(e) { alert("読込失敗: データが壊れている可能性があります"); }
         };
     },
 
@@ -164,12 +175,21 @@ App.Studio = {
     },
 
     setupPeriod: function(index) {
+        // ★修正: インデックス範囲外やデータなしのチェックを強化
+        if (!App.Data.periodPlaylist || App.Data.periodPlaylist.length === 0) {
+            alert("再生するプレイリストがありません。");
+            return;
+        }
+        
         const item = App.Data.periodPlaylist[index];
-        if(!item) return;
+        if(!item) {
+            alert(`エラー: セット番号[${index}]のデータが見つかりません。`);
+            return;
+        }
 
         App.State.currentPeriodIndex = index;
-        App.Data.studioQuestions = item.questions;
-        App.Data.currentConfig = item.config;
+        App.Data.studioQuestions = item.questions || [];
+        App.Data.currentConfig = item.config || { mode: 'normal' };
         App.Data.currentConfig.periodTitle = item.title;
         App.State.currentQIndex = 0;
 
@@ -277,7 +297,7 @@ App.Studio = {
                 break;
                 
             case 4: // RESULT (CLOSED)
-                // 正解発表ボタン (モニターに正解が出る)
+                // 正解発表ボタン
                 btnMain.textContent = "正解を発表 (SHOW ANSWER)";
                 btnMain.onclick = () => this.setStep(5);
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'result', isBuzzActive: false });
@@ -411,8 +431,6 @@ App.Studio = {
         }
         
         document.getElementById('studio-correct-text').textContent = correctText;
-        
-        // ★修正: 司会者画面では正解を常時表示（hiddenを削除）
         document.getElementById('studio-correct-display').classList.remove('hidden');
     },
 
