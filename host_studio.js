@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v121: Hide Tools on Standby)
+ * host_studio.js (v123: Clean Standby Screen)
  * =======================================================*/
 
 App.Studio = {
@@ -50,6 +50,11 @@ App.Studio = {
             }
         });
 
+        // 初期ロード時は不要なものを隠す
+        this.toggleHeaderItems(false);
+        const footerTools = document.querySelector('.footer-tools');
+        if(footerTools) footerTools.style.display = 'none';
+
         window.db.ref(`rooms/${code}/players`).on('value', snap => {
             const players = snap.val() || {};
             const count = Object.keys(players).length;
@@ -70,6 +75,19 @@ App.Studio = {
             btnMain.classList.add('hidden');
             this.loadProgramList();
         }
+    },
+
+    // ★追加: ヘッダー項目の表示/非表示切り替え
+    toggleHeaderItems: function(show) {
+        const ids = ['studio-mode-display', 'studio-q-num-display', 'studio-step-display'];
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                // 親要素(.status-item)を探して隠す
+                const parent = el.closest('.status-item');
+                if(parent) parent.style.display = show ? 'flex' : 'none';
+            }
+        });
     },
 
     loadProgramList: function() {
@@ -203,13 +221,13 @@ App.Studio = {
         subControls.classList.add('hidden');
         btnMain.classList.remove('hidden');
 
-        // ★追加: フッターツール（正解表示・強制スキップ）の表示制御
+        // ★修正: 待機中(0)・開始前(1) はツール＆ヘッダー情報を隠す
+        const isStandby = (stepId === 0 || stepId === 1);
         const footerTools = document.querySelector('.footer-tools');
-        if(footerTools) {
-            // 待機中(0)・開始前(1)は隠す、それ以外(出題中など)は表示
-            if (stepId === 0 || stepId === 1) footerTools.classList.add('hidden');
-            else footerTools.classList.remove('hidden');
-        }
+        if(footerTools) footerTools.style.display = isStandby ? 'none' : 'flex';
+        
+        // ヘッダー情報の切り替え
+        this.toggleHeaderItems(!isStandby);
 
         const stepsJA = ['待機中', '準備中', '出題中', '回答中', '結果表示', '正解表示', '次へ'];
         document.getElementById('studio-step-display').textContent = stepsJA[stepId];
@@ -232,18 +250,15 @@ App.Studio = {
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: App.State.currentQIndex });
                 break;
                 
-            case 1: // READY
+            case 1: // READY -> Step 3
                 btnMain.textContent = "ゲーム開始 (START)";
                 btnMain.classList.add('action-ready');
-                // ★修正: Step 2 (Open) を飛ばして Step 3 (Start) へ
                 btnMain.onclick = () => this.setStep(3);
                 
                 this.renderMonitorMessage("QUESTION", `Q. ${App.State.currentQIndex + 1}`);
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'ready' });
                 break;
             
-            // Case 2 (Open) is skipped
-                
             case 3: // ANSWERING
                 btnMain.textContent = "回答締め切り / 判定";
                 btnMain.classList.add('action-stop');
@@ -283,8 +298,6 @@ App.Studio = {
                 btnMain.classList.add('action-next');
                 btnMain.onclick = () => this.setStep(6);
                 document.getElementById('studio-correct-display').classList.remove('hidden');
-                
-                // ★スマホにも正解画面が出るようにステータス更新
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
                 break;
                 
