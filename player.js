@@ -1,5 +1,5 @@
 /* =========================================================
- * player.js (v120: Show Your Answer on Result)
+ * player.js (v122: Selection Lock & Change Popup)
  * =======================================================*/
 
 let myRoomId = null;
@@ -7,6 +7,9 @@ let myPlayerId = null;
 let myName = "NoName";
 let roomConfig = { mode: 'normal', normalLimit: 'one' }; 
 let currentQuestion = null;
+
+// ★追加: 再回答中かどうかのフラグ
+let isReanswering = false;
 
 let localStatus = { step: 'standby' };
 let localPlayerData = { isAlive: true, lastResult: null };
@@ -102,7 +105,6 @@ function startPlayerListener(roomId, playerId) {
                 }
             });
         }
-        
         updateUI(); 
     });
 }
@@ -111,16 +113,13 @@ function updateUI() {
     const st = localStatus;
     const p = localPlayerData;
     
+    // バッジ
     const badge = document.getElementById('alive-badge');
     if (p.isAlive) {
-        badge.textContent = "ENTRY";
-        badge.style.background = "#00bfff";
-        badge.style.color = "#000";
+        badge.textContent = "ENTRY"; badge.style.background = "#00bfff"; badge.style.color = "#000";
         document.getElementById('player-dead-overlay').classList.add('hidden');
     } else {
-        badge.textContent = "LOSE";
-        badge.style.background = "#555";
-        badge.style.color = "#aaa";
+        badge.textContent = "LOSE"; badge.style.background = "#555"; badge.style.color = "#aaa";
         document.getElementById('player-dead-overlay').classList.remove('hidden');
     }
     
@@ -148,10 +147,12 @@ function updateUI() {
     if (st.step === 'standby') {
         lobby.classList.remove('hidden');
         lobby.innerHTML = `<h3>STANDBY</h3><p>ホストが準備中です...</p>`;
+        isReanswering = false; // リセット
     }
     else if (st.step === 'ready') {
         lobby.classList.remove('hidden');
         lobby.innerHTML = `<h3>ARE YOU READY?</h3><p>まもなく開始します</p>`;
+        isReanswering = false;
     }
     else if (st.step === 'question') {
         if (roomConfig.mode === 'buzz') {
@@ -184,6 +185,7 @@ function updateUI() {
         }
     }
     else if (st.step === 'result') {
+        isReanswering = false;
         if (p.lastResult) showResultOverlay(p.lastResult);
         else {
             waitMsg.classList.remove('hidden');
@@ -191,14 +193,11 @@ function updateUI() {
         }
     }
     else if (st.step === 'answer') {
-        // ★正解表示: スマホにも問題・正解・自分の回答を表示
         if(currentQuestion) {
             quizArea.classList.remove('hidden');
             document.getElementById('question-text-disp').textContent = currentQuestion.q;
             
             const ansBox = document.getElementById('player-input-container');
-            
-            // 正解テキストの生成
             let correctText = "";
             if(currentQuestion.type === 'choice') {
                 if(Array.isArray(currentQuestion.correct)) correctText = currentQuestion.correct.map(i => currentQuestion.c[i]).join(' / ');
@@ -209,7 +208,6 @@ function updateUI() {
                 correctText = currentQuestion.correct;
             }
 
-            // ★追加: 自分の回答テキストの生成（選択肢なら文字に変換）
             let myAnsText = p.lastAnswer || "(未回答)";
             if(p.lastAnswer !== null && currentQuestion.type === 'choice') {
                 const idx = parseInt(p.lastAnswer);
@@ -223,7 +221,6 @@ function updateUI() {
                     <div style="font-size:0.8em; margin-bottom:5px;">正解 (ANSWER)</div>
                     <div style="font-size:1.5em;">${correctText}</div>
                 </div>
-                
                 <div style="background:#333; border:1px solid #555; color:#fff; padding:15px; border-radius:8px; font-weight:bold; text-align:center; margin-top:10px;">
                     <div style="font-size:0.8em; margin-bottom:5px; color:#aaa;">あなたの回答 (YOUR ANSWER)</div>
                     <div style="font-size:1.3em;">${myAnsText}</div>
@@ -233,25 +230,46 @@ function updateUI() {
     }
 }
 
+// ★修正: 回答済みUIの制御（薄くする処理・変更ボタン）
 function handleNormalResponseUI(p, quizArea, waitMsg) {
+    // 常にクイズエリアは表示しておく（隠さずに制御する）
+    quizArea.classList.remove('hidden');
+    waitMsg.classList.add('hidden');
+
+    const inputCont = document.getElementById('player-input-container');
+    
+    // 「変更」ボタンエリアがあるか確認、なければ作る
+    let changeBtnArea = document.getElementById('change-btn-area');
+    if (!changeBtnArea) {
+        changeBtnArea = document.createElement('div');
+        changeBtnArea.id = 'change-btn-area';
+        inputCont.parentNode.insertBefore(changeBtnArea, inputCont.nextSibling);
+    }
+
     if (p.lastAnswer != null) {
+        // 回答済みの場合
         if (roomConfig.normalLimit === 'unlimited') {
-            quizArea.classList.remove('hidden');
-            waitMsg.classList.remove('hidden');
-            waitMsg.style.background = "transparent";
-            waitMsg.style.color = "#00bfff";
-            waitMsg.style.border = "none";
-            waitMsg.style.padding = "5px";
-            
-            // 回答表示用（選択肢なら変換）
-            let dispAns = p.lastAnswer;
-            if(currentQuestion && currentQuestion.type === 'choice') {
-                const idx = parseInt(p.lastAnswer);
-                if(!isNaN(idx) && currentQuestion.c[idx]) dispAns = currentQuestion.c[idx];
+            // 修正可モード
+            if (isReanswering) {
+                // 再回答中 -> 全ボタン復活
+                unlockChoices();
+                changeBtnArea.innerHTML = ''; // ボタン消す
+            } else {
+                // ロック中 -> 選んだもの以外を薄く & 変更ボタン表示
+                lockChoices(p.lastAnswer);
+                
+                // 変更ボタンの描画（重複防止）
+                if (!document.getElementById('btn-change-ans')) {
+                    changeBtnArea.innerHTML = `
+                        <button id="btn-change-ans" class="btn-change-answer">
+                            答えを変更する
+                        </button>
+                    `;
+                    document.getElementById('btn-change-ans').onclick = openConfirmModal;
+                }
             }
-            
-            waitMsg.innerHTML = `<span style="font-size:0.8em;">現在の回答: <strong>${dispAns}</strong> (修正可)</span>`;
         } else {
+            // 一発勝負モード -> 画面消して待機
             quizArea.classList.add('hidden');
             waitMsg.classList.remove('hidden');
             waitMsg.style.background = "rgba(0, 184, 148, 0.2)";
@@ -261,9 +279,63 @@ function handleNormalResponseUI(p, quizArea, waitMsg) {
             waitMsg.textContent = "回答を受け付けました。発表を待っています...";
         }
     } else {
-        quizArea.classList.remove('hidden');
-        waitMsg.classList.add('hidden');
+        // 未回答 -> 全ボタン復活
+        unlockChoices();
+        changeBtnArea.innerHTML = '';
     }
+}
+
+// ボタンをロックして薄くする
+function lockChoices(selectedIndex) {
+    const btns = document.querySelectorAll('.answer-btn');
+    btns.forEach(btn => {
+        btn.disabled = true; // クリック不可
+        if (btn.dataset.ans == selectedIndex) {
+            btn.classList.add('btn-selected');
+            btn.classList.remove('btn-dimmed');
+        } else {
+            btn.classList.add('btn-dimmed');
+            btn.classList.remove('btn-selected');
+        }
+    });
+}
+
+// ボタンを元に戻す
+function unlockChoices() {
+    const btns = document.querySelectorAll('.answer-btn');
+    btns.forEach(btn => {
+        btn.disabled = false;
+        btn.classList.remove('btn-selected', 'btn-dimmed');
+    });
+}
+
+// 確認モーダルを開く
+function openConfirmModal() {
+    // 既存モーダルがあれば削除
+    const old = document.getElementById('confirm-modal-overlay');
+    if(old) old.remove();
+
+    const html = `
+        <div id="confirm-modal-overlay" class="confirm-modal-overlay">
+            <div class="confirm-modal">
+                <h3>答えを変更しますか？</h3>
+                <div class="confirm-btns">
+                    <button id="btn-yes" class="btn-confirm-yes">はい</button>
+                    <button id="btn-no" class="btn-confirm-no">いいえ</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', html);
+
+    document.getElementById('btn-yes').onclick = () => {
+        isReanswering = true;
+        updateUI(); // 画面更新してロック解除
+        document.getElementById('confirm-modal-overlay').remove();
+    };
+    document.getElementById('btn-no').onclick = () => {
+        document.getElementById('confirm-modal-overlay').remove();
+    };
 }
 
 function showResultOverlay(result) {
@@ -284,6 +356,10 @@ function renderPlayerQuestion(q, roomId, playerId) {
     const inputCont = document.getElementById('player-input-container');
     const qText = document.getElementById('question-text-disp');
     
+    // 変更ボタンエリアのリセット
+    const changeArea = document.getElementById('change-btn-area');
+    if(changeArea) changeArea.innerHTML = '';
+
     qText.textContent = q.q;
     inputCont.innerHTML = '';
 
@@ -299,15 +375,21 @@ function renderPlayerQuestion(q, roomId, playerId) {
             const btn = document.createElement('button');
             btn.className = 'answer-btn'; 
             btn.textContent = item.text;
+            btn.dataset.ans = item.originalIndex; // ★識別用ID
+            
             if(i===0) btn.classList.add('btn-blue');
             else if(i===1) btn.classList.add('btn-red');
             else if(i===2) btn.classList.add('btn-green');
             else btn.classList.add('btn-yellow');
+
             btn.onclick = () => submitAnswer(roomId, playerId, item.originalIndex); 
             inputCont.appendChild(btn);
         });
     }
+    // ... (Letter, Oral, Written の処理は変更なし) ...
+    // ※ 簡略化のため省略していますが、v117の内容をそのまま維持してください
     else if (q.type === 'letter_select') {
+        // v117のコードと同じ
         let pool = [];
         if (q.steps) {
             q.steps.forEach(step => {
@@ -324,84 +406,56 @@ function renderPlayerQuestion(q, roomId, playerId) {
             const j = Math.floor(Math.random() * (i + 1));
             [pool[i], pool[j]] = [pool[j], pool[i]];
         }
-
         const displayBox = document.createElement('div');
         displayBox.className = 'letter-display-box'; 
-        displayBox.style.background = "#fff";
-        displayBox.style.color = "#000";
-        displayBox.style.padding = "10px";
-        displayBox.style.fontSize = "24px";
-        displayBox.style.fontWeight = "bold";
-        displayBox.style.textAlign = "center";
-        displayBox.style.marginBottom = "15px";
-        displayBox.style.borderRadius = "8px";
-        displayBox.style.minHeight = "50px";
+        displayBox.style.background = "#fff"; displayBox.style.color = "#000"; displayBox.style.padding = "10px";
+        displayBox.style.fontSize = "24px"; displayBox.style.fontWeight = "bold"; displayBox.style.textAlign = "center";
+        displayBox.style.marginBottom = "15px"; displayBox.style.borderRadius = "8px"; displayBox.style.minHeight = "50px";
         displayBox.textContent = ""; 
         inputCont.appendChild(displayBox);
-
         const grid = document.createElement('div');
-        grid.style.display = "grid";
-        grid.style.gridTemplateColumns = "repeat(5, 1fr)";
-        grid.style.gap = "8px";
-        grid.style.marginBottom = "15px";
-
+        grid.style.display = "grid"; grid.style.gridTemplateColumns = "repeat(5, 1fr)"; grid.style.gap = "8px"; grid.style.marginBottom = "15px";
         pool.forEach(char => {
             const btn = document.createElement('button');
-            btn.textContent = char;
-            btn.className = 'letter-panel-btn'; 
-            btn.onclick = () => {
-                if (displayBox.textContent.length < 20) {
-                    displayBox.textContent += char;
-                }
-            };
+            btn.textContent = char; btn.className = 'letter-panel-btn'; 
+            btn.onclick = () => { if (displayBox.textContent.length < 20) displayBox.textContent += char; };
             grid.appendChild(btn);
         });
         inputCont.appendChild(grid);
-
         const controlRow = document.createElement('div');
-        controlRow.style.display = "flex";
-        controlRow.style.gap = "10px";
+        controlRow.style.display = "flex"; controlRow.style.gap = "10px";
         const clearBtn = document.createElement('button');
-        clearBtn.textContent = "Clear";
-        clearBtn.className = "btn-danger btn-block";
+        clearBtn.textContent = "Clear"; clearBtn.className = "btn-danger btn-block";
         clearBtn.onclick = () => { displayBox.textContent = ""; };
         const submitBtn = document.createElement('button');
-        submitBtn.textContent = "OK";
-        submitBtn.className = "btn-primary btn-block";
+        submitBtn.textContent = "OK"; submitBtn.className = "btn-primary btn-block";
         submitBtn.onclick = () => {
             if (displayBox.textContent.length === 0) return;
             submitAnswer(roomId, playerId, displayBox.textContent);
         };
-        controlRow.appendChild(clearBtn);
-        controlRow.appendChild(submitBtn);
-        inputCont.appendChild(controlRow);
+        controlRow.appendChild(clearBtn); controlRow.appendChild(submitBtn); inputCont.appendChild(controlRow);
     }
     else if (q.type === 'free_oral') {
         document.getElementById('player-oral-done-area').classList.remove('hidden');
-        document.getElementById('player-oral-done-btn').onclick = () => {
-            submitAnswer(roomId, playerId, "[Oral]");
-        };
+        document.getElementById('player-oral-done-btn').onclick = () => { submitAnswer(roomId, playerId, "[Oral]"); };
     }
     else {
         const inp = document.createElement('input');
-        inp.type = 'text';
-        inp.placeholder = '回答を入力...';
-        inp.className = 'modern-input'; 
-        inp.style.marginBottom = '15px';
+        inp.type = 'text'; inp.placeholder = '回答を入力...'; inp.className = 'modern-input'; inp.style.marginBottom = '15px';
         const sub = document.createElement('button');
-        sub.className = 'btn-primary btn-block';
-        sub.textContent = '送信';
+        sub.className = 'btn-primary btn-block'; sub.textContent = '送信';
         sub.onclick = () => {
             if(inp.value.trim() === "") return;
             submitAnswer(roomId, playerId, inp.value.trim());
         };
-        inputCont.appendChild(inp);
-        inputCont.appendChild(sub);
+        inputCont.appendChild(inp); inputCont.appendChild(sub);
     }
 }
 
 function submitAnswer(roomId, playerId, answer) {
+    // 送信したらロックする（再回答フラグを下げる）
+    isReanswering = false;
     window.db.ref(`rooms/${roomId}/players/${playerId}`).update({
         lastAnswer: answer
-    }).then(() => {});
+    });
 }
