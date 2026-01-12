@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v143: Fix Start Button & Safety Checks)
+ * host_studio.js (v144: Fix Buzz Reset Logic)
  * =======================================================*/
 
 App.Studio = {
@@ -47,7 +47,6 @@ App.Studio = {
             }
         });
 
-        // 「正解表示」ボタンは不要なので隠す
         const btnAns = document.getElementById('btn-toggle-ans');
         if(btnAns) btnAns.style.display = 'none';
 
@@ -130,7 +129,6 @@ App.Studio = {
                 const prog = JSON.parse(val);
                 App.Data.periodPlaylist = prog.playlist || [];
                 
-                // ★修正: プレイリストが空の場合のチェック
                 if (App.Data.periodPlaylist.length === 0) {
                     alert("⚠️ このプログラムにはセットが登録されていません。\n「ルール設定」でセットを追加して保存し直してください。");
                     return;
@@ -146,7 +144,6 @@ App.Studio = {
                 btnMain.classList.remove('hidden');
                 btnMain.className = 'btn-block btn-large-action action-ready';
                 
-                // ★修正: クリックイベントを確実にリセットして再登録
                 btnMain.onclick = null; 
                 btnMain.onclick = () => {
                     try {
@@ -175,7 +172,6 @@ App.Studio = {
     },
 
     setupPeriod: function(index) {
-        // ★修正: インデックス範囲外やデータなしのチェックを強化
         if (!App.Data.periodPlaylist || App.Data.periodPlaylist.length === 0) {
             alert("再生するプレイリストがありません。");
             return;
@@ -270,7 +266,6 @@ App.Studio = {
                 break;
             
             case 3: // ANSWERING
-                // 締め切りボタン
                 btnMain.textContent = "回答締め切り (CLOSE)";
                 btnMain.classList.add('action-stop');
                 if(App.Data.currentConfig.mode === 'buzz' || App.Data.currentConfig.mode === 'solo') {
@@ -297,7 +292,6 @@ App.Studio = {
                 break;
                 
             case 4: // RESULT (CLOSED)
-                // 正解発表ボタン
                 btnMain.textContent = "正解を発表 (SHOW ANSWER)";
                 btnMain.onclick = () => this.setStep(5);
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'result', isBuzzActive: false });
@@ -307,7 +301,6 @@ App.Studio = {
                 btnMain.textContent = "次の問題へ (NEXT) >>";
                 btnMain.classList.add('action-next');
                 btnMain.onclick = () => this.setStep(6);
-                // スマホにも正解を表示
                 document.getElementById('studio-correct-display').classList.remove('hidden');
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
                 break;
@@ -483,20 +476,45 @@ App.Studio = {
     judgeBuzz: function(isCorrect) {
         if (App.Data.currentConfig.mode === 'solo') { this.judgeSolo(isCorrect); return; }
         if(!this.buzzWinner) return;
+        
         const roomId = App.State.currentRoomId;
         const pts = App.Data.studioQuestions[App.State.currentQIndex].points || 1;
+        const action = App.Data.currentConfig.buzzWrongAction || 'reset'; // ★設定確認
+
         window.db.ref(`rooms/${roomId}/players/${this.buzzWinner}`).once('value', snap => {
             const p = snap.val();
             if(isCorrect) {
+                // 正解時
                 snap.ref.update({ periodScore: (p.periodScore||0) + pts, lastResult: 'win' });
                 this.buzzWinner = null;
                 document.getElementById('studio-sub-info').classList.add('hidden');
                 this.setStep(4);
             } else {
+                // 不正解時
                 snap.ref.update({ lastResult: 'lose', buzzTime: null });
-                this.buzzWinner = null;
-                document.getElementById('studio-sub-info').classList.add('hidden');
-                window.db.ref(`rooms/${roomId}/status`).update({ currentAnswerer: null, isBuzzActive: true });
+                
+                // ★修正: リセット設定なら、全員のbuzzTimeを消して再開
+                if (action === 'reset') {
+                    // 全員の buzzTime を null に更新
+                    window.db.ref(`rooms/${roomId}/players`).once('value', pSnap => {
+                        pSnap.forEach(pp => {
+                            pp.ref.update({ buzzTime: null, lastResult: null }); // lastResultも消して復活させる
+                        });
+                        this.buzzWinner = null;
+                        document.getElementById('studio-sub-info').classList.add('hidden');
+                        window.db.ref(`rooms/${roomId}/status`).update({ currentAnswerer: null, isBuzzActive: true });
+                        App.Ui.showToast("誤答によりリセットしました");
+                    });
+                } else if (action === 'end') {
+                    this.buzzWinner = null;
+                    document.getElementById('studio-sub-info').classList.add('hidden');
+                    this.setStep(4);
+                } else {
+                    // next (デフォルト: 間違えた人はそのまま、他が押せるように)
+                    this.buzzWinner = null;
+                    document.getElementById('studio-sub-info').classList.add('hidden');
+                    window.db.ref(`rooms/${roomId}/status`).update({ currentAnswerer: null, isBuzzActive: true });
+                }
             }
         });
     },
