@@ -1,5 +1,5 @@
 /* =========================================================
- * player.js (v132: Final Result Display)
+ * player.js (v136: Max 8 Players Limit)
  * =======================================================*/
 
 let myRoomId = null;
@@ -55,6 +55,18 @@ function joinRoom() {
     window.db.ref(`rooms/${code}`).once('value', snap => {
         if (!snap.exists()) {
             alert("その部屋コードは見つかりませんでした");
+            btn.disabled = false;
+            btn.textContent = "参加する";
+            return;
+        }
+
+        // ★追加: 人数制限チェック (最大8人)
+        const val = snap.val();
+        const currentPlayers = val.players || {};
+        const count = Object.keys(currentPlayers).length;
+        
+        if (count >= 8) {
+            alert("申し訳ありません、この部屋は満員です (定員8名)");
             btn.disabled = false;
             btn.textContent = "参加する";
             return;
@@ -124,7 +136,6 @@ function updateUI() {
     const st = localStatus;
     const p = localPlayerData;
     
-    // バッジ
     const badge = document.getElementById('alive-badge');
     if (p.isAlive) {
         badge.textContent = "ENTRY"; badge.style.background = "#00bfff"; badge.style.color = "#000";
@@ -146,11 +157,8 @@ function updateUI() {
     const buzzArea = document.getElementById('player-buzz-area');
     const oralArea = document.getElementById('player-oral-done-area');
     const changeArea = document.getElementById('change-btn-area');
-    
-    // ★追加: ランキングオーバーレイの取得
     const rankingOverlay = document.getElementById('player-ranking-overlay');
 
-    // 初期化（隠す）
     lobby.classList.add('hidden');
     if (st.step !== 'answering' && st.step !== 'question' && st.step !== 'answer') {
         quizArea.classList.add('hidden');
@@ -159,10 +167,8 @@ function updateUI() {
     }
     waitMsg.classList.add('hidden');
     resultOverlay.classList.add('hidden');
-    rankingOverlay.classList.add('hidden'); // ★隠す
+    rankingOverlay.classList.add('hidden'); 
 
-    // --- 状態ごとの表示 ---
-    
     if (st.step === 'standby') {
         lobby.classList.remove('hidden');
         lobby.innerHTML = `<h3>STANDBY</h3><p>ホストが準備中です...</p>`;
@@ -262,18 +268,15 @@ function updateUI() {
             `;
         }
     }
-    // ★追加: 最終結果発表
     else if (st.step === 'final_ranking') {
         showFinalResult(myRoomId, myPlayerId);
     }
 }
 
-// ★追加: 最終結果表示ロジック
 function showFinalResult(roomId, myId) {
     const overlay = document.getElementById('player-ranking-overlay');
     overlay.classList.remove('hidden');
     
-    // データ取得してランキング計算
     window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
         const players = snap.val() || {};
         const arr = Object.keys(players).map(k => ({
@@ -282,7 +285,6 @@ function showFinalResult(roomId, myId) {
             score: players[k].periodScore || 0
         })).sort((a,b) => b.score - a.score);
 
-        // 自分の順位を探す
         const myRankIdx = arr.findIndex(p => p.id === myId);
         const myData = arr[myRankIdx];
         
@@ -291,7 +293,6 @@ function showFinalResult(roomId, myId) {
             document.getElementById('player-my-score').textContent = `${myData.score}点`;
         }
 
-        // 上位表示
         const list = document.getElementById('player-leaderboard');
         list.innerHTML = '';
         arr.slice(0, 5).forEach((p, i) => {
@@ -303,10 +304,7 @@ function showFinalResult(roomId, myId) {
             div.style.color = (p.id === myId) ? '#00bfff' : '#fff';
             div.style.fontWeight = (p.id === myId) ? 'bold' : 'normal';
             
-            div.innerHTML = `
-                <span>${i+1}. ${p.name}</span>
-                <span>${p.score}pt</span>
-            `;
+            div.innerHTML = `<span>${i+1}. ${p.name}</span><span>${p.score}pt</span>`;
             list.appendChild(div);
         });
     });
