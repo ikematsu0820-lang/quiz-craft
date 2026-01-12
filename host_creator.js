@@ -1,5 +1,5 @@
 /* =========================================================
- * host_creator.js (v111: Step-by-Step Letter Editor)
+ * host_creator.js (v112: Modal UI Implementation)
  * =======================================================*/
 
 // ★ 安全装置
@@ -8,7 +8,7 @@ window.App = window.App || {};
 window.App.Creator = {
     editingIndex: null,
     editingTitle: "",
-    currentLetterSteps: [], // ★追加: 文字選択式のステップデータ管理用
+    currentLetterSteps: [], 
 
     init: function() {
         this.editingIndex = null;
@@ -94,7 +94,7 @@ window.App.Creator = {
 
     resetForm: function() {
         this.editingIndex = null;
-        this.currentLetterSteps = []; // リセット
+        this.currentLetterSteps = []; 
         document.getElementById('creator-form-title').textContent = APP_TEXT.Creator.HeadingNewQ;
         document.getElementById('add-question-btn').classList.remove('hidden');
         document.getElementById('update-question-area').classList.add('hidden');
@@ -122,13 +122,11 @@ window.App.Creator = {
             this.createAddBtn(container, APP_TEXT.Creator.BtnAddChoice, () => this.addChoiceInput(choicesDiv));
         } 
         
-        // ★修正: 文字選択式 (ステップ入力UI)
+        // --- 文字選択式 ---
         else if (type === 'letter_select') {
-            // データがあれば読み込む
             if (data && data.steps) {
                 this.currentLetterSteps = JSON.parse(JSON.stringify(data.steps));
             } else if (this.currentLetterSteps.length === 0) {
-                // 新規なら空っぽ
                 this.currentLetterSteps = [];
             }
 
@@ -182,22 +180,23 @@ window.App.Creator = {
         }
     },
 
-    // ★追加: ステップ一覧描画
+    // ★ ステップ一覧描画
     renderLetterStepList: function() {
         const list = document.getElementById('letter-step-container');
         if(!list) return;
         list.innerHTML = '';
 
-        // 既存ステップの表示
         this.currentLetterSteps.forEach((step, i) => {
             const btn = document.createElement('div');
             btn.className = 'letter-step-item';
-            btn.textContent = step.correct || '?';
+            btn.innerHTML = `
+                <span class="step-badge">${i+1}</span>
+                ${step.correct || '?'}
+            `;
             btn.onclick = () => this.openLetterModal(i);
             list.appendChild(btn);
         });
 
-        // 「＋」ボタン
         const addBtn = document.createElement('div');
         addBtn.className = 'letter-step-add-btn';
         addBtn.textContent = '+';
@@ -205,13 +204,12 @@ window.App.Creator = {
         list.appendChild(addBtn);
     },
 
-    // ★追加: 編集モーダルを開く
+    // ★ 編集モーダル (画像のUIを再現)
     openLetterModal: function(index) {
         const isNew = (index >= this.currentLetterSteps.length);
+        // ダミー文字は画像に合わせて3つに固定
         const data = isNew ? { correct: '', dummies: ['', '', ''] } : this.currentLetterSteps[index];
         const dummies = data.dummies || ['', '', ''];
-        
-        // 足りない分を補完
         while(dummies.length < 3) dummies.push('');
 
         const modalHtml = `
@@ -222,27 +220,33 @@ window.App.Creator = {
                         <button class="letter-modal-close" onclick="document.getElementById('letter-modal').remove()">×</button>
                     </div>
                     <div class="letter-modal-body">
-                        <div class="tag-correct">正解</div>
+                        <div class="tag-label tag-correct">正解</div>
                         <div style="margin-bottom:10px;">
-                            <input type="text" id="modal-input-correct" class="char-input-box" value="${data.correct}" maxlength="1" placeholder="あ">
+                            <input type="text" id="modal-input-correct" class="char-input-box" value="${data.correct}" maxlength="1" placeholder="あ" onfocus="this.select()">
                         </div>
 
-                        <div class="tag-wrong">不正解 (ダミー)</div>
+                        <div class="tag-label tag-wrong">不正解</div>
                         <div class="dummy-grid">
-                            <input type="text" class="char-input-box modal-input-dummy" value="${dummies[0]}" maxlength="1" placeholder="い">
-                            <input type="text" class="char-input-box modal-input-dummy" value="${dummies[1]}" maxlength="1" placeholder="う">
-                            <input type="text" class="char-input-box modal-input-dummy" value="${dummies[2]}" maxlength="1" placeholder="え">
+                            <input type="text" class="char-input-box modal-input-dummy" value="${dummies[0]}" maxlength="1" placeholder="い" onfocus="this.select()">
+                            <input type="text" class="char-input-box modal-input-dummy" value="${dummies[1]}" maxlength="1" placeholder="う" onfocus="this.select()">
+                            <input type="text" class="char-input-box modal-input-dummy" value="${dummies[2]}" maxlength="1" placeholder="え" onfocus="this.select()">
                         </div>
                     </div>
                     <div class="letter-modal-footer">
-                        ${!isNew ? '<button id="modal-btn-delete" class="btn-delete-modal">削除</button>' : '<div style="flex:1;"></div>'}
-                        <button id="modal-btn-save" class="btn-save-modal">保存 / 閉じる</button>
+                        ${!isNew ? '<button id="modal-btn-delete" class="btn-delete-modal">削除</button>' : ''}
+                        <button id="modal-btn-save" class="btn-save-modal">保存</button>
                     </div>
                 </div>
             </div>
         `;
 
         document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // 最初の入力欄にフォーカス
+        setTimeout(() => {
+            const firstInput = document.getElementById('modal-input-correct');
+            if(firstInput) firstInput.focus();
+        }, 100);
 
         // ボタンイベント
         document.getElementById('modal-btn-save').onclick = () => {
@@ -273,7 +277,7 @@ window.App.Creator = {
         }
     },
 
-    // 既存の関数群...
+    // --- 以下、既存ロジック ---
     addChoiceInput: function(parent, index, text="", checked=false) {
         if (parent.children.length >= 20) { alert(APP_TEXT.Creator.AlertMaxChoice); return; }
         const row = document.createElement('div');
@@ -365,14 +369,13 @@ window.App.Creator = {
             newQ.multi = (corr.length > 1);
             
         } 
-        // ★修正: 文字選択式のデータ保存
+        // ★修正: 文字選択式のデータ保存 (Stepsを保存)
         else if (type === 'letter_select') {
             if (this.currentLetterSteps.length === 0) {
                 alert("少なくとも1文字のステップを作成してください");
                 return null;
             }
             newQ.steps = this.currentLetterSteps;
-            // 一応互換性のためCorrect文字列も作っておく
             newQ.correct = this.currentLetterSteps.map(s => s.correct).join('');
             
         } else if (type === 'sort') {
@@ -455,7 +458,6 @@ window.App.Creator = {
         window.App.Data.createdQuestions.forEach((q, i) => {
             const div = document.createElement('div');
             div.className = 'q-list-item flex-between';
-            // ★アイコンに文字選択を追加
             let icon = '🔳';
             if (q.type === 'letter_select') icon = '🔠';
             else if (q.type === 'sort') icon = '🔢';
