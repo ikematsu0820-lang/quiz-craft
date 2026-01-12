@@ -1,5 +1,5 @@
 /* =========================================================
- * host_creator.js (v71: Auto Multi-Select Detection)
+ * host_creator.js (v110: Letter Panel & Manual Dummy Support)
  * =======================================================*/
 
 // ★ 安全装置
@@ -39,6 +39,7 @@ window.App.Creator = {
 
         const opts = [
             { v: 'choice', t: APP_TEXT.Creator.TypeChoice },
+            { v: 'letter_select', t: '文字選択 (Letter Panel)' }, // ★追加
             { v: 'sort', t: APP_TEXT.Creator.TypeSort },
             { v: 'free_oral', t: APP_TEXT.Creator.TypeFreeOral },
             { v: 'free_written', t: APP_TEXT.Creator.TypeFreeWritten },
@@ -107,9 +108,6 @@ window.App.Creator = {
         container.innerHTML = ''; 
 
         if (type === 'choice') {
-            // ★削除: 「正解を選択」チェックボックスの生成コードを削除しました
-            // 選択肢自体をクリックして選ぶので不要です
-
             const choicesDiv = document.createElement('div');
             choicesDiv.id = 'creator-choices-list';
             choicesDiv.className = 'grid-gap-5';
@@ -120,6 +118,23 @@ window.App.Creator = {
 
             this.createAddBtn(container, APP_TEXT.Creator.BtnAddChoice, () => this.addChoiceInput(choicesDiv));
         } 
+        // ★追加: 文字選択式の入力フォーム
+        else if (type === 'letter_select') {
+            const correctVal = (data && data.correct) ? data.correct : '';
+            const dummyVal = (data && data.dummyChars) ? data.dummyChars : '';
+            
+            container.innerHTML = `
+                <div class="mb-10">
+                    <label class="config-label">正解の言葉 (Correct Word)</label>
+                    <input type="text" id="creator-letter-correct" class="btn-block" placeholder="例: キャビア" value="${correctVal}">
+                </div>
+                <div class="mb-10">
+                    <label class="config-label" style="color:#e94560;">ダミー文字 (Dummy Chars)</label>
+                    <input type="text" id="creator-letter-dummy" class="btn-block" placeholder="例: トフグラ (誤答を誘う文字)" value="${dummyVal}">
+                    <p class="text-sm text-gray" style="margin-top:5px;">※プレイヤー画面には、正解とダミーがシャッフルされて表示されます。</p>
+                </div>
+            `;
+        }
         else if (type === 'sort') {
             const initVal = data ? data.initialOrder : 'random';
             container.innerHTML = `
@@ -143,7 +158,7 @@ window.App.Creator = {
             input.id = 'creator-text-answer';
             input.className = 'btn-block';
             input.placeholder = 'Answer Keyword';
-            if (data && data.correct) input.value = data.correct.join(', ');
+            if (data && data.correct) input.value = Array.isArray(data.correct) ? data.correct.join(', ') : data.correct;
             container.appendChild(input);
         }
         else if (type === 'multi') {
@@ -165,14 +180,12 @@ window.App.Creator = {
         const row = document.createElement('div');
         row.className = 'choice-row flex-center gap-5 p-5';
         
-        // 1. 隠しチェックボックス
         const chk = document.createElement('input');
         chk.type = 'checkbox';
         chk.className = 'choice-correct-chk';
         chk.checked = checked;
         chk.style.display = 'none';
 
-        // 2. ラベルボタン（クリックでトグル）
         const labelBtn = document.createElement('div');
         labelBtn.className = 'choice-label-btn';
         if(checked) labelBtn.classList.add('active');
@@ -183,14 +196,12 @@ window.App.Creator = {
             else labelBtn.classList.remove('active');
         };
 
-        // 3. テキスト入力
         const inp = document.createElement('input');
         inp.type = 'text';
         inp.className = 'choice-text-input flex-1';
         inp.placeholder = 'Choice';
         inp.value = text;
 
-        // 4. 削除ボタン
         const delBtn = document.createElement('button');
         delBtn.textContent = '×';
         delBtn.className = 'btn-mini btn-dark w-30';
@@ -267,9 +278,18 @@ window.App.Creator = {
             newQ.c = opts; 
             newQ.correct = corr; 
             newQ.correctIndex = corr[0];
-            
-            // ★変更: 複数正解があれば自動的にマルチモードとする
             newQ.multi = (corr.length > 1);
+            
+        } 
+        // ★追加: 文字選択式のデータ保存
+        else if (type === 'letter_select') {
+            const correct = document.getElementById('creator-letter-correct').value.trim();
+            const dummy = document.getElementById('creator-letter-dummy').value.trim();
+            
+            if(!correct) { alert("正解の言葉を入力してください"); return null; }
+            
+            newQ.correct = correct;
+            newQ.dummyChars = dummy; // ダミー文字を保存
             
         } else if (type === 'sort') {
             const opts = [];
@@ -351,7 +371,14 @@ window.App.Creator = {
         window.App.Data.createdQuestions.forEach((q, i) => {
             const div = document.createElement('div');
             div.className = 'q-list-item flex-between';
-            const icon = q.type==='sort'?'🔢':(q.type.startsWith('free')?'✍️':(q.type==='multi'?'📚':'🔳'));
+            
+            // ★アイコンに文字選択を追加
+            let icon = '🔳';
+            if (q.type === 'letter_select') icon = '🔠';
+            else if (q.type === 'sort') icon = '🔢';
+            else if (q.type.startsWith('free')) icon = '✍️';
+            else if (q.type === 'multi') icon = '📚';
+
             div.innerHTML = `
                 <div class="text-sm bold">${icon} Q${i+1}. ${q.q}</div>
                 <div class="flex gap-5">
