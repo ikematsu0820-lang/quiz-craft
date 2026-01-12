@@ -1,12 +1,12 @@
 /* =========================================================
- * player.js (v118: Show Answer on Phone)
+ * player.js (v119: Allow Answer Correction)
  * =======================================================*/
 
 let myRoomId = null;
 let myPlayerId = null;
 let myName = "NoName";
-let roomConfig = { mode: 'normal' };
-let currentQuestion = null; // ★追加: 現在の問題データを保持
+let roomConfig = { mode: 'normal', normalLimit: 'one' }; // デフォルトは1回
+let currentQuestion = null;
 
 let localStatus = { step: 'standby' };
 let localPlayerData = { isAlive: true, lastResult: null };
@@ -85,6 +85,7 @@ function startPlayerListener(roomId, playerId) {
     });
 
     configRef.on('value', snap => {
+        // 設定を読み込む
         roomConfig = snap.val() || { mode: 'normal' };
     });
 
@@ -93,12 +94,12 @@ function startPlayerListener(roomId, playerId) {
         if(!st) return;
         localStatus = st; 
         
-        // 問題が変わったらデータを取得してキャッシュ
+        // 問題データ取得
         if (st.step === 'answering' || st.step === 'question') {
              window.db.ref(`rooms/${roomId}/questions/${st.qIndex}`).once('value', qSnap => {
                 const q = qSnap.val();
                 if(q) {
-                    currentQuestion = q; // ★保存
+                    currentQuestion = q;
                     renderPlayerQuestion(q, roomId, playerId);
                 }
             });
@@ -112,6 +113,7 @@ function updateUI() {
     const st = localStatus;
     const p = localPlayerData;
     
+    // 生存バッジ
     const badge = document.getElementById('alive-badge');
     if (p.isAlive) {
         badge.textContent = "ENTRY";
@@ -125,11 +127,13 @@ function updateUI() {
         document.getElementById('player-dead-overlay').classList.remove('hidden');
     }
     
+    // スコア
     if (p.periodScore !== undefined) {
         document.getElementById('score-display-area').classList.remove('hidden');
         document.getElementById('current-score-value').textContent = p.periodScore;
     }
 
+    // 要素取得
     const lobby = document.getElementById('player-lobby-msg');
     const quizArea = document.getElementById('player-quiz-area');
     const waitMsg = document.getElementById('player-wait-msg');
@@ -137,6 +141,7 @@ function updateUI() {
     const buzzArea = document.getElementById('player-buzz-area');
     const oralArea = document.getElementById('player-oral-done-area');
 
+    // 初期化: 基本的に隠す
     lobby.classList.add('hidden');
     if (st.step !== 'answering' && st.step !== 'question' && st.step !== 'answer') {
         quizArea.classList.add('hidden');
@@ -146,6 +151,7 @@ function updateUI() {
     waitMsg.classList.add('hidden');
     resultOverlay.classList.add('hidden');
 
+    // --- ステップ制御 ---
     if (st.step === 'standby') {
         lobby.classList.remove('hidden');
         lobby.innerHTML = `<h3>STANDBY</h3><p>ホストが準備中です...</p>`;
@@ -155,18 +161,18 @@ function updateUI() {
         lobby.innerHTML = `<h3>ARE YOU READY?</h3><p>まもなく開始します</p>`;
     }
     else if (st.step === 'question') {
-        // 出題中 (基本的にここには来ないが、念のため)
+        // 出題中
         if (roomConfig.mode === 'buzz') {
             buzzArea.classList.remove('hidden');
             // ...
         } else {
-            quizArea.classList.remove('hidden');
+            // ★修正: 一斉回答モードの挙動
+            handleNormalResponseUI(p, quizArea, waitMsg);
         }
     }
     else if (st.step === 'answering') {
         // 回答中
         if (roomConfig.mode === 'buzz') {
-            // 早押しボタン
             if (st.isBuzzActive) {
                 buzzArea.classList.remove('hidden');
                 const btn = document.getElementById('player-buzz-btn');
@@ -176,29 +182,20 @@ function updateUI() {
                     btn.disabled = false; btn.textContent = "PUSH!";
                 }
             } else if (st.currentAnswerer === myPlayerId) {
-                // 回答権あり
                 quizArea.classList.remove('hidden'); 
                 buzzArea.classList.add('hidden');
             } else {
-                // 他人が回答中
                 lobby.classList.remove('hidden');
                 lobby.innerHTML = `<h3>LOCKED</h3><p>他のプレイヤーが回答中...</p>`;
                 quizArea.classList.add('hidden');
                 buzzArea.classList.add('hidden');
             }
         } else {
-            // 通常回答
-            if (p.lastAnswer != null) {
-                quizArea.classList.add('hidden');
-                waitMsg.classList.remove('hidden');
-                waitMsg.textContent = "回答を受け付けました。発表を待っています...";
-            } else {
-                quizArea.classList.remove('hidden');
-            }
+            // ★修正: 一斉回答モードの挙動
+            handleNormalResponseUI(p, quizArea, waitMsg);
         }
     }
     else if (st.step === 'result') {
-        // 結果発表 (勝敗)
         if (p.lastResult) showResultOverlay(p.lastResult);
         else {
             waitMsg.classList.remove('hidden');
@@ -206,12 +203,11 @@ function updateUI() {
         }
     }
     else if (st.step === 'answer') {
-        // ★正解表示: スマホにも問題と答えを表示
+        // 正解表示
         if(currentQuestion) {
             quizArea.classList.remove('hidden');
             document.getElementById('question-text-disp').textContent = currentQuestion.q;
             
-            // 入力エリアを答え表示エリアに書き換え
             const ansBox = document.getElementById('player-input-container');
             let correctText = "";
             if(currentQuestion.type === 'choice') {
@@ -230,6 +226,36 @@ function updateUI() {
                 </div>
             `;
         }
+    }
+}
+
+// ★追加: 通常回答のUI制御（修正可なら画面を残す）
+function handleNormalResponseUI(p, quizArea, waitMsg) {
+    if (p.lastAnswer != null) {
+        // 回答済みの場合
+        if (roomConfig.normalLimit === 'unlimited') {
+            // 修正可: 画面は消さず、メッセージだけ出す
+            quizArea.classList.remove('hidden');
+            waitMsg.classList.remove('hidden');
+            waitMsg.style.background = "transparent";
+            waitMsg.style.color = "#00bfff";
+            waitMsg.style.border = "none";
+            waitMsg.style.padding = "5px";
+            waitMsg.innerHTML = `<span style="font-size:0.8em;">現在の回答: <strong>${p.lastAnswer}</strong> (修正可)</span>`;
+        } else {
+            // 1回のみ: 画面を消す
+            quizArea.classList.add('hidden');
+            waitMsg.classList.remove('hidden');
+            waitMsg.style.background = "rgba(0, 184, 148, 0.2)";
+            waitMsg.style.color = "#00b894";
+            waitMsg.style.border = "1px solid #00b894";
+            waitMsg.style.padding = "15px";
+            waitMsg.textContent = "回答を受け付けました。発表を待っています...";
+        }
+    } else {
+        // 未回答
+        quizArea.classList.remove('hidden');
+        waitMsg.classList.add('hidden');
     }
 }
 
@@ -254,6 +280,7 @@ function renderPlayerQuestion(q, roomId, playerId) {
     qText.textContent = q.q;
     inputCont.innerHTML = '';
 
+    // A. 選択式
     if (q.type === 'choice') {
         let choices = q.c.map((text, i) => ({ text: text, originalIndex: i }));
         if (roomConfig.shuffleChoices === 'on') {
@@ -274,6 +301,7 @@ function renderPlayerQuestion(q, roomId, playerId) {
             inputCont.appendChild(btn);
         });
     }
+    // B. 文字選択式
     else if (q.type === 'letter_select') {
         let pool = [];
         if (q.steps) {
@@ -343,12 +371,14 @@ function renderPlayerQuestion(q, roomId, playerId) {
         controlRow.appendChild(submitBtn);
         inputCont.appendChild(controlRow);
     }
+    // C. 口頭回答
     else if (q.type === 'free_oral') {
         document.getElementById('player-oral-done-area').classList.remove('hidden');
         document.getElementById('player-oral-done-btn').onclick = () => {
             submitAnswer(roomId, playerId, "[Oral]");
         };
     }
+    // D. 記述式
     else {
         const inp = document.createElement('input');
         inp.type = 'text';
@@ -370,5 +400,6 @@ function renderPlayerQuestion(q, roomId, playerId) {
 function submitAnswer(roomId, playerId, answer) {
     window.db.ref(`rooms/${roomId}/players/${playerId}`).update({
         lastAnswer: answer
-    }).then(() => {});
+    });
+    // UI更新はupdateUI()に任せる（ここで何かするとちらつくため）
 }
