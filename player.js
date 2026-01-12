@@ -255,47 +255,128 @@ function renderPlayerQuestion(q, roomId, playerId) {
     const oralArea = document.getElementById('player-oral-done-area');
     
     area.classList.remove('hidden');
-    
+    oralArea.classList.add('hidden'); 
     qText.textContent = q.q;
     inputCont.innerHTML = '';
 
-    // A. 選択式
+    // --- A. 選択式 ---
     if (q.type === 'choice') {
         let choices = q.c.map((text, i) => ({ text: text, originalIndex: i }));
-        
-        // 選択肢を描画
+        if (roomConfig.shuffleChoices === 'on') {
+            // シャッフル処理
+            for (let i = choices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [choices[i], choices[j]] = [choices[j], choices[i]];
+            }
+        }
         choices.forEach((item, i) => {
             const btn = document.createElement('button');
             btn.className = 'btn-block answer-btn';
             btn.textContent = item.text;
-            
-            // 色分け
             if(i===0) btn.classList.add('btn-blue');
             else if(i===1) btn.classList.add('btn-red');
             else if(i===2) btn.classList.add('btn-green');
             else btn.classList.add('btn-yellow');
-
             btn.onclick = () => submitAnswer(roomId, playerId, item.originalIndex); 
             inputCont.appendChild(btn);
         });
     } 
-    // B. 口頭回答 (Hostが正誤判定)
-    else if (q.type === 'free_oral') {
-        area.classList.add('hidden'); // 問題文エリアは隠して
-        oralArea.classList.remove('hidden'); // 「回答した！」ボタンを出す
+    
+    // --- ★追加: B. 文字選択式 (Letter Select) ---
+    else if (q.type === 'letter_select') {
+        const correctChars = q.correct.split('');
+        const dummyChars = (q.dummyChars || '').split('');
+        // 正解とダミーを混ぜる
+        let pool = [...correctChars, ...dummyChars];
         
+        // シャッフル
+        for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+
+        // 入力表示エリア
+        const displayBox = document.createElement('div');
+        displayBox.className = 'letter-display-box';
+        displayBox.style.background = "#fff";
+        displayBox.style.color = "#000";
+        displayBox.style.padding = "10px";
+        displayBox.style.fontSize = "24px";
+        displayBox.style.fontWeight = "bold";
+        displayBox.style.textAlign = "center";
+        displayBox.style.marginBottom = "15px";
+        displayBox.style.borderRadius = "8px";
+        displayBox.style.minHeight = "40px";
+        displayBox.textContent = ""; // 初期は空
+        inputCont.appendChild(displayBox);
+
+        // 文字パネルグリッド
+        const grid = document.createElement('div');
+        grid.style.display = "grid";
+        grid.style.gridTemplateColumns = "repeat(5, 1fr)";
+        grid.style.gap = "8px";
+        grid.style.marginBottom = "15px";
+
+        pool.forEach(char => {
+            const btn = document.createElement('button');
+            btn.textContent = char;
+            btn.className = 'letter-panel-btn';
+            btn.style.aspectRatio = "1";
+            btn.style.background = "#333";
+            btn.style.border = "1px solid #555";
+            btn.style.color = "#fff";
+            btn.style.fontSize = "20px";
+            btn.style.borderRadius = "4px";
+            btn.style.cursor = "pointer";
+            
+            btn.onclick = () => {
+                if (displayBox.textContent.length < 20) {
+                    displayBox.textContent += char;
+                }
+            };
+            grid.appendChild(btn);
+        });
+        inputCont.appendChild(grid);
+
+        // 操作ボタン (Clear / Submit)
+        const controlRow = document.createElement('div');
+        controlRow.style.display = "flex";
+        controlRow.style.gap = "10px";
+
+        const clearBtn = document.createElement('button');
+        clearBtn.textContent = "Clear";
+        clearBtn.className = "btn-danger btn-block";
+        clearBtn.onclick = () => { displayBox.textContent = ""; };
+
+        const submitBtn = document.createElement('button');
+        submitBtn.textContent = "OK";
+        submitBtn.className = "btn-primary btn-block";
+        submitBtn.onclick = () => {
+            if (displayBox.textContent.length === 0) return;
+            submitAnswer(roomId, playerId, displayBox.textContent);
+        };
+
+        controlRow.appendChild(clearBtn);
+        controlRow.appendChild(submitBtn);
+        inputCont.appendChild(controlRow);
+    } 
+    
+    // --- C. 口頭回答 ---
+    else if (q.type === 'free_oral') {
+        area.classList.add('hidden'); 
+        oralArea.classList.remove('hidden'); 
         document.getElementById('player-oral-done-btn').onclick = () => {
             submitAnswer(roomId, playerId, "[Oral]");
         };
     } 
-    // C. 記述式 (自由入力)
+    
+    // --- D. 記述式 ---
     else {
         const inp = document.createElement('input');
         inp.type = 'text';
         inp.placeholder = '回答を入力...';
-        inp.className = 'modern-input'; // スタイル適用
+        inp.className = 'modern-input';
         inp.style.marginBottom = '10px';
-        
         const sub = document.createElement('button');
         sub.className = 'btn-primary btn-block';
         sub.textContent = '送信';
@@ -307,7 +388,6 @@ function renderPlayerQuestion(q, roomId, playerId) {
         inputCont.appendChild(sub);
     }
 }
-
 // 回答送信処理
 function submitAnswer(roomId, playerId, answer) {
     window.db.ref(`rooms/${roomId}/players/${playerId}`).update({
