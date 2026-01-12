@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v115: Robust & Safe Version)
+ * host_studio.js (v118: Skip Open Step & Direct Start)
  * =======================================================*/
 
 App.Studio = {
@@ -127,7 +127,6 @@ App.Studio = {
                 btnMain.classList.remove('hidden');
                 btnMain.className = 'btn-block btn-large-action action-ready';
                 
-                // ★修正: エラーハンドリングを追加
                 btnMain.onclick = () => {
                     try {
                         this.setupPeriod(0);
@@ -172,7 +171,6 @@ App.Studio = {
         document.getElementById('studio-standby-panel').classList.add('hidden');
         document.getElementById('studio-question-panel').classList.remove('hidden');
         
-        // ★修正: パネル操作盤がない場合でもエラーにしない
         const panelCtrl = document.getElementById('studio-panel-control');
         if (panelCtrl) {
             if (item.config.gameType === 'panel') {
@@ -224,33 +222,17 @@ App.Studio = {
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: App.State.currentQIndex });
                 break;
                 
-            case 1: // READY
-                btnMain.textContent = "準備完了 (SKIP)";
+            case 1: // READY -> Skip to Step 3 (ANSWERING)
+                btnMain.textContent = "ゲーム開始 (START)";
                 btnMain.classList.add('action-ready');
-                btnMain.onclick = () => this.setStep(2);
+                // ★修正: いきなりStep 3へ
+                btnMain.onclick = () => this.setStep(3);
                 
                 this.renderMonitorMessage("QUESTION", `Q. ${App.State.currentQIndex + 1}`);
-                
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'ready' });
                 break;
-                
-            case 2: // QUESTION (OPEN)
-                btnMain.textContent = "問題を表示 (OPEN)";
-                btnMain.onclick = () => this.setStep(3);
-                this.renderQuestionMonitor(q);
-                
-                let updateData = { step: 'question', startTime: firebase.database.ServerValue.TIMESTAMP };
-                
-                // 制限時間の送信ロジック
-                const qLimit = q.timeLimit || 0;
-                if (qLimit > 0) {
-                    updateData.timeLimit = qLimit;
-                } else if (App.Data.currentConfig.mode === 'solo' && App.Data.currentConfig.soloTimeVal) {
-                    updateData.timeLimit = App.Data.currentConfig.soloTimeVal;
-                }
-                
-                window.db.ref(`rooms/${roomId}/status`).update(updateData);
-                break;
+            
+            // Case 2 (QUESTION OPEN) はスキップされるため削除または未使用
                 
             case 3: // ANSWERING
                 btnMain.textContent = "回答締め切り / 判定";
@@ -261,7 +243,24 @@ App.Studio = {
                 } else {
                     btnMain.onclick = () => { this.judgeSimultaneous(); this.setStep(4); };
                 }
-                window.db.ref(`rooms/${roomId}/status`).update({ step: 'answering', isBuzzActive: (App.Data.currentConfig.mode === 'buzz') });
+                
+                // ★修正: Step 2でやっていた処理（プレビュー表示・タイマー送信）をここに統合
+                this.renderQuestionMonitor(q);
+                
+                let updateData = { 
+                    step: 'answering', 
+                    startTime: firebase.database.ServerValue.TIMESTAMP,
+                    isBuzzActive: (App.Data.currentConfig.mode === 'buzz')
+                };
+                
+                const qLimit = q.timeLimit || 0;
+                if (qLimit > 0) {
+                    updateData.timeLimit = qLimit;
+                } else if (App.Data.currentConfig.mode === 'solo' && App.Data.currentConfig.soloTimeVal) {
+                    updateData.timeLimit = App.Data.currentConfig.soloTimeVal;
+                }
+                
+                window.db.ref(`rooms/${roomId}/status`).update(updateData);
                 break;
                 
             case 4: // RESULT
@@ -390,7 +389,6 @@ App.Studio = {
 
     renderPanelControl: function() {
         const grid = document.getElementById('studio-panel-grid');
-        // ★修正: 要素がない場合は処理しない
         if(!grid) return;
         
         grid.innerHTML = '';
