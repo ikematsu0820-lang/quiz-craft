@@ -1,5 +1,5 @@
 /* =========================================================
- * host_config.js (v138: Edit Set Content & Playlist)
+ * host_config.js (v139: Hide Score/Loss for Panel Mode)
  * =======================================================*/
 
 App.Config = {
@@ -123,7 +123,7 @@ App.Config = {
                 <hr style="border:0; border-top:1px dashed #444; margin:20px 0;">
                 
                 <h5 style="margin:15px 0 5px 0;">問題別配点・失点・時間設定</h5>
-                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px; background:#222; padding:10px; border-radius:6px; border:1px solid #444;">
+                <div id="config-bulk-grid" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:15px; background:#222; padding:10px; border-radius:6px; border:1px solid #444;">
                     <div>
                         <label class="config-label" style="font-size:0.8em; color:#aaa;">${APP_TEXT.Config.LabelHeaderTime}</label>
                         <div style="display:flex; gap:5px; margin-bottom:5px;">
@@ -132,14 +132,14 @@ App.Config = {
                         </div>
                         <button id="config-bulk-time-inf-btn" class="btn-mini btn-info" style="width:100%; font-size:0.8em;">なし (No Limit)</button>
                     </div>
-                    <div>
+                    <div class="score-section">
                         <label class="config-label" style="font-size:0.8em; color:#0055ff;">${APP_TEXT.Config.LabelHeaderPt}</label>
                         <div style="display:flex; gap:5px;">
                             <input type="number" id="config-bulk-point-input" value="1" min="1" style="width:100%; text-align:center; color:#0055ff; font-weight:bold;">
                             <button id="config-bulk-point-btn" class="btn-mini btn-primary">SET</button>
                         </div>
                     </div>
-                    <div>
+                    <div class="score-section">
                         <label class="config-label" style="font-size:0.8em; color:#d00;">${APP_TEXT.Config.LabelHeaderLoss}</label>
                         <div style="display:flex; gap:5px;">
                             <input type="number" id="config-bulk-loss-input" value="0" min="0" style="width:100%; text-align:center; color:#d00; font-weight:bold;">
@@ -162,6 +162,9 @@ App.Config = {
         const updateDetails = () => {
             this.renderModeDetail(modeSel.value, conf);
             this.renderGameTypeDetail(typeSel.value, conf);
+            // ★追加: パネルモードならPt/Lossを隠す
+            const isPanel = (typeSel.value === 'panel');
+            this.toggleScoreSections(!isPanel);
         };
         
         modeSel.onchange = updateDetails;
@@ -187,6 +190,23 @@ App.Config = {
 
         updateDetails();
         this.renderQList();
+        
+        // 初期状態でも反映
+        this.toggleScoreSections(typeSel.value !== 'panel');
+    },
+
+    // ★追加: 点数設定エリアの表示切替
+    toggleScoreSections: function(show) {
+        document.querySelectorAll('.score-section').forEach(el => {
+            if(show) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        });
+        
+        // グリッドレイアウトの調整
+        const bulkGrid = document.getElementById('config-bulk-grid');
+        if(bulkGrid) {
+            bulkGrid.style.gridTemplateColumns = show ? "1fr 1fr 1fr" : "1fr";
+        }
     },
 
     setupBulkButtons: function() {
@@ -393,11 +413,11 @@ App.Config = {
                         <span style="font-size:0.6em; color:#aaa;">Time</span>
                         <input type="${inputType}" class="q-time-input" data-index="${i}" value="${timeVal}" style="width:50px; text-align:center; padding:5px; font-size:0.8em;" onfocus="this.type='number'; this.value='';" onblur="if(this.value==''||this.value=='0'){this.type='text';this.value='なし';}">
                     </div>
-                    <div style="display:flex; flex-direction:column; align-items:center;">
+                    <div class="score-section" style="display:flex; flex-direction:column; align-items:center;">
                         <span style="font-size:0.6em; color:#0055ff;">Pt</span>
                         <input type="number" class="q-point-input" data-index="${i}" value="${q.points||1}" style="width:40px; text-align:center; color:#0055ff; font-weight:bold; padding:5px;">
                     </div>
-                    <div style="display:flex; flex-direction:column; align-items:center;">
+                    <div class="score-section" style="display:flex; flex-direction:column; align-items:center;">
                         <span style="font-size:0.6em; color:#d00;">Loss</span>
                         <input type="number" class="q-loss-input" data-index="${i}" value="${q.loss||0}" style="width:40px; text-align:center; color:#d00; font-weight:bold; padding:5px;">
                     </div>
@@ -405,6 +425,12 @@ App.Config = {
             `;
             list.appendChild(row);
         });
+        
+        // リスト描画後、現在の設定に合わせて表示制御
+        const typeSel = document.getElementById('config-game-type');
+        if(typeSel && typeSel.value === 'panel') {
+            this.toggleScoreSections(false);
+        }
     },
 
     addPeriod: function() {
@@ -447,16 +473,6 @@ App.Config = {
             normalLimit: document.getElementById('config-normal-limit')?.value || 'unlimited',
             passCount: document.getElementById('conf-pass-count')?.value || 10
         };
-
-        if (mode === 'solo') {
-            newConfig.soloStyle = document.getElementById('config-solo-style')?.value;
-            newConfig.soloTimeType = document.getElementById('config-solo-time-type')?.value;
-            const sVal = document.getElementById('config-solo-time-val').value;
-            newConfig.soloTimeVal = (sVal === 'なし' || sVal === '0') ? 0 : (parseInt(sVal) || 5);
-            newConfig.soloLife = parseInt(document.getElementById('config-solo-life')?.value) || 3;
-            newConfig.soloRetire = document.getElementById('config-solo-retire')?.value;
-            newConfig.soloRecovery = parseInt(document.getElementById('config-solo-recovery')?.value) || 0;
-        }
 
         App.Data.periodPlaylist.push({
             title: title,
