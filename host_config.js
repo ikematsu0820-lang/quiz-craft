@@ -1,10 +1,10 @@
 /* =========================================================
- * host_config.js (v140: Retain Set Info on Edit)
+ * host_config.js (v141: Restrict Unlimited Answer by Type)
  * =======================================================*/
 
 App.Config = {
     selectedSetQuestions: [],
-    editingTitle: "", // ★追加: 編集中のタイトル保持用
+    editingTitle: "", 
 
     init: function() {
         App.Ui.showView(App.Ui.views.config);
@@ -59,7 +59,7 @@ App.Config = {
             this.editingTitle = "";
             container.innerHTML = '<p class="text-center text-gray p-20">セットを選択してください</p>';
             return;
-        }
+        },
 
         const data = JSON.parse(select.value);
         this.selectedSetQuestions = data.q || [];
@@ -73,15 +73,16 @@ App.Config = {
         const container = document.getElementById('config-builder-ui');
         let typeDisplay = "不明";
         let isOral = false;
+        let qType = 'choice'; // デフォルト
 
         if(questions.length > 0) {
-            const t = questions[0].type;
-            if(t === 'choice') typeDisplay = APP_TEXT.Creator.TypeChoice;
-            else if(t === 'letter_select') typeDisplay = "文字選択 (Letter)";
-            else if(t === 'sort') typeDisplay = APP_TEXT.Creator.TypeSort;
-            else if(t === 'free_oral') { typeDisplay = APP_TEXT.Creator.TypeFreeOral; isOral = true; }
-            else if(t === 'free_written') typeDisplay = APP_TEXT.Creator.TypeFreeWritten;
-            else if(t === 'multi') typeDisplay = APP_TEXT.Creator.TypeMulti;
+            qType = questions[0].type;
+            if(qType === 'choice') typeDisplay = APP_TEXT.Creator.TypeChoice;
+            else if(qType === 'letter_select') typeDisplay = "文字選択 (Letter)";
+            else if(qType === 'sort') typeDisplay = APP_TEXT.Creator.TypeSort;
+            else if(qType === 'free_oral') { typeDisplay = APP_TEXT.Creator.TypeFreeOral; isOral = true; }
+            else if(qType === 'free_written') typeDisplay = APP_TEXT.Creator.TypeFreeWritten;
+            else if(qType === 'multi') typeDisplay = APP_TEXT.Creator.TypeMulti;
         }
         
         const normalOption = isOral 
@@ -163,7 +164,8 @@ App.Config = {
         const typeSel = document.getElementById('config-game-type');
         
         const updateDetails = () => {
-            this.renderModeDetail(modeSel.value, conf);
+            // ★修正: 問題タイプ(qType)も渡して、修正可否を判定させる
+            this.renderModeDetail(modeSel.value, conf, qType);
             this.renderGameTypeDetail(typeSel.value, conf);
             const isPanel = (typeSel.value === 'panel');
             this.toggleScoreSections(!isPanel);
@@ -225,19 +227,37 @@ App.Config = {
         };
     },
 
-    renderModeDetail: function(mode, conf = {}) {
+    // ★修正: 問題タイプ(qType)によってNormalモードの設定を制限
+    renderModeDetail: function(mode, conf = {}, qType = 'choice') {
         const area = document.getElementById('mode-detail-area');
         let html = '';
 
         if(mode === 'normal') {
+            // 修正を許可する形式: 選択式, 並べ替え, 文字パネル, 多答
+            const canRetry = ['choice', 'sort', 'letter_select', 'multi'].includes(qType);
+            
+            let limitSelect = '';
+            if (canRetry) {
+                limitSelect = `
+                    <select id="config-normal-limit" class="btn-block config-select">
+                        <option value="unlimited" ${conf.normalLimit==='unlimited'?'selected':''}>${APP_TEXT.Config.NormalLimitUnlimited}</option>
+                        <option value="one" ${conf.normalLimit==='one'?'selected':''}>${APP_TEXT.Config.NormalLimitOne}</option>
+                    </select>`;
+            } else {
+                // 記述式などは強制的に「1回のみ」
+                limitSelect = `
+                    <select id="config-normal-limit" class="btn-block config-select" disabled style="opacity:0.7; cursor:not-allowed;">
+                        <option value="one" selected>1回のみ (固定)</option>
+                    </select>
+                    <p style="font-size:0.8em; color:#ffd700; margin-top:5px;">※この形式は回答の修正ができません</p>
+                `;
+            }
+
             html += `
                 <div class="mode-settings-box mode-box-normal">
                     <div class="mt-5">
                         <label class="config-label">${APP_TEXT.Config.LabelNormalLimit}</label>
-                        <select id="config-normal-limit" class="btn-block config-select">
-                            <option value="unlimited" ${conf.normalLimit==='unlimited'?'selected':''}>${APP_TEXT.Config.NormalLimitUnlimited}</option>
-                            <option value="one" ${conf.normalLimit==='one'?'selected':''}>${APP_TEXT.Config.NormalLimitOne}</option>
-                        </select>
+                        ${limitSelect}
                     </div>
                     <div class="mt-10">
                         <label class="config-label">${APP_TEXT.Config.LabelShuffleQ}</label>
@@ -430,7 +450,6 @@ App.Config = {
     },
 
     addPeriod: function() {
-        // ★修正: セレクトボックスが空なら編集中のタイトルを使う
         const select = document.getElementById('config-set-select');
         let title = this.editingTitle || "Custom Set";
         if (select.value) {
@@ -487,7 +506,6 @@ App.Config = {
             config: newConfig
         });
         
-        // リセット
         this.selectedSetQuestions = [];
         this.editingTitle = "";
         document.getElementById('config-builder-ui').innerHTML = '<p class="text-center text-gray p-20">セットが追加されました</p>';
@@ -503,13 +521,12 @@ App.Config = {
         App.Data.periodPlaylist.splice(index, 1);
         
         this.selectedSetQuestions = item.questions;
-        this.editingTitle = item.title; // ★タイトル保持
+        this.editingTitle = item.title;
         this.renderBuilderForm(item.config, item.questions);
         
-        // ★修正: セレクトボックスを「編集中」表示にする
         const select = document.getElementById('config-set-select');
         select.innerHTML = `<option value="">⚠️ 編集中: ${item.title}</option>`;
-        select.value = ""; // 値は空にしておく（誤作動防止）
+        select.value = ""; 
 
         this.renderPreview();
         document.querySelector('.panel-section.section-cyan').scrollIntoView({behavior: "smooth"});
