@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v131: Final Ranking Trigger)
+ * host_studio.js (v132: Always Show Answer)
  * =======================================================*/
 
 App.Studio = {
@@ -46,6 +46,10 @@ App.Studio = {
                 };
             }
         });
+
+        // ★修正: 「正解表示」ボタンはもう不要なので隠す
+        const btnAns = document.getElementById('btn-toggle-ans');
+        if(btnAns) btnAns.style.display = 'none';
 
         this.toggleUIForStandby(true);
 
@@ -246,6 +250,7 @@ App.Studio = {
                 break;
             
             case 3: // ANSWERING
+                // 締め切りボタン
                 btnMain.textContent = "回答締め切り (CLOSE)";
                 btnMain.classList.add('action-stop');
                 if(App.Data.currentConfig.mode === 'buzz' || App.Data.currentConfig.mode === 'solo') {
@@ -272,6 +277,7 @@ App.Studio = {
                 break;
                 
             case 4: // RESULT (CLOSED)
+                // 正解発表ボタン (モニターに正解が出る)
                 btnMain.textContent = "正解を発表 (SHOW ANSWER)";
                 btnMain.onclick = () => this.setStep(5);
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'result', isBuzzActive: false });
@@ -281,6 +287,7 @@ App.Studio = {
                 btnMain.textContent = "次の問題へ (NEXT) >>";
                 btnMain.classList.add('action-next');
                 btnMain.onclick = () => this.setStep(6);
+                // スマホにも正解を表示
                 document.getElementById('studio-correct-display').classList.remove('hidden');
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'answer' });
                 break;
@@ -310,14 +317,11 @@ App.Studio = {
                     btn.onclick = () => this.setupPeriod(nextIdx);
                 }
             } else {
-                // ★修正: ここで最終結果発表モードへ切り替え
                 if(confirm("全プログラム終了です。最終結果を表示しますか？")) {
                     window.db.ref(`rooms/${App.State.currentRoomId}/status`).update({ step: 'final_ranking' });
-                    // スタジオ側は「終了しました」表示
                     document.getElementById('studio-question-panel').classList.add('hidden');
                     document.getElementById('studio-standby-panel').classList.remove('hidden');
-                    const btn = document.getElementById('btn-phase-main');
-                    btn.classList.add('hidden');
+                    document.getElementById('btn-phase-main').classList.add('hidden');
                     document.getElementById('studio-program-info').innerHTML = "<h2 style='color:#ffd700'>全プログラム終了 (COMPLETED)</h2><p>モニターに結果を表示中...</p>";
                 }
             }
@@ -407,7 +411,9 @@ App.Studio = {
         }
         
         document.getElementById('studio-correct-text').textContent = correctText;
-        document.getElementById('studio-correct-display').classList.add('hidden');
+        
+        // ★修正: 司会者画面では正解を常時表示（hiddenを削除）
+        document.getElementById('studio-correct-display').classList.remove('hidden');
     },
 
     renderPanelControl: function() {
