@@ -1,11 +1,11 @@
 /* =========================================================
- * player.js (v119: Allow Answer Correction)
+ * player.js (v120: Show Your Answer on Result)
  * =======================================================*/
 
 let myRoomId = null;
 let myPlayerId = null;
 let myName = "NoName";
-let roomConfig = { mode: 'normal', normalLimit: 'one' }; // デフォルトは1回
+let roomConfig = { mode: 'normal', normalLimit: 'one' }; 
 let currentQuestion = null;
 
 let localStatus = { step: 'standby' };
@@ -85,7 +85,6 @@ function startPlayerListener(roomId, playerId) {
     });
 
     configRef.on('value', snap => {
-        // 設定を読み込む
         roomConfig = snap.val() || { mode: 'normal' };
     });
 
@@ -94,7 +93,6 @@ function startPlayerListener(roomId, playerId) {
         if(!st) return;
         localStatus = st; 
         
-        // 問題データ取得
         if (st.step === 'answering' || st.step === 'question') {
              window.db.ref(`rooms/${roomId}/questions/${st.qIndex}`).once('value', qSnap => {
                 const q = qSnap.val();
@@ -113,7 +111,6 @@ function updateUI() {
     const st = localStatus;
     const p = localPlayerData;
     
-    // 生存バッジ
     const badge = document.getElementById('alive-badge');
     if (p.isAlive) {
         badge.textContent = "ENTRY";
@@ -127,13 +124,11 @@ function updateUI() {
         document.getElementById('player-dead-overlay').classList.remove('hidden');
     }
     
-    // スコア
     if (p.periodScore !== undefined) {
         document.getElementById('score-display-area').classList.remove('hidden');
         document.getElementById('current-score-value').textContent = p.periodScore;
     }
 
-    // 要素取得
     const lobby = document.getElementById('player-lobby-msg');
     const quizArea = document.getElementById('player-quiz-area');
     const waitMsg = document.getElementById('player-wait-msg');
@@ -141,7 +136,6 @@ function updateUI() {
     const buzzArea = document.getElementById('player-buzz-area');
     const oralArea = document.getElementById('player-oral-done-area');
 
-    // 初期化: 基本的に隠す
     lobby.classList.add('hidden');
     if (st.step !== 'answering' && st.step !== 'question' && st.step !== 'answer') {
         quizArea.classList.add('hidden');
@@ -151,7 +145,6 @@ function updateUI() {
     waitMsg.classList.add('hidden');
     resultOverlay.classList.add('hidden');
 
-    // --- ステップ制御 ---
     if (st.step === 'standby') {
         lobby.classList.remove('hidden');
         lobby.innerHTML = `<h3>STANDBY</h3><p>ホストが準備中です...</p>`;
@@ -161,17 +154,13 @@ function updateUI() {
         lobby.innerHTML = `<h3>ARE YOU READY?</h3><p>まもなく開始します</p>`;
     }
     else if (st.step === 'question') {
-        // 出題中
         if (roomConfig.mode === 'buzz') {
             buzzArea.classList.remove('hidden');
-            // ...
         } else {
-            // ★修正: 一斉回答モードの挙動
             handleNormalResponseUI(p, quizArea, waitMsg);
         }
     }
     else if (st.step === 'answering') {
-        // 回答中
         if (roomConfig.mode === 'buzz') {
             if (st.isBuzzActive) {
                 buzzArea.classList.remove('hidden');
@@ -191,7 +180,6 @@ function updateUI() {
                 buzzArea.classList.add('hidden');
             }
         } else {
-            // ★修正: 一斉回答モードの挙動
             handleNormalResponseUI(p, quizArea, waitMsg);
         }
     }
@@ -203,12 +191,14 @@ function updateUI() {
         }
     }
     else if (st.step === 'answer') {
-        // 正解表示
+        // ★正解表示: スマホにも問題・正解・自分の回答を表示
         if(currentQuestion) {
             quizArea.classList.remove('hidden');
             document.getElementById('question-text-disp').textContent = currentQuestion.q;
             
             const ansBox = document.getElementById('player-input-container');
+            
+            // 正解テキストの生成
             let correctText = "";
             if(currentQuestion.type === 'choice') {
                 if(Array.isArray(currentQuestion.correct)) correctText = currentQuestion.correct.map(i => currentQuestion.c[i]).join(' / ');
@@ -218,32 +208,50 @@ function updateUI() {
             } else {
                 correctText = currentQuestion.correct;
             }
+
+            // ★追加: 自分の回答テキストの生成（選択肢なら文字に変換）
+            let myAnsText = p.lastAnswer || "(未回答)";
+            if(p.lastAnswer !== null && currentQuestion.type === 'choice') {
+                const idx = parseInt(p.lastAnswer);
+                if(!isNaN(idx) && currentQuestion.c && currentQuestion.c[idx]) {
+                    myAnsText = currentQuestion.c[idx];
+                }
+            }
             
             ansBox.innerHTML = `
                 <div style="background:#00bfff; color:#000; padding:15px; border-radius:8px; font-weight:bold; text-align:center; margin-top:20px;">
                     <div style="font-size:0.8em; margin-bottom:5px;">正解 (ANSWER)</div>
                     <div style="font-size:1.5em;">${correctText}</div>
                 </div>
+                
+                <div style="background:#333; border:1px solid #555; color:#fff; padding:15px; border-radius:8px; font-weight:bold; text-align:center; margin-top:10px;">
+                    <div style="font-size:0.8em; margin-bottom:5px; color:#aaa;">あなたの回答 (YOUR ANSWER)</div>
+                    <div style="font-size:1.3em;">${myAnsText}</div>
+                </div>
             `;
         }
     }
 }
 
-// ★追加: 通常回答のUI制御（修正可なら画面を残す）
 function handleNormalResponseUI(p, quizArea, waitMsg) {
     if (p.lastAnswer != null) {
-        // 回答済みの場合
         if (roomConfig.normalLimit === 'unlimited') {
-            // 修正可: 画面は消さず、メッセージだけ出す
             quizArea.classList.remove('hidden');
             waitMsg.classList.remove('hidden');
             waitMsg.style.background = "transparent";
             waitMsg.style.color = "#00bfff";
             waitMsg.style.border = "none";
             waitMsg.style.padding = "5px";
-            waitMsg.innerHTML = `<span style="font-size:0.8em;">現在の回答: <strong>${p.lastAnswer}</strong> (修正可)</span>`;
+            
+            // 回答表示用（選択肢なら変換）
+            let dispAns = p.lastAnswer;
+            if(currentQuestion && currentQuestion.type === 'choice') {
+                const idx = parseInt(p.lastAnswer);
+                if(!isNaN(idx) && currentQuestion.c[idx]) dispAns = currentQuestion.c[idx];
+            }
+            
+            waitMsg.innerHTML = `<span style="font-size:0.8em;">現在の回答: <strong>${dispAns}</strong> (修正可)</span>`;
         } else {
-            // 1回のみ: 画面を消す
             quizArea.classList.add('hidden');
             waitMsg.classList.remove('hidden');
             waitMsg.style.background = "rgba(0, 184, 148, 0.2)";
@@ -253,7 +261,6 @@ function handleNormalResponseUI(p, quizArea, waitMsg) {
             waitMsg.textContent = "回答を受け付けました。発表を待っています...";
         }
     } else {
-        // 未回答
         quizArea.classList.remove('hidden');
         waitMsg.classList.add('hidden');
     }
@@ -280,7 +287,6 @@ function renderPlayerQuestion(q, roomId, playerId) {
     qText.textContent = q.q;
     inputCont.innerHTML = '';
 
-    // A. 選択式
     if (q.type === 'choice') {
         let choices = q.c.map((text, i) => ({ text: text, originalIndex: i }));
         if (roomConfig.shuffleChoices === 'on') {
@@ -301,7 +307,6 @@ function renderPlayerQuestion(q, roomId, playerId) {
             inputCont.appendChild(btn);
         });
     }
-    // B. 文字選択式
     else if (q.type === 'letter_select') {
         let pool = [];
         if (q.steps) {
@@ -371,14 +376,12 @@ function renderPlayerQuestion(q, roomId, playerId) {
         controlRow.appendChild(submitBtn);
         inputCont.appendChild(controlRow);
     }
-    // C. 口頭回答
     else if (q.type === 'free_oral') {
         document.getElementById('player-oral-done-area').classList.remove('hidden');
         document.getElementById('player-oral-done-btn').onclick = () => {
             submitAnswer(roomId, playerId, "[Oral]");
         };
     }
-    // D. 記述式
     else {
         const inp = document.createElement('input');
         inp.type = 'text';
@@ -400,6 +403,5 @@ function renderPlayerQuestion(q, roomId, playerId) {
 function submitAnswer(roomId, playerId, answer) {
     window.db.ref(`rooms/${roomId}/players/${playerId}`).update({
         lastAnswer: answer
-    });
-    // UI更新はupdateUI()に任せる（ここで何かするとちらつくため）
+    }).then(() => {});
 }
