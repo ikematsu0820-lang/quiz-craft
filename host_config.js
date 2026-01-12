@@ -68,6 +68,7 @@ App.Config = {
         if(this.selectedSetQuestions.length > 0) {
             const t = this.selectedSetQuestions[0].type;
             if(t === 'choice') typeDisplay = APP_TEXT.Creator.TypeChoice;
+            else if(t === 'letter_select') typeDisplay = "文字選択 (Letter)"; // ★追加
             else if(t === 'sort') typeDisplay = APP_TEXT.Creator.TypeSort;
             else if(t === 'free_oral') { 
                 typeDisplay = APP_TEXT.Creator.TypeFreeOral;
@@ -76,7 +77,6 @@ App.Config = {
             else if(t === 'free_written') typeDisplay = APP_TEXT.Creator.TypeFreeWritten;
             else if(t === 'multi') typeDisplay = APP_TEXT.Creator.TypeMulti;
         }
-
         const normalOption = isOral 
             ? `<option value="normal" disabled style="color:#555;">✖ 一斉回答 (口頭形式では選択不可)</option>` 
             : `<option value="normal">一斉回答 (Normal)</option>`;
