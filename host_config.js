@@ -59,7 +59,7 @@ App.Config = {
             this.editingTitle = "";
             container.innerHTML = '<p class="text-center text-gray p-20">セットを選択してください</p>';
             return;
-        }
+        } // ★修正: ここにあった余計なカンマを削除
 
         const data = JSON.parse(select.value);
         this.selectedSetQuestions = data.q || [];
@@ -231,6 +231,7 @@ App.Config = {
         let html = '';
 
         if(mode === 'normal') {
+            // 修正を許可する形式: 選択式, 並べ替え, 文字パネル, 多答
             const canRetry = ['choice', 'sort', 'letter_select', 'multi'].includes(qType);
             
             let limitSelect = '';
@@ -241,6 +242,7 @@ App.Config = {
                         <option value="one" ${conf.normalLimit==='one'?'selected':''}>${APP_TEXT.Config.NormalLimitOne}</option>
                     </select>`;
             } else {
+                // 記述式などは強制的に「1回のみ」
                 limitSelect = `
                     <select id="config-normal-limit" class="btn-block config-select" disabled style="opacity:0.7; cursor:not-allowed;">
                         <option value="one" selected>1回のみ (固定)</option>
@@ -620,4 +622,3 @@ window.enterConfigMode = () => App.Config.init();
 window.loadProgramToConfigOnDash = (d) => App.Config.loadExternal(d);
 document.getElementById('config-save-program-btn')?.addEventListener('click', () => App.Config.saveProgram());
 document.getElementById('config-go-studio-btn')?.addEventListener('click', () => { App.Config.saveProgram(); window.startRoom(); });
-}
