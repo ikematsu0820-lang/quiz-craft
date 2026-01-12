@@ -1,5 +1,5 @@
 /* =========================================================
- * host_studio.js (v118: Skip Open Step & Direct Start)
+ * host_studio.js (v119: Auto Reset Player Status)
  * =======================================================*/
 
 App.Studio = {
@@ -219,21 +219,21 @@ App.Studio = {
                 const pTitle = App.Data.periodPlaylist[App.State.currentPeriodIndex].title;
                 this.renderMonitorMessage("PROGRAM", pTitle);
                 
+                // ★修正: 待機状態に入るときに、全プレイヤーの回答状態をリセットする
+                this.resetPlayerStatus();
+
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'standby', qIndex: App.State.currentQIndex });
                 break;
                 
-            case 1: // READY -> Skip to Step 3 (ANSWERING)
+            case 1: // READY -> Skip to Step 3
                 btnMain.textContent = "ゲーム開始 (START)";
                 btnMain.classList.add('action-ready');
-                // ★修正: いきなりStep 3へ
                 btnMain.onclick = () => this.setStep(3);
                 
                 this.renderMonitorMessage("QUESTION", `Q. ${App.State.currentQIndex + 1}`);
                 window.db.ref(`rooms/${roomId}/status`).update({ step: 'ready' });
                 break;
             
-            // Case 2 (QUESTION OPEN) はスキップされるため削除または未使用
-                
             case 3: // ANSWERING
                 btnMain.textContent = "回答締め切り / 判定";
                 btnMain.classList.add('action-stop');
@@ -244,7 +244,6 @@ App.Studio = {
                     btnMain.onclick = () => { this.judgeSimultaneous(); this.setStep(4); };
                 }
                 
-                // ★修正: Step 2でやっていた処理（プレビュー表示・タイマー送信）をここに統合
                 this.renderQuestionMonitor(q);
                 
                 let updateData = { 
@@ -308,6 +307,20 @@ App.Studio = {
                 document.getElementById('btn-phase-main').classList.add('hidden');
             }
         }
+    },
+
+    // ★追加: プレイヤーの状態リセット（回答・結果・早押しタイムを消す）
+    resetPlayerStatus: function() {
+        const roomId = App.State.currentRoomId;
+        window.db.ref(`rooms/${roomId}/players`).once('value', snap => {
+            snap.forEach(p => {
+                p.ref.update({ 
+                    lastAnswer: null, 
+                    lastResult: null, 
+                    buzzTime: null 
+                });
+            });
+        });
     },
 
     renderMonitorMessage: function(label, text) {
@@ -468,7 +481,22 @@ App.Studio = {
             snap.forEach(pSnap => {
                 const p = pSnap.val();
                 let isCor = false;
-                if(q.type === 'choice' && p.lastAnswer == q.correct) isCor = true;
+                
+                // 判定ロジック
+                if(q.type === 'choice') {
+                    if (p.lastAnswer == q.correct) isCor = true;
+                } else if (q.type === 'letter_select') {
+                    // 文字パネルの判定 (正解文字列と比較)
+                    let correctStr = "";
+                    if (q.steps) correctStr = q.steps.map(s => s.correct).join('');
+                    else correctStr = q.correct;
+                    
+                    if (p.lastAnswer === correctStr) isCor = true;
+                } else {
+                    // 完全一致
+                    if (p.lastAnswer == q.correct) isCor = true;
+                }
+
                 if(isCor) pSnap.ref.update({ periodScore: (p.periodScore||0) + 1, lastResult: 'win' });
                 else pSnap.ref.update({ lastResult: 'lose' });
             });
